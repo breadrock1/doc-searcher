@@ -13,3 +13,7 @@ serde = "~1"
 serde_json = "~1"
 thiserror = "1.0.48"
 tokio = { version = "*", features = ["full"] }
+
+[[test]]
+name = "elastic-tests"
+path = "test/elastic.rs"
