@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 use elasticsearch::Elasticsearch;
-use elasticsearch::http::transport::Transport;
 
 #[derive(Default, Clone)]
 pub struct SearchContext {
@@ -8,11 +7,9 @@ pub struct SearchContext {
 }
 
 impl SearchContext {
-    pub fn _new(url: &str) -> Option<Self> {
-        let trans = Transport::single_node(url).unwrap();
-        let elastic = Elasticsearch::new(trans);
-        let elastic_ref = Arc::new(Mutex::new(elastic));
-        Some(SearchContext { context: elastic_ref })
+    pub fn _new(elastic: Elasticsearch) -> Option<Self> {
+        let elastic = Arc::new(Mutex::new(elastic));
+        Some(SearchContext { context: elastic })
     }
 
     pub fn get_cxt(&self) -> &Arc<Mutex<Elasticsearch>> {
