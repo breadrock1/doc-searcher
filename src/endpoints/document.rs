@@ -1,4 +1,4 @@
-use crate::endpoints::elastic;
+use crate::endpoints::document;
 use crate::errors::WebResponse;
 use crate::wrappers::DocumentJson;
 use crate::context::SearchContext;
@@ -9,7 +9,7 @@ use elasticsearch::CreateParts;
 use serde_json::json;
 
 
-#[post("/{document}")]
+#[post("/docs/{document}")]
 async fn create_index(
     cxt: web::Data<SearchContext>,
     path: web::Path<String>,
@@ -28,10 +28,10 @@ async fn create_index(
         .unwrap();
 
     let result = response.status_code().is_success();
-    Ok(web::Json(DocumentJson::new("tweets", "/tmp", ".txt")))
+    Ok(web::Json(DocumentJson::new(1u64, "tweets", "/tmp", ".txt")))
 }
 
-#[get("/{document}")]
+#[get("/docs/{document}")]
 async fn find_index(
     cxt: web::Data<SearchContext>,
     path: web::Path<String>,
@@ -50,5 +50,5 @@ async fn find_index(
         .unwrap();
 
     let result = response.status_code().is_success();
-    Ok(web::Json(DocumentJson::new("tweets", "/tmp", ".txt")))
+    Ok(web::Json(DocumentJson::new(2u64,"tweets", "/tmp", ".txt")))
 }
