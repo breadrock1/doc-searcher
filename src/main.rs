@@ -4,7 +4,7 @@ mod errors;
 mod wrappers;
 
 use crate::context::SearchContext;
-use crate::endpoints::elastic::{create_index, find_index};
+use crate::endpoints::document::{create_index, find_index};
 
 use actix_web::{web, App, HttpServer, Scope};
 use elasticsearch::{Elasticsearch, SearchParts};
@@ -12,6 +12,7 @@ use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
 use elasticsearch::http::transport::{SingleNodeConnectionPool, Transport, TransportBuilder};
 use elasticsearch::http::Url;
+use crate::endpoints::cluster::{all_clusters, new_cluster};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -31,7 +32,7 @@ async fn main() -> std::io::Result<()> {
 fn build_elastic() -> Option<Elasticsearch> {
     let es_url = Url::parse("https://localhost:9200").unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
-    let creds = Credentials::Basic("elastic".into(), "MomQSpuUJk0ANHBTjSKM".into());
+    let creds = Credentials::Basic("elastic".into(), "uldetDvu=q4Co27*vkcp".into());
     let validation = CertificateValidation::None;
     let transport = TransportBuilder::new(conn_pool)
         .auth(creds)
@@ -43,7 +44,9 @@ fn build_elastic() -> Option<Elasticsearch> {
 }
 
 fn build_service() -> Scope {
-    web::scope("/home")
+    web::scope("/searcher")
+        .service(new_cluster)
+        .service(all_clusters)
         .service(create_index)
         .service(find_index)
 }
