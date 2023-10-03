@@ -3,7 +3,7 @@ use actix_web::{HttpResponse, ResponseError};
 use serde::Serialize;
 use thiserror::Error;
 
-pub type WebResponse<T> = Result<T, Error>;
+pub type WebResponse<T> = Result<T, WebError>;
 
 #[derive(Serialize)]
 struct ErrorResponse {
@@ -13,24 +13,24 @@ struct ErrorResponse {
 }
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum WebError {
     #[error("Some error")]
     SomeError(String),
 }
 
-impl Error {
+impl WebError {
     pub fn name(&self) -> String {
         match self {
-            Error::SomeError(_) => "",
+            WebError::SomeError(_) => "",
         }
         .to_string()
     }
 }
 
-impl ResponseError for Error {
+impl ResponseError for WebError {
     fn status_code(&self) -> StatusCode {
         match self {
-            Error::SomeError(_) => StatusCode::BAD_REQUEST,
+            WebError::SomeError(_) => StatusCode::BAD_REQUEST,
         }
     }
 
