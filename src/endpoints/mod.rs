@@ -1,1 +1,2 @@
-pub mod elastic;
+pub mod cluster;
+pub mod document;
