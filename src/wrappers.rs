@@ -50,8 +50,44 @@ pub struct Cluster {
     name: String,
 }
 
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct ClusterForm {
     cluster_name: String,
+}
+
+impl ToString for ClusterForm {
+    fn to_string(&self) -> String {
+        let self_data = &self.cluster_name;
+        self_data.clone()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Bucket {
+    health: String,
+    status: String,
+    index: String,
+    uuid: String,
+    pri: String,
+    rep: String,
+    #[serde(alias = "docs.count")]
+    docs_count: String,
+    #[serde(alias = "docs.deleted")]
+    docs_deleted: String,
+    #[serde(alias = "store.size")]
+    store_size: String,
+    #[serde(alias = "pri.store.role")]
+    pri_store_size: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct BucketForm {
+    bucket_name: String,
+}
+
+impl ToString for BucketForm {
+    fn to_string(&self) -> String {
+        let self_data = &self.bucket_name;
+        self_data.clone()
+    }
 }
