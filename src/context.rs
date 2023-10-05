@@ -1,5 +1,5 @@
-use std::sync::{Arc, Mutex};
 use elasticsearch::Elasticsearch;
+use std::sync::{Arc, Mutex};
 
 #[derive(Default, Clone)]
 pub struct SearchContext {
@@ -16,4 +16,3 @@ impl SearchContext {
         &self.context
     }
 }
-
