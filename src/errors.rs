@@ -1,5 +1,6 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
+use elasticsearch::Error;
 use serde::Serialize;
 use thiserror::Error;
 
@@ -19,11 +20,21 @@ pub enum WebError {
 }
 
 impl WebError {
+    pub fn new(msg: String) -> Self {
+        WebError::SomeError(msg)
+    }
+
     pub fn name(&self) -> String {
         match self {
             WebError::SomeError(_) => "",
         }
         .to_string()
+    }
+}
+
+impl From<elasticsearch::Error> for WebError {
+    fn from(value: Error) -> Self {
+        WebError::new(value.to_string())
     }
 }
 
