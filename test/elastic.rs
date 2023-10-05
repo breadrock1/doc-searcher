@@ -1,18 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use elasticsearch::{BulkParts, DeleteParts, Elasticsearch, IndexParts, SearchParts};
     use elasticsearch::auth::Credentials;
     use elasticsearch::cert::CertificateValidation;
     use elasticsearch::http::request::JsonBody;
     use elasticsearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
     use elasticsearch::http::Url;
+    use elasticsearch::{BulkParts, DeleteParts, Elasticsearch, IndexParts, SearchParts};
     use serde_json::{json, Value};
     use tokio;
 
     fn build_elastic() -> Elasticsearch {
         let es_url = Url::parse("https://localhost:9200").unwrap();
         let conn_pool = SingleNodeConnectionPool::new(es_url);
-        let creds = Credentials::Basic("elastic".into(), "MomQSpuUJk0ANHBTjSKM".into());
+        let creds = Credentials::Basic("elastic".into(), "s4Tvs7hAtki_ME_fNUuo".into());
         let validation = CertificateValidation::None;
         let transport = TransportBuilder::new(conn_pool)
             .auth(creds)
@@ -61,55 +61,64 @@ mod tests {
         let es_client = build_elastic();
         let mut body: Vec<JsonBody<_>> = Vec::with_capacity(6);
         body.push(json!({"index": { "_id": 1 }}).into());
-        body.push(json!({
-            "bucket_uuid": "Y2xvdWQtZW5kcG9pbnQuZ",
-            "bucket_path": "/tmp/test_bucket",
-            "document_name": "document_1",
-            "document_path": "./",
-            "document_size": 1024,
-            "document_type": "document",
-            "document_extension": ".docx",
-            "document_permissions": 777,
-            "document_created": "2023-09-15T00:00:00Z",
-            "document_modified": "2023-09-15T00:00:00Z",
-            "document_md5_hash": "79054025255fb1a26e4bc422aef54eb4",
-            "document_ssdeep_hash": "3a:34gh5",
-            "entity_keywords": ["document", "report"],
-        }).into());
+        body.push(
+            json!({
+                "bucket_uuid": "Y2xvdWQtZW5kcG9pbnQuZ",
+                "bucket_path": "/tmp/test_bucket",
+                "document_name": "document_1",
+                "document_path": "./",
+                "document_size": 1024,
+                "document_type": "document",
+                "document_extension": ".docx",
+                "document_permissions": 777,
+                "document_created": "2023-09-15T00:00:00Z",
+                "document_modified": "2023-09-15T00:00:00Z",
+                "document_md5_hash": "79054025255fb1a26e4bc422aef54eb4",
+                "document_ssdeep_hash": "3a:34gh5",
+                "entity_keywords": ["document", "report"],
+            })
+            .into(),
+        );
 
         body.push(json!({"index": { "_id": 2 }}).into());
-        body.push(json!({
-            "bucket_uuid": "W5kcG9pbnQuZXhhbXB",
-            "bucket_path": "/tmp/test_bucket",
-            "document_name": "document_2",
-            "document_path": "./",
-            "document_size": 4096,
-            "document_type": "document",
-            "document_extension": ".docx",
-            "document_permissions": 777,
-            "document_created": "2023-09-15T00:00:00Z",
-            "document_modified": "2023-09-15T00:00:00Z",
-            "document_md5_hash": "77dfmg8s5255fb1a26e4bc422aef54eb4",
-            "document_ssdeep_hash": "3a:34gh5",
-            "entity_keywords": ["document", "report"],
-        }).into());
+        body.push(
+            json!({
+                "bucket_uuid": "W5kcG9pbnQuZXhhbXB",
+                "bucket_path": "/tmp/test_bucket",
+                "document_name": "document_2",
+                "document_path": "./",
+                "document_size": 4096,
+                "document_type": "document",
+                "document_extension": ".docx",
+                "document_permissions": 777,
+                "document_created": "2023-09-15T00:00:00Z",
+                "document_modified": "2023-09-15T00:00:00Z",
+                "document_md5_hash": "77dfmg8s5255fb1a26e4bc422aef54eb4",
+                "document_ssdeep_hash": "3a:34gh5",
+                "entity_keywords": ["document", "report"],
+            })
+            .into(),
+        );
 
         body.push(json!({"index": { "_id": 3 }}).into());
-        body.push(json!({
-            "bucket_uuid": "zZGFkZjgyM2YwNTM4ODQ5N2V",
-            "bucket_path": "/tmp/test_bucket",
-            "document_name": "document_3",
-            "document_path": "./",
-            "document_size": 2048,
-            "document_type": "document",
-            "document_extension": ".docx",
-            "document_permissions": 777,
-            "document_created": "2022-08-15T00:00:00Z",
-            "document_modified": "2023-08-15T00:00:00Z",
-            "document_md5_hash": "79054025255fb1d8fb4bc422aef54eb4",
-            "document_ssdeep_hash": "3a:34gh5",
-            "entity_keywords": ["document", "report"],
-        }).into());
+        body.push(
+            json!({
+                "bucket_uuid": "zZGFkZjgyM2YwNTM4ODQ5N2V",
+                "bucket_path": "/tmp/test_bucket",
+                "document_name": "document_3",
+                "document_path": "./",
+                "document_size": 2048,
+                "document_type": "document",
+                "document_extension": ".docx",
+                "document_permissions": 777,
+                "document_created": "2022-08-15T00:00:00Z",
+                "document_modified": "2023-08-15T00:00:00Z",
+                "document_md5_hash": "79054025255fb1d8fb4bc422aef54eb4",
+                "document_ssdeep_hash": "3a:34gh5",
+                "entity_keywords": ["document", "report"],
+            })
+            .into(),
+        );
 
         let response = es_client
             .bulk(BulkParts::Index("documents"))
