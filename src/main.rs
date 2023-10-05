@@ -7,12 +7,11 @@ use crate::context::SearchContext;
 use crate::endpoints::document::{create_index, find_index};
 
 use actix_web::{web, App, HttpServer, Scope};
-use elasticsearch::{Elasticsearch, SearchParts};
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
-use elasticsearch::http::transport::{SingleNodeConnectionPool, Transport, TransportBuilder};
+use elasticsearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
 use elasticsearch::http::Url;
-use crate::endpoints::cluster::{all_clusters, new_cluster};
+use elasticsearch::Elasticsearch;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
