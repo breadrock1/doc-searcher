@@ -21,15 +21,13 @@ impl DocumentJson {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct ClusterResult {
+pub struct StatusResult {
     result: u16,
 }
 
-impl ClusterResult {
+impl StatusResult {
     pub fn new(status: u16) -> Self {
-        ClusterResult {
-            result: status,
-        }
+        StatusResult { result: status }
     }
 }
 
