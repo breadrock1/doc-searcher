@@ -50,6 +50,7 @@ mod tests {
                         "document_modified": { "type": "date" },
                         "document_md5_hash": { "type": "string" },
                         "document_ssdeep_hash": { "type": "string" },
+                        "entity_data": { "type": "string" },
                         "entity_keywords": [],
                     }
                 }
@@ -81,6 +82,7 @@ mod tests {
                 "document_modified": "2023-09-15T00:00:00Z",
                 "document_md5_hash": "79054025255fb1a26e4bc422aef54eb4",
                 "document_ssdeep_hash": "3a:34gh5",
+                "entity_data": "Using skip_serializing does not skip deserializing the field. If you only add the skip_serializing attribute, and then attempt to deserialize the data, it will fail, as it will still attempt to deserialize the skipped field.",
                 "entity_keywords": ["document", "report"],
             })
             .into(),
@@ -101,6 +103,7 @@ mod tests {
                 "document_modified": "2023-09-15T00:00:00Z",
                 "document_md5_hash": "77dfmg8s5255fb1a26e4bc422aef54eb4",
                 "document_ssdeep_hash": "3a:34gh5",
+                "entity_data": "If you need to test stream generation, it would be enough to call into_parts() and convert the resulting body into a future and execute it, for example when testing Server Sent Events.",
                 "entity_keywords": ["document", "report"],
             })
             .into(),
@@ -121,6 +124,7 @@ mod tests {
                 "document_modified": "2023-08-15T00:00:00Z",
                 "document_md5_hash": "79054025255fb1d8fb4bc422aef54eb4",
                 "document_ssdeep_hash": "3a:34gh5",
+                "entity_data": "Multiple filters can be combined through the use of the bool filter. In the next example, the filter determines that the returned results must have at least 20 reviews, must not be published before 2015 and should be published by oreilly.",
                 "entity_keywords": ["document", "report"],
             })
             .into(),
