@@ -1,5 +1,5 @@
 use crate::context::SearchContext;
-use crate::errors::WebResponse;
+use crate::errors::{WebError, WebResponse};
 use crate::wrappers::{
     Document, DocumentSizeQuery, MultiMatchQuery, QueryString, SearchParameters,
 };
@@ -87,18 +87,22 @@ async fn search_all(
     let result_offset = es_parameters.result_offset;
     let body_value = build_search_query(es_parameters);
 
-    let response = elastic
+    let response_result = elastic
         .search(SearchParts::Index(&["*"]))
         .from(result_offset)
         .size(result_size)
         .body(body_value)
         .allow_no_indices(true)
         .send()
-        .await
-        .unwrap();
+        .await;
 
-    let documents = parse_search_result(response).await;
-    Ok(web::Json(documents))
+    match response_result {
+        Err(err) => Err(WebError::SomeError(err.to_string())),
+        Ok(response) => {
+            let documents = parse_search_result(response).await;
+            Ok(web::Json(documents))
+        }
+    }
 }
 
 #[post("/search/{bucket_names}")]
@@ -121,8 +125,7 @@ async fn search_target(
         .body(body_value)
         .allow_no_indices(true)
         .send()
-        .await
-        .unwrap();
+        .await?;
 
     let documents = parse_search_result(response).await;
     Ok(web::Json(documents))
