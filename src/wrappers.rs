@@ -137,6 +137,7 @@ pub struct Document {
     pub document_permissions: i32,
     pub document_md5_hash: String,
     pub document_ssdeep_hash: String,
+    pub entity_data: String,
     pub entity_keywords: Vec<String>,
     #[serde(
         serialize_with = "serialize_dt",
