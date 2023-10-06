@@ -15,7 +15,7 @@ struct ErrorResponse {
 
 #[derive(Error, Debug)]
 pub enum WebError {
-    #[error("Some error")]
+    #[error("Some error: {0}")]
     SomeError(String),
 }
 
