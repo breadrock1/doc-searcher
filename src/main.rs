@@ -1,7 +1,7 @@
-mod context;
-mod endpoints;
-mod errors;
-mod wrappers;
+pub mod context;
+pub mod endpoints;
+pub mod errors;
+pub mod wrappers;
 
 use crate::context::SearchContext;
 use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_bucket};
@@ -20,7 +20,16 @@ use elasticsearch::Elasticsearch;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let elastic = build_elastic().unwrap();
+    let es_host = var("ELASTIC_HOST")
+        .expect("There is not ELASTIC_HOST env variable!");
+    let es_user = var("ELASTIC_USER")
+        .expect("There is no ELASTIC_USER env variable!");
+    let es_passwd = var("ELASTIC_PASSWORD")
+        .expect("There is not ELASTIC_PASSWORD env variable!");
+
+    let elastic = build_elastic(es_host.as_str(), es_user.as_str(), es_passwd.as_str())
+        .ok_or(std::io::ErrorKind::ConnectionReset)?;
+
     let cxt = SearchContext::_new(elastic).unwrap();
     HttpServer::new(move || {
         let cxt = cxt.clone();
@@ -33,27 +42,26 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-fn build_elastic() -> Option<Elasticsearch> {
-    let es_url = Url::parse("https://localhost:9200").unwrap();
+pub fn build_elastic(es_host: &str, es_user: &str, es_passwd: &str) -> Option<Elasticsearch> {
+    let es_url = Url::parse(es_host).unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
-
-    let es_user = var("ELASTIC_USER")
-        .expect("There is no ELASTIC_USER env variable!");
-    let es_passwd = var("ELASTIC_PASSWORD")
-        .expect("There is not ELASTIC_PASSWORD env variable!");
-
-    let creds = Credentials::Basic(es_user, es_passwd);
+    let creds = Credentials::Basic(es_user.into(), es_passwd.into());
     let validation = CertificateValidation::None;
-    let transport = TransportBuilder::new(conn_pool)
+    let transport_result = TransportBuilder::new(conn_pool)
         .auth(creds)
         .cert_validation(validation)
-        .build()
-        .unwrap();
+        .build();
 
-    Some(Elasticsearch::new(transport))
+    match transport_result {
+        Ok(transport) => Some(Elasticsearch::new(transport)),
+        Err(err) => {
+            println!("{:?}", err);
+            None
+        }
+    }
 }
 
-fn build_service() -> Scope {
+pub fn build_service() -> Scope {
     web::scope("/searcher")
         .service(new_cluster)
         .service(delete_cluster)
