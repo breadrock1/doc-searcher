@@ -9,6 +9,8 @@ use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::searcher::{search_all, search_target};
 
+use std::env::var;
+
 use actix_web::{web, App, HttpServer, Scope};
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
@@ -34,7 +36,13 @@ async fn main() -> std::io::Result<()> {
 fn build_elastic() -> Option<Elasticsearch> {
     let es_url = Url::parse("https://localhost:9200").unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
-    let creds = Credentials::Basic("elastic".into(), "s4Tvs7hAtki_ME_fNUuo".into());
+
+    let es_user = var("ELASTIC_USER")
+        .expect("There is no ELASTIC_USER env variable!");
+    let es_passwd = var("ELASTIC_PASSWORD")
+        .expect("There is not ELASTIC_PASSWORD env variable!");
+
+    let creds = Credentials::Basic(es_user, es_passwd);
     let validation = CertificateValidation::None;
     let transport = TransportBuilder::new(conn_pool)
         .auth(creds)

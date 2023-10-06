@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use std::env::var;
     use elasticsearch::auth::Credentials;
     use elasticsearch::cert::CertificateValidation;
     use elasticsearch::http::request::JsonBody;
@@ -12,7 +13,12 @@ mod tests {
     fn build_elastic() -> Elasticsearch {
         let es_url = Url::parse("https://localhost:9200").unwrap();
         let conn_pool = SingleNodeConnectionPool::new(es_url);
-        let creds = Credentials::Basic("elastic".into(), "s4Tvs7hAtki_ME_fNUuo".into());
+        let es_user = var("ELASTIC_USER")
+            .expect("There is no ELASTIC_USER env variable!");
+        let es_passwd = var("ELASTIC_PASSWORD")
+            .expect("There is not ELASTIC_PASSWORD env variable!");
+
+        let creds = Credentials::Basic(es_user, es_passwd);
         let validation = CertificateValidation::None;
         let transport = TransportBuilder::new(conn_pool)
             .auth(creds)
@@ -176,10 +182,7 @@ mod tests {
             .await
             .unwrap();
 
-        let response_body = response.json::<Value>().await.unwrap();
-        println!("{:?}", response_body);
-
-        // let successful = response.status_code().is_success();
-        // assert_eq!(successful, true);
+        let successful = response.status_code().is_success();
+        assert_eq!(successful, true);
     }
 }
