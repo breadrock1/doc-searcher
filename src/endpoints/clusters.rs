@@ -1,16 +1,15 @@
 use crate::context::SearchContext;
-use crate::errors::{WebError, WebResponse};
-use crate::wrappers::{Cluster, ClusterForm, StatusResult};
+use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::wrappers::{Cluster, ClusterForm};
 
-use actix_web::{delete, get, post, web};
-use elasticsearch::http::headers::HeaderMap;
-use elasticsearch::http::Method;
+use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+use elasticsearch::http::{headers::HeaderMap, Method};
 use serde_json::{json, Value};
 
 #[get("/clusters")]
 async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec<Cluster>>> {
-    let elastic = cxt.get_cxt().blocking_read();
-    let response = elastic
+    let elastic = cxt.get_cxt().read().await;
+    let response_result = elastic
         .send(
             Method::Get,
             "/_cat/nodes",
@@ -19,8 +18,14 @@ async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Ve
             Some(b"".as_ref()),
             None,
         )
-        .await?;
+        .await;
 
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        return Err(WebError::from(err));
+    }
+
+    let response = response_result.unwrap();
     match response.json::<Vec<Cluster>>().await {
         Ok(json_clusters) => Ok(web::Json(json_clusters)),
         Err(err) => Err(WebError::GetClusterError(err.to_string())),
@@ -28,24 +33,17 @@ async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Ve
 }
 
 #[post("/cluster/new")]
-async fn new_cluster(
-    cxt: web::Data<SearchContext>,
-    form: web::Form<ClusterForm>,
-) -> WebResponse<web::Json<StatusResult>> {
+async fn new_cluster(cxt: web::Data<SearchContext>, form: web::Json<ClusterForm>) -> HttpResponse {
     let _elastic = cxt.get_cxt().blocking_read();
     let _cluster_name = form.0;
     // TODO: Add executing command from cli.
-    let result = 200u16;
-    Ok(web::Json(StatusResult::new(result)))
+    SuccessfulResponse::ok_response("Ok")
 }
 
 #[delete("/cluster/delete")]
-async fn delete_cluster(
-    cxt: web::Data<SearchContext>,
-    form: web::Form<ClusterForm>,
-) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().blocking_read();
-    let cluster_name = form.0;
+async fn delete_cluster(cxt: web::Data<SearchContext>, path: web::Path<String>) -> HttpResponse {
+    let elastic = cxt.get_cxt().read().await;
+    let cluster_name = path.to_string();
     let json_data: Value = json!({
         "transient": {
             "cluster.routing.allocation.exclude._ip": cluster_name
@@ -53,7 +51,7 @@ async fn delete_cluster(
     });
 
     let body = json_data.as_str().unwrap().as_bytes();
-    let response = elastic
+    let response_result = elastic
         .send(
             Method::Put,
             "/_cluster/settings",
@@ -62,10 +60,15 @@ async fn delete_cluster(
             Some(body),
             None,
         )
-        .await?;
+        .await;
 
-    let result = response.status_code().as_u16();
-    Ok(web::Json(StatusResult::new(result)))
+    match response_result {
+        Ok(_) => SuccessfulResponse::ok_response("Ok"),
+        Err(err) => {
+            let web_err = WebError::DeletingClusterError(err.to_string());
+            web_err.error_response()
+        }
+    }
 }
 
 #[get("/cluster/{cluster_name}")]
@@ -73,10 +76,10 @@ async fn get_cluster(
     cxt: web::Data<SearchContext>,
     path: web::Path<String>,
 ) -> WebResponse<web::Json<Value>> {
-    let elastic = cxt.get_cxt().blocking_read();
+    let elastic = cxt.get_cxt().read().await;
     let cluster_name = format!("/_nodes/{}", path.to_string());
     let body = b"";
-    let response = elastic
+    let response_result = elastic
         .send(
             Method::Get,
             cluster_name.as_str(),
@@ -85,8 +88,14 @@ async fn get_cluster(
             Some(body.as_ref()),
             None,
         )
-        .await?;
+        .await;
 
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        return Err(WebError::from(err));
+    }
+
+    let response = response_result.unwrap();
     match response.json::<Value>().await {
         Ok(cluster_info) => Ok(web::Json(cluster_info)),
         Err(err) => Err(WebError::GetClusterError(err.to_string())),
