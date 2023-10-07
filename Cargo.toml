@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.3.1"
+anyhow = "1.0.75"
 chrono = { version = "0.4.30", features = ["serde", "rustc-serialize"] }
 elasticsearch = "8.5.0-alpha.1"
 log = "0.4.19"
@@ -19,3 +20,7 @@ tokio = { version = "*", features = ["full"] }
 [[test]]
 name = "elastic-tests"
 path = "test/elastic.rs"
+
+[[test]]
+name = "cluster-endpoints"
+path = "test/cluster_endpoints.rs"
