@@ -1,8 +1,8 @@
 use crate::context::SearchContext;
-use crate::errors::{WebError, WebResponse};
-use crate::wrappers::{Bucket, BucketForm, StatusResult};
+use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::wrappers::{Bucket, BucketForm};
 
-use actix_web::{delete, get, post, web};
+use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::Method;
 use elasticsearch::IndexParts;
@@ -10,8 +10,8 @@ use serde_json::{json, Value};
 
 #[get("/buckets")]
 async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec<Bucket>>> {
-    let elastic = cxt.get_cxt().blocking_read();
-    let response = elastic
+    let elastic = cxt.get_cxt().read().await;
+    let response_result = elastic
         .send(
             Method::Get,
             "/_cat/indices?format=json",
@@ -20,8 +20,14 @@ async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec
             Some(b"".as_ref()),
             None,
         )
-        .await?;
+        .await;
 
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        return Err(WebError::from(err));
+    }
+
+    let response = response_result.unwrap();
     match response.json::<Vec<Bucket>>().await {
         Ok(json_buckets) => Ok(web::Json(json_buckets)),
         Err(err) => Err(WebError::GetBucketError(err.to_string())),
@@ -29,15 +35,12 @@ async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec
 }
 
 #[post("/bucket/new")]
-async fn new_bucket(
-    cxt: web::Data<SearchContext>,
-    form: web::Form<BucketForm>,
-) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().blocking_read();
+async fn new_bucket(cxt: web::Data<SearchContext>, form: web::Json<BucketForm>) -> HttpResponse {
+    let elastic = cxt.get_cxt().read().await;
     let bucket_name = form.0.to_string();
     let digest = md5::compute(bucket_name.as_str());
     let id_str = format!("{:x}", digest);
-    let response = elastic
+    let response_result = elastic
         .index(IndexParts::IndexId(bucket_name.as_str(), id_str.as_str()))
         .body(json!({
             bucket_name.as_str(): {
@@ -55,25 +58,28 @@ async fn new_bucket(
                     "document_modified": { "type": "date" },
                     "document_md5_hash": { "type": "string" },
                     "document_ssdeep_hash": { "type": "string" },
+                    "entity_data": { "type": "string" },
                     "entity_keywords": [],
                 }
             }
         }))
         .send()
-        .await?;
+        .await;
 
-    let result = response.status_code().as_u16();
-    Ok(web::Json(StatusResult::new(result)))
+    match response_result {
+        Ok(_) => SuccessfulResponse::ok_response("Ok"),
+        Err(err) => {
+            let web_err = WebError::CreateBucketError(err.to_string());
+            web_err.error_response()
+        }
+    }
 }
 
-#[delete("/bucket/delete")]
-async fn delete_bucket(
-    cxt: web::Data<SearchContext>,
-    form: web::Form<BucketForm>,
-) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().blocking_read();
-    let bucket_name = format!("/{}", form.0.to_string());
-    let response = elastic
+#[delete("/bucket/{bucket_name}")]
+async fn delete_bucket(cxt: web::Data<SearchContext>, path: web::Path<String>) -> HttpResponse {
+    let elastic = cxt.get_cxt().read().await;
+    let bucket_name = path.to_string();
+    let response_result = elastic
         .send(
             Method::Delete,
             bucket_name.as_str(),
@@ -82,20 +88,25 @@ async fn delete_bucket(
             Some(b"".as_ref()),
             None,
         )
-        .await?;
+        .await;
 
-    let result = response.status_code().as_u16();
-    Ok(web::Json(StatusResult::new(result)))
+    match response_result {
+        Ok(_) => SuccessfulResponse::ok_response("Ok"),
+        Err(err) => {
+            let web_err = WebError::DeleteBucketError(err.to_string());
+            web_err.error_response()
+        }
+    }
 }
 
 #[get("/bucket/{bucket_name}")]
 async fn get_bucket(
     cxt: web::Data<SearchContext>,
     path: web::Path<String>,
-) -> WebResponse<web::Json<Value>> {
-    let elastic = cxt.get_cxt().blocking_read();
-    let bucket_name = format!("/{}", path.to_string());
-    let response = elastic
+) -> WebResponse<web::Json<Bucket>> {
+    let elastic = cxt.get_cxt().read().await;
+    let bucket_name = format!("/{}/_stats", path.to_string());
+    let response_result = elastic
         .send(
             Method::Get,
             bucket_name.as_str(),
@@ -104,10 +115,55 @@ async fn get_bucket(
             Some(b"".as_ref()),
             None,
         )
-        .await?;
+        .await;
 
-    match response.json::<Value>().await {
-        Ok(cluster_info) => Ok(web::Json(cluster_info)),
-        Err(err) => Err(WebError::GetBucketError(err.to_string())),
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        return Err(WebError::from(err));
     }
+
+    let response = response_result.unwrap();
+    match response.json::<Value>().await {
+        Err(err) => Err(WebError::GetBucketError(err.to_string())),
+        Ok(value) => match extract_bucket_stats(&value) {
+            Ok(data) => Ok(web::Json(data)),
+            Err(err) => Err(err),
+        },
+    }
+}
+
+fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
+    let indicies = &value[&"indices"];
+    let bucket_id = indicies.as_object();
+    if bucket_id.is_none() {
+        let msg = String::from("There is no passed bucket name in json.");
+        return Err(WebError::BucketParsingError(msg));
+    }
+
+    let bucket_id = bucket_id.unwrap().keys().next().unwrap();
+    let bucket = &indicies[bucket_id.as_str()];
+    let health = &bucket[&"health"].as_str().unwrap();
+    let status = &bucket[&"status"].as_str().unwrap();
+    let uuid = &bucket[&"uuid"].as_str().unwrap();
+
+    let primaries = &value[&"_all"][&"primaries"];
+    let docs_count = &primaries[&"docs"][&"count"].as_i64().unwrap();
+    let docs_deleted = &primaries[&"docs"][&"deleted"].as_i64().unwrap();
+    let store_size = &primaries[&"store"][&"size_in_bytes"].as_i64().unwrap();
+    let pri_store_size = &primaries[&"store"][&"total_data_set_size_in_bytes"]
+        .as_i64()
+        .unwrap();
+
+    Ok(Bucket::new(
+        health.to_string(),
+        status.to_string(),
+        bucket_id.to_string(),
+        uuid.to_string(),
+        docs_count.to_string(),
+        docs_deleted.to_string(),
+        store_size.to_string(),
+        pri_store_size.to_string(),
+        None,
+        None,
+    ))
 }
