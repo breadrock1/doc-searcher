@@ -1,8 +1,8 @@
 use crate::context::SearchContext;
-use crate::errors::{WebError, WebResponse};
-use crate::wrappers::{Document, StatusResult};
+use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::wrappers::Document;
 
-use actix_web::{delete, get, post, put, web};
+use actix_web::{delete, get, post, put, web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
@@ -11,21 +11,19 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 #[put("/document/update")]
-async fn update_document(
-    cxt: web::Data<SearchContext>,
-    form: web::Json<Document>,
-) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().blocking_read();
+async fn update_document(cxt: web::Data<SearchContext>, form: web::Json<Document>) -> HttpResponse {
+    let elastic = cxt.get_cxt().read().await;
     let bucket_name = &form.bucket_uuid;
     let document_id = &form.document_md5_hash;
     let document_ref = &form.0;
-    let to_value_result = serde_json::to_value(document_ref);
-    if to_value_result.is_err() {
-        let err = to_value_result.err().unwrap();
-        return Err(WebError::DocumentSerializingError(err.to_string()));
+    let document_json = deserialize_document(document_ref);
+    if document_json.is_err() {
+        let err = document_json.err().unwrap();
+        let web_err = WebError::UpdateDocumentError(err.to_string());
+        return web_err.error_response();
     }
 
-    let document_json = to_value_result.unwrap();
+    let document_json = document_json.unwrap();
     let s_path = format!("/{}/_doc/{}", bucket_name, document_id);
     let response_result = elastic
         .send(
@@ -39,27 +37,25 @@ async fn update_document(
         .await;
 
     match response_result {
-        Err(err) => Err(WebError::UpdateDocumentError(err.to_string())),
-        Ok(response) => {
-            let result = response.status_code().as_u16();
-            Ok(web::Json(StatusResult::new(result)))
+        Ok(_) => SuccessfulResponse::ok_response("Ok"),
+        Err(err) => {
+            let web_err = WebError::UpdateDocumentError(err.to_string());
+            web_err.error_response()
         }
     }
 }
 
 #[post("/document/new")]
-async fn new_document(
-    cxt: web::Data<SearchContext>,
-    form: web::Json<Document>,
-) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().blocking_read();
+async fn new_document(cxt: web::Data<SearchContext>, form: web::Json<Document>) -> HttpResponse {
+    let elastic = cxt.get_cxt().read().await;
     let bucket_name = &form.bucket_uuid;
     let document_id = &form.document_md5_hash;
     let document_ref = &form.0;
     let to_value_result = serde_json::to_value(document_ref);
     if to_value_result.is_err() {
         let err = to_value_result.err().unwrap();
-        return Err(WebError::DocumentSerializingError(err.to_string()));
+        let web_err = WebError::DocumentSerializingError(err.to_string());
+        return web_err.error_response();
     }
 
     let document_json = to_value_result.unwrap();
@@ -74,10 +70,10 @@ async fn new_document(
         .await;
 
     match response_result {
-        Err(err) => Err(WebError::CreateDocumentError(err.to_string())),
-        Ok(response) => {
-            let result = response.status_code().as_u16();
-            Ok(web::Json(StatusResult::new(result)))
+        Ok(_) => SuccessfulResponse::ok_response("Ok"),
+        Err(err) => {
+            let web_err = WebError::CreateDocumentError(err.to_string());
+            web_err.error_response()
         }
     }
 }
@@ -86,8 +82,8 @@ async fn new_document(
 async fn delete_document(
     cxt: web::Data<SearchContext>,
     path: web::Path<(String, String)>,
-) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().blocking_read();
+) -> HttpResponse {
+    let elastic = cxt.get_cxt().read().await;
     let (bucket_name, document_id) = path.as_ref();
     let s_path = format!("/{}/_doc/{}", bucket_name, document_id);
     let response_result = elastic
@@ -102,10 +98,10 @@ async fn delete_document(
         .await;
 
     match response_result {
-        Err(err) => Err(WebError::DeleteDocumentError(err.to_string())),
-        Ok(response) => {
-            let result = response.status_code().as_u16();
-            Ok(web::Json(StatusResult::new(result)))
+        Ok(_) => SuccessfulResponse::ok_response("Ok"),
+        Err(err) => {
+            let web_err = WebError::DeleteDocumentError(err.to_string());
+            web_err.error_response()
         }
     }
 }
@@ -115,7 +111,7 @@ async fn get_document(
     cxt: web::Data<SearchContext>,
     path: web::Path<(String, String)>,
 ) -> WebResponse<web::Json<Document>> {
-    let elastic = cxt.get_cxt().blocking_read();
+    let elastic = cxt.get_cxt().read().await;
     let (bucket_name, document_id) = path.as_ref();
     let s_path = format!("/{}/_doc/{}", bucket_name, document_id);
     let response_result = elastic
@@ -127,12 +123,25 @@ async fn get_document(
             Some(b"".as_ref()),
             None,
         )
-        .await?;
+        .await;
 
-    let common_object = response_result.json::<Value>().await?;
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        return Err(WebError::from(err));
+    }
+
+    let response = response_result.unwrap();
+    let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"_source"];
     match Document::deserialize(document_json) {
         Ok(document) => Ok(web::Json(document)),
         Err(err) => Err(WebError::GetDocumentError(err.to_string())),
+    }
+}
+
+fn deserialize_document(document_ref: &Document) -> Result<Value, WebError> {
+    match serde_json::to_value(document_ref) {
+        Ok(value) => Ok(value),
+        Err(err) => Err(WebError::DocumentSerializingError(err.to_string())),
     }
 }
