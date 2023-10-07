@@ -1,8 +1,6 @@
 use crate::context::SearchContext;
 use crate::errors::{WebError, WebResponse};
-use crate::wrappers::{
-    Document, DocumentSizeQuery, MultiMatchQuery, QueryString, SearchParameters,
-};
+use crate::wrappers::*;
 
 use actix_web::{post, web};
 use elasticsearch::http::response::Response;
@@ -15,7 +13,7 @@ async fn search_all(
     cxt: web::Data<SearchContext>,
     form: web::Json<SearchParameters>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
-    let elastic = cxt.get_cxt().blocking_read();
+    let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
     search_documents(&elastic, es_parameters, &["*"]).await
 }
@@ -26,7 +24,7 @@ async fn search_target(
     path: web::Path<String>,
     form: web::Json<SearchParameters>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
-    let elastic = cxt.get_cxt().blocking_read();
+    let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
     let indexes: Vec<&str> = path.split(',').collect();
     search_documents(&elastic, es_parameters, indexes.as_slice()).await
@@ -50,7 +48,10 @@ async fn search_documents(
         .await;
 
     match response_result {
-        Err(err) => Err(WebError::SearchError(err.to_string())),
+        Err(err) => {
+            let web_err = WebError::SearchError(err.to_string());
+            Err(web_err)
+        }
         Ok(response) => {
             let documents = parse_search_result(response).await;
             Ok(web::Json(documents))
