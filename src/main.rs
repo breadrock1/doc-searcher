@@ -14,23 +14,19 @@ use std::env::var;
 use actix_web::{web, App, HttpServer, Scope};
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
-use elasticsearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
+use elasticsearch::http::transport::{BuildError, SingleNodeConnectionPool, TransportBuilder};
 use elasticsearch::http::Url;
 use elasticsearch::Elasticsearch;
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let es_host = var("ELASTIC_HOST")
-        .expect("There is not ELASTIC_HOST env variable!");
-    let es_user = var("ELASTIC_USER")
-        .expect("There is no ELASTIC_USER env variable!");
-    let es_passwd = var("ELASTIC_PASSWORD")
-        .expect("There is not ELASTIC_PASSWORD env variable!");
+async fn main() -> anyhow::Result<()> {
+    let es_host = var("ELASTIC_HOST").expect("There is not ELASTIC_HOST env variable!");
+    let es_user = var("ELASTIC_USER").expect("There is no ELASTIC_USER env variable!");
+    let es_passwd = var("ELASTIC_PASSWORD").expect("There is not ELASTIC_PASSWORD env variable!");
 
-    let elastic = build_elastic(es_host.as_str(), es_user.as_str(), es_passwd.as_str())
-        .ok_or(std::io::ErrorKind::ConnectionReset)?;
+    let elastic = build_elastic(es_host.as_str(), es_user.as_str(), es_passwd.as_str())?;
+    let cxt = SearchContext::_new(elastic);
 
-    let cxt = SearchContext::_new(elastic).unwrap();
     HttpServer::new(move || {
         let cxt = cxt.clone();
         App::new()
@@ -39,26 +35,26 @@ async fn main() -> std::io::Result<()> {
     })
     .bind(("127.0.0.1", 45678))?
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }
 
-pub fn build_elastic(es_host: &str, es_user: &str, es_passwd: &str) -> Option<Elasticsearch> {
+pub fn build_elastic(
+    es_host: &str,
+    es_user: &str,
+    es_passwd: &str,
+) -> Result<Elasticsearch, BuildError> {
     let es_url = Url::parse(es_host).unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
     let creds = Credentials::Basic(es_user.into(), es_passwd.into());
     let validation = CertificateValidation::None;
-    let transport_result = TransportBuilder::new(conn_pool)
+    let transport = TransportBuilder::new(conn_pool)
         .auth(creds)
         .cert_validation(validation)
-        .build();
+        .build()?;
 
-    match transport_result {
-        Ok(transport) => Some(Elasticsearch::new(transport)),
-        Err(err) => {
-            println!("{:?}", err);
-            None
-        }
-    }
+    Ok(Elasticsearch::new(transport))
 }
 
 pub fn build_service() -> Scope {
