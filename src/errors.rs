@@ -99,3 +99,21 @@ impl ResponseError for WebError {
         HttpResponse::build(status_code).json(response)
     }
 }
+
+#[derive(Serialize)]
+pub struct SuccessfulResponse {
+    code: u16,
+    message: String,
+}
+
+impl SuccessfulResponse {
+    pub fn ok_response(msg: &str) -> HttpResponse {
+        let status_code = StatusCode::OK;
+        let response = SuccessfulResponse {
+            code: status_code.as_u16(),
+            message: msg.to_string(),
+        };
+
+        HttpResponse::build(status_code).json(response)
+    }
+}
