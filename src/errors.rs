@@ -15,18 +15,42 @@ struct ErrorResponse {
 
 #[derive(Error, Debug)]
 pub enum WebError {
-    #[error("Some error: {0}")]
-    SomeError(String),
+    #[error("Unknown error: {0}")]
+    RuntimeError(String),
+    #[error("Error while getting cluster: {0}")]
+    GetClusterError(String),
+    #[error("Error while getting bucket: {0}")]
+    GetBucketError(String),
+    #[error("Error elastic response: {0}")]
+    GetDocumentError(String),
+    #[error("Failed while creating document: {0}")]
+    CreateDocumentError(String),
+    #[error("Failed while updating document: {0}")]
+    UpdateDocumentError(String),
+    #[error("Failed while deleting document: {0}")]
+    DeleteDocumentError(String),
+    #[error("Failed while serializing document: {0}")]
+    DocumentSerializingError(String),
+    #[error("Failed while searching: {0}")]
+    SearchError(String),
 }
 
 impl WebError {
     pub fn new(msg: String) -> Self {
-        WebError::SomeError(msg)
+        WebError::RuntimeError(msg)
     }
 
     pub fn name(&self) -> String {
         match self {
-            WebError::SomeError(_) => "",
+            WebError::SearchError(_) => "SearchError",
+            WebError::GetClusterError(_) => "GetClusterError",
+            WebError::GetBucketError(_) => "GetBucketError",
+            WebError::GetDocumentError(_) => "GetDocumentError",
+            WebError::CreateDocumentError(_) => "CreateDocumentError",
+            WebError::UpdateDocumentError(_) => "UpdateDocumentError",
+            WebError::DeleteDocumentError(_) => "DeleteDocumentError",
+            WebError::DocumentSerializingError(_) => "DocumentSerializingError",
+            _ => "RuntimeError",
         }
         .to_string()
     }
@@ -41,7 +65,15 @@ impl From<elasticsearch::Error> for WebError {
 impl ResponseError for WebError {
     fn status_code(&self) -> StatusCode {
         match self {
-            WebError::SomeError(_) => StatusCode::BAD_REQUEST,
+            WebError::SearchError(_) => StatusCode::BAD_REQUEST,
+            WebError::GetClusterError(_) => StatusCode::BAD_REQUEST,
+            WebError::GetBucketError(_) => StatusCode::BAD_REQUEST,
+            WebError::GetDocumentError(_) => StatusCode::BAD_REQUEST,
+            WebError::CreateDocumentError(_) => StatusCode::BAD_REQUEST,
+            WebError::UpdateDocumentError(_) => StatusCode::BAD_REQUEST,
+            WebError::DeleteDocumentError(_) => StatusCode::BAD_REQUEST,
+            WebError::DocumentSerializingError(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::BAD_REQUEST,
         }
     }
 
