@@ -210,16 +210,46 @@ pub struct Bucket {
     status: String,
     index: String,
     uuid: String,
-    pri: String,
-    rep: String,
     #[serde(alias = "docs.count")]
     docs_count: String,
     #[serde(alias = "docs.deleted")]
     docs_deleted: String,
     #[serde(alias = "store.size")]
     store_size: String,
-    #[serde(alias = "pri.store.role")]
+    #[serde(alias = "pri.store.size")]
     pri_store_size: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pri: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rep: Option<String>,
+}
+
+impl Bucket {
+    pub fn new(
+        health: String,
+        status: String,
+        index: String,
+        uuid: String,
+        docs_count: String,
+        docs_deleted: String,
+        store_size: String,
+        pri_store_size: String,
+        pri: Option<String>,
+        rep: Option<String>,
+    ) -> Self {
+        Bucket {
+            health,
+            status,
+            index,
+            uuid,
+            docs_count,
+            docs_deleted,
+            store_size,
+            pri_store_size,
+            pri,
+            rep,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize)]
