@@ -10,25 +10,21 @@ use serde_json::{json, Value};
 
 #[get("/buckets")]
 async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec<Bucket>>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
-    let body = b"";
+    let elastic = cxt.get_cxt().blocking_read();
     let response = elastic
         .send(
             Method::Get,
             "/_cat/indices?format=json",
             HeaderMap::new(),
             Option::<&Value>::None,
-            Some(body.as_ref()),
+            Some(b"".as_ref()),
             None,
         )
         .await?;
 
     match response.json::<Vec<Bucket>>().await {
         Ok(json_buckets) => Ok(web::Json(json_buckets)),
-        Err(err) => {
-            println!("{:?}", err);
-            Err(WebError::SomeError(err.to_string()))
-        }
+        Err(err) => Err(WebError::GetBucketError(err.to_string())),
     }
 }
 
@@ -37,7 +33,7 @@ async fn new_bucket(
     cxt: web::Data<SearchContext>,
     form: web::Form<BucketForm>,
 ) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
+    let elastic = cxt.get_cxt().blocking_read();
     let bucket_name = form.0.to_string();
     let digest = md5::compute(bucket_name.as_str());
     let id_str = format!("{:x}", digest);
@@ -75,16 +71,15 @@ async fn delete_bucket(
     cxt: web::Data<SearchContext>,
     form: web::Form<BucketForm>,
 ) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
+    let elastic = cxt.get_cxt().blocking_read();
     let bucket_name = format!("/{}", form.0.to_string());
-    let body = b"";
     let response = elastic
         .send(
             Method::Delete,
             bucket_name.as_str(),
             HeaderMap::new(),
             Option::<&Value>::None,
-            Some(body.as_ref()),
+            Some(b"".as_ref()),
             None,
         )
         .await?;
@@ -98,25 +93,21 @@ async fn get_bucket(
     cxt: web::Data<SearchContext>,
     path: web::Path<String>,
 ) -> WebResponse<web::Json<Value>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
+    let elastic = cxt.get_cxt().blocking_read();
     let bucket_name = format!("/{}", path.to_string());
-    let body = b"";
     let response = elastic
         .send(
             Method::Get,
             bucket_name.as_str(),
             HeaderMap::new(),
             Option::<&Value>::None,
-            Some(body.as_ref()),
+            Some(b"".as_ref()),
             None,
         )
         .await?;
 
     match response.json::<Value>().await {
         Ok(cluster_info) => Ok(web::Json(cluster_info)),
-        Err(err) => {
-            println!("{:?}", err);
-            Err(WebError::SomeError(err.to_string()))
-        }
+        Err(err) => Err(WebError::GetBucketError(err.to_string())),
     }
 }

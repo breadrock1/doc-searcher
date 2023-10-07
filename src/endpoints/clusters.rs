@@ -9,26 +9,21 @@ use serde_json::{json, Value};
 
 #[get("/clusters")]
 async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec<Cluster>>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
-
-    let body = b"";
+    let elastic = cxt.get_cxt().blocking_read();
     let response = elastic
         .send(
             Method::Get,
             "/_cat/nodes",
             HeaderMap::new(),
             Option::<&Value>::None,
-            Some(body.as_ref()),
+            Some(b"".as_ref()),
             None,
         )
         .await?;
 
     match response.json::<Vec<Cluster>>().await {
         Ok(json_clusters) => Ok(web::Json(json_clusters)),
-        Err(err) => {
-            println!("{:?}", err);
-            Err(WebError::SomeError(err.to_string()))
-        }
+        Err(err) => Err(WebError::GetClusterError(err.to_string())),
     }
 }
 
@@ -37,11 +32,9 @@ async fn new_cluster(
     cxt: web::Data<SearchContext>,
     form: web::Form<ClusterForm>,
 ) -> WebResponse<web::Json<StatusResult>> {
-    let _elastic = cxt.get_cxt().lock().unwrap();
+    let _elastic = cxt.get_cxt().blocking_read();
     let _cluster_name = form.0;
-
     // TODO: Add executing command from cli.
-
     let result = 200u16;
     Ok(web::Json(StatusResult::new(result)))
 }
@@ -51,9 +44,8 @@ async fn delete_cluster(
     cxt: web::Data<SearchContext>,
     form: web::Form<ClusterForm>,
 ) -> WebResponse<web::Json<StatusResult>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
+    let elastic = cxt.get_cxt().blocking_read();
     let cluster_name = form.0;
-
     let json_data: Value = json!({
         "transient": {
             "cluster.routing.allocation.exclude._ip": cluster_name
@@ -67,7 +59,7 @@ async fn delete_cluster(
             "/_cluster/settings",
             HeaderMap::new(),
             Option::<&Value>::None,
-            Some(body.as_ref()),
+            Some(body),
             None,
         )
         .await?;
@@ -81,8 +73,7 @@ async fn get_cluster(
     cxt: web::Data<SearchContext>,
     path: web::Path<String>,
 ) -> WebResponse<web::Json<Value>> {
-    let elastic = cxt.get_cxt().lock().unwrap();
-
+    let elastic = cxt.get_cxt().blocking_read();
     let cluster_name = format!("/_nodes/{}", path.to_string());
     let body = b"";
     let response = elastic
@@ -98,9 +89,6 @@ async fn get_cluster(
 
     match response.json::<Value>().await {
         Ok(cluster_info) => Ok(web::Json(cluster_info)),
-        Err(err) => {
-            println!("{:?}", err);
-            Err(WebError::SomeError(err.to_string()))
-        }
+        Err(err) => Err(WebError::GetClusterError(err.to_string())),
     }
 }
