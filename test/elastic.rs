@@ -1,22 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use std::env::var;
     use elasticsearch::auth::Credentials;
     use elasticsearch::cert::CertificateValidation;
     use elasticsearch::http::request::JsonBody;
     use elasticsearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
     use elasticsearch::http::Url;
     use elasticsearch::{BulkParts, DeleteParts, Elasticsearch, IndexParts, SearchParts};
-    use serde_json::{json, Value};
+    use serde_json::json;
+    use std::env::var;
     use tokio;
 
     fn build_elastic() -> Elasticsearch {
         let es_url = Url::parse("https://localhost:9200").unwrap();
         let conn_pool = SingleNodeConnectionPool::new(es_url);
-        let es_user = var("ELASTIC_USER")
-            .expect("There is no ELASTIC_USER env variable!");
-        let es_passwd = var("ELASTIC_PASSWORD")
-            .expect("There is not ELASTIC_PASSWORD env variable!");
+        let es_user = var("ELASTIC_USER").expect("There is no ELASTIC_USER env variable!");
+        let es_passwd =
+            var("ELASTIC_PASSWORD").expect("There is not ELASTIC_PASSWORD env variable!");
 
         let creds = Credentials::Basic(es_user, es_passwd);
         let validation = CertificateValidation::None;
