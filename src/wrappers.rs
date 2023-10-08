@@ -125,6 +125,20 @@ pub struct SearchParameters {
     pub result_offset: i64,
 }
 
+impl Default for SearchParameters {
+    fn default() -> Self {
+        SearchParameters {
+            query: "*".to_string(),
+            document_size_to: 0,
+            document_size_from: 0,
+            created_date_to: 0,
+            created_date_from: 0,
+            result_size: 25,
+            result_offset: 0,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct Document {
     pub bucket_uuid: String,
