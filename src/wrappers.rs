@@ -51,33 +51,15 @@ pub struct MustQuery {
     must: Value,
 }
 
-impl MustQuery {
-    pub fn new(value: Value) -> Self {
-        MustQuery { must: value }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct BoolQuery {
     #[serde(alias = "bool")]
     bool: MustQuery,
 }
 
-impl BoolQuery {
-    pub fn new(value: MustQuery) -> Self {
-        BoolQuery { bool: value }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct RangeQuery {
     range: Value,
-}
-
-impl RangeQuery {
-    pub fn new(value: Value) -> Self {
-        RangeQuery { range: value }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -87,31 +69,9 @@ pub struct SearchQuery {
     filter: Option<BoolQuery>,
 }
 
-impl SearchQuery {
-    pub fn new1(match_query: MustQuery) -> Self {
-        SearchQuery {
-            bool: match_query,
-            filter: None,
-        }
-    }
-
-    pub fn new2(match_query: MustQuery, filter_query: BoolQuery) -> Self {
-        SearchQuery {
-            bool: match_query,
-            filter: Some(filter_query),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct MainQueryNode {
     query: SearchQuery,
-}
-
-impl MainQueryNode {
-    pub fn new(value: SearchQuery) -> Self {
-        MainQueryNode { query: value }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -175,17 +135,6 @@ where
             .serialize(serializer)
     } else {
         serializer.serialize_none()
-    }
-}
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct StatusResult {
-    result: u16,
-}
-
-impl StatusResult {
-    pub fn new(status: u16) -> Self {
-        StatusResult { result: status }
     }
 }
 
