@@ -142,6 +142,137 @@ async fn get_document(
 fn deserialize_document(document_ref: &Document) -> Result<Value, WebError> {
     match serde_json::to_value(document_ref) {
         Ok(value) => Ok(value),
-        Err(err) => Err(WebError::DocumentSerializingError(err.to_string())),
+        Err(err) => Err(WebError::DocumentSerializing(err.to_string())),
+    }
+}
+
+#[cfg(test)]
+mod documents_endpoints {
+    use crate::context::SearchContext;
+    use crate::errors::{ErrorResponse, SuccessfulResponse};
+    use crate::es_client::{build_elastic, build_service, init_service_parameters};
+    use crate::wrappers::Document;
+
+    use actix_web::test::TestRequest;
+    use actix_web::{test, web, App};
+    use serde_json::json;
+
+    #[test]
+    async fn build_application() {
+        let service_parameters = init_service_parameters().unwrap();
+        let es_host = service_parameters.es_host();
+        let es_user = service_parameters.es_user();
+        let es_passwd = service_parameters.es_passwd();
+        let service_port = service_parameters.service_port();
+        let service_addr = service_parameters.service_address();
+
+        let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
+        let cxt = SearchContext::_new(elastic);
+        let app = App::new()
+            .app_data(web::Data::new(cxt))
+            .service(build_service());
+
+        let test_app = test::init_service(app).await;
+        let test_bucket_name = "test_bucket";
+        let test_document_name = "test_document";
+        let test_document_path = "/tmp/dir/";
+        let test_document_id = "79054025255fb1a26e4bc422aef54eb4";
+
+        // Create new document with name: "test_document"
+        let create_document_resp = TestRequest::post()
+            .uri("/searcher/document/new")
+            .set_json(&json!({
+                "bucket_uuid": test_bucket_name,
+                "bucket_path": "/tmp/test_document",
+                "document_name": test_document_name,
+                "document_path": test_document_path,
+                "document_size": 1024,
+                "document_type": "document",
+                "document_extension": ".docx",
+                "document_permissions": 777,
+                "document_created": "2023-09-15T00:00:00Z",
+                "document_modified": "2023-09-15T00:00:00Z",
+                "document_md5_hash": test_document_id,
+                "document_ssdeep_hash": "3a:34gh5",
+                "entity_data": "Using skip_serializing does not skip deserializing the field.",
+                "entity_keywords": ["document", "report"]
+            }))
+            .send_request(&test_app)
+            .await;
+
+        let new_document: SuccessfulResponse = test::read_body_json(create_document_resp).await;
+        assert_eq!(new_document.code, 200);
+
+        // Get document request by document name
+        let get_document_resp = TestRequest::get()
+            .uri(&format!(
+                "/searcher/document/{}/{}",
+                test_bucket_name, test_document_id
+            ))
+            .send_request(&test_app)
+            .await;
+
+        let get_document: Document = test::read_body_json(get_document_resp).await;
+        assert_eq!(get_document.document_md5_hash, test_document_id);
+
+        // Get document request by document name after updating
+        let update_document_resp = TestRequest::put()
+            .uri("/searcher/document/update")
+            .set_json(&json!({
+                "bucket_uuid": test_bucket_name,
+                "bucket_path": "/tmp/test_document",
+                "document_name": test_document_name,
+                "document_path": "./",
+                "document_size": 1024,
+                "document_type": "document",
+                "document_extension": ".docx",
+                "document_permissions": 777,
+                "document_created": "2023-09-15T00:00:00Z",
+                "document_modified": "2023-09-15T00:00:00Z",
+                "document_md5_hash": test_document_id,
+                "document_ssdeep_hash": "3a:34gh5",
+                "entity_data": "Using skip_serializing does not skip deserializing the field.",
+                "entity_keywords": ["document", "report"]
+            }))
+            .send_request(&test_app)
+            .await;
+
+        let update_document: SuccessfulResponse = test::read_body_json(update_document_resp).await;
+        assert_eq!(update_document.code, 200);
+
+        let get_updated_document_resp = TestRequest::get()
+            .uri(&format!(
+                "/searcher/document/{}/{}",
+                test_bucket_name, test_document_id
+            ))
+            .send_request(&test_app)
+            .await;
+
+        let get_document: Document = test::read_body_json(get_updated_document_resp).await;
+        assert_eq!(get_document.document_path, "./");
+
+        // Delete document by index
+        let delete_document_resp = TestRequest::delete()
+            .uri(&format!(
+                "/searcher/document/{}/{}",
+                test_bucket_name, test_document_id
+            ))
+            .send_request(&test_app)
+            .await;
+
+        let delete_document: SuccessfulResponse = test::read_body_json(delete_document_resp).await;
+        assert_eq!(delete_document.code, 200);
+
+        // Get document by index -> get error message
+        let get_document_err_resp = TestRequest::get()
+            .uri(&format!(
+                "/searcher/document/{}/{}",
+                test_bucket_name, "lsdfnbsikdjfsidg"
+            ))
+            .send_request(&test_app)
+            .await;
+
+        let get_document_err: ErrorResponse = test::read_body_json(get_document_err_resp).await;
+        assert_eq!(get_document_err.code, 400);
     }
 }
