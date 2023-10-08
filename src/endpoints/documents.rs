@@ -19,7 +19,7 @@ async fn update_document(cxt: web::Data<SearchContext>, form: web::Json<Document
     let document_json = deserialize_document(document_ref);
     if document_json.is_err() {
         let err = document_json.err().unwrap();
-        let web_err = WebError::UpdateDocumentError(err.to_string());
+        let web_err = WebError::UpdateDocument(err.to_string());
         return web_err.error_response();
     }
 
@@ -54,7 +54,7 @@ async fn new_document(cxt: web::Data<SearchContext>, form: web::Json<Document>) 
     let to_value_result = serde_json::to_value(document_ref);
     if to_value_result.is_err() {
         let err = to_value_result.err().unwrap();
-        let web_err = WebError::DocumentSerializingError(err.to_string());
+        let web_err = WebError::DocumentSerializing(err.to_string());
         return web_err.error_response();
     }
 
@@ -72,7 +72,7 @@ async fn new_document(cxt: web::Data<SearchContext>, form: web::Json<Document>) 
     match response_result {
         Ok(_) => SuccessfulResponse::ok_response("Ok"),
         Err(err) => {
-            let web_err = WebError::CreateDocumentError(err.to_string());
+            let web_err = WebError::CreateDocument(err.to_string());
             web_err.error_response()
         }
     }
@@ -100,7 +100,7 @@ async fn delete_document(
     match response_result {
         Ok(_) => SuccessfulResponse::ok_response("Ok"),
         Err(err) => {
-            let web_err = WebError::DeleteDocumentError(err.to_string());
+            let web_err = WebError::DeleteDocument(err.to_string());
             web_err.error_response()
         }
     }
@@ -135,7 +135,7 @@ async fn get_document(
     let document_json = &common_object[&"_source"];
     match Document::deserialize(document_json) {
         Ok(document) => Ok(web::Json(document)),
-        Err(err) => Err(WebError::GetDocumentError(err.to_string())),
+        Err(err) => Err(WebError::GetDocument(err.to_string())),
     }
 }
 
