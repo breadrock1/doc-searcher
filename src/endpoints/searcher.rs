@@ -49,7 +49,7 @@ async fn search_documents(
 
     match response_result {
         Err(err) => {
-            let web_err = WebError::SearchError(err.to_string());
+            let web_err = WebError::SearchFailed(err.to_string());
             Err(web_err)
         }
         Ok(response) => {
