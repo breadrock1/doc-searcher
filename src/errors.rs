@@ -75,14 +75,13 @@ impl ResponseError for WebError {
         match self {
             WebError::SearchFailed(_) => StatusCode::BAD_REQUEST,
             WebError::ResponseError(_) => StatusCode::BAD_REQUEST,
-            WebError::GetBucketError(_) => StatusCode::BAD_REQUEST,
-            WebError::GetClusterError(_) => StatusCode::BAD_REQUEST,
-            WebError::GetDocumentError(_) => StatusCode::BAD_REQUEST,
-            WebError::CreateDocumentError(_) => StatusCode::BAD_REQUEST,
-            WebError::UpdateDocumentError(_) => StatusCode::BAD_REQUEST,
-            WebError::DeleteDocumentError(_) => StatusCode::BAD_REQUEST,
-            WebError::DocumentSerializingError(_) => StatusCode::BAD_REQUEST,
+            WebError::GetBucket(_) => StatusCode::BAD_REQUEST,
             WebError::GetCluster(_) => StatusCode::BAD_REQUEST,
+            WebError::GetDocument(_) => StatusCode::BAD_REQUEST,
+            WebError::CreateDocument(_) => StatusCode::BAD_REQUEST,
+            WebError::UpdateDocument(_) => StatusCode::BAD_REQUEST,
+            WebError::DeleteDocument(_) => StatusCode::BAD_REQUEST,
+            WebError::DocumentSerializing(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::BAD_REQUEST,
         }
     }
