@@ -28,7 +28,7 @@ async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Ve
     let response = response_result.unwrap();
     match response.json::<Vec<Cluster>>().await {
         Ok(json_clusters) => Ok(web::Json(json_clusters)),
-        Err(err) => Err(WebError::GetClusterError(err.to_string())),
+        Err(err) => Err(WebError::GetCluster(err.to_string())),
     }
 }
 
@@ -75,7 +75,7 @@ async fn delete_cluster(cxt: web::Data<SearchContext>, path: web::Path<String>) 
     match response_result {
         Ok(_) => SuccessfulResponse::ok_response("Ok"),
         Err(err) => {
-            let web_err = WebError::DeletingClusterError(err.to_string());
+            let web_err = WebError::DeletingCluster(err.to_string());
             web_err.error_response()
         }
     }
