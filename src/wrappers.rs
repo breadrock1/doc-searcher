@@ -220,22 +220,22 @@ impl ToString for ClusterForm {
 
 #[derive(Deserialize, Serialize)]
 pub struct Bucket {
-    health: String,
-    status: String,
-    index: String,
-    uuid: String,
+    pub health: String,
+    pub status: String,
+    pub index: String,
+    pub uuid: String,
     #[serde(alias = "docs.count")]
-    docs_count: String,
+    pub docs_count: String,
     #[serde(alias = "docs.deleted")]
-    docs_deleted: String,
+    pub docs_deleted: String,
     #[serde(alias = "store.size")]
-    store_size: String,
+    pub store_size: String,
     #[serde(alias = "pri.store.size")]
-    pri_store_size: String,
+    pub pri_store_size: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pri: Option<String>,
+    pub pri: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rep: Option<String>,
+    pub rep: Option<String>,
 }
 
 impl Bucket {
