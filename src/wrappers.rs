@@ -238,6 +238,7 @@ pub struct Bucket {
     pub rep: Option<String>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Bucket {
     pub fn new(
         health: String,
