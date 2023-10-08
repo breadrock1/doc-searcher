@@ -43,7 +43,7 @@ async fn new_cluster(cxt: web::Data<SearchContext>, form: web::Json<ClusterForm>
     web_err.error_response()
 }
 
-#[delete("/cluster/delete")]
+#[delete("/cluster/{cluster_name}")]
 async fn delete_cluster(cxt: web::Data<SearchContext>, path: web::Path<String>) -> HttpResponse {
     let elastic = cxt.get_cxt().read().await;
     let cluster_name = path.to_string();
