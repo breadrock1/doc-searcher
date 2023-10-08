@@ -53,7 +53,14 @@ async fn delete_cluster(cxt: web::Data<SearchContext>, path: web::Path<String>) 
         }
     });
 
-    let body = json_data.as_str().unwrap().as_bytes();
+    let body = json_data.as_str();
+    if body.is_none() {
+        let msg = String::from("Json body is None");
+        let web_err = WebError::DeletingCluster(msg);
+        return web_err.error_response();
+    }
+
+    let body = body.unwrap().as_bytes();
     let response_result = elastic
         .send(
             Method::Put,
