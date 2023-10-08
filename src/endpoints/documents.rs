@@ -39,7 +39,7 @@ async fn update_document(cxt: web::Data<SearchContext>, form: web::Json<Document
     match response_result {
         Ok(_) => SuccessfulResponse::ok_response("Ok"),
         Err(err) => {
-            let web_err = WebError::UpdateDocumentError(err.to_string());
+            let web_err = WebError::UpdateDocument(err.to_string());
             web_err.error_response()
         }
     }
