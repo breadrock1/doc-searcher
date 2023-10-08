@@ -98,10 +98,10 @@ impl ResponseError for WebError {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SuccessfulResponse {
-    code: u16,
-    message: String,
+    pub code: u16,
+    pub message: String,
 }
 
 impl SuccessfulResponse {
