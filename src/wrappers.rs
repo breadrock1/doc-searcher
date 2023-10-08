@@ -51,33 +51,15 @@ pub struct MustQuery {
     must: Value,
 }
 
-impl MustQuery {
-    pub fn new(value: Value) -> Self {
-        MustQuery { must: value }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct BoolQuery {
     #[serde(alias = "bool")]
     bool: MustQuery,
 }
 
-impl BoolQuery {
-    pub fn new(value: MustQuery) -> Self {
-        BoolQuery { bool: value }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct RangeQuery {
     range: Value,
-}
-
-impl RangeQuery {
-    pub fn new(value: Value) -> Self {
-        RangeQuery { range: value }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -87,31 +69,9 @@ pub struct SearchQuery {
     filter: Option<BoolQuery>,
 }
 
-impl SearchQuery {
-    pub fn new1(match_query: MustQuery) -> Self {
-        SearchQuery {
-            bool: match_query,
-            filter: None,
-        }
-    }
-
-    pub fn new2(match_query: MustQuery, filter_query: BoolQuery) -> Self {
-        SearchQuery {
-            bool: match_query,
-            filter: Some(filter_query),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct MainQueryNode {
     query: SearchQuery,
-}
-
-impl MainQueryNode {
-    pub fn new(value: SearchQuery) -> Self {
-        MainQueryNode { query: value }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -123,6 +83,20 @@ pub struct SearchParameters {
     pub created_date_from: i64,
     pub result_size: i64,
     pub result_offset: i64,
+}
+
+impl Default for SearchParameters {
+    fn default() -> Self {
+        SearchParameters {
+            query: "*".to_string(),
+            document_size_to: 0,
+            document_size_from: 0,
+            created_date_to: 0,
+            created_date_from: 0,
+            result_size: 25,
+            result_offset: 0,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -165,17 +139,6 @@ where
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct StatusResult {
-    result: u16,
-}
-
-impl StatusResult {
-    pub fn new(status: u16) -> Self {
-        StatusResult { result: status }
-    }
-}
-
-#[derive(Deserialize, Serialize, Clone)]
 pub struct Cluster {
     ip: String,
     #[serde(alias = "heap.percent")]
@@ -206,24 +169,25 @@ impl ToString for ClusterForm {
 
 #[derive(Deserialize, Serialize)]
 pub struct Bucket {
-    health: String,
-    status: String,
-    index: String,
-    uuid: String,
+    pub health: String,
+    pub status: String,
+    pub index: String,
+    pub uuid: String,
     #[serde(alias = "docs.count")]
-    docs_count: String,
+    pub docs_count: String,
     #[serde(alias = "docs.deleted")]
-    docs_deleted: String,
+    pub docs_deleted: String,
     #[serde(alias = "store.size")]
-    store_size: String,
+    pub store_size: String,
     #[serde(alias = "pri.store.size")]
-    pri_store_size: String,
+    pub pri_store_size: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pri: Option<String>,
+    pub pri: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rep: Option<String>,
+    pub rep: Option<String>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Bucket {
     pub fn new(
         health: String,

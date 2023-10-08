@@ -30,7 +30,7 @@ async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec
     let response = response_result.unwrap();
     match response.json::<Vec<Bucket>>().await {
         Ok(json_buckets) => Ok(web::Json(json_buckets)),
-        Err(err) => Err(WebError::GetBucketError(err.to_string())),
+        Err(err) => Err(WebError::GetBucket(err.to_string())),
     }
 }
 
@@ -69,7 +69,7 @@ async fn new_bucket(cxt: web::Data<SearchContext>, form: web::Json<BucketForm>) 
     match response_result {
         Ok(_) => SuccessfulResponse::ok_response("Ok"),
         Err(err) => {
-            let web_err = WebError::CreateBucketError(err.to_string());
+            let web_err = WebError::CreateBucket(err.to_string());
             web_err.error_response()
         }
     }
@@ -93,7 +93,7 @@ async fn delete_bucket(cxt: web::Data<SearchContext>, path: web::Path<String>) -
     match response_result {
         Ok(_) => SuccessfulResponse::ok_response("Ok"),
         Err(err) => {
-            let web_err = WebError::DeleteBucketError(err.to_string());
+            let web_err = WebError::DeleteBucket(err.to_string());
             web_err.error_response()
         }
     }
@@ -124,7 +124,7 @@ async fn get_bucket(
 
     let response = response_result.unwrap();
     match response.json::<Value>().await {
-        Err(err) => Err(WebError::GetBucketError(err.to_string())),
+        Err(err) => Err(WebError::GetBucket(err.to_string())),
         Ok(value) => match extract_bucket_stats(&value) {
             Ok(data) => Ok(web::Json(data)),
             Err(err) => Err(err),
@@ -137,7 +137,7 @@ fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
     let bucket_id = indicies.as_object();
     if bucket_id.is_none() {
         let msg = String::from("There is no passed bucket name in json.");
-        return Err(WebError::BucketParsingError(msg));
+        return Err(WebError::BucketParsing(msg));
     }
 
     let bucket_id = bucket_id.unwrap().keys().next().unwrap();
@@ -166,4 +166,81 @@ fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
         None,
         None,
     ))
+}
+
+#[cfg(test)]
+mod buckets_endpoints {
+    use crate::context::SearchContext;
+    use crate::errors::{ErrorResponse, SuccessfulResponse};
+    use crate::es_client::{build_elastic, build_service, init_service_parameters};
+    use crate::wrappers::Bucket;
+
+    use actix_web::test::TestRequest;
+    use actix_web::{test, web, App};
+    use serde_json::json;
+
+    #[test]
+    async fn build_application() {
+        let service_parameters = init_service_parameters().unwrap();
+        let es_host = service_parameters.es_host();
+        let es_user = service_parameters.es_user();
+        let es_passwd = service_parameters.es_passwd();
+        let service_port = service_parameters.service_port();
+        let service_addr = service_parameters.service_address();
+
+        let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
+        let cxt = SearchContext::_new(elastic);
+        let app = App::new()
+            .app_data(web::Data::new(cxt))
+            .service(build_service());
+
+        let test_app = test::init_service(app).await;
+        let test_bucket_name = "test_bucket";
+
+        // Create new bucket with name: "test_bucket"
+        let create_bucket_resp = TestRequest::post()
+            .uri("/searcher/bucket/new")
+            .set_json(&json!({"bucket_name": test_bucket_name}))
+            .send_request(&test_app)
+            .await;
+
+        let new_bucket: SuccessfulResponse = test::read_body_json(create_bucket_resp).await;
+        assert_eq!(new_bucket.code, 200);
+
+        // Get all buckets request
+        let get_all_buckets_resp = TestRequest::get()
+            .uri("/searcher/buckets")
+            .send_request(&test_app)
+            .await;
+
+        let get_all_buckets: Vec<Bucket> = test::read_body_json(get_all_buckets_resp).await;
+        assert_eq!(get_all_buckets.len(), 1);
+
+        // Get bucket request by bucket name
+        let get_bucket_resp = TestRequest::get()
+            .uri(&format!("/searcher/bucket/{}", test_bucket_name))
+            .send_request(&test_app)
+            .await;
+
+        let get_bucket: Bucket = test::read_body_json(get_bucket_resp).await;
+        assert_eq!(get_bucket.index, test_bucket_name);
+
+        // Delete bucket by index
+        let delete_bucket_resp = TestRequest::delete()
+            .uri(&format!("/searcher/bucket/{}", test_bucket_name))
+            .send_request(&test_app)
+            .await;
+
+        let delete_bucket: SuccessfulResponse = test::read_body_json(delete_bucket_resp).await;
+        assert_eq!(delete_bucket.code, 200);
+
+        // Get bucket by index -> get error message
+        let get_bucket_err_resp = TestRequest::get()
+            .uri(&format!("/searcher/bucket/{}", "lsdfnbsikdjfsidg"))
+            .send_request(&test_app)
+            .await;
+
+        let get_bucket_err: ErrorResponse = test::read_body_json(get_bucket_err_resp).await;
+        assert_eq!(get_bucket_err.code, 400);
+    }
 }

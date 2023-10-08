@@ -6,21 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.3.1"
-anyhow = "1.0.75"
-chrono = { version = "0.4.30", features = ["serde", "rustc-serialize"] }
+actix-web = "^4.3"
+dotenv = "^0.15"
 elasticsearch = "8.5.0-alpha.1"
-log = "0.4.19"
-md5 = "0.7.0"
+log = "^0.4"
+md5 = "^0.7"
 serde = "~1"
 serde_json = "~1"
-thiserror = "1.0.48"
-tokio = { version = "*", features = ["full"] }
+thiserror = "^1.0"
 
-[[test]]
-name = "elastic-tests"
-path = "test/elastic.rs"
+[dependencies.chrono]
+version = "^0.4"
+features = ["rustc-serialize", "serde"]
 
-[[test]]
-name = "cluster-endpoints"
-path = "test/cluster_endpoints.rs"
+[dependencies.tokio]
+version = "^1.32"
+features = ["full"]
+
+[dev-dependencies]
+lazy_static = "1.4.0"
