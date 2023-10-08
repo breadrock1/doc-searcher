@@ -34,10 +34,13 @@ async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Ve
 
 #[post("/cluster/new")]
 async fn new_cluster(cxt: web::Data<SearchContext>, form: web::Json<ClusterForm>) -> HttpResponse {
-    let _elastic = cxt.get_cxt().blocking_read();
+    let _elastic = cxt.get_cxt().read().await;
     let _cluster_name = form.0;
+
     // TODO: Add executing command from cli.
-    SuccessfulResponse::ok_response("Ok")
+    let msg = "This method is not implemented yet";
+    let web_err = WebError::CreateCluster(msg.to_string());
+    web_err.error_response()
 }
 
 #[delete("/cluster/delete")]
