@@ -63,11 +63,11 @@ impl From<elasticsearch::Error> for WebError {
     }
 }
 
-#[derive(Serialize)]
-struct ErrorResponse {
-    code: u16,
-    error: String,
-    message: String,
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+    pub code: u16,
+    pub error: String,
+    pub message: String,
 }
 
 impl ResponseError for WebError {
