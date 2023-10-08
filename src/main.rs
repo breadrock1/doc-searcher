@@ -1,76 +1,36 @@
-pub mod context;
-pub mod endpoints;
-pub mod errors;
-pub mod wrappers;
+mod context;
+mod endpoints;
+mod errors;
+mod es_client;
+mod wrappers;
 
 use crate::context::SearchContext;
-use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_bucket};
-use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
-use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
-use crate::endpoints::searcher::{search_all, search_target};
+use crate::es_client::{build_elastic, build_service, init_service_parameters};
 
-use std::env::var;
-
-use actix_web::{web, App, HttpServer, Scope};
-use elasticsearch::auth::Credentials;
-use elasticsearch::cert::CertificateValidation;
-use elasticsearch::http::transport::{BuildError, SingleNodeConnectionPool, TransportBuilder};
-use elasticsearch::http::Url;
-use elasticsearch::Elasticsearch;
+use actix_web::{web, App, HttpServer};
+use elasticsearch::http::transport::BuildError;
 
 #[actix_web::main]
-async fn main() -> anyhow::Result<()> {
-    let es_host = var("ELASTIC_HOST").expect("There is not ELASTIC_HOST env variable!");
-    let es_user = var("ELASTIC_USER").expect("There is no ELASTIC_USER env variable!");
-    let es_passwd = var("ELASTIC_PASSWORD").expect("There is not ELASTIC_PASSWORD env variable!");
+async fn main() -> Result<(), BuildError> {
+    let service_parameters = init_service_parameters()?;
+    let es_host = service_parameters.es_host();
+    let es_user = service_parameters.es_user();
+    let es_passwd = service_parameters.es_passwd();
+    let service_port = service_parameters.service_port();
+    let service_addr = service_parameters.service_address();
 
-    let elastic = build_elastic(es_host.as_str(), es_user.as_str(), es_passwd.as_str())?;
-    let cxt = SearchContext::_new(elastic);
+    let elastic = build_elastic(es_host, es_user, es_passwd)?;
+    let search_context = SearchContext::_new(elastic);
 
     HttpServer::new(move || {
-        let cxt = cxt.clone();
+        let cxt = search_context.clone();
         App::new()
             .app_data(web::Data::new(cxt))
             .service(build_service())
     })
-    .bind(("127.0.0.1", 45678))?
+    .bind((service_addr, service_port))?
     .run()
     .await?;
 
     Ok(())
-}
-
-pub fn build_elastic(
-    es_host: &str,
-    es_user: &str,
-    es_passwd: &str,
-) -> Result<Elasticsearch, BuildError> {
-    let es_url = Url::parse(es_host).unwrap();
-    let conn_pool = SingleNodeConnectionPool::new(es_url);
-    let creds = Credentials::Basic(es_user.into(), es_passwd.into());
-    let validation = CertificateValidation::None;
-    let transport = TransportBuilder::new(conn_pool)
-        .auth(creds)
-        .cert_validation(validation)
-        .build()?;
-
-    Ok(Elasticsearch::new(transport))
-}
-
-pub fn build_service() -> Scope {
-    web::scope("/searcher")
-        .service(new_cluster)
-        .service(delete_cluster)
-        .service(all_clusters)
-        .service(get_cluster)
-        .service(new_bucket)
-        .service(delete_bucket)
-        .service(all_buckets)
-        .service(get_bucket)
-        .service(new_document)
-        .service(delete_document)
-        .service(update_document)
-        .service(get_document)
-        .service(search_target)
-        .service(search_all)
 }
