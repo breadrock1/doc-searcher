@@ -1,58 +1,56 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
 use elasticsearch::Error;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub type WebResponse<T> = Result<T, WebError>;
 
 #[derive(Error, Debug)]
 pub enum WebError {
-    #[error("Unknown error: {0}")]
-    RuntimeError(String),
     #[error("Error while getting cluster: {0}")]
-    GetClusterError(String),
+    GetCluster(String),
     #[error("Error while creating cluster: {0}")]
-    CreateClusterError(String),
+    CreateCluster(String),
     #[error("Error while deleting cluster: {0}")]
-    DeletingClusterError(String),
+    DeletingCluster(String),
     #[error("Error while getting bucket: {0}")]
-    GetBucketError(String),
+    GetBucket(String),
     #[error("Error while creating bucket: {0}")]
-    CreateBucketError(String),
+    CreateBucket(String),
     #[error("Error while deleting bucket: {0}")]
-    DeleteBucketError(String),
+    DeleteBucket(String),
     #[error("Error elastic response: {0}")]
-    GetDocumentError(String),
+    GetDocument(String),
     #[error("Failed while creating document: {0}")]
-    CreateDocumentError(String),
+    CreateDocument(String),
     #[error("Failed while updating document: {0}")]
-    UpdateDocumentError(String),
+    UpdateDocument(String),
     #[error("Failed while deleting document: {0}")]
-    DeleteDocumentError(String),
+    DeleteDocument(String),
     #[error("Failed while serializing document: {0}")]
-    DocumentSerializingError(String),
+    DocumentSerializing(String),
     #[error("Failed while searching: {0}")]
-    SearchError(String),
+    SearchFailed(String),
     #[error("Response error: {0}")]
     ResponseError(String),
     #[error("Failed while parsing bucket: {0}")]
-    BucketParsingError(String),
+    BucketParsing(String),
 }
 
 impl WebError {
     pub fn name(&self) -> String {
         match self {
-            WebError::SearchError(_) => "SearchError",
+            WebError::SearchFailed(_) => "SearchError",
             WebError::ResponseError(_) => "ResponseError",
-            WebError::GetBucketError(_) => "GetBucketError",
-            WebError::GetClusterError(_) => "GetClusterError",
-            WebError::GetDocumentError(_) => "GetDocumentError",
-            WebError::CreateDocumentError(_) => "CreateDocumentError",
-            WebError::UpdateDocumentError(_) => "UpdateDocumentError",
-            WebError::DeleteDocumentError(_) => "DeleteDocumentError",
-            WebError::DocumentSerializingError(_) => "DocumentSerializingError",
-            WebError::BucketParsingError(_) => "BucketParsingError",
+            WebError::GetBucket(_) => "GetBucketError",
+            WebError::GetCluster(_) => "GetClusterError",
+            WebError::GetDocument(_) => "GetDocumentError",
+            WebError::CreateDocument(_) => "CreateDocumentError",
+            WebError::UpdateDocument(_) => "UpdateDocumentError",
+            WebError::DeleteDocument(_) => "DeleteDocumentError",
+            WebError::DocumentSerializing(_) => "DocumentSerializingError",
+            WebError::BucketParsing(_) => "BucketParsingError",
             _ => "RuntimeError",
         }
         .to_string()
@@ -75,7 +73,7 @@ struct ErrorResponse {
 impl ResponseError for WebError {
     fn status_code(&self) -> StatusCode {
         match self {
-            WebError::SearchError(_) => StatusCode::BAD_REQUEST,
+            WebError::SearchFailed(_) => StatusCode::BAD_REQUEST,
             WebError::ResponseError(_) => StatusCode::BAD_REQUEST,
             WebError::GetBucketError(_) => StatusCode::BAD_REQUEST,
             WebError::GetClusterError(_) => StatusCode::BAD_REQUEST,
@@ -84,6 +82,7 @@ impl ResponseError for WebError {
             WebError::UpdateDocumentError(_) => StatusCode::BAD_REQUEST,
             WebError::DeleteDocumentError(_) => StatusCode::BAD_REQUEST,
             WebError::DocumentSerializingError(_) => StatusCode::BAD_REQUEST,
+            WebError::GetCluster(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::BAD_REQUEST,
         }
     }
