@@ -107,6 +107,13 @@ fn build_search_query(parameters: &SearchParameters) -> Value {
                 "must": match_value,
                 "filter": common_filter
             }
+        },
+        "highlight" : {
+            "fields" : {
+                "entity_data" : {
+                    "fragment_size" : 3
+                }
+            }
         }
     })
 }
