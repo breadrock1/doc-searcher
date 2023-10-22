@@ -30,7 +30,10 @@ async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec
     let response = response_result.unwrap();
     match response.json::<Vec<Bucket>>().await {
         Ok(json_buckets) => Ok(web::Json(json_buckets)),
-        Err(err) => Err(WebError::GetBucket(err.to_string())),
+        Err(err) => {
+            println!("{:?}", err.to_string().as_str());
+            Err(WebError::GetBucket(err.to_string()))
+        },
     }
 }
 
@@ -185,8 +188,6 @@ mod buckets_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
         let cxt = SearchContext::_new(elastic);
@@ -242,5 +243,34 @@ mod buckets_endpoints {
 
         let get_bucket_err: ErrorResponse = test::read_body_json(get_bucket_err_resp).await;
         assert_eq!(get_bucket_err.code, 400);
+    }
+
+    #[test]
+    async fn create_for_integration_tests() {
+        let service_parameters = init_service_parameters().unwrap();
+        let es_host = service_parameters.es_host();
+        let es_user = service_parameters.es_user();
+        let es_passwd = service_parameters.es_passwd();
+        let service_port = service_parameters.service_port();
+        let service_addr = service_parameters.service_address();
+
+        let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
+        let cxt = SearchContext::_new(elastic);
+        let app = App::new()
+            .app_data(web::Data::new(cxt))
+            .service(build_service());
+
+        let test_app = test::init_service(app).await;
+        let test_bucket_name = "docs";
+
+        // Create new bucket with name: "test_bucket"
+        let create_bucket_resp = TestRequest::post()
+            .uri("/searcher/bucket/new")
+            .set_json(&json!({"bucket_name": test_bucket_name}))
+            .send_request(&test_app)
+            .await;
+
+        let new_bucket: SuccessfulResponse = test::read_body_json(create_bucket_resp).await;
+        assert_eq!(new_bucket.code, 200);
     }
 }
