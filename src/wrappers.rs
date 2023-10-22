@@ -113,16 +113,22 @@ pub struct Document {
     pub document_ssdeep_hash: String,
     pub entity_data: String,
     pub entity_keywords: Vec<String>,
+    pub highlight: Option<HighlightEntity>,
     #[serde(
         serialize_with = "serialize_dt",
-        skip_serializing_if = "Option::is_none"
+        skip_serializing_if = "Option::is_none",
     )]
     pub document_created: Option<DateTime<Utc>>,
     #[serde(
         serialize_with = "serialize_dt",
-        skip_serializing_if = "Option::is_none"
+        skip_serializing_if = "Option::is_none",
     )]
     pub document_modified: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct HighlightEntity {
+    pub entity_data: Vec<String>,
 }
 
 pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
