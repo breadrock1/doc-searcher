@@ -2,7 +2,8 @@ ES_CLIENT_PASSWORD="elastic"
 
 docker network create elastic
 docker pull docker.elastic.co/elasticsearch/elasticsearch:8.10.2
-docker run --name es01 --net elastic \
+sudo sysctl -w vm.max_map_count=262144
+docker run --rm --name es01 --net elastic \
   -m 1GB \
   -p 9200:9200 \
   -e ELASTIC_PASSWORD=$ES_CLIENT_PASSWORD \
