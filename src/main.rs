@@ -5,7 +5,7 @@ mod es_client;
 mod wrappers;
 
 use crate::context::SearchContext;
-use crate::es_client::{build_elastic, build_service, init_service_parameters};
+use crate::es_client::{build_elastic, build_service, init_service_parameters, build_cors_config};
 
 use actix_web::{web, App, HttpServer};
 use elasticsearch::http::transport::BuildError;
@@ -18,13 +18,16 @@ async fn main() -> Result<(), BuildError> {
     let es_passwd = service_parameters.es_passwd();
     let service_port = service_parameters.service_port();
     let service_addr = service_parameters.service_address();
+    let cors_origin = service_parameters.cors_origin();
 
     let elastic = build_elastic(es_host, es_user, es_passwd)?;
     let search_context = SearchContext::_new(elastic);
 
     HttpServer::new(move || {
         let cxt = search_context.clone();
+        let cors = build_cors_config(cors_origin);
         App::new()
+            .wrap(cors)
             .app_data(web::Data::new(cxt))
             .service(build_service())
     })
