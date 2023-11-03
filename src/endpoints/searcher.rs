@@ -15,9 +15,7 @@ async fn search_all(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
-    let build_query_fn = |params: &SearchParameters| -> Value {
-        build_search_query(params)
-    };
+    let build_query_fn = |params: &SearchParameters| -> Value { build_search_query(params) };
     search_documents(&elastic, es_parameters, &["*"], &build_query_fn).await
 }
 
@@ -30,9 +28,7 @@ async fn search_target(
     let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
     let indexes: Vec<&str> = path.split(',').collect();
-    let build_query_fn = |params: &SearchParameters| -> Value {
-        build_search_query(params)
-    };
+    let build_query_fn = |params: &SearchParameters| -> Value { build_search_query(params) };
     search_documents(&elastic, es_parameters, indexes.as_slice(), &build_query_fn).await
 }
 
@@ -43,9 +39,8 @@ async fn search_similar_docs(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
-    let build_query_fn = |params: &SearchParameters| -> Value {
-        build_search_similar_query(params)
-    };
+    let build_query_fn =
+        |params: &SearchParameters| -> Value { build_search_similar_query(params) };
     search_documents(&elastic, es_parameters, &["*"], &build_query_fn).await
 }
 
@@ -58,9 +53,8 @@ async fn search_similar_docs_target(
     let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
     let indexes: Vec<&str> = path.split(',').collect();
-    let build_query_fn = |params: &SearchParameters| -> Value {
-        build_search_similar_query(params)
-    };
+    let build_query_fn =
+        |params: &SearchParameters| -> Value { build_search_similar_query(params) };
     search_documents(&elastic, es_parameters, indexes.as_slice(), &build_query_fn).await
 }
 
