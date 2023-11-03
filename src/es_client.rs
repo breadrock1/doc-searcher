@@ -103,8 +103,8 @@ impl ServiceParameters {
         self.service_port
     }
 
-    pub fn cors_origin(&self) -> &str {
-        self.cors_origin.as_str()
+    pub fn cors_origin(&self) -> String {
+        self.cors_origin.clone()
     }
 }
 
@@ -120,7 +120,14 @@ pub fn init_service_parameters() -> Result<ServiceParameters, BuildError> {
     let client_port =
         u16::from_str(client_port.as_str()).expect("Failed while parsing port number.");
 
-    let service = ServiceParameters::new(es_host, es_user, es_passwd, client_addr, client_port, cors_origins);
+    let service = ServiceParameters::new(
+        es_host,
+        es_user,
+        es_passwd,
+        client_addr,
+        client_port,
+        cors_origins,
+    );
     Ok(service)
 }
 
