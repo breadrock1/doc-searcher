@@ -1,10 +1,13 @@
 use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_bucket};
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
-use crate::endpoints::searcher::{search_all, search_similar_docs, search_similar_docs_target, search_target};
+use crate::endpoints::hello::hello;
+use crate::endpoints::searcher::{
+    search_all, search_similar_docs, search_similar_docs_target, search_target,
+};
 
 use actix_cors::Cors;
-use actix_web::{web, Scope, http::header};
+use actix_web::{http::header, web, Scope};
 use dotenv::dotenv;
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
@@ -33,6 +36,7 @@ pub fn build_elastic(
 
 pub fn build_service() -> Scope {
     web::scope("/searcher")
+        .service(hello)
         .service(new_cluster)
         .service(delete_cluster)
         .service(all_clusters)
