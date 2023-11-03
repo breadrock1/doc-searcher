@@ -1,10 +1,13 @@
 use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_bucket};
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
-use crate::endpoints::searcher::{search_all, search_similar_docs, search_similar_docs_target, search_target};
+use crate::endpoints::hello::hello;
+use crate::endpoints::searcher::{
+    search_all, search_similar_docs, search_similar_docs_target, search_target,
+};
 
 use actix_cors::Cors;
-use actix_web::{web, Scope, http::header};
+use actix_web::{http::header, web, Scope};
 use dotenv::dotenv;
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
@@ -33,6 +36,7 @@ pub fn build_elastic(
 
 pub fn build_service() -> Scope {
     web::scope("/searcher")
+        .service(hello)
         .service(new_cluster)
         .service(delete_cluster)
         .service(all_clusters)
@@ -99,8 +103,8 @@ impl ServiceParameters {
         self.service_port
     }
 
-    pub fn cors_origin(&self) -> &str {
-        self.cors_origin.as_str()
+    pub fn cors_origin(&self) -> String {
+        self.cors_origin.clone()
     }
 }
 
@@ -116,7 +120,14 @@ pub fn init_service_parameters() -> Result<ServiceParameters, BuildError> {
     let client_port =
         u16::from_str(client_port.as_str()).expect("Failed while parsing port number.");
 
-    let service = ServiceParameters::new(es_host, es_user, es_passwd, client_addr, client_port, cors_origins);
+    let service = ServiceParameters::new(
+        es_host,
+        es_user,
+        es_passwd,
+        client_addr,
+        client_port,
+        cors_origins,
+    );
     Ok(service)
 }
 
