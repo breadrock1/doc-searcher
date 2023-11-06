@@ -15,7 +15,8 @@ async fn search_all(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
-    search_documents(&elastic, es_parameters, &["*"]).await
+    let build_query_fn = |params: &SearchParameters| -> Value { build_search_query(params) };
+    search_documents(&elastic, es_parameters, &["*"], &build_query_fn).await
 }
 
 #[post("/search/{bucket_names}")]
@@ -27,17 +28,45 @@ async fn search_target(
     let elastic = cxt.get_cxt().read().await;
     let es_parameters = &form.0;
     let indexes: Vec<&str> = path.split(',').collect();
-    search_documents(&elastic, es_parameters, indexes.as_slice()).await
+    let build_query_fn = |params: &SearchParameters| -> Value { build_search_query(params) };
+    search_documents(&elastic, es_parameters, indexes.as_slice(), &build_query_fn).await
+}
+
+#[post("/search-similar")]
+async fn search_similar_docs(
+    cxt: web::Data<SearchContext>,
+    form: web::Json<SearchParameters>,
+) -> WebResponse<web::Json<Vec<Document>>> {
+    let elastic = cxt.get_cxt().read().await;
+    let es_parameters = &form.0;
+    let build_query_fn =
+        |params: &SearchParameters| -> Value { build_search_similar_query(params) };
+    search_documents(&elastic, es_parameters, &["*"], &build_query_fn).await
+}
+
+#[post("/search-similar/{bucket_names}")]
+async fn search_similar_docs_target(
+    cxt: web::Data<SearchContext>,
+    path: web::Path<String>,
+    form: web::Json<SearchParameters>,
+) -> WebResponse<web::Json<Vec<Document>>> {
+    let elastic = cxt.get_cxt().read().await;
+    let es_parameters = &form.0;
+    let indexes: Vec<&str> = path.split(',').collect();
+    let build_query_fn =
+        |params: &SearchParameters| -> Value { build_search_similar_query(params) };
+    search_documents(&elastic, es_parameters, indexes.as_slice(), &build_query_fn).await
 }
 
 async fn search_documents(
     elastic: &Elasticsearch,
     es_parameters: &SearchParameters,
     indexes: &[&str],
+    build_query_fn: &dyn Fn(&SearchParameters) -> Value,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let result_size = es_parameters.result_size;
     let result_offset = es_parameters.result_offset;
-    let body_value = build_search_query(es_parameters);
+    let body_value = build_query_fn(es_parameters);
     let response_result = elastic
         .search(SearchParts::Index(indexes))
         .from(result_offset)
@@ -113,6 +142,25 @@ fn build_search_query(parameters: &SearchParameters) -> Value {
                 "entity_data" : {
                     "fragment_size" : 3
                 }
+            }
+        }
+    })
+}
+
+fn build_search_similar_query(parameters: &SearchParameters) -> Value {
+    let ssdeep_hash = &parameters.query;
+    println!("Need find by this: {:?}", ssdeep_hash);
+    json!({
+        "query": {
+            "more_like_this" : {
+                "fields" : [
+                    "entity_data",
+                    "document_ssdeep_hash",
+                ],
+                "like" : ssdeep_hash,
+                "min_doc_freq": 1,
+                "min_term_freq" : 1,
+                "max_query_terms" : 25,
             }
         }
     })

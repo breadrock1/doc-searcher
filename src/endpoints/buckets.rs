@@ -246,7 +246,7 @@ mod buckets_endpoints {
     }
 
     #[test]
-    async fn create_for_integration_tests() {
+    async fn create_buckets_integration_test() {
         let service_parameters = init_service_parameters().unwrap();
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
