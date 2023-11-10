@@ -152,6 +152,7 @@ fn build_search_query(parameters: &SearchParameters) -> Value {
             }
         },
         "highlight" : {
+            "order": "score",
             "fields" : {
                 "entity_data" : {
                     "fragment_size" : 3
