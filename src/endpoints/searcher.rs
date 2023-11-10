@@ -99,12 +99,22 @@ async fn parse_search_result(response: Response) -> Vec<Document> {
 
     json_array
         .iter()
-        .map(|value| value[&"_source"].to_owned())
-        .map(Document::deserialize)
+        .map(parse_document_highlight)
         .map(Result::ok)
         .filter(Option::is_some)
         .flatten()
         .collect()
+}
+
+fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
+    let source_value = value[&"_source"].to_owned();
+    let mut document = Document::deserialize(source_value)?;
+
+    let highlight_value = value[&"highlight"].to_owned();
+    let highlight_entity = HighlightEntity::deserialize(highlight_value).ok();
+
+    document.append_highlight(highlight_entity);
+    Ok(document)
 }
 
 fn build_search_query(parameters: &SearchParameters) -> Value {
