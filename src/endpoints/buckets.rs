@@ -1,6 +1,6 @@
 use crate::context::SearchContext;
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::wrappers::{Bucket, BucketForm};
+use crate::wrappers::bucket::{Bucket, BucketForm};
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
@@ -30,7 +30,10 @@ async fn all_buckets(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec
     let response = response_result.unwrap();
     match response.json::<Vec<Bucket>>().await {
         Ok(json_buckets) => Ok(web::Json(json_buckets)),
-        Err(err) => Err(WebError::GetBucket(err.to_string())),
+        Err(err) => {
+            println!("{:?}", err.to_string().as_str());
+            Err(WebError::GetBucket(err.to_string()))
+        },
     }
 }
 
@@ -173,7 +176,7 @@ mod buckets_endpoints {
     use crate::context::SearchContext;
     use crate::errors::{ErrorResponse, SuccessfulResponse};
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::wrappers::Bucket;
+    use crate::wrappers::bucket::Bucket;
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
@@ -185,8 +188,6 @@ mod buckets_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
         let cxt = SearchContext::_new(elastic);

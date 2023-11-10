@@ -1,6 +1,6 @@
 use crate::context::SearchContext;
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::wrappers::Document;
+use crate::wrappers::document::Document;
 
 use actix_web::{delete, get, post, put, web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
@@ -151,7 +151,7 @@ mod documents_endpoints {
     use crate::context::SearchContext;
     use crate::errors::{ErrorResponse, SuccessfulResponse};
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::wrappers::Document;
+    use crate::wrappers::document::Document;
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};

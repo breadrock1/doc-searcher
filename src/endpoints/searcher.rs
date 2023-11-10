@@ -1,6 +1,7 @@
 use crate::context::SearchContext;
 use crate::errors::{WebError, WebResponse};
-use crate::wrappers::*;
+use crate::wrappers::document::{Document, HighlightEntity};
+use crate::wrappers::search_params::*;
 
 use actix_web::{post, web};
 use elasticsearch::http::response::Response;
@@ -72,6 +73,7 @@ async fn search_documents(
         .from(result_offset)
         .size(result_size)
         .body(body_value)
+        .pretty(true)
         .allow_no_indices(true)
         .send()
         .await;
@@ -97,12 +99,22 @@ async fn parse_search_result(response: Response) -> Vec<Document> {
 
     json_array
         .iter()
-        .map(|value| value[&"_source"].to_owned())
-        .map(Document::deserialize)
+        .map(parse_document_highlight)
         .map(Result::ok)
         .filter(Option::is_some)
         .flatten()
         .collect()
+}
+
+fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
+    let source_value = value[&"_source"].to_owned();
+    let mut document = Document::deserialize(source_value)?;
+
+    let highlight_value = value[&"highlight"].to_owned();
+    let highlight_entity = HighlightEntity::deserialize(highlight_value).ok();
+
+    document.append_highlight(highlight_entity);
+    Ok(document)
 }
 
 fn build_search_query(parameters: &SearchParameters) -> Value {
@@ -120,7 +132,9 @@ fn build_search_query(parameters: &SearchParameters) -> Value {
             },
             "should": {
                 "term": {
-                    "document_extension": "*"
+                    "document_type": "*",
+                    "document_path": "*",
+                    "document_extension": "*",
                 }
             }
         }
@@ -135,6 +149,18 @@ fn build_search_query(parameters: &SearchParameters) -> Value {
             "bool": {
                 "must": match_value,
                 "filter": common_filter
+            }
+        },
+        "highlight" : {
+            "order": "score",
+            "fields" : {
+                "body" : {
+                    "pre_tags" : [""],
+                    "post_tags" : [""]
+                },
+                "matched_fields": [
+                    "entity_data"
+                ],
             }
         }
     })
@@ -163,7 +189,8 @@ fn build_search_similar_query(parameters: &SearchParameters) -> Value {
 mod documents_endpoints {
     use crate::context::SearchContext;
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::wrappers::{Document, SearchParameters};
+    use crate::wrappers::document::Document;
+    use crate::wrappers::search_params::*;
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
