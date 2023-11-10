@@ -1,6 +1,7 @@
 use crate::context::SearchContext;
 use crate::errors::{WebError, WebResponse};
-use crate::wrappers::*;
+use crate::wrappers::document::{Document, HighlightEntity};
+use crate::wrappers::search_params::*;
 
 use actix_web::{post, web};
 use elasticsearch::http::response::Response;
@@ -170,7 +171,8 @@ fn build_search_similar_query(parameters: &SearchParameters) -> Value {
 mod documents_endpoints {
     use crate::context::SearchContext;
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::wrappers::{Document, SearchParameters};
+    use crate::wrappers::document::Document;
+    use crate::wrappers::search_params::*;
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
