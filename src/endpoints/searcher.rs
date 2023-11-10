@@ -73,6 +73,7 @@ async fn search_documents(
         .from(result_offset)
         .size(result_size)
         .body(body_value)
+        .pretty(true)
         .allow_no_indices(true)
         .send()
         .await;
