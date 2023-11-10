@@ -1,6 +1,6 @@
 use crate::context::SearchContext;
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::wrappers::{Bucket, BucketForm};
+use crate::wrappers::bucket::{Bucket, BucketForm};
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
@@ -176,7 +176,7 @@ mod buckets_endpoints {
     use crate::context::SearchContext;
     use crate::errors::{ErrorResponse, SuccessfulResponse};
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::wrappers::Bucket;
+    use crate::wrappers::bucket::Bucket;
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
