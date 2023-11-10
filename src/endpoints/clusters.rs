@@ -1,6 +1,6 @@
 use crate::context::SearchContext;
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::wrappers::{Cluster, ClusterForm};
+use crate::wrappers::cluster::{Cluster, ClusterForm};
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 use elasticsearch::http::{headers::HeaderMap, Method};
