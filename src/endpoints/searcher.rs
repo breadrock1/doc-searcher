@@ -132,7 +132,9 @@ fn build_search_query(parameters: &SearchParameters) -> Value {
             },
             "should": {
                 "term": {
-                    "document_extension": "*"
+                    "document_type": "*",
+                    "document_path": "*",
+                    "document_extension": "*",
                 }
             }
         }
