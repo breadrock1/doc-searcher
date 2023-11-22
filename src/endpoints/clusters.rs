@@ -1,3 +1,5 @@
+
+use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
 use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::cluster::{Cluster, ClusterForm};
@@ -5,36 +7,27 @@ use crate::wrappers::cluster::{Cluster, ClusterForm};
 use actix_web::{delete, get, post, web, HttpResponse};
 
 #[get("/clusters")]
-async fn all_clusters(cxt: web::Data<dyn ServiceClient>) -> WebResponse<web::Json<Vec<Cluster>>> {
+async fn all_clusters(cxt: ContextData) -> WebResponse<web::Json<Vec<Cluster>>> {
     let client = cxt.get_ref();
     client.get_all_clusters().await
 }
 
 #[post("/cluster/new")]
-async fn new_cluster(
-    cxt: web::Data<dyn ServiceClient>,
-    form: web::Json<ClusterForm>,
-) -> HttpResponse {
+async fn new_cluster(cxt: ContextData, form: web::Json<ClusterForm>) -> HttpResponse {
     let cluster_name = form.0.to_string();
     let client = cxt.get_ref();
     client.create_cluster(cluster_name.as_str()).await
 }
 
 #[delete("/cluster/{cluster_name}")]
-async fn delete_cluster(
-    cxt: web::Data<dyn ServiceClient>,
-    path: web::Path<String>,
-) -> HttpResponse {
+async fn delete_cluster(cxt: ContextData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
     let cluster_name = path.to_string();
     client.delete_cluster(cluster_name.as_str()).await
 }
 
 #[get("/cluster/{cluster_name}")]
-async fn get_cluster(
-    cxt: web::Data<dyn ServiceClient>,
-    path: web::Path<String>,
-) -> WebResponse<web::Json<Cluster>> {
+async fn get_cluster(cxt: ContextData, path: web::Path<String>) -> WebResponse<web::Json<Cluster>> {
     let client = cxt.get_ref();
     let cluster_name = format!("/_nodes/{}", path);
     client.get_cluster(cluster_name.as_str()).await
@@ -43,9 +36,9 @@ async fn get_cluster(
 #[cfg(test)]
 mod cluster_endpoints {
     use crate::errors::SuccessfulResponse;
-    use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
+    use crate::service::{build_service, init_service_parameters};
     use crate::wrappers::cluster::Cluster;
 
     use actix_web::test::TestRequest;

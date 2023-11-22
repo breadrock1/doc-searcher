@@ -1,3 +1,4 @@
+use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
 use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::document::Document;
@@ -5,30 +6,21 @@ use crate::wrappers::document::Document;
 use actix_web::{delete, get, post, put, web, HttpResponse};
 
 #[put("/document/update")]
-async fn update_document(
-    cxt: web::Data<dyn ServiceClient>,
-    form: web::Json<Document>,
-) -> HttpResponse {
+async fn update_document(cxt: ContextData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
     client.update_document(&doc_form).await
 }
 
 #[post("/document/new")]
-async fn new_document(
-    cxt: web::Data<dyn ServiceClient>,
-    form: web::Json<Document>,
-) -> HttpResponse {
+async fn new_document(cxt: ContextData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
     client.create_document(&doc_form).await
 }
 
 #[delete("/document/{bucket_name}/{document_id}")]
-async fn delete_document(
-    cxt: web::Data<dyn ServiceClient>,
-    path: web::Path<(String, String)>,
-) -> HttpResponse {
+async fn delete_document(cxt: ContextData, path: web::Path<(String, String)>) -> HttpResponse {
     let client = cxt.get_ref();
     let (bucket_name, doc_id) = path.as_ref();
     client
@@ -38,7 +30,7 @@ async fn delete_document(
 
 #[get("/document/{bucket_name}/{document_id}")]
 async fn get_document(
-    cxt: web::Data<dyn ServiceClient>,
+    cxt: ContextData,
     path: web::Path<(String, String)>,
 ) -> WebResponse<web::Json<Document>> {
     let client = cxt.get_ref();
@@ -51,9 +43,9 @@ async fn get_document(
 #[cfg(test)]
 mod documents_endpoints {
     use crate::errors::{ErrorResponse, SuccessfulResponse};
-    use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
+    use crate::service::{build_service, init_service_parameters};
     use crate::wrappers::document::Document;
 
     use actix_web::test::TestRequest;

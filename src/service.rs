@@ -66,6 +66,7 @@ impl ServiceParameters {
 
 pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     dotenv().ok();
+    build_env_logger();
 
     let es_host = var("ELASTIC_HOST").expect("There is not ELASTIC_HOST env variable!");
     let es_user = var("ELASTIC_USER").expect("There is no ELASTIC_USER env variable!");
@@ -97,6 +98,12 @@ pub fn build_cors_config(origin: &str) -> Cors {
         .allowed_headers(available_headers)
         .allowed_origin(origin)
         .max_age(3600)
+}
+
+pub fn build_env_logger() {
+    let mut env_log = env_logger::Env::new();
+    let env_log = env_log.default_filter_or("info");
+    env_logger::init_from_env(env_log);
 }
 
 pub fn build_service() -> Scope {

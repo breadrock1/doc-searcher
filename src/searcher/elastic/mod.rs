@@ -2,11 +2,11 @@ pub mod client;
 pub mod context;
 pub mod helper;
 
-use elasticsearch::Elasticsearch;
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
 use elasticsearch::http::transport::{BuildError, SingleNodeConnectionPool, TransportBuilder};
 use elasticsearch::http::Url;
+use elasticsearch::Elasticsearch;
 
 pub type ElasticBuildResult = Result<Elasticsearch, BuildError>;
 

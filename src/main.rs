@@ -1,7 +1,7 @@
 mod endpoints;
 mod errors;
-mod service;
 mod searcher;
+mod service;
 mod wrappers;
 
 use crate::searcher::elastic::context::ElasticContext;
@@ -9,6 +9,7 @@ use crate::searcher::own_engine::context::OtherContext;
 use crate::searcher::service_client::ServiceClient;
 use crate::service::{build_cors_config, build_service, init_service_parameters};
 
+use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 
 #[actix_web::main]
@@ -33,9 +34,10 @@ async fn main() -> Result<(), anyhow::Error> {
         let cors_cln = cors_origin.clone();
         let cors = build_cors_config(cors_cln.as_str());
         App::new()
-            .wrap(cors)
             .app_data(web::Data::new(box_cxt))
             .service(build_service())
+            .wrap(Logger::default())
+            .wrap(cors)
     })
     .bind((service_addr, service_port))?
     .run()
