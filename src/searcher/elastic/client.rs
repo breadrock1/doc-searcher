@@ -1,0 +1,349 @@
+use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::searcher::elastic::context::ElasticContext;
+use crate::searcher::elastic::helper::*;
+use crate::searcher::service_client::ServiceClient;
+use crate::wrappers::bucket::{Bucket, BucketForm};
+use crate::wrappers::cluster::Cluster;
+use crate::wrappers::document::Document;
+use crate::wrappers::search_params::SearchParameters;
+
+use actix_web::{web, HttpResponse, ResponseError};
+use elasticsearch::http::headers::HeaderMap;
+use elasticsearch::http::request::JsonBody;
+use elasticsearch::http::Method;
+use elasticsearch::{BulkParts, IndexParts};
+use serde::Deserialize;
+use serde_json::{json, Value};
+
+#[async_trait::async_trait]
+impl ServiceClient for ElasticContext {
+    async fn get_all_clusters(&self) -> WebResponse<web::Json<Vec<Cluster>>> {
+        let elastic = self.get_cxt().read().await;
+        let response_result = elastic
+            .send(
+                Method::Get,
+                "/_cat/nodes",
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            return Err(WebError::GetCluster(err.to_string()));
+        }
+
+        let response = response_result.unwrap();
+        match response.json::<Vec<Cluster>>().await {
+            Err(err) => Err(WebError::from(err)),
+            Ok(clusters) => Ok(web::Json(clusters)),
+        }
+    }
+
+    async fn get_cluster(&self, cluster_id: &str) -> WebResponse<web::Json<Cluster>> {
+        let elastic = self.get_cxt().read().await;
+        let cluster_name = format!("/_nodes/{}", cluster_id);
+        let body = b"";
+        let response_result = elastic
+            .send(
+                Method::Get,
+                cluster_name.as_str(),
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(body.as_ref()),
+                None,
+            )
+            .await;
+
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            return Err(WebError::DeletingCluster(err.to_string()));
+        }
+
+        let response = response_result.unwrap();
+        match response.json::<Cluster>().await {
+            Err(err) => Err(WebError::from(err)),
+            Ok(cluster) => Ok(web::Json(cluster)),
+        }
+    }
+
+    async fn create_cluster(&self, _cluster_id: &str) -> HttpResponse {
+        let msg = "This functionality does not implemented yet!";
+        WebError::CreateCluster(msg.to_string()).error_response()
+    }
+
+    async fn delete_cluster(&self, cluster_id: &str) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let json_data: Value = json!({
+            "transient": {
+                "cluster.routing.allocation.exclude._ip": cluster_id
+            }
+        });
+
+        let body = json_data.as_str();
+        if body.is_none() {
+            let msg = String::from("Json body is None");
+            return WebError::DeletingCluster(msg).error_response();
+        }
+
+        let body = body.unwrap().as_bytes();
+        let response_result = elastic
+            .send(
+                Method::Put,
+                "/_cluster/settings",
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(body),
+                None,
+            )
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => WebError::DeletingCluster(err.to_string()).error_response(),
+        }
+    }
+
+    async fn get_all_buckets(&self) -> WebResponse<web::Json<Vec<Bucket>>> {
+        let elastic = self.get_cxt().read().await;
+        let response_result = elastic
+            .send(
+                Method::Get,
+                "/_cat/indices?format=json",
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            return Err(WebError::from(err));
+        }
+
+        let response = response_result.unwrap();
+        match response.json::<Vec<Bucket>>().await {
+            Err(err) => Err(WebError::from(err)),
+            Ok(buckets) => Ok(web::Json(buckets)),
+        }
+    }
+
+    async fn get_bucket(&self, bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
+        let elastic = self.get_cxt().read().await;
+        let bucket_name = format!("/{}/_stats", bucket_id);
+        let response_result = elastic
+            .send(
+                Method::Get,
+                bucket_name.as_str(),
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            return Err(WebError::from(err));
+        }
+
+        let response = response_result.unwrap();
+        let json_value = response.json::<Value>().await.unwrap();
+        match extract_bucket_stats(&json_value) {
+            Ok(bucket) => Ok(web::Json(bucket)),
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let response_result = elastic
+            .send(
+                Method::Delete,
+                bucket_id,
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => WebError::DeleteBucket(err.to_string()).error_response(),
+        }
+    }
+
+    async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let bucket_name = bucket_form.get_name();
+        let digest = md5::compute(bucket_name);
+        let id_str = format!("{:x}", digest);
+        let bucket_schema: Value = serde_json::from_str(create_bucket_scheme().as_str()).unwrap();
+        let response_result = elastic
+            .index(IndexParts::IndexId(bucket_name, id_str.as_str()))
+            .body(json!({
+                bucket_name: bucket_schema,
+            }))
+            .send()
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => WebError::CreateBucket(err.to_string()).error_response(),
+        }
+    }
+
+    async fn get_document(
+        &self,
+        bucket_id: &str,
+        doc_id: &str,
+    ) -> WebResponse<web::Json<Document>> {
+        let elastic = self.get_cxt().read().await;
+        let s_path = format!("/{}/_doc/{}", bucket_id, doc_id);
+        let response_result = elastic
+            .send(
+                Method::Get,
+                s_path.as_str(),
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            return Err(WebError::GetDocument(err.to_string()));
+        }
+
+        let response = response_result.unwrap();
+        let common_object = response.json::<Value>().await.unwrap();
+        let document_json = &common_object[&"_source"];
+        match Document::deserialize(document_json) {
+            Ok(document) => Ok(web::Json(document)),
+            Err(err) => Err(WebError::GetDocument(err.to_string())),
+        }
+    }
+
+    async fn create_document(&self, doc_form: &Document) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let bucket_name = &doc_form.bucket_uuid;
+        let document_id = &doc_form.document_md5_hash;
+        let to_value_result = serde_json::to_value(doc_form);
+        if to_value_result.is_err() {
+            let err = to_value_result.err().unwrap();
+            let web_err = WebError::DocumentSerializing(err.to_string());
+            return web_err.error_response();
+        }
+
+        let document_json = to_value_result.unwrap();
+        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
+        body.push(json!({"index": { "_id": document_id.as_str() }}).into());
+        body.push(document_json.into());
+
+        let response_result = elastic
+            .bulk(BulkParts::Index(bucket_name.as_str()))
+            .body(body)
+            .send()
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => WebError::CreateDocument(err.to_string()).error_response(),
+        }
+    }
+
+    async fn update_document(&self, doc_form: &Document) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let bucket_name = &doc_form.bucket_uuid;
+        let document_id = &doc_form.document_md5_hash;
+        let document_json = deserialize_document(doc_form);
+        if document_json.is_err() {
+            let err = document_json.err().unwrap();
+            let web_err = WebError::UpdateDocument(err.to_string());
+            return web_err.error_response();
+        }
+
+        let document_json = document_json.unwrap();
+        let s_path = format!("/{}/_doc/{}", bucket_name, document_id);
+        let response_result = elastic
+            .send(
+                Method::Put,
+                s_path.as_str(),
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(document_json.to_string().as_bytes()),
+                None,
+            )
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => WebError::UpdateDocument(err.to_string()).error_response(),
+        }
+    }
+
+    async fn delete_document(&self, bucket_id: &str, doc_id: &str) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let s_path = format!("/{}/_doc/{}", bucket_id, doc_id);
+        let response_result = elastic
+            .send(
+                Method::Delete,
+                s_path.as_str(),
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => WebError::DeleteDocument(err.to_string()).error_response(),
+        }
+    }
+
+    async fn search_from_all(
+        &self,
+        s_params: &SearchParameters,
+    ) -> WebResponse<web::Json<Vec<Document>>> {
+        let elastic = self.get_cxt().read().await;
+        let body_value = build_search_query(s_params);
+        search_documents(&elastic, &["*"], &body_value, s_params).await
+    }
+
+    async fn search_from_target(
+        &self,
+        buckets_ids: &str,
+        s_params: &SearchParameters,
+    ) -> WebResponse<web::Json<Vec<Document>>> {
+        let elastic = self.get_cxt().read().await;
+        let indexes: Vec<&str> = buckets_ids.split(',').collect();
+        let body_value = build_search_query(s_params);
+        search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
+    }
+
+    async fn similar_from_all(
+        &self,
+        s_params: &SearchParameters,
+    ) -> WebResponse<web::Json<Vec<Document>>> {
+        let elastic = self.get_cxt().read().await;
+        let body_value = build_search_similar_query(s_params);
+        search_documents(&elastic, &["*"], &body_value, s_params).await
+    }
+
+    async fn similar_from_target(
+        &self,
+        buckets_id: &str,
+        s_params: &SearchParameters,
+    ) -> WebResponse<web::Json<Vec<Document>>> {
+        let elastic = self.get_cxt().read().await;
+        let indexes: Vec<&str> = buckets_id.split(',').collect();
+        let body_value = build_search_similar_query(s_params);
+        search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
+    }
+}

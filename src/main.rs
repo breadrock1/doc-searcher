@@ -1,17 +1,18 @@
-mod context;
 mod endpoints;
 mod errors;
-mod es_client;
+mod service;
+mod searcher;
 mod wrappers;
 
-use crate::context::SearchContext;
-use crate::es_client::{build_cors_config, build_elastic, build_service, init_service_parameters};
+use crate::searcher::elastic::context::ElasticContext;
+use crate::searcher::own_engine::context::OtherContext;
+use crate::searcher::service_client::ServiceClient;
+use crate::service::{build_cors_config, build_service, init_service_parameters};
 
 use actix_web::{web, App, HttpServer};
-use elasticsearch::http::transport::BuildError;
 
 #[actix_web::main]
-async fn main() -> Result<(), BuildError> {
+async fn main() -> Result<(), anyhow::Error> {
     let service_parameters = init_service_parameters()?;
     let es_host = service_parameters.es_host();
     let es_user = service_parameters.es_user();
@@ -20,16 +21,20 @@ async fn main() -> Result<(), BuildError> {
     let service_addr = service_parameters.service_address();
     let cors_origin = service_parameters.cors_origin();
 
-    let elastic = build_elastic(es_host, es_user, es_passwd)?;
-    let search_context = SearchContext::_new(elastic);
+    #[cfg(feature = "elastic-search")]
+    let search_context = build_elastic_service(es_host, es_user, es_passwd);
+
+    #[cfg(feature = "default-search")]
+    let search_context = build_client_service(es_host, es_user, es_passwd);
 
     HttpServer::new(move || {
         let cxt = search_context.clone();
+        let box_cxt: Box<dyn ServiceClient> = Box::new(cxt);
         let cors_cln = cors_origin.clone();
         let cors = build_cors_config(cors_cln.as_str());
         App::new()
             .wrap(cors)
-            .app_data(web::Data::new(cxt))
+            .app_data(web::Data::new(box_cxt))
             .service(build_service())
     })
     .bind((service_addr, service_port))?
@@ -37,4 +42,17 @@ async fn main() -> Result<(), BuildError> {
     .await?;
 
     Ok(())
+}
+
+#[cfg(feature = "elastic-search")]
+fn build_elastic_service(es_host: &str, es_user: &str, es_passwd: &str) -> ElasticContext {
+    use crate::searcher::elastic::build_elastic_client;
+    let client = build_elastic_client(es_host, es_user, es_passwd);
+    ElasticContext::_new(client.unwrap())
+}
+
+#[cfg(feature = "default-search")]
+fn build_client_service(es_host: &str, es_user: &str, es_passwd: &str) -> OtherContext {
+    use crate::searcher::own_engine::build_own_client;
+    build_own_client(es_host, es_user, es_passwd)?
 }

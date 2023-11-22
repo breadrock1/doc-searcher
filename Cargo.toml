@@ -5,7 +5,13 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+elastic-search = []
+default-search = []
+default = ["elastic-search"]
+
 [dependencies]
+anyhow = "1.0.75"
 actix-web = "^4.3"
 actix-cors = "0.6.4"
 dotenv = "^0.15"
@@ -16,6 +22,7 @@ serde = "~1"
 serde_json = "~1"
 serde_derive = "^1.0"
 thiserror = "^1.0"
+async-trait = "0.1.74"
 
 [dependencies.chrono]
 version = "^0.4"

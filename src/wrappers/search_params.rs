@@ -73,7 +73,7 @@ pub struct MainQueryNode {
     query: SearchQuery,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SearchParameters {
     pub query: String,
     pub document_type: String,

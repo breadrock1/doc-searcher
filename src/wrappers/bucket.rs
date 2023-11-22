@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct Bucket {
     pub health: String,
     pub status: String,
@@ -58,5 +58,11 @@ impl ToString for BucketForm {
     fn to_string(&self) -> String {
         let self_data = &self.bucket_name;
         self_data.clone()
+    }
+}
+
+impl BucketForm {
+    pub fn get_name(&self) -> &str {
+        self.bucket_name.as_str()
     }
 }

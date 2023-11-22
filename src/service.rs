@@ -2,58 +2,14 @@ use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_buck
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::hello::hello;
-use crate::endpoints::searcher::{
-    search_all, search_similar_docs, search_similar_docs_target, search_target,
-};
+use crate::endpoints::searcher::{search_all, search_target};
+use crate::endpoints::similarities::{search_similar_docs, search_similar_docs_target};
 
 use actix_cors::Cors;
 use actix_web::{http::header, web, Scope};
 use dotenv::dotenv;
-use elasticsearch::auth::Credentials;
-use elasticsearch::cert::CertificateValidation;
-use elasticsearch::http::transport::{BuildError, SingleNodeConnectionPool, TransportBuilder};
-use elasticsearch::http::Url;
-use elasticsearch::Elasticsearch;
 use std::env::var;
 use std::str::FromStr;
-
-pub fn build_elastic(
-    es_host: &str,
-    es_user: &str,
-    es_passwd: &str,
-) -> Result<Elasticsearch, BuildError> {
-    let es_url = Url::parse(es_host).unwrap();
-    let conn_pool = SingleNodeConnectionPool::new(es_url);
-    let creds = Credentials::Basic(es_user.into(), es_passwd.into());
-    let validation = CertificateValidation::None;
-    let transport = TransportBuilder::new(conn_pool)
-        .auth(creds)
-        .cert_validation(validation)
-        .build()?;
-
-    Ok(Elasticsearch::new(transport))
-}
-
-pub fn build_service() -> Scope {
-    web::scope("/searcher")
-        .service(hello)
-        .service(new_cluster)
-        .service(delete_cluster)
-        .service(all_clusters)
-        .service(get_cluster)
-        .service(new_bucket)
-        .service(delete_bucket)
-        .service(all_buckets)
-        .service(get_bucket)
-        .service(new_document)
-        .service(delete_document)
-        .service(update_document)
-        .service(get_document)
-        .service(search_target)
-        .service(search_all)
-        .service(search_similar_docs)
-        .service(search_similar_docs_target)
-}
 
 pub struct ServiceParameters {
     es_host: String,
@@ -108,7 +64,7 @@ impl ServiceParameters {
     }
 }
 
-pub fn init_service_parameters() -> Result<ServiceParameters, BuildError> {
+pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     dotenv().ok();
 
     let es_host = var("ELASTIC_HOST").expect("There is not ELASTIC_HOST env variable!");
@@ -141,4 +97,25 @@ pub fn build_cors_config(origin: &str) -> Cors {
         .allowed_headers(available_headers)
         .allowed_origin(origin)
         .max_age(3600)
+}
+
+pub fn build_service() -> Scope {
+    web::scope("/searcher")
+        .service(hello)
+        .service(new_cluster)
+        .service(delete_cluster)
+        .service(all_clusters)
+        .service(get_cluster)
+        .service(new_bucket)
+        .service(delete_bucket)
+        .service(all_buckets)
+        .service(get_bucket)
+        .service(new_document)
+        .service(delete_document)
+        .service(update_document)
+        .service(get_document)
+        .service(search_target)
+        .service(search_all)
+        .service(search_similar_docs)
+        .service(search_similar_docs_target)
 }

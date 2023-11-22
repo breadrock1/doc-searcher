@@ -34,8 +34,6 @@ pub enum WebError {
     SearchFailed(String),
     #[error("Response error: {0}")]
     ResponseError(String),
-    #[error("Failed while parsing bucket: {0}")]
-    BucketParsing(String),
 }
 
 impl WebError {
@@ -50,7 +48,6 @@ impl WebError {
             WebError::UpdateDocument(_) => "UpdateDocumentError",
             WebError::DeleteDocument(_) => "DeleteDocumentError",
             WebError::DocumentSerializing(_) => "DocumentSerializingError",
-            WebError::BucketParsing(_) => "BucketParsingError",
             _ => "RuntimeError",
         }
         .to_string()

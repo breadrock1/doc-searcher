@@ -5,18 +5,18 @@ use crate::wrappers::search_params::*;
 
 use actix_web::{post, web};
 
-#[post("/search")]
-async fn search_all(
+#[post("/search-similar")]
+async fn search_similar_docs(
     cxt: web::Data<dyn ServiceClient>,
     form: web::Json<SearchParameters>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.search_from_all(&search_form).await
+    client.similar_from_all(&search_form).await
 }
 
-#[post("/search/{bucket_names}")]
-async fn search_target(
+#[post("/search-similar/{bucket_names}")]
+async fn search_similar_docs_target(
     cxt: web::Data<dyn ServiceClient>,
     path: web::Path<String>,
     form: web::Json<SearchParameters>,
@@ -25,12 +25,12 @@ async fn search_target(
     let search_form = form.0;
     let buckets = path.as_ref();
     client
-        .search_from_target(buckets.as_str(), &search_form)
+        .similar_from_target(buckets.as_str(), &search_form)
         .await
 }
 
 #[cfg(test)]
-mod searcher_endpoints {
+mod similarities_endpoints {
     use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;

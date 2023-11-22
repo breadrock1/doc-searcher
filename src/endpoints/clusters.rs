@@ -1,123 +1,52 @@
-use crate::context::SearchContext;
-use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::errors::WebResponse;
+use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::cluster::{Cluster, ClusterForm};
 
-use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
-use elasticsearch::http::{headers::HeaderMap, Method};
-use serde_json::{json, Value};
+use actix_web::{delete, get, post, web, HttpResponse};
 
 #[get("/clusters")]
-async fn all_clusters(cxt: web::Data<SearchContext>) -> WebResponse<web::Json<Vec<Cluster>>> {
-    let elastic = cxt.get_cxt().read().await;
-    let response_result = elastic
-        .send(
-            Method::Get,
-            "/_cat/nodes",
-            HeaderMap::new(),
-            Option::<&Value>::None,
-            Some(b"".as_ref()),
-            None,
-        )
-        .await;
-
-    if response_result.is_err() {
-        let err = response_result.err().unwrap();
-        return Err(WebError::from(err));
-    }
-
-    let response = response_result.unwrap();
-    match response.json::<Vec<Cluster>>().await {
-        Ok(json_clusters) => Ok(web::Json(json_clusters)),
-        Err(err) => Err(WebError::GetCluster(err.to_string())),
-    }
+async fn all_clusters(cxt: web::Data<dyn ServiceClient>) -> WebResponse<web::Json<Vec<Cluster>>> {
+    let client = cxt.get_ref();
+    client.get_all_clusters().await
 }
 
 #[post("/cluster/new")]
-async fn new_cluster(cxt: web::Data<SearchContext>, form: web::Json<ClusterForm>) -> HttpResponse {
-    let _elastic = cxt.get_cxt().read().await;
-    let _cluster_name = form.0;
-
-    // TODO: Add executing command from cli.
-    let msg = "This method is not implemented yet";
-    let web_err = WebError::CreateCluster(msg.to_string());
-    web_err.error_response()
+async fn new_cluster(
+    cxt: web::Data<dyn ServiceClient>,
+    form: web::Json<ClusterForm>,
+) -> HttpResponse {
+    let cluster_name = form.0.to_string();
+    let client = cxt.get_ref();
+    client.create_cluster(cluster_name.as_str()).await
 }
 
 #[delete("/cluster/{cluster_name}")]
-async fn delete_cluster(cxt: web::Data<SearchContext>, path: web::Path<String>) -> HttpResponse {
-    let elastic = cxt.get_cxt().read().await;
+async fn delete_cluster(
+    cxt: web::Data<dyn ServiceClient>,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let client = cxt.get_ref();
     let cluster_name = path.to_string();
-    let json_data: Value = json!({
-        "transient": {
-            "cluster.routing.allocation.exclude._ip": cluster_name
-        }
-    });
-
-    let body = json_data.as_str();
-    if body.is_none() {
-        let msg = String::from("Json body is None");
-        let web_err = WebError::DeletingCluster(msg);
-        return web_err.error_response();
-    }
-
-    let body = body.unwrap().as_bytes();
-    let response_result = elastic
-        .send(
-            Method::Put,
-            "/_cluster/settings",
-            HeaderMap::new(),
-            Option::<&Value>::None,
-            Some(body),
-            None,
-        )
-        .await;
-
-    match response_result {
-        Ok(_) => SuccessfulResponse::ok_response("Ok"),
-        Err(err) => {
-            let web_err = WebError::DeletingCluster(err.to_string());
-            web_err.error_response()
-        }
-    }
+    client.delete_cluster(cluster_name.as_str()).await
 }
 
 #[get("/cluster/{cluster_name}")]
 async fn get_cluster(
-    cxt: web::Data<SearchContext>,
+    cxt: web::Data<dyn ServiceClient>,
     path: web::Path<String>,
-) -> WebResponse<web::Json<Value>> {
-    let elastic = cxt.get_cxt().read().await;
-    let cluster_name = format!("/_nodes/{}", path.to_string());
-    let body = b"";
-    let response_result = elastic
-        .send(
-            Method::Get,
-            cluster_name.as_str(),
-            HeaderMap::new(),
-            Option::<&Value>::None,
-            Some(body.as_ref()),
-            None,
-        )
-        .await;
-
-    if response_result.is_err() {
-        let err = response_result.err().unwrap();
-        return Err(WebError::from(err));
-    }
-
-    let response = response_result.unwrap();
-    match response.json::<Value>().await {
-        Ok(cluster_info) => Ok(web::Json(cluster_info)),
-        Err(err) => Err(WebError::GetCluster(err.to_string())),
-    }
+) -> WebResponse<web::Json<Cluster>> {
+    let client = cxt.get_ref();
+    let cluster_name = format!("/_nodes/{}", path);
+    client.get_cluster(cluster_name.as_str()).await
 }
 
 #[cfg(test)]
 mod cluster_endpoints {
-    use crate::context::SearchContext;
     use crate::errors::SuccessfulResponse;
-    use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::wrappers::Cluster;
+    use crate::service::{build_service, init_service_parameters};
+    use crate::searcher::elastic::build_elastic_client;
+    use crate::searcher::elastic::context::ElasticContext;
+    use crate::wrappers::cluster::Cluster;
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
@@ -132,8 +61,8 @@ mod cluster_endpoints {
         let service_port = service_parameters.service_port();
         let service_addr = service_parameters.service_address();
 
-        let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
-        let cxt = SearchContext::_new(elastic);
+        let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
+        let cxt = ElasticContext::_new(elastic);
         let app = App::new()
             .app_data(web::Data::new(cxt))
             .service(build_service());
