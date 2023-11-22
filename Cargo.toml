@@ -11,6 +11,7 @@ default-search = []
 default = ["elastic-search"]
 
 [dependencies]
+anyhow = "1.0.75"
 actix-web = "^4.3"
 actix-cors = "0.6.4"
 dotenv = "^0.15"
