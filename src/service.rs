@@ -66,6 +66,7 @@ impl ServiceParameters {
 
 pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     dotenv().ok();
+    build_env_logger();
 
     let es_host = var("ELASTIC_HOST").expect("There is not ELASTIC_HOST env variable!");
     let es_user = var("ELASTIC_USER").expect("There is no ELASTIC_USER env variable!");
