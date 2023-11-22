@@ -1,10 +1,10 @@
+use crate::endpoints::ContextData;
 use crate::errors::SuccessfulResponse;
-use crate::searcher::service_client::ServiceClient;
 
-use actix_web::{get, web, HttpResponse};
+use actix_web::{get, HttpResponse};
 
 #[get("/hello")]
-async fn hello(cxt: web::Data<&dyn ServiceClient>) -> HttpResponse {
+async fn hello(cxt: ContextData) -> HttpResponse {
     let _client = cxt.get_ref();
     SuccessfulResponse::ok_response("Ok")
 }
