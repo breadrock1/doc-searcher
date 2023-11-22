@@ -99,6 +99,12 @@ pub fn build_cors_config(origin: &str) -> Cors {
         .max_age(3600)
 }
 
+pub fn build_env_logger() {
+    let mut env_log = env_logger::Env::new();
+    let env_log = env_log.default_filter_or("info");
+    env_logger::init_from_env(env_log);
+}
+
 pub fn build_service() -> Scope {
     web::scope("/searcher")
         .service(hello)
