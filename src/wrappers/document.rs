@@ -17,13 +17,13 @@ pub struct Document {
     pub entity_keywords: Vec<String>,
     pub highlight: Option<HighlightEntity>,
     #[serde(
-    serialize_with = "serialize_dt",
-    skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_dt",
+        skip_serializing_if = "Option::is_none"
     )]
     pub document_created: Option<DateTime<Utc>>,
     #[serde(
-    serialize_with = "serialize_dt",
-    skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_dt",
+        skip_serializing_if = "Option::is_none"
     )]
     pub document_modified: Option<DateTime<Utc>>,
 }
@@ -40,8 +40,8 @@ impl Document {
 }
 
 pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+where
+    S: Serializer,
 {
     if let Some(dt) = dt {
         dt.format("%Y-%m-%dT%H:%M:%SZ")
