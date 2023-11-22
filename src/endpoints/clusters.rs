@@ -43,7 +43,8 @@ async fn get_cluster(
 #[cfg(test)]
 mod cluster_endpoints {
     use crate::errors::SuccessfulResponse;
-    use crate::es_client::{build_elastic, build_service, init_service_parameters};
+    use crate::service::{build_service, init_service_parameters};
+    use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
     use crate::wrappers::cluster::Cluster;
 
@@ -60,7 +61,7 @@ mod cluster_endpoints {
         let service_port = service_parameters.service_port();
         let service_addr = service_parameters.service_address();
 
-        let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
+        let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
         let cxt = ElasticContext::_new(elastic);
         let app = App::new()
             .app_data(web::Data::new(cxt))
