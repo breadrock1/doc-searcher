@@ -38,9 +38,9 @@ async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> WebResponse<we
 #[cfg(test)]
 mod buckets_endpoints {
     use crate::errors::{ErrorResponse, SuccessfulResponse};
-    use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
+    use crate::service::{build_service, init_service_parameters};
     use crate::wrappers::bucket::Bucket;
 
     use actix_web::test::TestRequest;

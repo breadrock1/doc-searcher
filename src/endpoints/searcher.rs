@@ -32,9 +32,9 @@ async fn search_target(
 
 #[cfg(test)]
 mod searcher_endpoints {
-    use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
+    use crate::service::{build_service, init_service_parameters};
     use crate::wrappers::document::Document;
     use crate::wrappers::search_params::*;
 

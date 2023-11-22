@@ -36,9 +36,9 @@ async fn get_cluster(cxt: ContextData, path: web::Path<String>) -> WebResponse<w
 #[cfg(test)]
 mod cluster_endpoints {
     use crate::errors::SuccessfulResponse;
-    use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
+    use crate::service::{build_service, init_service_parameters};
     use crate::wrappers::cluster::Cluster;
 
     use actix_web::test::TestRequest;

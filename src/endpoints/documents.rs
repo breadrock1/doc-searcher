@@ -43,9 +43,9 @@ async fn get_document(
 #[cfg(test)]
 mod documents_endpoints {
     use crate::errors::{ErrorResponse, SuccessfulResponse};
-    use crate::service::{build_service, init_service_parameters};
     use crate::searcher::elastic::build_elastic_client;
     use crate::searcher::elastic::context::ElasticContext;
+    use crate::service::{build_service, init_service_parameters};
     use crate::wrappers::document::Document;
 
     use actix_web::test::TestRequest;
