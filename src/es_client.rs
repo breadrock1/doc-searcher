@@ -2,9 +2,8 @@ use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_buck
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::hello::hello;
-use crate::endpoints::searcher::{
-    search_all, search_similar_docs, search_similar_docs_target, search_target,
-};
+use crate::endpoints::searcher::{search_all, search_target};
+use crate::endpoints::similarities::{search_similar_docs, search_similar_docs_target};
 
 use actix_cors::Cors;
 use actix_web::{http::header, web, Scope};
@@ -17,11 +16,9 @@ use elasticsearch::Elasticsearch;
 use std::env::var;
 use std::str::FromStr;
 
-pub fn build_elastic(
-    es_host: &str,
-    es_user: &str,
-    es_passwd: &str,
-) -> Result<Elasticsearch, BuildError> {
+pub type ElasticBuildResult = Result<Elasticsearch, BuildError>;
+
+pub fn build_elastic(es_host: &str, es_user: &str, es_passwd: &str) -> ElasticBuildResult {
     let es_url = Url::parse(es_host).unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
     let creds = Credentials::Basic(es_user.into(), es_passwd.into());
