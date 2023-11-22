@@ -1,194 +1,38 @@
-use crate::context::SearchContext;
-use crate::errors::{WebError, WebResponse};
-use crate::wrappers::document::{Document, HighlightEntity};
+use crate::errors::WebResponse;
+use crate::searcher::service_client::ServiceClient;
+use crate::wrappers::document::Document;
 use crate::wrappers::search_params::*;
 
 use actix_web::{post, web};
-use elasticsearch::http::response::Response;
-use elasticsearch::{Elasticsearch, SearchParts};
-use serde::Deserialize;
-use serde_json::{json, Value};
 
 #[post("/search")]
 async fn search_all(
-    cxt: web::Data<SearchContext>,
+    cxt: web::Data<dyn ServiceClient>,
     form: web::Json<SearchParameters>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
-    let elastic = cxt.get_cxt().read().await;
-    let es_parameters = &form.0;
-    let build_query_fn = |params: &SearchParameters| -> Value { build_search_query(params) };
-    search_documents(&elastic, es_parameters, &["*"], &build_query_fn).await
+    let client = cxt.get_ref();
+    let search_form = form.0;
+    client.search_from_all(&search_form).await
 }
 
 #[post("/search/{bucket_names}")]
 async fn search_target(
-    cxt: web::Data<SearchContext>,
+    cxt: web::Data<dyn ServiceClient>,
     path: web::Path<String>,
     form: web::Json<SearchParameters>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
-    let elastic = cxt.get_cxt().read().await;
-    let es_parameters = &form.0;
-    let indexes: Vec<&str> = path.split(',').collect();
-    let build_query_fn = |params: &SearchParameters| -> Value { build_search_query(params) };
-    search_documents(&elastic, es_parameters, indexes.as_slice(), &build_query_fn).await
-}
-
-#[post("/search-similar")]
-async fn search_similar_docs(
-    cxt: web::Data<SearchContext>,
-    form: web::Json<SearchParameters>,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let elastic = cxt.get_cxt().read().await;
-    let es_parameters = &form.0;
-    let build_query_fn =
-        |params: &SearchParameters| -> Value { build_search_similar_query(params) };
-    search_documents(&elastic, es_parameters, &["*"], &build_query_fn).await
-}
-
-#[post("/search-similar/{bucket_names}")]
-async fn search_similar_docs_target(
-    cxt: web::Data<SearchContext>,
-    path: web::Path<String>,
-    form: web::Json<SearchParameters>,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let elastic = cxt.get_cxt().read().await;
-    let es_parameters = &form.0;
-    let indexes: Vec<&str> = path.split(',').collect();
-    let build_query_fn =
-        |params: &SearchParameters| -> Value { build_search_similar_query(params) };
-    search_documents(&elastic, es_parameters, indexes.as_slice(), &build_query_fn).await
-}
-
-async fn search_documents(
-    elastic: &Elasticsearch,
-    es_parameters: &SearchParameters,
-    indexes: &[&str],
-    build_query_fn: &dyn Fn(&SearchParameters) -> Value,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let result_size = es_parameters.result_size;
-    let result_offset = es_parameters.result_offset;
-    let body_value = build_query_fn(es_parameters);
-    let response_result = elastic
-        .search(SearchParts::Index(indexes))
-        .from(result_offset)
-        .size(result_size)
-        .body(body_value)
-        .pretty(true)
-        .allow_no_indices(true)
-        .send()
-        .await;
-
-    match response_result {
-        Err(err) => {
-            let web_err = WebError::SearchFailed(err.to_string());
-            Err(web_err)
-        }
-        Ok(response) => {
-            let documents = parse_search_result(response).await;
-            Ok(web::Json(documents))
-        }
-    }
-}
-
-async fn parse_search_result(response: Response) -> Vec<Document> {
-    let common_object = response.json::<Value>().await.unwrap();
-    let document_json = &common_object[&"hits"][&"hits"];
-    let own_document = document_json.to_owned();
-    let default_vec: Vec<Value> = Vec::default();
-    let json_array = own_document.as_array().unwrap_or(&default_vec);
-
-    json_array
-        .iter()
-        .map(parse_document_highlight)
-        .map(Result::ok)
-        .filter(Option::is_some)
-        .flatten()
-        .collect()
-}
-
-fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
-    let source_value = value[&"_source"].to_owned();
-    let mut document = Document::deserialize(source_value)?;
-
-    let highlight_value = value[&"highlight"].to_owned();
-    let highlight_entity = HighlightEntity::deserialize(highlight_value).ok();
-
-    document.append_highlight(highlight_entity);
-    Ok(document)
-}
-
-fn build_search_query(parameters: &SearchParameters) -> Value {
-    let doc_size_to = parameters.document_size_to;
-    let doc_size_from = parameters.document_size_from;
-    let doc_size_query = DocumentSizeQuery::new(doc_size_from, doc_size_to);
-    let doc_size_value = serde_json::to_value(doc_size_query).unwrap();
-
-    let common_filter = json!({
-        "bool": {
-            "must": {
-                "range": {
-                    "document_size": doc_size_value,
-                },
-            },
-            "should": {
-                "term": {
-                    "document_type": "*",
-                    "document_path": "*",
-                    "document_extension": "*",
-                }
-            }
-        }
-    });
-
-    let query_str = QueryString::new(parameters.query.clone());
-    let match_query = MultiMatchQuery::new(query_str);
-    let match_value = serde_json::to_value(match_query).unwrap();
-
-    json!({
-        "query": {
-            "bool": {
-                "must": match_value,
-                "filter": common_filter
-            }
-        },
-        "highlight" : {
-            "order": "score",
-            "fields" : {
-                "body" : {
-                    "pre_tags" : [""],
-                    "post_tags" : [""]
-                },
-                "matched_fields": [
-                    "entity_data"
-                ],
-            }
-        }
-    })
-}
-
-fn build_search_similar_query(parameters: &SearchParameters) -> Value {
-    let ssdeep_hash = &parameters.query;
-    println!("Need find by this: {:?}", ssdeep_hash);
-    json!({
-        "query": {
-            "more_like_this" : {
-                "fields" : [
-                    "entity_data",
-                    "document_ssdeep_hash",
-                ],
-                "like" : ssdeep_hash,
-                "min_doc_freq": 1,
-                "min_term_freq" : 1,
-                "max_query_terms" : 25,
-            }
-        }
-    })
+    let client = cxt.get_ref();
+    let search_form = form.0;
+    let buckets = path.as_ref();
+    client
+        .search_from_target(buckets.as_str(), &search_form)
+        .await
 }
 
 #[cfg(test)]
-mod documents_endpoints {
-    use crate::context::SearchContext;
+mod searcher_endpoints {
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
+    use crate::searcher::elastic::context::ElasticContext;
     use crate::wrappers::document::Document;
     use crate::wrappers::search_params::*;
 
@@ -206,7 +50,7 @@ mod documents_endpoints {
         let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic(es_host, es_user, es_passwd).unwrap();
-        let cxt = SearchContext::_new(elastic);
+        let cxt = ElasticContext::_new(elastic);
         let app = App::new()
             .app_data(web::Data::new(cxt))
             .service(build_service());
