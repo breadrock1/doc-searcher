@@ -1,3 +1,4 @@
+use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
 use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::bucket::{Bucket, BucketForm};
@@ -5,7 +6,7 @@ use crate::wrappers::bucket::{Bucket, BucketForm};
 use actix_web::{delete, get, post, web, HttpResponse};
 
 #[get("/buckets")]
-async fn all_buckets(cxt: web::Data<&dyn ServiceClient>) -> WebResponse<web::Json<Vec<Bucket>>> {
+async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
     let client = cxt.get_ref();
     client.get_all_buckets().await
 }
@@ -21,17 +22,14 @@ async fn new_bucket(
 }
 
 #[delete("/bucket/{bucket_name}")]
-async fn delete_bucket(cxt: web::Data<dyn ServiceClient>, path: web::Path<String>) -> HttpResponse {
+async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_name = path.to_string();
     client.delete_bucket(bucket_name.as_str()).await
 }
 
 #[get("/bucket/{bucket_name}")]
-async fn get_bucket(
-    cxt: web::Data<dyn ServiceClient>,
-    path: web::Path<String>,
-) -> WebResponse<web::Json<Bucket>> {
+async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> WebResponse<web::Json<Bucket>> {
     let client = cxt.get_ref();
     let bucket_name = format!("/{}/_stats", path);
     client.get_bucket(bucket_name.as_str()).await
