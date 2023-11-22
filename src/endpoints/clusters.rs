@@ -44,7 +44,7 @@ async fn get_cluster(
 mod cluster_endpoints {
     use crate::errors::SuccessfulResponse;
     use crate::es_client::{build_elastic, build_service, init_service_parameters};
-    use crate::searcher::elastic::client::ElasticContext;
+    use crate::searcher::elastic::context::ElasticContext;
     use crate::wrappers::cluster::Cluster;
 
     use actix_web::test::TestRequest;
