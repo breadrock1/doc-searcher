@@ -1,11 +1,11 @@
-use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::errors::{SuccessfulResponse, WebError};
 use crate::searcher::elastic::context::ElasticContext;
 use crate::searcher::elastic::helper::*;
-use crate::searcher::service_client::ServiceClient;
+use crate::searcher::service_client::{JsonResponse, ServiceClient};
 use crate::wrappers::bucket::{Bucket, BucketForm};
 use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
-use crate::wrappers::search_params::SearchParameters;
+use crate::wrappers::search_params::SearchParams;
 
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
@@ -17,7 +17,7 @@ use serde_json::{json, Value};
 
 #[async_trait::async_trait]
 impl ServiceClient for ElasticContext {
-    async fn get_all_clusters(&self) -> WebResponse<web::Json<Vec<Cluster>>> {
+    async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .send(
@@ -42,7 +42,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_cluster(&self, cluster_id: &str) -> WebResponse<web::Json<Cluster>> {
+    async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
         let cluster_name = format!("/_nodes/{}", cluster_id);
         let body = b"";
@@ -106,7 +106,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_all_buckets(&self) -> WebResponse<web::Json<Vec<Bucket>>> {
+    async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .send(
@@ -131,7 +131,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_bucket(&self, bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
+    async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket> {
         let elastic = self.get_cxt().read().await;
         let bucket_name = format!("/{}/_stats", bucket_id);
         let response_result = elastic
@@ -184,7 +184,7 @@ impl ServiceClient for ElasticContext {
         let id_str = format!("{:x}", digest);
         let bucket_schema: Value = serde_json::from_str(create_bucket_scheme().as_str()).unwrap();
         let response_result = elastic
-            .index(IndexParts::IndexId(bucket_name, id_str.as_str()))
+            .index(IndexParts::IndexId(bucket_name, id_str))
             .body(json!({
                 bucket_name: bucket_schema,
             }))
@@ -197,11 +197,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_document(
-        &self,
-        bucket_id: &str,
-        doc_id: &str,
-    ) -> WebResponse<web::Json<Document>> {
+    async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let elastic = self.get_cxt().read().await;
         let s_path = format!("/{}/_doc/{}", bucket_id, doc_id);
         let response_result = elastic
