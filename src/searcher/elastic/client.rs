@@ -312,31 +312,28 @@ impl ServiceClient for ElasticContext {
         search_documents(&elastic, &["*"], &body_value, s_params).await
     }
 
-    async fn search_from_target(
+    async fn search_bucket(
         &self,
         buckets_ids: &str,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+        s_params: &SearchParams,
+    ) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let indexes: Vec<&str> = buckets_ids.split(',').collect();
         let body_value = build_search_query(s_params);
         search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
     }
 
-    async fn similar_from_all(
-        &self,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_similar_query(s_params);
         search_documents(&elastic, &["*"], &body_value, s_params).await
     }
 
-    async fn similar_from_target(
+    async fn similar_bucket(
         &self,
         buckets_id: &str,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+        s_params: &SearchParams,
+    ) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let indexes: Vec<&str> = buckets_id.split(',').collect();
         let body_value = build_search_similar_query(s_params);
