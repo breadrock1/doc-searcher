@@ -4,7 +4,7 @@ use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::bucket::{Bucket, BucketForm};
 use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
-use crate::wrappers::search_params::SearchParameters;
+use crate::wrappers::search_params::SearchParams;
 
 use actix_web::{web, HttpResponse};
 
@@ -66,28 +66,27 @@ impl ServiceClient for OtherContext {
         &self,
         _s_params: &SearchParameters,
     ) -> WebResponse<web::Json<Vec<Document>>> {
+
+    async fn search_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
         Ok(web::Json(Vec::default()))
     }
 
     async fn search_from_target(
         &self,
         _bucket_id: &str,
-        _s_params: &SearchParameters,
+        _s_params: &SearchParams,
     ) -> WebResponse<web::Json<Vec<Document>>> {
         Ok(web::Json(Vec::default()))
     }
 
-    async fn similar_from_all(
-        &self,
-        _s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn similar_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
         Ok(web::Json(Vec::default()))
     }
 
     async fn similar_from_target(
         &self,
         _bucket_id: &str,
-        _s_params: &SearchParameters,
+        _s_params: &SearchParams,
     ) -> WebResponse<web::Json<Vec<Document>>> {
         Ok(web::Json(Vec::default()))
     }
