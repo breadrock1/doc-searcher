@@ -231,7 +231,7 @@ mod documents_endpoints {
         ];
 
         let test_app = test::init_service(app).await;
-        let test_bucket_name = "docs";
+        let test_bucket_name = "test_bucket";
         for document_index in 1..20 {
             let document_size = 1024 + document_index * 10;
             let test_document_name = &format!("test_document_{}", document_index);
