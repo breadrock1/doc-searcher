@@ -9,7 +9,7 @@ use actix_web::{post, web};
 #[post("/search")]
 async fn search_all(
     cxt: ContextData,
-    form: web::Json<SearchParameters>,
+    form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
@@ -20,7 +20,7 @@ async fn search_all(
 async fn search_target(
     cxt: ContextData,
     path: web::Path<String>,
-    form: web::Json<SearchParameters>,
+    form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
@@ -110,7 +110,7 @@ mod searcher_endpoints {
         assert_eq!(founded_documents.len() >= 1, true);
 
         // Found documents request by document name and bucket name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         let search_resp = TestRequest::post()
             .uri(&format!("/searcher/search/{}", test_bucket_name))
@@ -122,7 +122,7 @@ mod searcher_endpoints {
         assert_eq!(founded_documents.len() >= 4, true);
 
         // Found documents request by document name and bucket name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "does not skip".to_string();
         let search_resp = TestRequest::post()
             .uri("/searcher/search")
