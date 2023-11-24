@@ -1,4 +1,3 @@
-
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
 use crate::searcher::service_client::ServiceClient;
