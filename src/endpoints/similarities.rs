@@ -85,7 +85,7 @@ mod similarities_endpoints {
         }
 
         // Found documents request by document name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         let search_resp = TestRequest::post()
             .uri("/searcher/search")
@@ -97,7 +97,7 @@ mod similarities_endpoints {
         assert_eq!(founded_documents.len() > 0, true);
 
         // Found documents request by document name with filter
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         search_params.document_size_from = 1026;
         let search_resp = TestRequest::post()
@@ -110,7 +110,7 @@ mod similarities_endpoints {
         assert_eq!(founded_documents.len() >= 1, true);
 
         // Found documents request by document name and bucket name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         let search_resp = TestRequest::post()
             .uri(&format!("/searcher/search/{}", test_bucket_name))
@@ -122,7 +122,7 @@ mod similarities_endpoints {
         assert_eq!(founded_documents.len() >= 4, true);
 
         // Found documents request by document name and bucket name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "does not skip".to_string();
         let search_resp = TestRequest::post()
             .uri("/searcher/search")
