@@ -74,7 +74,7 @@ pub struct MainQueryNode {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct SearchParameters {
+pub struct SearchParams {
     pub query: String,
     pub document_type: String,
     pub document_path: String,
@@ -87,9 +87,9 @@ pub struct SearchParameters {
     pub result_offset: i64,
 }
 
-impl Default for SearchParameters {
+impl Default for SearchParams {
     fn default() -> Self {
-        SearchParameters {
+        SearchParams {
             query: "*".to_string(),
             document_type: "*".to_string(),
             document_path: "*".to_string(),
