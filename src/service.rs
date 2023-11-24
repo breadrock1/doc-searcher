@@ -2,6 +2,7 @@ use crate::endpoints::buckets::{all_buckets, delete_bucket, get_bucket, new_buck
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::hello::hello;
+use crate::endpoints::loader::{load_file, upload_file, load_file_to_bucket, upload_file_to_bucket};
 use crate::endpoints::searcher::{search_all, search_target};
 use crate::endpoints::similarities::{search_similar_docs, search_similar_docs_target};
 
@@ -125,4 +126,8 @@ pub fn build_service() -> Scope {
         .service(search_all)
         .service(search_similar_docs)
         .service(search_similar_docs_target)
+        .service(load_file)
+        .service(upload_file)
+        .service(load_file_to_bucket)
+        .service(upload_file_to_bucket)
 }
