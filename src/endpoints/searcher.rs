@@ -13,7 +13,7 @@ async fn search_all(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.search_from_all(&search_form).await
+    client.search_all(&search_form).await
 }
 
 #[post("/search/{bucket_names}")]
@@ -25,9 +25,7 @@ async fn search_target(
     let client = cxt.get_ref();
     let search_form = form.0;
     let buckets = path.as_ref();
-    client
-        .search_from_target(buckets.as_str(), &search_form)
-        .await
+    client.search_bucket(buckets.as_str(), &search_form).await
 }
 
 #[cfg(test)]
@@ -40,7 +38,8 @@ mod searcher_endpoints {
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
-    use serde_json::json;
+    use elasticsearch::SearchParts;
+    use serde_json::{json, Value};
 
     #[test]
     async fn build_application() {
@@ -132,5 +131,85 @@ mod searcher_endpoints {
 
         let founded_documents: Vec<Document> = test::read_body_json(search_resp).await;
         assert_eq!(founded_documents.len() >= 4, true);
+    }
+
+    #[test]
+    async fn exec_search_query() {
+        let service_parameters = init_service_parameters().unwrap();
+        let es_host = service_parameters.es_host();
+        let es_user = service_parameters.es_user();
+        let es_passwd = service_parameters.es_passwd();
+        let service_port = service_parameters.service_port();
+        let service_addr = service_parameters.service_address();
+        let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
+        let cxt = ElasticContext::_new(elastic.clone());
+        let app = App::new()
+            .app_data(web::Data::new(cxt))
+            .service(build_service());
+
+        let test_app = test::init_service(app).await;
+
+        let query_object = json!({
+            "query": {
+                "bool": {
+                    "must": {
+                        "multi_match": {
+                            "query": "fuzzing binary file using aflgow"
+                        }
+                    },
+                    "filter": {
+                        "bool": {
+                            "must": [
+
+                                {
+                                    "range": {
+                                        "document_size": {
+                                            "gte": 10000
+                                        },
+                                    },
+                                },
+
+                                {
+                                    "term": {
+                                        "document_extension": "txt",
+                                    },
+                                },
+
+
+                                {
+                                    "term": {
+                                        "document_path": "*",
+                                    },
+                                },
+                            ]
+                        }
+                    }
+                }
+            },
+            "highlight" : {
+                "order": "score",
+                "fields" : {
+                    "entity_data": {
+                        "pre_tags" : [""],
+                        "post_tags" : [""]
+                    }
+                }
+            }
+        });
+
+        let result_size = 25;
+        let result_offset = 0;
+        let response_result = elastic
+            .search(SearchParts::Index(&[&"*"]))
+            .from(result_offset)
+            .size(result_size)
+            .body(query_object)
+            .send()
+            .await;
+
+        let response = response_result.unwrap();
+        let json_response = response.json::<Value>().await.unwrap();
+        let json_string = serde_json::to_string_pretty(&json_response);
+        println!("{}", json_string.unwrap().to_string());
     }
 }
