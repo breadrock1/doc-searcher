@@ -111,7 +111,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_size_query = DocumentSizeQuery::new(doc_size_from, doc_size_to);
     let doc_size_value = serde_json::to_value(doc_size_query).unwrap();
 
-    let common_filter = json!({
+    let mut common_filter = json!({
         "bool": {
             "must": {
                 "range": {
@@ -127,6 +127,45 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
             }
         }
     });
+            "must": [
+                {
+                    "range": {
+                        "document_size": doc_size_value,
+                    },
+                }
+            ]
+        }
+    });
+
+    if (!parameters.document_extension.is_empty()) {
+        let doc_ext = parameters.document_extension.as_str();
+        let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
+        must_field.push(json!({
+            "term": {
+                "document_extension": doc_ext
+            }
+        }));
+    }
+
+    if (!parameters.document_path.is_empty()) {
+        let doc_path = parameters.document_path.as_str();
+        let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
+        must_field.push(json!({
+            "term": {
+                "document_path": doc_path
+            }
+        }));
+    }
+
+    if (!parameters.document_type.is_empty()) {
+        let doc_type = parameters.document_type.as_str();
+        let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
+        must_field.push(json!({
+            "term": {
+                "document_type": doc_type
+            }
+        }));
+    }
 
     let query_str = QueryString::new(parameters.query.clone());
     let match_query = MultiMatchQuery::new(query_str);
