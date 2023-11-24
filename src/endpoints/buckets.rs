@@ -12,10 +12,7 @@ async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
 }
 
 #[post("/bucket/new")]
-async fn new_bucket(
-    cxt: web::Data<&dyn ServiceClient>,
-    form: web::Json<BucketForm>,
-) -> HttpResponse {
+async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_form = form.0;
     client.create_bucket(&bucket_form).await
