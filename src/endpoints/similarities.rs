@@ -9,7 +9,7 @@ use actix_web::{post, web};
 #[post("/search-similar")]
 async fn search_similar_docs(
     cxt: ContextData,
-    form: web::Json<SearchParameters>,
+    form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
@@ -20,7 +20,7 @@ async fn search_similar_docs(
 async fn search_similar_docs_target(
     cxt: ContextData,
     path: web::Path<String>,
-    form: web::Json<SearchParameters>,
+    form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
