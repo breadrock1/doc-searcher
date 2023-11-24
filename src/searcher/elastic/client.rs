@@ -303,10 +303,40 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn search_from_all(
-        &self,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn load_file_to_all(&self, file_path: &str) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let file_path_ = std::path::Path::new(file_path);
+        let documents = load_directory_entity(file_path_);
+
+        for doc_form in documents.iter() {
+            let bucket_id = doc_form.bucket_uuid.as_str();
+            send_document(&elastic, doc_form, bucket_id).await;
+        }
+
+        SuccessfulResponse::ok_response("Ok")
+    }
+
+    async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let file_path_ = std::path::Path::new(file_path);
+        let documents = load_directory_entity(file_path_);
+
+        for doc_form in documents.iter() {
+            send_document(&elastic, doc_form, bucket_id).await;
+        }
+
+        SuccessfulResponse::ok_response("Ok")
+    }
+
+    // async fn upload_file_to_all(&self, mut part: Multipart) -> HttpResponse {
+    //     SuccessfulResponse::ok_response("Ok")
+    // }
+    //
+    // async fn upload_file_to_bucket(&self, bucket_id: &str, mut part: Multipart) -> HttpResponse {
+    //     SuccessfulResponse::ok_response("Ok")
+    // }
+
+    async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_query(s_params);
         search_documents(&elastic, &["*"], &body_value, s_params).await
