@@ -1,11 +1,15 @@
-use crate::errors::{WebError, WebResponse};
+use crate::errors::{SuccessfulResponse, WebError, WebResponse};
 use crate::wrappers::bucket::Bucket;
 use crate::wrappers::document::{Document, HighlightEntity};
 use crate::wrappers::search_params::*;
 
-use actix_web::web;
+use actix_web::{web, HttpResponse, ResponseError, Responder};
+use chrono::{DateTime, Utc};
+use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
-use elasticsearch::{Elasticsearch, SearchParts};
+use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
+use futures::stream::{Stream, StreamExt};
+use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -15,6 +19,8 @@ use std::io::Read;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::string::ToString;
+use futures::SinkExt;
+use tokio::sync::RwLockReadGuard;
 
 pub fn create_bucket_scheme() -> String {
     String::from("
