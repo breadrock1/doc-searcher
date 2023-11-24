@@ -13,7 +13,7 @@ async fn search_similar_docs(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.similar_from_all(&search_form).await
+    client.similar_all(&search_form).await
 }
 
 #[post("/search-similar/{bucket_names}")]
@@ -25,9 +25,7 @@ async fn search_similar_docs_target(
     let client = cxt.get_ref();
     let search_form = form.0;
     let buckets = path.as_ref();
-    client
-        .similar_from_target(buckets.as_str(), &search_form)
-        .await
+    client.similar_bucket(buckets.as_str(), &search_form).await
 }
 
 #[cfg(test)]
