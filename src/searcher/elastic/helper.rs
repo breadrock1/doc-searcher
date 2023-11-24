@@ -113,20 +113,6 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
 
     let mut common_filter = json!({
         "bool": {
-            "must": {
-                "range": {
-                    "document_size": doc_size_value,
-                },
-            },
-            "should": {
-                "term": {
-                    "document_type": "*",
-                    "document_path": "*",
-                    "document_extension": "*",
-                }
-            }
-        }
-    });
             "must": [
                 {
                     "range": {
