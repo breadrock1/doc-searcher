@@ -167,13 +167,10 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         "highlight" : {
             "order": "score",
             "fields" : {
-                "body" : {
+                "entity_data": {
                     "pre_tags" : [""],
                     "post_tags" : [""]
-                },
-                "matched_fields": [
-                    "entity_data"
-                ],
+                }
             }
         }
     })
