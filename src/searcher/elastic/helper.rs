@@ -8,11 +8,16 @@ use elasticsearch::http::response::Response;
 use elasticsearch::{Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
+
+use std::fs::File;
+use std::ffi::OsStr;
+use std::io::Read;
+use std::os::unix::prelude::{MetadataExt, PermissionsExt};
+use std::path::Path;
 use std::string::ToString;
 
 pub fn create_bucket_scheme() -> String {
-    String::from(
-        "
+    String::from("
     {
         \"_source\": { \"enabled\": false },
         \"properties\": {
@@ -30,17 +35,18 @@ pub fn create_bucket_scheme() -> String {
             \"document_ssdeep_hash\": { \"type\": \"string\" },
             \"entity_data\": { \"type\": \"string\" },
             \"entity_keywords\": [],
+            \"document_created\": { \"type\": \"string\" },
+            \"document_modified\": { \"type\": \"string\" }
         }
     }
-    ",
-    )
+    ")
 }
 
 pub async fn search_documents(
     elastic: &Elasticsearch,
     indexes: &[&str],
     body_value: &Value,
-    es_params: &SearchParameters,
+    es_params: &SearchParams,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let result_size = es_params.result_size;
     let result_offset = es_params.result_offset;
