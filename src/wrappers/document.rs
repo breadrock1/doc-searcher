@@ -33,7 +33,49 @@ pub struct HighlightEntity {
     pub entity_data: Vec<String>,
 }
 
+impl HighlightEntity {
+    pub fn create(entity_data: Vec<String>) -> Self {
+        HighlightEntity { entity_data }
+    }
+}
+
 impl Document {
+    pub fn create(
+        bucket_uuid: String,
+        bucket_path: String,
+        document_name: String,
+        document_path: String,
+        document_size: i32,
+        document_type: String,
+        document_extension: String,
+        document_permissions: i32,
+        document_md5_hash: String,
+        document_ssdeep_hash: String,
+        entity_data: String,
+        entity_keywords: Vec<String>,
+        highlight: Option<HighlightEntity>,
+        document_created: Option<DateTime<Utc>>,
+        document_modified: Option<DateTime<Utc>>,
+    ) -> Self {
+        Document {
+            bucket_uuid,
+            bucket_path,
+            document_name,
+            document_path,
+            document_size,
+            document_type,
+            document_extension,
+            document_permissions,
+            document_md5_hash,
+            document_ssdeep_hash,
+            entity_data,
+            entity_keywords,
+            highlight,
+            document_created,
+            document_modified,
+        }
+    }
+
     pub fn append_highlight(&mut self, highlight: Option<HighlightEntity>) {
         self.highlight = highlight
     }
