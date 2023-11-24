@@ -62,10 +62,6 @@ impl ServiceClient for OtherContext {
         SuccessfulResponse::ok_response("Ok")
     }
 
-    async fn search_from_all(
-        &self,
-        _s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
     async fn load_file_to_all(&self, _file_path: &str) -> HttpResponse {
         SuccessfulResponse::ok_response("Ok")
     }
@@ -73,6 +69,14 @@ impl ServiceClient for OtherContext {
     async fn load_file_to_bucket(&self, _bucket_id: &str, _file_path: &str) -> HttpResponse {
         SuccessfulResponse::ok_response("Ok")
     }
+
+    // async fn upload_file_to_all(&self, _part: Multipart) -> HttpResponse {
+    //     SuccessfulResponse::ok_response("Ok")
+    // }
+    //
+    // async fn upload_file_to_bucket(&self, _bucket_id: &str, _part: Multipart) -> HttpResponse {
+    //     SuccessfulResponse::ok_response("Ok")
+    // }
 
     async fn search_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
         Ok(web::Json(Vec::default()))
