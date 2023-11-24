@@ -105,7 +105,7 @@ pub fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::E
     Ok(document)
 }
 
-pub fn build_search_query(parameters: &SearchParameters) -> Value {
+pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_size_to = parameters.document_size_to;
     let doc_size_from = parameters.document_size_from;
     let doc_size_query = DocumentSizeQuery::new(doc_size_from, doc_size_to);
@@ -154,7 +154,7 @@ pub fn build_search_query(parameters: &SearchParameters) -> Value {
     })
 }
 
-pub fn build_search_similar_query(parameters: &SearchParameters) -> Value {
+pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
     let ssdeep_hash = &parameters.query;
     println!("Need find by this: {:?}", ssdeep_hash);
     json!({
