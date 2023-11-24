@@ -12,6 +12,7 @@ use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
 use elasticsearch::{BulkParts, IndexParts};
+use hasher::{HashType, gen_hash};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -180,8 +181,9 @@ impl ServiceClient for ElasticContext {
     async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let bucket_name = bucket_form.get_name();
-        let digest = md5::compute(bucket_name);
-        let id_str = format!("{:x}", digest);
+        let hasher_res = gen_hash(HashType::MD5, bucket_name.as_bytes());
+        let binding = hasher_res.unwrap();
+        let id_str = binding.get_hash_data();
         let bucket_schema: Value = serde_json::from_str(create_bucket_scheme().as_str()).unwrap();
         let response_result = elastic
             .index(IndexParts::IndexId(bucket_name, id_str))
