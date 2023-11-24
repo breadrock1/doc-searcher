@@ -66,12 +66,19 @@ impl ServiceClient for OtherContext {
         &self,
         _s_params: &SearchParameters,
     ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn load_file_to_all(&self, _file_path: &str) -> HttpResponse {
+        SuccessfulResponse::ok_response("Ok")
+    }
+
+    async fn load_file_to_bucket(&self, _bucket_id: &str, _file_path: &str) -> HttpResponse {
+        SuccessfulResponse::ok_response("Ok")
+    }
 
     async fn search_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
         Ok(web::Json(Vec::default()))
     }
 
-    async fn search_from_target(
+    async fn search_bucket(
         &self,
         _bucket_id: &str,
         _s_params: &SearchParams,
@@ -83,7 +90,7 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(Vec::default()))
     }
 
-    async fn similar_from_target(
+    async fn similar_bucket(
         &self,
         _bucket_id: &str,
         _s_params: &SearchParams,
