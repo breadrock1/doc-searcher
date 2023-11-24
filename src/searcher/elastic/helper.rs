@@ -203,3 +203,123 @@ pub fn deserialize_document(document_ref: &Document) -> Result<Value, WebError> 
         Err(err) => Err(WebError::DocumentSerializing(err.to_string())),
     }
 }
+
+fn load_target_file(file_path: &Path) -> std::io::Result<Document> {
+    let mut file = File::open(file_path)?;
+    let file_metadata = file.metadata()?;
+    let perms_ = file_metadata.permissions().mode();
+
+    let file_path_ = file_path.to_str().unwrap_or("unknown");
+    let file_name_ = file_path
+        .file_name()
+        .unwrap_or(OsStr::new(file_path_))
+        .to_str()
+        .unwrap_or("unknown");
+
+    let ext_ = file_path
+        .extension()
+        .unwrap_or(OsStr::new(""))
+        .to_str()
+        .unwrap_or("unknown");
+
+    let mut file_data_ = String::new();
+    file.read_to_string(&mut file_data_).unwrap_or_default();
+    let md5_hash = gen_hash(HashType::MD5, file_data_.as_bytes());
+    let binding = md5_hash.unwrap();
+    let md5_hash_ = binding.get_hash_data();
+
+    let ssdeep_hash = gen_hash(HashType::SSDEEP, file_data_.as_bytes());
+    let binding = ssdeep_hash.unwrap();
+    let ssdeep_hash_ = binding.get_hash_data();
+
+    let created_ = file_metadata.created()?;
+    let dt_cr_utc: DateTime<Utc> = created_.clone().into();
+
+    let modified_ = file_metadata.modified()?;
+    let dt_md_utc: DateTime<Utc> = modified_.clone().into();
+
+    Ok(Document::create(
+        "common_bucket".to_string(),
+        "/".to_string(),
+        file_name_.to_string(),
+        file_path_.to_string(),
+        file_metadata.size() as i32,
+        "document".to_string(),
+        ext_.to_string(),
+        perms_ as i32,
+        md5_hash_.to_string(),
+        ssdeep_hash_.to_string(),
+        file_data_,
+        Vec::<String>::default(),
+        Option::<HighlightEntity>::None,
+        Some(dt_cr_utc),
+        Some(dt_md_utc),
+    ))
+}
+
+pub fn load_directory_entity(directory: &Path) -> Vec<Document> {
+    if (directory.is_file()) {
+        let loaded_result = load_target_file(&directory);
+        return match loaded_result {
+            Ok(document) => vec![document],
+            Err(_) => Vec::default(),
+        };
+    }
+
+    walkdir::WalkDir::new(directory)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter_map(|e| load_target_file(e.path()).ok())
+        .collect()
+}
+
+pub async fn send_document(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    doc_form: &Document,
+    bucket_id: &str,
+) -> HttpResponse {
+    let to_value_result = serde_json::to_value(doc_form);
+    let document_json = to_value_result.unwrap();
+    let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
+
+    body.push(json!({"index": { "_id": doc_form.document_md5_hash.as_str() }}).into());
+    body.push(document_json.into());
+
+    let response_result = elastic
+        .bulk(BulkParts::Index(bucket_id))
+        .body(body)
+        .send()
+        .await;
+
+    if (response_result.is_err()) {
+        println!("{:?}", response_result.err());
+        println!("{:?}", "");
+    }
+    SuccessfulResponse::ok_response("Ok")
+    // match response_result {
+    //     Ok(_) => SuccessfulResponse::ok_response("Ok"),
+    //     Err(err) => WebError::CreateDocument(err.to_string()).error_response(),
+    // }
+}
+
+#[cfg(test)]
+mod helper_tests {
+    use super::*;
+
+    #[test]
+    fn load_directory_entity_test() {
+        let file_path = "/Users/breadrock/Downloads/optikot-data/tests-dockers";
+        let path_object = Path::new(file_path);
+        let _documents = load_directory_entity(&path_object);
+        println!("{:?}", "sdf");
+    }
+
+    #[test]
+    fn load_file_entity_test() {
+        let file_path = "/Users/breadrock/Downloads/optikot-data/tests-dockers/fuzzer-configs/asa5516/asa5516-dhcp.py";
+        let path_object = Path::new(file_path);
+        let _documents = load_directory_entity(&path_object);
+        println!("{:?}", "sdf");
+    }
+}
