@@ -6,7 +6,7 @@ use actix_multipart::form::MultipartForm;
 use actix_web::{post, web, HttpResponse};
 
 #[post("/loader/upload")]
-async fn upload_file(cxt: ContextData, form: MultipartForm<UploadFileForm>) -> HttpResponse {
+async fn upload_file(cxt: ContextData, _form: MultipartForm<UploadFileForm>) -> HttpResponse {
     let _client = cxt.get_ref();
     SuccessfulResponse::ok_response("Ok")
 }
@@ -14,7 +14,7 @@ async fn upload_file(cxt: ContextData, form: MultipartForm<UploadFileForm>) -> H
 #[post("/loader/{bucket_name}/upload")]
 async fn upload_file_to_bucket(
     cxt: ContextData,
-    form: MultipartForm<UploadFileForm>,
+    _form: MultipartForm<UploadFileForm>,
 ) -> HttpResponse {
     let _client = cxt.get_ref();
     SuccessfulResponse::ok_response("Ok")
