@@ -125,7 +125,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
 
     if !parameters.document_extension.is_empty() {
         let doc_ext = parameters.document_extension.as_str();
-        let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
+        let must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
         must_field.push(json!({
             "term": {
                 "document_extension": doc_ext
@@ -135,7 +135,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
 
     if !parameters.document_path.is_empty() {
         let doc_path = parameters.document_path.as_str();
-        let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
+        let must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
         must_field.push(json!({
             "term": {
                 "document_path": doc_path
@@ -145,7 +145,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
 
     if !parameters.document_type.is_empty() {
         let doc_type = parameters.document_type.as_str();
-        let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
+        let must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
         must_field.push(json!({
             "term": {
                 "document_type": doc_type
