@@ -1,6 +1,5 @@
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::MultipartForm;
-use actix_web::FromRequest;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(MultipartForm)]
