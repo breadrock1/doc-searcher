@@ -49,7 +49,8 @@ mod documents_endpoints {
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
-    use serde_json::json;
+    use elasticsearch::CountParts;
+    use serde_json::{json, Value};
 
     #[test]
     async fn build_application() {
@@ -251,5 +252,31 @@ mod documents_endpoints {
                 .send_request(&test_app)
                 .await;
         }
+    }
+
+    #[test]
+    async fn remove_duplicates() {
+        let service_parameters = init_service_parameters().unwrap();
+        let es_host = service_parameters.es_host();
+        let es_user = service_parameters.es_user();
+        let es_passwd = service_parameters.es_passwd();
+
+        let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
+        let response = elastic
+            .count(CountParts::Index(&[&"test_bucket"]))
+            .body(json!({
+                "query" : {
+                    "term" : {
+                        "document_md5_hash" : "test_document_1"
+                    }
+                }
+            }))
+            .send()
+            .await;
+
+        let value = response.unwrap().json::<Value>().await.unwrap();
+        let count = value["count"].as_i64().unwrap();
+        // let res_string = serde_json::to_string_pretty(&value).unwrap();
+        println!("{}", count > 0);
     }
 }
