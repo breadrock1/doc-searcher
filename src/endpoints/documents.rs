@@ -231,7 +231,7 @@ mod documents_endpoints {
         for document_index in 1..20 {
             let document_size = 1024 + document_index * 10;
             let test_document_name = &format!("test_document_{}", document_index);
-            let create_document_resp = TestRequest::post()
+            let _create_document_resp = TestRequest::post()
                 .uri("/searcher/document/new")
                 .set_json(&json!({
                     "bucket_uuid": test_bucket_name,
