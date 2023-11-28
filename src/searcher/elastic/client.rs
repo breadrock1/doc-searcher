@@ -240,7 +240,11 @@ impl ServiceClient for ElasticContext {
 
         let document_json = to_value_result.unwrap();
         let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        body.push(json!({"index": { "_id": document_id.as_str() }}).into());
+        body.push(json!({
+            "index": {
+                "_id": document_id.as_str()
+            }
+        }).into());
         body.push(document_json.into());
 
         let response_result = elastic
