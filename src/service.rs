@@ -104,7 +104,7 @@ pub fn build_cors_config(_origin: &str) -> Cors {
 }
 
 pub fn build_env_logger() {
-    let mut env_log = env_logger::Env::new();
+    let env_log = env_logger::Env::new();
     let env_log = env_log.default_filter_or("info");
     env_logger::init_from_env(env_log);
 }

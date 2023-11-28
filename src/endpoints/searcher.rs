@@ -58,7 +58,7 @@ mod searcher_endpoints {
         for document_index in 1..5 {
             let document_size = 1024 + document_index;
             let test_document_name = &format!("test_document_{}", document_index);
-            let create_document_resp = TestRequest::post()
+            let _create_document_resp = TestRequest::post()
                 .uri("/searcher/document/new")
                 .set_json(&json!({
                     "bucket_uuid": test_bucket_name,
@@ -143,7 +143,7 @@ mod searcher_endpoints {
             .app_data(web::Data::new(cxt))
             .service(build_service());
 
-        let test_app = test::init_service(app).await;
+        let _test_app = test::init_service(app).await;
 
         let query_object = json!({
             "query": {
