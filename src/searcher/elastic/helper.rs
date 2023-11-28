@@ -3,7 +3,7 @@ use crate::wrappers::bucket::Bucket;
 use crate::wrappers::document::{Document, HighlightEntity};
 use crate::wrappers::search_params::*;
 
-use actix_web::{web, HttpResponse, ResponseError, Responder};
+use actix_web::{web, HttpResponse, Responder, ResponseError};
 use chrono::{DateTime, Utc};
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
@@ -13,17 +13,18 @@ use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use std::fs::File;
+use futures::SinkExt;
 use std::ffi::OsStr;
+use std::fs::File;
 use std::io::Read;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::string::ToString;
-use futures::SinkExt;
 use tokio::sync::RwLockReadGuard;
 
 pub fn create_bucket_scheme() -> String {
-    String::from("
+    String::from(
+        "
     {
         \"_source\": { \"enabled\": false },
         \"properties\": {
@@ -45,7 +46,8 @@ pub fn create_bucket_scheme() -> String {
             \"document_modified\": { \"type\": \"string\" }
         }
     }
-    ")
+    ",
+    )
 }
 
 pub async fn search_documents(
