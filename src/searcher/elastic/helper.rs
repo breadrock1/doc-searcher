@@ -3,17 +3,15 @@ use crate::wrappers::bucket::Bucket;
 use crate::wrappers::document::{Document, HighlightEntity};
 use crate::wrappers::search_params::*;
 
-use actix_web::{web, HttpResponse, Responder, ResponseError};
+use actix_web::{web, HttpResponse};
 use chrono::{DateTime, Utc};
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
-use futures::stream::{Stream, StreamExt};
 use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use futures::SinkExt;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
