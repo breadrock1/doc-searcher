@@ -125,7 +125,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         }
     });
 
-    if (!parameters.document_extension.is_empty()) {
+    if !parameters.document_extension.is_empty() {
         let doc_ext = parameters.document_extension.as_str();
         let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
         must_field.push(json!({
@@ -135,7 +135,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         }));
     }
 
-    if (!parameters.document_path.is_empty()) {
+    if !parameters.document_path.is_empty() {
         let doc_path = parameters.document_path.as_str();
         let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
         must_field.push(json!({
@@ -145,7 +145,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         }));
     }
 
-    if (!parameters.document_type.is_empty()) {
+    if !parameters.document_type.is_empty() {
         let doc_type = parameters.document_type.as_str();
         let mut must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
         must_field.push(json!({
@@ -294,7 +294,7 @@ fn load_target_file(file_path: &Path) -> std::io::Result<Document> {
 }
 
 pub fn load_directory_entity(directory: &Path) -> Vec<Document> {
-    if (directory.is_file()) {
+    if directory.is_file() {
         let loaded_result = load_target_file(&directory);
         return match loaded_result {
             Ok(document) => vec![document],
@@ -328,9 +328,8 @@ pub async fn send_document(
         .send()
         .await;
 
-    if (response_result.is_err()) {
+    if response_result.is_err() {
         println!("{:?}", response_result.err());
-        println!("{:?}", "");
     }
     SuccessfulResponse::ok_response("Ok")
     // match response_result {
