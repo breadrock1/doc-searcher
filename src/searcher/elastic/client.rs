@@ -11,7 +11,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
-use elasticsearch::{BulkParts, IndexParts};
+use elasticsearch::{BulkParts, CountParts, IndexParts};
 use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -199,6 +199,25 @@ impl ServiceClient for ElasticContext {
         }
     }
 
+    async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool {
+        let elastic = self.get_cxt().read().await;
+        let response = elastic
+            .count(CountParts::Index(&[bucket_id]))
+            .body(json!({
+                "query" : {
+                    "term" : {
+                        "document_md5_hash" : document_id
+                    }
+                }
+            }))
+            .send()
+            .await;
+
+        let value = response.unwrap().json::<Value>().await.unwrap();
+        let count = value["count"].as_i64().unwrap_or(0);
+        count > 0
+    }
+
     async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let elastic = self.get_cxt().read().await;
         let s_path = format!("/{}/_doc/{}", bucket_id, doc_id);
@@ -236,6 +255,11 @@ impl ServiceClient for ElasticContext {
             let err = to_value_result.err().unwrap();
             let web_err = WebError::DocumentSerializing(err.to_string());
             return web_err.error_response();
+        }
+
+        if self.check_duplication(bucket_name.as_str(), document_id.as_str()).await {
+            let msg = format!("Passed document: {} already exists", document_id);
+            return WebError::CreateDocument(msg).error_response();
         }
 
         let document_json = to_value_result.unwrap();
