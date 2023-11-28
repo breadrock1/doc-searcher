@@ -42,6 +42,10 @@ impl ServiceClient for OtherContext {
         SuccessfulResponse::ok_response("Ok")
     }
 
+    async fn check_duplication(&self, _bucket_id: &str, _document_id: &str) -> bool {
+        false
+    }
+
     async fn get_document(
         &self,
         _bucket_id: &str,
