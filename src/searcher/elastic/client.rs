@@ -12,7 +12,7 @@ use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
 use elasticsearch::{BulkParts, IndexParts};
-use hasher::{HashType, gen_hash};
+use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
