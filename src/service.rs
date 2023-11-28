@@ -91,7 +91,7 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     Ok(service)
 }
 
-pub fn build_cors_config(origin: &str) -> Cors {
+pub fn build_cors_config(_origin: &str) -> Cors {
     let available_methods = vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"];
     let available_headers = vec![header::AUTHORIZATION, header::ACCEPT];
 
