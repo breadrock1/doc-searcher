@@ -217,18 +217,20 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
         .as_i64()
         .unwrap();
 
-    Ok(Bucket::new(
-        health.to_string(),
-        status.to_string(),
-        bucket_id.to_string(),
-        uuid.to_string(),
-        docs_count.to_string(),
-        docs_deleted.to_string(),
-        store_size.to_string(),
-        pri_store_size.to_string(),
-        None,
-        None,
-    ))
+    let built_bucket = BucketBuilder::default()
+        .health(health.to_string())
+        .status(status.to_string())
+        .index(bucket_id.to_string())
+        .uuid(uuid.to_string())
+        .docs_count(docs_count.to_string())
+        .docs_deleted(docs_deleted.to_string())
+        .store_size(store_size.to_string())
+        .pri_store_size(pri_store_size.to_string())
+        .pri(None)
+        .rep(None)
+        .build();
+
+    Ok(built_bucket.unwrap())
 }
 
 pub fn deserialize_document(document_ref: &Document) -> Result<Value, WebError> {
