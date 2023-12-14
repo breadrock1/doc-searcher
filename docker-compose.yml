@@ -42,6 +42,8 @@ services:
       - "2892:2892"
     networks:
       - elastic-net
+    volumes:
+      - dsdata1:/archiver
 
   kibana:
     depends_on:
@@ -56,6 +58,8 @@ services:
 
 volumes:
   esdata1:
+    driver: local
+  dsdata1:
     driver: local
 
 networks:
