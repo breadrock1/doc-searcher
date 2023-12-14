@@ -17,6 +17,13 @@ async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpRespon
     client.create_bucket(&bucket_form).await
 }
 
+#[post("/bucket/default")]
+async fn default_bucket(cxt: ContextData) -> HttpResponse {
+    let client = cxt.get_ref();
+    let bucket_form = BucketForm::default();
+    client.create_bucket(&bucket_form).await
+}
+
 #[delete("/bucket/{bucket_name}")]
 async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
