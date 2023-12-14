@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default, Builder)]
 pub struct Bucket {
     pub health: String,
     pub status: String,
@@ -18,35 +18,6 @@ pub struct Bucket {
     pub pri: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rep: Option<String>,
-}
-
-#[allow(clippy::too_many_arguments)]
-impl Bucket {
-    pub fn new(
-        health: String,
-        status: String,
-        index: String,
-        uuid: String,
-        docs_count: String,
-        docs_deleted: String,
-        store_size: String,
-        pri_store_size: String,
-        pri: Option<String>,
-        rep: Option<String>,
-    ) -> Self {
-        Bucket {
-            health,
-            status,
-            index,
-            uuid,
-            docs_count,
-            docs_deleted,
-            store_size,
-            pri_store_size,
-            pri,
-            rep,
-        }
-    }
 }
 
 #[derive(Deserialize, Serialize)]
