@@ -66,10 +66,6 @@ impl ServiceClient for OtherContext {
         SuccessfulResponse::ok_response("Ok")
     }
 
-    async fn load_file_to_all(&self, _file_path: &str) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
-    }
-
     async fn load_file_to_bucket(&self, _bucket_id: &str, _file_path: &str) -> HttpResponse {
         SuccessfulResponse::ok_response("Ok")
     }
