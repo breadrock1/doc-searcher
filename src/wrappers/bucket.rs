@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Default, Builder)]
@@ -29,6 +30,14 @@ impl ToString for BucketForm {
     fn to_string(&self) -> String {
         let self_data = &self.bucket_name;
         self_data.clone()
+    }
+}
+
+impl Default for BucketForm {
+    fn default() -> Self {
+        BucketForm {
+            bucket_name: "common_bucket".to_string(),
+        }
     }
 }
 
