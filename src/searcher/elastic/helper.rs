@@ -1,24 +1,21 @@
-use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::wrappers::bucket::Bucket;
+use crate::errors::{WebError, WebResponse};
+use crate::searcher::elastic::send_status::SendDocumentStatus;
+use crate::wrappers::bucket::{Bucket, BucketBuilder};
 use crate::wrappers::document::{Document, HighlightEntity};
-use crate::wrappers::search_params::*;
+use crate::wrappers::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use crate::wrappers::search_params::SearchParams;
+use crate::wrappers::search_query::MultiMatchQuery;
 
-use actix_web::{web, HttpResponse};
-use chrono::{DateTime, Utc};
+use actix_web::web;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
-use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use tokio::sync::RwLockReadGuard;
 
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::Read;
-use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::string::ToString;
-use tokio::sync::RwLockReadGuard;
 
 pub fn create_bucket_scheme() -> String {
     String::from(
@@ -244,10 +241,33 @@ pub async fn send_document(
 #[cfg(test)]
 mod helper_tests {
     use super::*;
+    use crate::wrappers::filter_query::FilterRange;
+
+    #[test]
+    fn build_filter_query() {
+        let params = SearchParams::default();
+        let parameters = &params;
+        let doc_size_to = parameters.document_size_to;
+        let doc_size_from = parameters.document_size_from;
+        let doc_ext = parameters.document_extension.as_str();
+        let doc_path = parameters.document_path.as_str();
+        let doc_type = parameters.document_type.as_str();
+        let doc_type = parameters.document_type.as_str();
+
+        let common_ = CommonFilter::new()
+            .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
+            .with_term::<FilterTerm>("document_extension", doc_ext)
+            .with_term::<FilterTerm>("document_path", doc_path)
+            .with_term::<FilterTerm>("document_type", doc_type)
+            .build();
+
+        let val = serde_json::to_value(common_).unwrap();
+        println!("{}", serde_json::to_string_pretty(&val).unwrap());
+    }
 
     #[test]
     fn load_directory_entity_test() {
-        let file_path = "/Users/breadrock/Downloads/optikot-data/tests-dockers";
+        let file_path = "/Users/breadrock/Downloads/elastic-docstest/second";
         let path_object = Path::new(file_path);
         let _documents = load_directory_entity(&path_object);
         println!("{:?}", "sdf");
