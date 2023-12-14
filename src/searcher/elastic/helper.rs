@@ -108,59 +108,26 @@ pub fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::E
 pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_size_to = parameters.document_size_to;
     let doc_size_from = parameters.document_size_from;
-    let doc_size_query = DocumentSizeQuery::new(doc_size_from, doc_size_to);
-    let doc_size_value = serde_json::to_value(doc_size_query).unwrap();
+    let doc_cr_to = parameters.created_date_to.as_str();
+    let doc_cr_from = parameters.created_date_from.as_str();
+    let doc_ext = parameters.document_extension.as_str();
+    let doc_path = parameters.document_path.as_str();
+    let doc_type = parameters.document_type.as_str();
 
-    let mut common_filter = json!({
-        "bool": {
-            "must": [
-                {
-                    "range": {
-                        "document_size": doc_size_value,
-                    },
-                }
-            ]
-        }
-    });
+    let common_filter = CommonFilter::new()
+        .with_date::<FilterRange, CreateDateQuery>("document_created", doc_cr_from, doc_cr_to)
+        .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
+        .with_term::<FilterTerm>("document_extension", doc_ext)
+        .with_term::<FilterTerm>("document_path", doc_path)
+        .with_term::<FilterTerm>("document_type", doc_type)
+        .build();
 
-    if !parameters.document_extension.is_empty() {
-        let doc_ext = parameters.document_extension.as_str();
-        let must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
-        must_field.push(json!({
-            "term": {
-                "document_extension": doc_ext
-            }
-        }));
-    }
-
-    if !parameters.document_path.is_empty() {
-        let doc_path = parameters.document_path.as_str();
-        let must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
-        must_field.push(json!({
-            "term": {
-                "document_path": doc_path
-            }
-        }));
-    }
-
-    if !parameters.document_type.is_empty() {
-        let doc_type = parameters.document_type.as_str();
-        let must_field = common_filter["bool"]["must"].as_array_mut().unwrap();
-        must_field.push(json!({
-            "term": {
-                "document_type": doc_type
-            }
-        }));
-    }
-
-    let query_str = QueryString::new(parameters.query.clone());
-    let match_query = MultiMatchQuery::new(query_str);
-    let match_value = serde_json::to_value(match_query).unwrap();
+    let match_query = MultiMatchQuery::new(parameters.query.as_str());
 
     json!({
         "query": {
             "bool": {
-                "must": match_value,
+                "must": match_query,
                 "filter": common_filter
             }
         },
