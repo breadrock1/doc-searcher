@@ -12,6 +12,8 @@ use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
 use elasticsearch::{BulkParts, CountParts, IndexParts};
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -333,26 +335,33 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn load_file_to_all(&self, file_path: &str) -> HttpResponse {
-        let elastic = self.get_cxt().read().await;
-        let file_path_ = std::path::Path::new(file_path);
-        let documents = load_directory_entity(file_path_);
-
-        for doc_form in documents.iter() {
-            let bucket_id = doc_form.bucket_uuid.as_str();
-            send_document(&elastic, doc_form, bucket_id).await;
-        }
-
-        SuccessfulResponse::ok_response("Ok")
-    }
-
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let file_path_ = std::path::Path::new(file_path);
-        let documents = load_directory_entity(file_path_);
+        if !file_path_.exists() {
+            let err = WebError::LoadFileFailed(file_path.to_string());
+            return err.error_response();
+        }
 
-        for doc_form in documents.iter() {
-            send_document(&elastic, doc_form, bucket_id).await;
+        let documents = load_directory_entity(file_path_);
+        let futures_list = documents
+            .iter()
+            .map(|doc_form| send_document(&elastic, doc_form, bucket_id))
+            .collect::<FuturesUnordered<_>>()
+            .collect::<Vec<_>>()
+            .await;
+
+        let failed = futures_list
+            .into_iter()
+            .filter(|response| !response.is_success())
+            .map(|response| response.get_path())
+            .collect::<Vec<_>>();
+
+        if !failed.is_empty() {
+            let msg_str = format!("Failed while saving: {}", failed.join("\n"));
+            println!("Common error - {}", msg_str.as_str());
+            let err = WebError::CreateDocument(msg_str);
+            return err.error_response();
         }
 
         SuccessfulResponse::ok_response("Ok")
