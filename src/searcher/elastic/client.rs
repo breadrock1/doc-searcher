@@ -259,18 +259,24 @@ impl ServiceClient for ElasticContext {
             return web_err.error_response();
         }
 
-        if self.check_duplication(bucket_name.as_str(), document_id.as_str()).await {
+        if self
+            .check_duplication(bucket_name.as_str(), document_id.as_str())
+            .await
+        {
             let msg = format!("Passed document: {} already exists", document_id);
             return WebError::CreateDocument(msg).error_response();
         }
 
         let document_json = to_value_result.unwrap();
         let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        body.push(json!({
-            "index": {
-                "_id": document_id.as_str()
-            }
-        }).into());
+        body.push(
+            json!({
+                "index": {
+                    "_id": document_id.as_str()
+                }
+            })
+            .into(),
+        );
         body.push(document_json.into());
 
         let response_result = elastic
