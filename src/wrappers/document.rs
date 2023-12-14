@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
+use file_loader::FileData;
 use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Deserialize, Serialize, Default, Builder)]
@@ -53,3 +54,25 @@ pub struct HighlightEntity {
     pub entity_data: Vec<String>,
 }
 
+impl From<FileData> for Document {
+    fn from(value: FileData) -> Self {
+        DocumentBuilder::default()
+            .bucket_uuid(value.bucket_uuid)
+            .bucket_path(value.bucket_path)
+            .document_name(value.document_name)
+            .document_path(value.document_path)
+            .document_size(value.document_size)
+            .document_type(value.document_type)
+            .document_extension(value.document_extension)
+            .document_permissions(value.document_permissions)
+            .document_md5_hash(value.document_md5_hash)
+            .document_ssdeep_hash(value.document_ssdeep_hash)
+            .entity_data(value.entity_data)
+            .entity_keywords(value.entity_keywords)
+            .highlight(Option::<HighlightEntity>::None)
+            .document_created(value.document_created)
+            .document_modified(value.document_modified)
+            .build()
+            .unwrap()
+    }
+}
