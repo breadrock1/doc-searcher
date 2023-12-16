@@ -1,5 +1,4 @@
-use chrono::DateTime;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 
 #[derive(Builder)]
