@@ -32,6 +32,8 @@ pub enum WebError {
     DocumentSerializing(String),
     #[error("Failed while searching: {0}")]
     SearchFailed(String),
+    #[error("Passed file path does not exist: {0}")]
+    LoadFileFailed(String),
     #[error("Response error: {0}")]
     ResponseError(String),
 }

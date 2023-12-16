@@ -1,23 +1,26 @@
-use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::errors::{SuccessfulResponse, WebError};
 use crate::searcher::elastic::context::ElasticContext;
 use crate::searcher::elastic::helper::*;
-use crate::searcher::service_client::ServiceClient;
+use crate::searcher::service_client::{JsonResponse, ServiceClient};
 use crate::wrappers::bucket::{Bucket, BucketForm};
 use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
-use crate::wrappers::search_params::SearchParameters;
+use crate::wrappers::search_params::SearchParams;
 
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
-use elasticsearch::{BulkParts, IndexParts};
+use elasticsearch::{BulkParts, CountParts, IndexParts};
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
+use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
 #[async_trait::async_trait]
 impl ServiceClient for ElasticContext {
-    async fn get_all_clusters(&self) -> WebResponse<web::Json<Vec<Cluster>>> {
+    async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .send(
@@ -42,7 +45,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_cluster(&self, cluster_id: &str) -> WebResponse<web::Json<Cluster>> {
+    async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
         let cluster_name = format!("/_nodes/{}", cluster_id);
         let body = b"";
@@ -106,7 +109,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_all_buckets(&self) -> WebResponse<web::Json<Vec<Bucket>>> {
+    async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .send(
@@ -131,7 +134,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_bucket(&self, bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
+    async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket> {
         let elastic = self.get_cxt().read().await;
         let bucket_name = format!("/{}/_stats", bucket_id);
         let response_result = elastic
@@ -180,11 +183,12 @@ impl ServiceClient for ElasticContext {
     async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let bucket_name = bucket_form.get_name();
-        let digest = md5::compute(bucket_name);
-        let id_str = format!("{:x}", digest);
+        let hasher_res = gen_hash(HashType::MD5, bucket_name.as_bytes());
+        let binding = hasher_res.unwrap();
+        let id_str = binding.get_hash_data();
         let bucket_schema: Value = serde_json::from_str(create_bucket_scheme().as_str()).unwrap();
         let response_result = elastic
-            .index(IndexParts::IndexId(bucket_name, id_str.as_str()))
+            .index(IndexParts::IndexId(bucket_name, id_str))
             .body(json!({
                 bucket_name: bucket_schema,
             }))
@@ -197,11 +201,26 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn get_document(
-        &self,
-        bucket_id: &str,
-        doc_id: &str,
-    ) -> WebResponse<web::Json<Document>> {
+    async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool {
+        let elastic = self.get_cxt().read().await;
+        let response = elastic
+            .count(CountParts::Index(&[bucket_id]))
+            .body(json!({
+                "query" : {
+                    "term" : {
+                        "document_md5_hash" : document_id
+                    }
+                }
+            }))
+            .send()
+            .await;
+
+        let value = response.unwrap().json::<Value>().await.unwrap();
+        let count = value["count"].as_i64().unwrap_or(0);
+        count > 0
+    }
+
+    async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let elastic = self.get_cxt().read().await;
         let s_path = format!("/{}/_doc/{}", bucket_id, doc_id);
         let response_result = elastic
@@ -240,9 +259,24 @@ impl ServiceClient for ElasticContext {
             return web_err.error_response();
         }
 
+        if self
+            .check_duplication(bucket_name.as_str(), document_id.as_str())
+            .await
+        {
+            let msg = format!("Passed document: {} already exists", document_id);
+            return WebError::CreateDocument(msg).error_response();
+        }
+
         let document_json = to_value_result.unwrap();
         let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        body.push(json!({"index": { "_id": document_id.as_str() }}).into());
+        body.push(
+            json!({
+                "index": {
+                    "_id": document_id.as_str()
+                }
+            })
+            .into(),
+        );
         body.push(document_json.into());
 
         let response_result = elastic
@@ -307,40 +341,74 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn search_from_all(
-        &self,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let file_path_ = std::path::Path::new(file_path);
+        if !file_path_.exists() {
+            let err = WebError::LoadFileFailed(file_path.to_string());
+            return err.error_response();
+        }
+
+        let documents = load_directory_entity(file_path_);
+        let futures_list = documents
+            .iter()
+            .map(|doc_form| send_document(&elastic, doc_form, bucket_id))
+            .collect::<FuturesUnordered<_>>()
+            .collect::<Vec<_>>()
+            .await;
+
+        let failed = futures_list
+            .into_iter()
+            .filter(|response| !response.is_success())
+            .map(|response| response.get_path())
+            .collect::<Vec<_>>();
+
+        if !failed.is_empty() {
+            let msg_str = format!("Failed while saving: {}", failed.join("\n"));
+            println!("Common error - {}", msg_str.as_str());
+            let err = WebError::CreateDocument(msg_str);
+            return err.error_response();
+        }
+
+        SuccessfulResponse::ok_response("Ok")
+    }
+
+    // async fn upload_file_to_all(&self, mut part: Multipart) -> HttpResponse {
+    //     SuccessfulResponse::ok_response("Ok")
+    // }
+    //
+    // async fn upload_file_to_bucket(&self, bucket_id: &str, mut part: Multipart) -> HttpResponse {
+    //     SuccessfulResponse::ok_response("Ok")
+    // }
+
+    async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_query(s_params);
         search_documents(&elastic, &["*"], &body_value, s_params).await
     }
 
-    async fn search_from_target(
+    async fn search_bucket(
         &self,
         buckets_ids: &str,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+        s_params: &SearchParams,
+    ) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let indexes: Vec<&str> = buckets_ids.split(',').collect();
         let body_value = build_search_query(s_params);
         search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
     }
 
-    async fn similar_from_all(
-        &self,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_similar_query(s_params);
         search_documents(&elastic, &["*"], &body_value, s_params).await
     }
 
-    async fn similar_from_target(
+    async fn similar_bucket(
         &self,
         buckets_id: &str,
-        s_params: &SearchParameters,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+        s_params: &SearchParams,
+    ) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let indexes: Vec<&str> = buckets_id.split(',').collect();
         let body_value = build_search_similar_query(s_params);

@@ -1,6 +1,5 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
-use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::bucket::{Bucket, BucketForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
@@ -12,12 +11,16 @@ async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
 }
 
 #[post("/bucket/new")]
-async fn new_bucket(
-    cxt: web::Data<&dyn ServiceClient>,
-    form: web::Json<BucketForm>,
-) -> HttpResponse {
+async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_form = form.0;
+    client.create_bucket(&bucket_form).await
+}
+
+#[post("/bucket/default")]
+async fn default_bucket(cxt: ContextData) -> HttpResponse {
+    let client = cxt.get_ref();
+    let bucket_form = BucketForm::default();
     client.create_bucket(&bucket_form).await
 }
 
@@ -116,8 +119,6 @@ mod buckets_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
         let cxt = ElasticContext::_new(elastic);

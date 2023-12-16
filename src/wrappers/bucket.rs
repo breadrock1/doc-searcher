@@ -1,6 +1,7 @@
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default, Builder)]
 pub struct Bucket {
     pub health: String,
     pub status: String,
@@ -20,35 +21,6 @@ pub struct Bucket {
     pub rep: Option<String>,
 }
 
-#[allow(clippy::too_many_arguments)]
-impl Bucket {
-    pub fn new(
-        health: String,
-        status: String,
-        index: String,
-        uuid: String,
-        docs_count: String,
-        docs_deleted: String,
-        store_size: String,
-        pri_store_size: String,
-        pri: Option<String>,
-        rep: Option<String>,
-    ) -> Self {
-        Bucket {
-            health,
-            status,
-            index,
-            uuid,
-            docs_count,
-            docs_deleted,
-            store_size,
-            pri_store_size,
-            pri,
-            rep,
-        }
-    }
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct BucketForm {
     bucket_name: String,
@@ -58,6 +30,14 @@ impl ToString for BucketForm {
     fn to_string(&self) -> String {
         let self_data = &self.bucket_name;
         self_data.clone()
+    }
+}
+
+impl Default for BucketForm {
+    fn default() -> Self {
+        BucketForm {
+            bucket_name: "common_bucket".to_string(),
+        }
     }
 }
 

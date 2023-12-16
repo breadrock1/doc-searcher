@@ -2,6 +2,7 @@ pub mod buckets;
 pub mod clusters;
 pub mod documents;
 pub mod hello;
+pub mod loader;
 pub mod searcher;
 pub mod similarities;
 

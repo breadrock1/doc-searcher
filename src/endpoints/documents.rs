@@ -1,6 +1,5 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
-use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::document::Document;
 
 use actix_web::{delete, get, post, put, web, HttpResponse};
@@ -50,7 +49,8 @@ mod documents_endpoints {
 
     use actix_web::test::TestRequest;
     use actix_web::{test, web, App};
-    use serde_json::json;
+    use elasticsearch::CountParts;
+    use serde_json::{json, Value};
 
     #[test]
     async fn build_application() {
@@ -58,8 +58,6 @@ mod documents_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
         let cxt = ElasticContext::_new(elastic);
@@ -177,8 +175,6 @@ mod documents_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
         let cxt = ElasticContext::_new(elastic);
@@ -231,11 +227,11 @@ mod documents_endpoints {
         ];
 
         let test_app = test::init_service(app).await;
-        let test_bucket_name = "docs";
+        let test_bucket_name = "test_bucket";
         for document_index in 1..20 {
             let document_size = 1024 + document_index * 10;
             let test_document_name = &format!("test_document_{}", document_index);
-            let create_document_resp = TestRequest::post()
+            let _create_document_resp = TestRequest::post()
                 .uri("/searcher/document/new")
                 .set_json(&json!({
                     "bucket_uuid": test_bucket_name,
@@ -256,5 +252,31 @@ mod documents_endpoints {
                 .send_request(&test_app)
                 .await;
         }
+    }
+
+    #[test]
+    async fn remove_duplicates() {
+        let service_parameters = init_service_parameters().unwrap();
+        let es_host = service_parameters.es_host();
+        let es_user = service_parameters.es_user();
+        let es_passwd = service_parameters.es_passwd();
+
+        let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
+        let response = elastic
+            .count(CountParts::Index(&[&"test_bucket"]))
+            .body(json!({
+                "query" : {
+                    "term" : {
+                        "document_md5_hash" : "test_document_1"
+                    }
+                }
+            }))
+            .send()
+            .await;
+
+        let value = response.unwrap().json::<Value>().await.unwrap();
+        let count = value["count"].as_i64().unwrap();
+        // let res_string = serde_json::to_string_pretty(&value).unwrap();
+        println!("{}", count > 0);
     }
 }

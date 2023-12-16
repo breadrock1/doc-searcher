@@ -1,13 +1,20 @@
 use crate::errors::{WebError, WebResponse};
-use crate::wrappers::bucket::Bucket;
+use crate::searcher::elastic::send_status::SendDocumentStatus;
+use crate::wrappers::bucket::{Bucket, BucketBuilder};
 use crate::wrappers::document::{Document, HighlightEntity};
-use crate::wrappers::search_params::*;
+use crate::wrappers::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use crate::wrappers::search_params::SearchParams;
+use crate::wrappers::search_query::MultiMatchQuery;
 
 use actix_web::web;
+use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
-use elasticsearch::{Elasticsearch, SearchParts};
+use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use tokio::sync::RwLockReadGuard;
+
+use std::path::Path;
 use std::string::ToString;
 
 pub fn create_bucket_scheme() -> String {
@@ -16,6 +23,7 @@ pub fn create_bucket_scheme() -> String {
     {
         \"_source\": { \"enabled\": false },
         \"properties\": {
+            \"_timestamp\": { \"enabled\": \"true\" },
             \"bucket_uuid\": { \"type\": \"string\" },
             \"bucket_path\": { \"type\": \"string\" },
             \"document_name\": { \"type\": \"string\" },
@@ -30,6 +38,8 @@ pub fn create_bucket_scheme() -> String {
             \"document_ssdeep_hash\": { \"type\": \"string\" },
             \"entity_data\": { \"type\": \"string\" },
             \"entity_keywords\": [],
+            \"document_created\": { \"type\": \"date\" },
+            \"document_modified\": { \"type\": \"date\" }
         }
     }
     ",
@@ -40,7 +50,7 @@ pub async fn search_documents(
     elastic: &Elasticsearch,
     indexes: &[&str],
     body_value: &Value,
-    es_params: &SearchParameters,
+    es_params: &SearchParams,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let result_size = es_params.result_size;
     let result_offset = es_params.result_offset;
@@ -93,56 +103,45 @@ pub fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::E
     Ok(document)
 }
 
-pub fn build_search_query(parameters: &SearchParameters) -> Value {
+pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_size_to = parameters.document_size_to;
     let doc_size_from = parameters.document_size_from;
-    let doc_size_query = DocumentSizeQuery::new(doc_size_from, doc_size_to);
-    let doc_size_value = serde_json::to_value(doc_size_query).unwrap();
+    let doc_cr_to = parameters.created_date_to.as_str();
+    let doc_cr_from = parameters.created_date_from.as_str();
+    let doc_ext = parameters.document_extension.as_str();
+    let doc_path = parameters.document_path.as_str();
+    let doc_type = parameters.document_type.as_str();
 
-    let common_filter = json!({
-        "bool": {
-            "must": {
-                "range": {
-                    "document_size": doc_size_value,
-                },
-            },
-            "should": {
-                "term": {
-                    "document_type": "*",
-                    "document_path": "*",
-                    "document_extension": "*",
-                }
-            }
-        }
-    });
+    let common_filter = CommonFilter::new()
+        .with_date::<FilterRange, CreateDateQuery>("document_created", doc_cr_from, doc_cr_to)
+        .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
+        .with_term::<FilterTerm>("document_extension", doc_ext)
+        .with_term::<FilterTerm>("document_path", doc_path)
+        .with_term::<FilterTerm>("document_type", doc_type)
+        .build();
 
-    let query_str = QueryString::new(parameters.query.clone());
-    let match_query = MultiMatchQuery::new(query_str);
-    let match_value = serde_json::to_value(match_query).unwrap();
+    let match_query = MultiMatchQuery::new(parameters.query.as_str());
 
     json!({
         "query": {
             "bool": {
-                "must": match_value,
+                "must": match_query,
                 "filter": common_filter
             }
         },
         "highlight" : {
             "order": "score",
             "fields" : {
-                "body" : {
+                "entity_data": {
                     "pre_tags" : [""],
                     "post_tags" : [""]
-                },
-                "matched_fields": [
-                    "entity_data"
-                ],
+                }
             }
         }
     })
 }
 
-pub fn build_search_similar_query(parameters: &SearchParameters) -> Value {
+pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
     let ssdeep_hash = &parameters.query;
     println!("Need find by this: {:?}", ssdeep_hash);
     json!({
@@ -183,23 +182,104 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
         .as_i64()
         .unwrap();
 
-    Ok(Bucket::new(
-        health.to_string(),
-        status.to_string(),
-        bucket_id.to_string(),
-        uuid.to_string(),
-        docs_count.to_string(),
-        docs_deleted.to_string(),
-        store_size.to_string(),
-        pri_store_size.to_string(),
-        None,
-        None,
-    ))
+    let built_bucket = BucketBuilder::default()
+        .health(health.to_string())
+        .status(status.to_string())
+        .index(bucket_id.to_string())
+        .uuid(uuid.to_string())
+        .docs_count(docs_count.to_string())
+        .docs_deleted(docs_deleted.to_string())
+        .store_size(store_size.to_string())
+        .pri_store_size(pri_store_size.to_string())
+        .pri(None)
+        .rep(None)
+        .build();
+
+    Ok(built_bucket.unwrap())
 }
 
 pub fn deserialize_document(document_ref: &Document) -> Result<Value, WebError> {
     match serde_json::to_value(document_ref) {
         Ok(value) => Ok(value),
         Err(err) => Err(WebError::DocumentSerializing(err.to_string())),
+    }
+}
+
+pub fn load_directory_entity(directory: &Path) -> Vec<Document> {
+    file_loader::load_directory_entity(directory)
+        .into_iter()
+        .map(Document::from)
+        .collect::<Vec<Document>>()
+}
+
+pub async fn send_document(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    doc_form: &Document,
+    bucket_id: &str,
+) -> SendDocumentStatus {
+    let to_value_result = serde_json::to_value(doc_form);
+    let document_json = to_value_result.unwrap();
+    let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
+
+    body.push(json!({"index": { "_id": doc_form.document_md5_hash.as_str() }}).into());
+    body.push(document_json.into());
+
+    let response_result = elastic
+        .bulk(BulkParts::Index(bucket_id))
+        .body(body)
+        .send()
+        .await;
+
+    match response_result {
+        Ok(_) => SendDocumentStatus::new(true, doc_form.document_path.as_str()),
+        Err(err) => {
+            let err_msg = format!("Failed while loading file: {:?}", err);
+            SendDocumentStatus::new(false, err_msg.as_str())
+        }
+    }
+}
+
+#[cfg(test)]
+mod helper_tests {
+    use super::*;
+    use crate::wrappers::filter_query::FilterRange;
+
+    #[test]
+    fn build_filter_query() {
+        let params = SearchParams::default();
+        let parameters = &params;
+        let doc_size_to = parameters.document_size_to;
+        let doc_size_from = parameters.document_size_from;
+        let doc_ext = parameters.document_extension.as_str();
+        let doc_path = parameters.document_path.as_str();
+        let doc_type = parameters.document_type.as_str();
+        let doc_type = parameters.document_type.as_str();
+
+        let common_ = CommonFilter::new()
+            .with_date::<FilterRange, CreateDateQuery>("document_created", "2022-11-23 00:00:00", "")
+            .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
+            .with_term::<FilterTerm>("document_extension", doc_ext)
+            .with_term::<FilterTerm>("document_path", doc_path)
+            .with_term::<FilterTerm>("document_type", doc_type)
+            .build();
+
+        let val = serde_json::to_value(common_).unwrap();
+        println!("{}", serde_json::to_string_pretty(&val).unwrap());
+    }
+
+    #[test]
+    fn load_directory_entity_test() {
+        let file_path = "/Users/breadrock/Downloads/elastic-docstest/second";
+        let path_object = Path::new(file_path);
+        let _documents = load_directory_entity(&path_object);
+        println!("{:?}", "sdf");
+    }
+
+    #[test]
+    fn load_file_entity_test() {
+        let file_path = "/Users/breadrock/Downloads/optikot-data/tests-dockers/fuzzer-configs/asa5516/asa5516-dhcp.py";
+        let path_object = Path::new(file_path);
+        let _documents = load_directory_entity(&path_object);
+        println!("{:?}", "sdf");
     }
 }

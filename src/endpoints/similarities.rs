@@ -1,6 +1,5 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
-use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::document::Document;
 use crate::wrappers::search_params::*;
 
@@ -9,25 +8,23 @@ use actix_web::{post, web};
 #[post("/search-similar")]
 async fn search_similar_docs(
     cxt: ContextData,
-    form: web::Json<SearchParameters>,
+    form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.similar_from_all(&search_form).await
+    client.similar_all(&search_form).await
 }
 
 #[post("/search-similar/{bucket_names}")]
 async fn search_similar_docs_target(
     cxt: ContextData,
     path: web::Path<String>,
-    form: web::Json<SearchParameters>,
+    form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     let buckets = path.as_ref();
-    client
-        .similar_from_target(buckets.as_str(), &search_form)
-        .await
+    client.similar_bucket(buckets.as_str(), &search_form).await
 }
 
 #[cfg(test)]
@@ -48,8 +45,6 @@ mod similarities_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
         let cxt = ElasticContext::_new(elastic);
@@ -62,7 +57,7 @@ mod similarities_endpoints {
         for document_index in 1..5 {
             let document_size = 1024 + document_index;
             let test_document_name = &format!("test_document_{}", document_index);
-            let create_document_resp = TestRequest::post()
+            let _create_document_resp = TestRequest::post()
                 .uri("/searcher/document/new")
                 .set_json(&json!({
                     "bucket_uuid": test_bucket_name,
@@ -85,7 +80,7 @@ mod similarities_endpoints {
         }
 
         // Found documents request by document name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         let search_resp = TestRequest::post()
             .uri("/searcher/search")
@@ -97,7 +92,7 @@ mod similarities_endpoints {
         assert_eq!(founded_documents.len() > 0, true);
 
         // Found documents request by document name with filter
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         search_params.document_size_from = 1026;
         let search_resp = TestRequest::post()
@@ -110,7 +105,7 @@ mod similarities_endpoints {
         assert_eq!(founded_documents.len() >= 1, true);
 
         // Found documents request by document name and bucket name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "document".to_string();
         let search_resp = TestRequest::post()
             .uri(&format!("/searcher/search/{}", test_bucket_name))
@@ -122,7 +117,7 @@ mod similarities_endpoints {
         assert_eq!(founded_documents.len() >= 4, true);
 
         // Found documents request by document name and bucket name
-        let mut search_params = SearchParameters::default();
+        let mut search_params = SearchParams::default();
         search_params.query = "does not skip".to_string();
         let search_resp = TestRequest::post()
             .uri("/searcher/search")

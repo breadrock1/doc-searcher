@@ -1,7 +1,5 @@
-
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
-use crate::searcher::service_client::ServiceClient;
 use crate::wrappers::cluster::{Cluster, ClusterForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
@@ -51,8 +49,6 @@ mod cluster_endpoints {
         let es_host = service_parameters.es_host();
         let es_user = service_parameters.es_user();
         let es_passwd = service_parameters.es_passwd();
-        let service_port = service_parameters.service_port();
-        let service_addr = service_parameters.service_address();
 
         let elastic = build_elastic_client(es_host, es_user, es_passwd).unwrap();
         let cxt = ElasticContext::_new(elastic);
