@@ -3,13 +3,13 @@ mod file_data;
 pub use crate::file_data::FileData;
 use crate::file_data::FileDataBuilder;
 
-use hasher::gen_hash;
-use hasher::HashType;
-use std::os::unix::fs::MetadataExt;
+use chrono::{DateTime, Utc};
+use hasher::{HashType, gen_hash};
 
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Error, Read};
+use std::os::unix::fs::MetadataExt;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::time::SystemTime;
@@ -90,12 +90,12 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
     // Typically, the most portable way to get the latest file or directory is the modification time. That's
     // available nearly universally, including in POSIX. The access time is probably less useful and is often
     // disabled for performance reasons.
-    let dt_cr_utc = file_metadata
+    let dt_cr_utc: DateTime<Utc> = file_metadata
         .created()
         .unwrap_or_else(get_local_datetime)
         .into();
 
-    let dt_md_utc = file_metadata
+    let dt_md_utc: DateTime<Utc> = file_metadata
         .modified()
         .unwrap_or_else(get_local_datetime)
         .into();
