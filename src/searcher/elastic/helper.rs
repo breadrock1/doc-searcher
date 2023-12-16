@@ -23,6 +23,7 @@ pub fn create_bucket_scheme() -> String {
     {
         \"_source\": { \"enabled\": false },
         \"properties\": {
+            \"_timestamp\": { \"enabled\": \"true\" },
             \"bucket_uuid\": { \"type\": \"string\" },
             \"bucket_path\": { \"type\": \"string\" },
             \"document_name\": { \"type\": \"string\" },
@@ -37,8 +38,8 @@ pub fn create_bucket_scheme() -> String {
             \"document_ssdeep_hash\": { \"type\": \"string\" },
             \"entity_data\": { \"type\": \"string\" },
             \"entity_keywords\": [],
-            \"document_created\": { \"type\": \"string\" },
-            \"document_modified\": { \"type\": \"string\" }
+            \"document_created\": { \"type\": \"date\" },
+            \"document_modified\": { \"type\": \"date\" }
         }
     }
     ",
