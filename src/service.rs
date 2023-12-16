@@ -10,6 +10,7 @@ use crate::endpoints::similarities::{search_similar_docs, search_similar_docs_ta
 
 use actix_cors::Cors;
 use actix_web::{web, Scope};
+use actix_web::http::header;
 use dotenv::dotenv;
 
 use std::env::var;
