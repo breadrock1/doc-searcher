@@ -40,7 +40,7 @@ impl FilterDateQuery for CreateDateQuery {
     fn new(gte: &str, lte: &str) -> Self {
         let lte_value = match lte.is_empty() {
             true => Some(lte.to_string()),
-            false => Some(Local::now().format("%Y-%m-%d %H:%M:%S").to_string()),
+            false => Some(Local::now().format("%Y-%m-%d").to_string()),
         };
 
         CreateDateQuery {
