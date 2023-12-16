@@ -256,6 +256,7 @@ mod helper_tests {
         let doc_type = parameters.document_type.as_str();
 
         let common_ = CommonFilter::new()
+            .with_date::<FilterRange, CreateDateQuery>("document_created", "2022-11-23 00:00:00", "")
             .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
             .with_term::<FilterTerm>("document_extension", doc_ext)
             .with_term::<FilterTerm>("document_path", doc_path)
