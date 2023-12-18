@@ -18,8 +18,7 @@ use std::path::Path;
 use std::string::ToString;
 
 pub fn create_bucket_scheme() -> String {
-    String::from(
-        "
+    String::from("
     {
         \"_source\": { \"enabled\": false },
         \"properties\": {
@@ -27,7 +26,7 @@ pub fn create_bucket_scheme() -> String {
             \"bucket_uuid\": { \"type\": \"string\" },
             \"bucket_path\": { \"type\": \"string\" },
             \"document_name\": { \"type\": \"string\" },
-            \"document_path\": { \"type\": \"string\" },
+            \"document_path\": { \"type\": \"string\", \"index\": \"not_analyzed\" },
             \"document_size\": { \"type\": \"integer\" },
             \"document_type\": { \"type\": \"string\" },
             \"document_extension\": { \"type\": \"string\" },
@@ -42,8 +41,7 @@ pub fn create_bucket_scheme() -> String {
             \"document_modified\": { \"type\": \"date\" }
         }
     }
-    ",
-    )
+    ")
 }
 
 pub async fn search_documents(
