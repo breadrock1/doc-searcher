@@ -27,6 +27,7 @@ serde_derive = "^1.0"
 serde_json = "~1"
 thiserror = "^1.0"
 walkdir = "2.4.0"
+datetime = { path = "src/features/datetime" }
 hasher = { path = "src/features/hasher" }
 file_loader = { path = "src/features/file_loader" }
 
