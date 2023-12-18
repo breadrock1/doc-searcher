@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Clone, Default)]
@@ -22,9 +23,9 @@ pub struct ClusterForm {
     cluster_name: String,
 }
 
-impl ToString for ClusterForm {
-    fn to_string(&self) -> String {
+impl Display for ClusterForm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let self_data = &self.cluster_name;
-        self_data.clone()
+        write!(f, "{}", self_data.clone())
     }
 }
