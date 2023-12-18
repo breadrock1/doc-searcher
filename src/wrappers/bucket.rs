@@ -2,7 +2,7 @@ use std::fmt::Display;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Default, Builder)]
+#[derive(Deserialize, Serialize, Builder, Default)]
 pub struct Bucket {
     pub health: String,
     pub status: String,
@@ -22,7 +22,7 @@ pub struct Bucket {
     pub rep: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct BucketForm {
     bucket_name: String,
 }
