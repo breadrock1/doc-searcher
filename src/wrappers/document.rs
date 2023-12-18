@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use file_loader::FileData;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Deserialize, Serialize, Default, Builder)]
+#[derive(Deserialize, Serialize, Builder, Default)]
 pub struct Document {
     pub bucket_uuid: String,
     pub bucket_path: String,
@@ -64,7 +64,7 @@ fn format_datetime(value: &str) -> ParseResult<DateTime<Utc>> {
     Utc.datetime_from_str(value, "%Y-%m-%dT%H:%M:%SZ")
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct HighlightEntity {
     pub entity_data: Vec<String>,
 }
