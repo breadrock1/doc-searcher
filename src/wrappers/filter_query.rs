@@ -24,8 +24,11 @@ impl CommonFilter {
         if !param.is_empty() {
             let value = json!({ key: param });
             let filter_term = T::create(value);
-            let filter_value = serde_json::to_value(filter_term).unwrap();
-            self.bool.must.push(filter_value);
+            let serde_result = serde_json::to_value(filter_term);
+            if serde_result.is_ok() {
+                let filter_value = serde_result.unwrap();
+                self.bool.must.push(filter_value);
+            }
         }
 
         self
@@ -38,8 +41,11 @@ impl CommonFilter {
         let doc_size_query = DocumentSizeQuery::new(gte, lte);
         let value = json!({ key: doc_size_query });
         let filter_range = T::create(value);
-        let filter_value = serde_json::to_value(filter_range).unwrap();
-        self.bool.must.push(filter_value);
+        let serde_result = serde_json::to_value(filter_range);
+        if serde_result.is_ok() {
+            let filter_value = serde_result.unwrap();
+            self.bool.must.push(filter_value);
+        }
 
         self
     }
@@ -53,8 +59,11 @@ impl CommonFilter {
             let doc_date_query = U::new(gte, lte);
             let value = json!({ key: doc_date_query });
             let filter_range = T::create(value);
-            let filter_value = serde_json::to_value(filter_range).unwrap();
-            self.bool.must.push(filter_value);
+            let serde_result = serde_json::to_value(filter_range);
+            if serde_result.is_ok() {
+                let filter_value = serde_result.unwrap();
+                self.bool.must.push(filter_value);
+            }
         }
 
         self
