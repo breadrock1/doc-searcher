@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
 use file_loader::FileData;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Builder, Default)]
 pub struct Document {
