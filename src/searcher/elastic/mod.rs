@@ -2,6 +2,7 @@ pub mod client;
 pub mod context;
 pub mod helper;
 mod send_status;
+mod query_builder;
 
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;

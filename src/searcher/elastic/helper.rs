@@ -1,10 +1,11 @@
 use crate::errors::{WebError, WebResponse};
 use crate::searcher::elastic::send_status::SendDocumentStatus;
+use crate::searcher::elastic::query_builder::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use crate::searcher::elastic::query_builder::search_query::MultiMatchQuery;
 use crate::wrappers::bucket::{Bucket, BucketBuilder};
 use crate::wrappers::document::{Document, HighlightEntity};
-use crate::wrappers::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
 use crate::wrappers::search_params::SearchParams;
-use crate::wrappers::search_query::MultiMatchQuery;
+
 
 use actix_web::web;
 use elasticsearch::http::request::JsonBody;
@@ -238,7 +239,7 @@ pub async fn send_document(
 #[cfg(test)]
 mod helper_tests {
     use super::*;
-    use crate::wrappers::filter_query::FilterRange;
+    use crate::searcher::elastic::query_builder::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
 
     #[test]
     fn build_filter_query() {
