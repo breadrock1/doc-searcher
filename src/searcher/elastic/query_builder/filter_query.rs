@@ -75,12 +75,12 @@ impl CommonFilter {
 }
 
 
-pub(crate) trait FilterItem {
+pub trait FilterItem {
     fn create(value: Value) -> Self;
 }
 
 #[derive(Clone, Default, Serialize)]
-pub(crate) struct FilterTerm {
+pub struct FilterTerm {
     term: Option<Value>,
 }
 
