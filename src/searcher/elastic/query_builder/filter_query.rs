@@ -128,8 +128,8 @@ pub struct CreateDateQuery {
 impl FilterDateQuery for CreateDateQuery {
     fn new(gte: &str, lte: &str) -> Self {
         let lte_value = match lte.is_empty() {
-            true => Some(lte.to_string()),
-            false => Some(Local::now().format("%Y-%m-%d").to_string()),
+            false => Some(lte.to_string()),
+            true => Some(Local::now().format("%Y-%m-%d").to_string()),
         };
 
         CreateDateQuery {
