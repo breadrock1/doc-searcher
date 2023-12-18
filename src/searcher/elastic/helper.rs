@@ -157,15 +157,15 @@ pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
 }
 
 pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
-    let indicies = &value[&"indices"];
-    let bucket_id = indicies.as_object();
+    let indices = &value[&"indices"];
+    let bucket_id = indices.as_object();
     if bucket_id.is_none() {
         let msg = "There is no passed bucket name in json.";
         return Err(WebError::GetBucket(msg.to_string()));
     }
 
     let bucket_id = bucket_id.unwrap().keys().next().unwrap();
-    let bucket = &indicies[bucket_id.as_str()];
+    let bucket = &indices[bucket_id.as_str()];
     let health = &bucket[&"health"].as_str().unwrap();
     let status = &bucket[&"status"].as_str().unwrap();
     let uuid = &bucket[&"uuid"].as_str().unwrap();
@@ -247,7 +247,6 @@ mod helper_tests {
         let doc_size_to = parameters.document_size_to;
         let doc_size_from = parameters.document_size_from;
         let doc_ext = parameters.document_extension.as_str();
-        let doc_path = parameters.document_path.as_str();
         let doc_type = parameters.document_type.as_str();
         let doc_type = parameters.document_type.as_str();
 
@@ -255,7 +254,6 @@ mod helper_tests {
             .with_date::<FilterRange, CreateDateQuery>("document_created", "2022-11-23 00:00:00", "")
             .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
             .with_term::<FilterTerm>("document_extension", doc_ext)
-            .with_term::<FilterTerm>("document_path", doc_path)
             .with_term::<FilterTerm>("document_type", doc_type)
             .build();
 
