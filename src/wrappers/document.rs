@@ -1,4 +1,5 @@
-use chrono::{DateTime, ParseResult, TimeZone, Utc};
+use chrono::{DateTime, Utc};
+use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
 use file_loader::FileData;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -36,32 +37,6 @@ impl Document {
     pub fn append_highlight(&mut self, highlight: Option<HighlightEntity>) {
         self.highlight = highlight
     }
-}
-
-pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    if let Some(dt) = dt {
-        dt.format("%Y-%m-%dT%H:%M:%SZ")
-            .to_string()
-            .serialize(serializer)
-    } else {
-        serializer.serialize_none()
-    }
-}
-
-pub fn deserialize_dt<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    String::deserialize(deserializer)
-        .and_then(|value| Ok(format_datetime(value.as_str())))
-        .and_then(|value| Ok(value.ok()))
-}
-
-fn format_datetime(value: &str) -> ParseResult<DateTime<Utc>> {
-    Utc.datetime_from_str(value, "%Y-%m-%dT%H:%M:%SZ")
 }
 
 #[derive(Serialize, Deserialize, Clone, Default)]
