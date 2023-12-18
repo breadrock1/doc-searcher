@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Cluster {
     ip: String,
     #[serde(alias = "heap.percent")]
@@ -18,7 +18,7 @@ pub struct Cluster {
     name: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct ClusterForm {
     cluster_name: String,
 }
