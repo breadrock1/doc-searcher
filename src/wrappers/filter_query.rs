@@ -2,102 +2,6 @@ use chrono::Local;
 use serde_derive::Serialize;
 use serde_json::{json, Value};
 
-#[derive(Serialize)]
-#[serde(rename = "document_size")]
-pub struct DocumentSizeQuery {
-    gte: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    lte: Option<i64>,
-}
-
-impl DocumentSizeQuery {
-    pub fn new(gte: i64, lte: i64) -> Self {
-        let lte_value = match lte > 0 {
-            true => Some(lte),
-            false => None,
-        };
-
-        DocumentSizeQuery {
-            gte,
-            lte: lte_value,
-        }
-    }
-}
-
-pub trait FilterDateQuery {
-    fn new(gte: &str, lte: &str) -> Self;
-}
-
-#[derive(Serialize)]
-#[serde(rename = "document_created")]
-pub struct CreateDateQuery {
-    gte: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    lte: Option<String>,
-}
-
-impl FilterDateQuery for CreateDateQuery {
-    fn new(gte: &str, lte: &str) -> Self {
-        let lte_value = match lte.is_empty() {
-            true => Some(lte.to_string()),
-            false => Some(Local::now().format("%Y-%m-%d").to_string()),
-        };
-
-        CreateDateQuery {
-            gte: gte.to_string(),
-            lte: lte_value,
-        }
-    }
-}
-
-#[derive(Serialize)]
-#[serde(rename = "document_modified")]
-pub struct ModifyDateQuery {
-    gte: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    lte: Option<String>,
-}
-
-impl FilterDateQuery for ModifyDateQuery {
-    fn new(gte: &str, lte: &str) -> Self {
-        let lte_value = match lte.is_empty() {
-            true => Some(lte.to_string()),
-            false => None,
-        };
-
-        ModifyDateQuery {
-            gte: gte.to_string(),
-            lte: lte_value,
-        }
-    }
-}
-
-pub(crate) trait FilterItem {
-    fn create(value: Value) -> Self;
-}
-
-#[derive(Clone, Default, Serialize)]
-pub(crate) struct FilterTerm {
-    term: Option<Value>,
-}
-
-impl FilterItem for FilterTerm {
-    fn create(value: Value) -> Self {
-        FilterTerm { term: Some(value) }
-    }
-}
-
-#[derive(Clone, Default, Serialize)]
-pub struct FilterRange {
-    range: Option<Value>,
-}
-
-impl FilterItem for FilterRange {
-    fn create(value: Value) -> Self {
-        FilterRange { range: Some(value) }
-    }
-}
-
 #[derive(Clone, Default, Serialize)]
 struct FilterMust {
     must: Vec<Value>,
@@ -158,5 +62,115 @@ impl CommonFilter {
 
     pub fn build(self) -> Self {
         self
+    }
+}
+
+
+pub(crate) trait FilterItem {
+    fn create(value: Value) -> Self;
+}
+
+#[derive(Clone, Default, Serialize)]
+pub(crate) struct FilterTerm {
+    term: Option<Value>,
+}
+
+impl FilterItem for FilterTerm {
+    fn create(value: Value) -> Self {
+        FilterTerm { term: Some(value) }
+    }
+}
+
+#[derive(Clone, Default, Serialize)]
+pub struct FilterRange {
+    range: Option<Value>,
+}
+
+impl FilterItem for FilterRange {
+    fn create(value: Value) -> Self {
+        FilterRange { range: Some(value) }
+    }
+}
+
+#[derive(Clone, Default, Serialize)]
+pub struct FilterPrefix {
+    prefix: Option<Value>,
+}
+
+impl FilterItem for FilterPrefix {
+    fn create(value: Value) -> Self {
+        FilterPrefix { prefix: Some(value) }
+    }
+}
+
+
+pub trait FilterDateQuery {
+    fn new(gte: &str, lte: &str) -> Self;
+}
+
+#[derive(Serialize)]
+#[serde(rename = "document_created")]
+pub struct CreateDateQuery {
+    gte: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    lte: Option<String>,
+}
+
+impl FilterDateQuery for CreateDateQuery {
+    fn new(gte: &str, lte: &str) -> Self {
+        let lte_value = match lte.is_empty() {
+            true => Some(lte.to_string()),
+            false => Some(Local::now().format("%Y-%m-%d").to_string()),
+        };
+
+        CreateDateQuery {
+            gte: gte.to_string(),
+            lte: lte_value,
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename = "document_modified")]
+pub struct ModifyDateQuery {
+    gte: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    lte: Option<String>,
+}
+
+impl FilterDateQuery for ModifyDateQuery {
+    fn new(gte: &str, lte: &str) -> Self {
+        let lte_value = match lte.is_empty() {
+            true => Some(lte.to_string()),
+            false => None,
+        };
+
+        ModifyDateQuery {
+            gte: gte.to_string(),
+            lte: lte_value,
+        }
+    }
+}
+
+
+#[derive(Serialize)]
+#[serde(rename = "document_size")]
+pub struct DocumentSizeQuery {
+    gte: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    lte: Option<i64>,
+}
+
+impl DocumentSizeQuery {
+    pub fn new(gte: i64, lte: i64) -> Self {
+        let lte_value = match lte > 0 {
+            true => Some(lte),
+            false => None,
+        };
+
+        DocumentSizeQuery {
+            gte,
+            lte: lte_value,
+        }
     }
 }
