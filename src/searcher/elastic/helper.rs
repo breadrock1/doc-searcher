@@ -107,14 +107,12 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_cr_to = parameters.created_date_to.as_str();
     let doc_cr_from = parameters.created_date_from.as_str();
     let doc_ext = parameters.document_extension.as_str();
-    let doc_path = parameters.document_path.as_str();
     let doc_type = parameters.document_type.as_str();
 
     let common_filter = CommonFilter::new()
         .with_date::<FilterRange, CreateDateQuery>("document_created", doc_cr_from, doc_cr_to)
         .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
         .with_term::<FilterTerm>("document_extension", doc_ext)
-        .with_term::<FilterTerm>("document_path", doc_path)
         .with_term::<FilterTerm>("document_type", doc_type)
         .build();
 
