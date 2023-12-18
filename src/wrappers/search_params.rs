@@ -5,7 +5,6 @@ use serde::Deserialize;
 pub struct SearchParams {
     pub query: String,
     pub document_type: String,
-    pub document_path: String,
     pub document_extension: String,
     pub document_size_to: i64,
     pub document_size_from: i64,
@@ -20,7 +19,6 @@ impl Default for SearchParams {
         SearchParamsBuilder::default()
             .query("*".to_string())
             .document_type(String::default())
-            .document_path(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
             .created_date_from(String::default())
