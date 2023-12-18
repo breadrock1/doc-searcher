@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -26,10 +27,10 @@ pub struct BucketForm {
     bucket_name: String,
 }
 
-impl ToString for BucketForm {
-    fn to_string(&self) -> String {
+impl Display for BucketForm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let self_data = &self.bucket_name;
-        self_data.clone()
+        write!(f, "{}", self_data.clone())
     }
 }
 
