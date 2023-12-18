@@ -1,13 +1,13 @@
 use actix_multipart::form::tempfile::TempFile;
 use actix_multipart::form::MultipartForm;
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 
 #[derive(MultipartForm)]
 pub struct UploadFileForm {
     _file: TempFile,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct LoadFileForm {
     file_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
