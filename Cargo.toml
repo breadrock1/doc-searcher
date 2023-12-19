@@ -11,22 +11,22 @@ default-search = []
 default = ["elastic-search"]
 
 [dependencies]
-anyhow = "1.0.75"
+anyhow = "^1.0"
 actix-web = "^4.3"
-actix-cors = "0.6.4"
-actix-multipart = "0.6.1"
-async-trait = "0.1.74"
+actix-cors = "^0.6"
+actix-multipart = "^0.6"
+async-trait = "^0.1"
 derive_builder = "^0.12"
 dotenv = "^0.15"
 elasticsearch = "8.5.0-alpha.1"
-env_logger = "0.10.1"
-futures = "0.3.29"
+env_logger = "^0.10"
+futures = "^0.3"
 log = "^0.4"
-serde = "~1"
+serde = "^1.0"
 serde_derive = "^1.0"
-serde_json = "~1"
+serde_json = "^1.0"
 thiserror = "^1.0"
-walkdir = "2.4.0"
+walkdir = "^2.4"
 datetime = { path = "src/features/datetime" }
 hasher = { path = "src/features/hasher" }
 file_loader = { path = "src/features/file_loader" }
