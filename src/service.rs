@@ -9,13 +9,13 @@ use crate::endpoints::searcher::{search_all, search_target};
 use crate::endpoints::similarities::{search_similar_docs, search_similar_docs_target};
 
 use actix_cors::Cors;
-use actix_web::{web, Scope};
 use actix_web::http::header;
+use actix_web::{web, Scope};
 use dotenv::dotenv;
 
+use derive_builder::Builder;
 use std::env::var;
 use std::str::FromStr;
-use derive_builder::Builder;
 
 #[derive(Builder)]
 pub struct ServiceParameters {

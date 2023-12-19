@@ -1,11 +1,12 @@
 use crate::errors::{WebError, WebResponse};
-use crate::searcher::elastic::send_status::SendDocumentStatus;
-use crate::searcher::elastic::query_builder::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use crate::searcher::elastic::query_builder::filter_query::{
+    CommonFilter, CreateDateQuery, FilterRange, FilterTerm,
+};
 use crate::searcher::elastic::query_builder::search_query::MultiMatchQuery;
+use crate::searcher::elastic::send_status::SendDocumentStatus;
 use crate::wrappers::bucket::{Bucket, BucketBuilder};
 use crate::wrappers::document::{Document, HighlightEntity};
 use crate::wrappers::search_params::SearchParams;
-
 
 use actix_web::web;
 use elasticsearch::http::request::JsonBody;
@@ -19,7 +20,8 @@ use std::path::Path;
 use std::string::ToString;
 
 pub fn create_bucket_scheme() -> String {
-    String::from("
+    String::from(
+        "
     {
         \"_source\": { \"enabled\": false },
         \"properties\": {
@@ -42,7 +44,8 @@ pub fn create_bucket_scheme() -> String {
             \"document_modified\": { \"type\": \"date\" }
         }
     }
-    ")
+    ",
+    )
 }
 
 pub async fn search_documents(
@@ -239,7 +242,9 @@ pub async fn send_document(
 #[cfg(test)]
 mod helper_tests {
     use super::*;
-    use crate::searcher::elastic::query_builder::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+    use crate::searcher::elastic::query_builder::filter_query::{
+        CommonFilter, CreateDateQuery, FilterRange, FilterTerm,
+    };
 
     #[test]
     fn build_filter_query() {
@@ -252,7 +257,11 @@ mod helper_tests {
         let doc_type = parameters.document_type.as_str();
 
         let common_ = CommonFilter::new()
-            .with_date::<FilterRange, CreateDateQuery>("document_created", "2022-11-23 00:00:00", "")
+            .with_date::<FilterRange, CreateDateQuery>(
+                "document_created",
+                "2022-11-23 00:00:00",
+                "",
+            )
             .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
             .with_term::<FilterTerm>("document_extension", doc_ext)
             .with_term::<FilterTerm>("document_type", doc_type)

@@ -2,8 +2,8 @@ use chrono::{DateTime, ParseResult, TimeZone, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+where
+    S: Serializer,
 {
     if let Some(dt) = dt {
         dt.format("%Y-%m-%dT%H:%M:%SZ")
@@ -15,8 +15,8 @@ pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::O
 }
 
 pub fn deserialize_dt<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     String::deserialize(deserializer)
         .and_then(|value| Ok(format_datetime(value.as_str())))

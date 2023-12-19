@@ -5,9 +5,7 @@ pub struct Hashed {
 
 impl Hashed {
     pub fn new(hashed: String) -> Hashed {
-        Hashed {
-            hash_data: hashed,
-        }
+        Hashed { hash_data: hashed }
     }
 
     pub fn get_hash_data(&self) -> &str {
