@@ -1,5 +1,10 @@
 use chrono::{DateTime, ParseResult, TimeZone, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::time::SystemTime;
+
+pub fn get_local_now() -> SystemTime {
+    SystemTime::now()
+}
 
 pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
 where
