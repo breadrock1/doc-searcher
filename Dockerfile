@@ -12,8 +12,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
     sh -s -- --default-toolchain 1.71.0 -y && \
     ln -s $HOME/.cargo/bin/* /usr/bin/
 
-RUN rustup default nightly-unknown-linux-gnu
-
 COPY . /home/docsearcher
 WORKDIR /home/docsearcher
 RUN rm -rf .env
