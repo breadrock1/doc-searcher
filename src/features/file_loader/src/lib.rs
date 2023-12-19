@@ -4,7 +4,7 @@ pub use crate::file_data::FileData;
 use crate::file_data::FileDataBuilder;
 
 use chrono::{DateTime, Utc};
-use hasher::{HashType, gen_hash};
+use hasher::{gen_hash, HashType};
 
 use std::ffi::OsStr;
 use std::fs::File;
@@ -44,13 +44,9 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
     }
 
     let file_metadata = metadata_res.unwrap();
-    let perms_ = file_metadata
-        .permissions()
-        .mode();
+    let perms_ = file_metadata.permissions().mode();
 
-    let file_path_ = file_path
-        .to_str()
-        .unwrap_or("unknown");
+    let file_path_ = file_path.to_str().unwrap_or("unknown");
 
     let file_name_ = file_path
         .file_name()

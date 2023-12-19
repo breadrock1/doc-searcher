@@ -1,6 +1,6 @@
-use std::fmt::Display;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Deserialize, Serialize, Builder, Default)]
 pub struct Bucket {

@@ -74,7 +74,6 @@ impl CommonFilter {
     }
 }
 
-
 pub trait FilterItem {
     fn create(value: Value) -> Self;
 }
@@ -108,10 +107,11 @@ pub struct FilterPrefix {
 
 impl FilterItem for FilterPrefix {
     fn create(value: Value) -> Self {
-        FilterPrefix { prefix: Some(value) }
+        FilterPrefix {
+            prefix: Some(value),
+        }
     }
 }
-
 
 pub trait FilterDateQuery {
     fn new(gte: &str, lte: &str) -> Self;
@@ -160,7 +160,6 @@ impl FilterDateQuery for ModifyDateQuery {
         }
     }
 }
-
 
 #[derive(Serialize)]
 #[serde(rename = "document_size")]
