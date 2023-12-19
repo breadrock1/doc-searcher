@@ -9,5 +9,6 @@ edition = "2021"
 chrono = "^0.4"
 derive_builder = "^0.12"
 docx-rust = "^0.1"
+office = "^0.8"
 walkdir = "^2.4"
 hasher = { path = "../hasher" }
