@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 chrono = "^0.4"
 derive_builder = "^0.12"
-walkdir = "2.4.0"
+docx-rust = "^0.1"
+walkdir = "^2.4"
 hasher = { path = "../hasher" }
