@@ -4,16 +4,16 @@ use crate::endpoints::buckets::{
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::hello::hello;
-use crate::endpoints::loader::{load_file, upload_file};
+use crate::endpoints::loader::load_file;
 use crate::endpoints::searcher::{search_all, search_target};
 use crate::endpoints::similarities::{search_similar_docs, search_similar_docs_target};
 
 use actix_cors::Cors;
 use actix_web::http::header;
 use actix_web::{web, Scope};
+use derive_builder::Builder;
 use dotenv::dotenv;
 
-use derive_builder::Builder;
 use std::env::var;
 use std::str::FromStr;
 
@@ -117,5 +117,4 @@ pub fn build_service() -> Scope {
         .service(search_similar_docs)
         .service(search_similar_docs_target)
         .service(load_file)
-        .service(upload_file)
 }
