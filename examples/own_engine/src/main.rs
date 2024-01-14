@@ -1,13 +1,7 @@
-mod endpoints;
-mod errors;
-mod searcher;
-mod service;
-mod wrappers;
-
-use crate::searcher::elastic::context::ElasticContext;
-use crate::searcher::own_engine::context::OtherContext;
-use crate::searcher::service_client::ServiceClient;
-use crate::service::{build_cors_config, build_service, init_service_parameters};
+extern crate docsearcher;
+use docsearcher::service::*;
+use docsearcher::searcher::service_client::ServiceClient;
+use docsearcher::searcher::own_engine::context::OtherContext;
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -21,11 +15,6 @@ async fn main() -> Result<(), anyhow::Error> {
     let service_port = service_parameters.service_port();
     let service_addr = service_parameters.service_address();
     let cors_origin = service_parameters.cors_origin();
-
-    #[cfg(feature = "elastic-search")]
-    let search_context = build_elastic_service(es_host, es_user, es_passwd);
-
-    #[cfg(feature = "default-search")]
     let search_context = build_client_service(es_host, es_user, es_passwd);
 
     HttpServer::new(move || {
@@ -39,22 +28,15 @@ async fn main() -> Result<(), anyhow::Error> {
             .wrap(Logger::default())
             .wrap(cors)
     })
-    .bind((service_addr, service_port))?
-    .run()
-    .await?;
+        .bind((service_addr, service_port))?
+        .run()
+        .await?;
 
     Ok(())
 }
 
-#[cfg(feature = "elastic-search")]
-fn build_elastic_service(es_host: &str, es_user: &str, es_passwd: &str) -> ElasticContext {
-    use crate::searcher::elastic::build_elastic_client;
-    let client = build_elastic_client(es_host, es_user, es_passwd);
-    ElasticContext::_new(client.unwrap())
-}
-
-#[cfg(feature = "default-search")]
 fn build_client_service(es_host: &str, es_user: &str, es_passwd: &str) -> OtherContext {
-    use crate::searcher::own_engine::build_own_client;
-    build_own_client(es_host, es_user, es_passwd)?
+    use docsearcher::searcher::own_engine::build_own_client;
+    let client = build_own_client(es_host, es_user, es_passwd);
+    client.unwrap()
 }
