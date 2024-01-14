@@ -20,7 +20,7 @@ pub enum WebError {
     CreateBucket(String),
     #[error("Error while deleting bucket: {0}")]
     DeleteBucket(String),
-    #[error("Error elastic response: {0}")]
+    #[error("Error elasticsearch response: {0}")]
     GetDocument(String),
     #[error("Failed while creating document: {0}")]
     CreateDocument(String),
