@@ -28,7 +28,6 @@ pub trait ServiceClient {
     async fn delete_document(&self, bucket_id: &str, doc_id: &str) -> HttpResponse;
 
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
-    // async fn upload_file_to_bucket(&self, bucket_id: &str, part: Multipart) -> HttpResponse;
 
     async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
     async fn search_bucket(
