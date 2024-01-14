@@ -48,26 +48,3 @@ fn md5_hash(data: &[u8]) -> HasherResult {
     let hash_data = format!("{:x}", digest);
     Ok(Hashed::new(hash_data))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const TEST_STRING: &'static str = "There is some data to check ssdeep hasher";
-
-    #[test]
-    fn ssdeep_hash_test() {
-        let hasher_result = ssdeep_hash(TEST_STRING.as_bytes());
-        let binding = hasher_result.unwrap();
-        let hash_data = binding.get_hash_data();
-        assert_eq!(hash_data, "3:ZFkREaLGqnP3/SX:7knL7v/k")
-    }
-
-    #[test]
-    fn md5_hash_test() {
-        let hasher_result = md5_hash(TEST_STRING.as_bytes());
-        let binding = hasher_result.unwrap();
-        let hash_data = binding.get_hash_data();
-        assert_eq!(hash_data, "ece0157cd8e0c1c4d7986904151e7930")
-    }
-}

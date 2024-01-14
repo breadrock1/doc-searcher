@@ -9,3 +9,7 @@ edition = "2021"
 md5 = "0.7.0"
 ssdeep = "0.2.0"
 thiserror = "^1.0"
+
+[[test]]
+name = "test"
+path = "test/test.rs"
