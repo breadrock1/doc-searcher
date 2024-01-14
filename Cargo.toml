@@ -1,9 +1,10 @@
 [package]
-name = "searcher"
+name = "docsearcher"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[badges]
+maintenance = { status = "actively-developed" }
 
 [features]
 elastic-search = []
@@ -16,6 +17,7 @@ actix-web = "^4.3"
 actix-cors = "^0.6"
 actix-multipart = "^0.6"
 async-trait = "^0.1"
+chrono = { version = "^0.4", features = ["rustc-serialize", "serde"] }
 derive_builder = "^0.12"
 dotenv = "^0.15"
 elasticsearch = "8.5.0-alpha.1"
@@ -26,18 +28,29 @@ serde = "^1.0"
 serde_derive = "^1.0"
 serde_json = "^1.0"
 thiserror = "^1.0"
+tokio = { version = "^1.32", features = ["full"] }
 walkdir = "^2.4"
+
 datetime = { path = "src/features/datetime" }
+elquery = { path = "src/features/elquery" }
 hasher = { path = "src/features/hasher" }
-file_loader = { path = "src/features/file_loader" }
-
-[dependencies.chrono]
-version = "^0.4"
-features = ["rustc-serialize", "serde"]
-
-[dependencies.tokio]
-version = "^1.32"
-features = ["full"]
+loader = { path = "src/features/loader" }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
+
+[[test]]
+name = "datetime_tests"
+path = "src/features/datetime/test/test.rs"
+
+[[test]]
+name = "elquery_tests"
+path = "src/features/elquery/test/test.rs"
+
+[[test]]
+name = "hasher_tests"
+path = "src/features/hasher/test/test.rs"
+
+[[test]]
+name = "loader_tests"
+path = "src/features/loader/test/test.rs"
