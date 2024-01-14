@@ -1,7 +1,7 @@
 use derive_builder::Builder;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Builder)]
+#[derive(Builder, Deserialize, Serialize)]
 pub struct SearchParams {
     pub query: String,
     pub document_type: String,
