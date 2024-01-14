@@ -123,14 +123,3 @@ fn get_local_datetime(err: Error) -> SystemTime {
     println!("{:?}", err);
     SystemTime::now()
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        // let result = add(2, 2);
-        // assert_eq!(result, 4);
-    }
-}
