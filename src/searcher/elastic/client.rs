@@ -295,14 +295,15 @@ impl ServiceClient for ElasticContext {
         let elastic = self.get_cxt().read().await;
         let bucket_name = &doc_form.bucket_uuid;
         let document_id = &doc_form.document_md5_hash;
-        let document_json = deserialize_document(doc_form);
-        if document_json.is_err() {
-            let err = document_json.err().unwrap();
+
+        let ser_doc_result = serde_json::to_value(doc_form);
+        if ser_doc_result.is_err() {
+            let err = ser_doc_result.err().unwrap();
             let web_err = WebError::UpdateDocument(err.to_string());
             return web_err.error_response();
         }
 
-        let document_json = document_json.unwrap();
+        let document_json = ser_doc_result.unwrap();
         let s_path = format!("/{}/_doc/{}", bucket_name, document_id);
         let response_result = elastic
             .send(
@@ -349,7 +350,11 @@ impl ServiceClient for ElasticContext {
             return err.error_response();
         }
 
-        let documents = load_directory_entity(file_path_);
+        let documents = loader::load_directory_entity(file_path_)
+            .into_iter()
+            .map(Document::from)
+            .collect::<Vec<Document>>();
+
         let futures_list = documents
             .iter()
             .map(|doc_form| send_document(&elastic, doc_form, bucket_id))
@@ -372,14 +377,6 @@ impl ServiceClient for ElasticContext {
 
         SuccessfulResponse::ok_response("Ok")
     }
-
-    // async fn upload_file_to_all(&self, mut part: Multipart) -> HttpResponse {
-    //     SuccessfulResponse::ok_response("Ok")
-    // }
-    //
-    // async fn upload_file_to_bucket(&self, bucket_id: &str, mut part: Multipart) -> HttpResponse {
-    //     SuccessfulResponse::ok_response("Ok")
-    // }
 
     async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
