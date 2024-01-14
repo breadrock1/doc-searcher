@@ -1,5 +1,5 @@
-use crate::parser::{docx_file_parser, excel_file_parser, pdf_file_parser};
 use crate::parser::text_file_parser;
+use crate::parser::{docx_file_parser, excel_file_parser, pdf_file_parser};
 use std::path::Path;
 
 pub enum FileKind {
@@ -28,13 +28,13 @@ impl FileKind {
 
     pub fn parse_file(file_path: &Path, kind: &FileKind) -> String {
         match kind {
-            FileKind::Docx=> docx_file_parser::parse(file_path),
-            FileKind::Excel=> excel_file_parser::parse(file_path),
-            FileKind::Text=> text_file_parser::parse(file_path),
-            FileKind::Pdf=> pdf_file_parser::parse(file_path),
-            FileKind::Video=> Ok("There is video file.".to_string()),
+            FileKind::Docx => docx_file_parser::parse(file_path),
+            FileKind::Excel => excel_file_parser::parse(file_path),
+            FileKind::Text => text_file_parser::parse(file_path),
+            FileKind::Pdf => pdf_file_parser::parse(file_path),
+            FileKind::Video => Ok("There is video file.".to_string()),
             FileKind::Audio => Ok("There is audio file.".to_string()),
-            FileKind::Picture=> Ok("There is picture file.".to_string()),
+            FileKind::Picture => Ok("There is picture file.".to_string()),
         }
         .unwrap()
     }
