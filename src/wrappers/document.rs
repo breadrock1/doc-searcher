@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
-use file_loader::FileData;
+use loader::FileData;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Builder, Default)]
