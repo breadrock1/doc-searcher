@@ -1,6 +1,6 @@
 use std::fs::File;
-use std::path::Path;
 use std::io::{Error, Read};
+use std::path::Path;
 
 pub fn parse(file_path: &Path) -> Result<String, Error> {
     let file_res = File::open(file_path);

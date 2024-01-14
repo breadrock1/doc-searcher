@@ -1,12 +1,12 @@
-use office::{Excel, Range, DataType};
+use office::{DataType, Excel, Range};
 
-use std::path::Path;
 use std::io::Error;
-
+use std::path::Path;
 
 pub fn parse(file_path: &Path) -> Result<String, Error> {
     let mut workbook = Excel::open(file_path).unwrap();
-    let sheet_data = workbook.sheet_names()
+    let sheet_data = workbook
+        .sheet_names()
         .unwrap_or_default()
         .iter()
         .flat_map(|sheet_name| {
@@ -24,9 +24,7 @@ fn parse_sheet(range: &Range) -> Vec<String> {
     range
         .rows()
         .enumerate()
-        .flat_map(|(row_index, row)| {
-            parse_sheet_row(range, row_index, row)
-        })
+        .flat_map(|(row_index, row)| parse_sheet_row(range, row_index, row))
         .collect::<Vec<String>>()
 }
 
