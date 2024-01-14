@@ -1,51 +1,48 @@
 use crate::errors::{WebError, WebResponse};
-use crate::searcher::elastic::query_builder::filter_query::{
-    CommonFilter, CreateDateQuery, FilterRange, FilterTerm,
-};
-use crate::searcher::elastic::query_builder::search_query::MultiMatchQuery;
 use crate::searcher::elastic::send_status::SendDocumentStatus;
 use crate::wrappers::bucket::{Bucket, BucketBuilder};
 use crate::wrappers::document::{Document, HighlightEntity};
+use crate::wrappers::schema::BucketSchema;
 use crate::wrappers::search_params::SearchParams;
 
 use actix_web::web;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
+use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use elquery::highlight_query::HighlightOrder;
+use elquery::search_query::MultiMatchQuery;
+use elquery::similar_query::SimilarQuery;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::string::ToString;
 use tokio::sync::RwLockReadGuard;
 
-use std::path::Path;
-use std::string::ToString;
+pub async fn send_document(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    doc_form: &Document,
+    bucket_id: &str,
+) -> SendDocumentStatus {
+    let to_value_result = serde_json::to_value(doc_form);
+    let document_json = to_value_result.unwrap();
+    let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
 
-pub fn create_bucket_scheme() -> String {
-    String::from(
-        "
-    {
-        \"_source\": { \"enabled\": false },
-        \"properties\": {
-            \"_timestamp\": { \"enabled\": \"true\" },
-            \"bucket_uuid\": { \"type\": \"string\" },
-            \"bucket_path\": { \"type\": \"string\" },
-            \"document_name\": { \"type\": \"string\" },
-            \"document_path\": { \"type\": \"string\", \"index\": \"not_analyzed\" },
-            \"document_size\": { \"type\": \"integer\" },
-            \"document_type\": { \"type\": \"string\" },
-            \"document_extension\": { \"type\": \"string\" },
-            \"document_permissions\": { \"type\": \"integer\" },
-            \"document_created\": { \"type\": \"date\" },
-            \"document_modified\": { \"type\": \"date\" },
-            \"document_md5_hash\": { \"type\": \"string\" },
-            \"document_ssdeep_hash\": { \"type\": \"string\" },
-            \"entity_data\": { \"type\": \"string\" },
-            \"entity_keywords\": [],
-            \"document_created\": { \"type\": \"date\" },
-            \"document_modified\": { \"type\": \"date\" }
+    body.push(json!({"index": { "_id": doc_form.document_md5_hash.as_str() }}).into());
+    body.push(document_json.into());
+
+    let response_result = elastic
+        .bulk(BulkParts::Index(bucket_id))
+        .body(body)
+        .send()
+        .await;
+
+    match response_result {
+        Ok(_) => SendDocumentStatus::new(true, doc_form.document_path.as_str()),
+        Err(err) => {
+            let err_msg = format!("Failed while loading file: {:?}", err);
+            SendDocumentStatus::new(false, err_msg.as_str())
         }
     }
-    ",
-    )
 }
 
 pub async fn search_documents(
@@ -94,7 +91,7 @@ pub async fn parse_search_result(response: Response) -> Vec<Document> {
         .collect()
 }
 
-pub fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
+fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
     let source_value = value[&"_source"].to_owned();
     let mut document = Document::deserialize(source_value)?;
 
@@ -121,6 +118,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         .build();
 
     let match_query = MultiMatchQuery::new(parameters.query.as_str());
+    let highlight_order = HighlightOrder::default();
 
     json!({
         "query": {
@@ -129,35 +127,15 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
                 "filter": common_filter
             }
         },
-        "highlight" : {
-            "order": "score",
-            "fields" : {
-                "entity_data": {
-                    "pre_tags" : [""],
-                    "post_tags" : [""]
-                }
-            }
-        }
+        "highlight": highlight_order
     })
 }
 
 pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
+    let fields = vec!["entity_data".to_string(), "documen_ssdeep_hash".to_string()];
     let ssdeep_hash = &parameters.query;
-    println!("Need find by this: {:?}", ssdeep_hash);
-    json!({
-        "query": {
-            "more_like_this" : {
-                "fields" : [
-                    "entity_data",
-                    "document_ssdeep_hash",
-                ],
-                "like" : ssdeep_hash,
-                "min_doc_freq": 1,
-                "min_term_freq" : 1,
-                "max_query_terms" : 25,
-            }
-        }
-    })
+    let similar_query = SimilarQuery::new(ssdeep_hash.clone(), fields);
+    json!({ "query": similar_query })
 }
 
 pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
@@ -198,92 +176,7 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
     Ok(built_bucket.unwrap())
 }
 
-pub fn deserialize_document(document_ref: &Document) -> Result<Value, WebError> {
-    match serde_json::to_value(document_ref) {
-        Ok(value) => Ok(value),
-        Err(err) => Err(WebError::DocumentSerializing(err.to_string())),
-    }
-}
-
-pub fn load_directory_entity(directory: &Path) -> Vec<Document> {
-    file_loader::load_directory_entity(directory)
-        .into_iter()
-        .map(Document::from)
-        .collect::<Vec<Document>>()
-}
-
-pub async fn send_document(
-    elastic: &RwLockReadGuard<'_, Elasticsearch>,
-    doc_form: &Document,
-    bucket_id: &str,
-) -> SendDocumentStatus {
-    let to_value_result = serde_json::to_value(doc_form);
-    let document_json = to_value_result.unwrap();
-    let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-
-    body.push(json!({"index": { "_id": doc_form.document_md5_hash.as_str() }}).into());
-    body.push(document_json.into());
-
-    let response_result = elastic
-        .bulk(BulkParts::Index(bucket_id))
-        .body(body)
-        .send()
-        .await;
-
-    match response_result {
-        Ok(_) => SendDocumentStatus::new(true, doc_form.document_path.as_str()),
-        Err(err) => {
-            let err_msg = format!("Failed while loading file: {:?}", err);
-            SendDocumentStatus::new(false, err_msg.as_str())
-        }
-    }
-}
-
-#[cfg(test)]
-mod helper_tests {
-    use super::*;
-    use crate::searcher::elastic::query_builder::filter_query::{
-        CommonFilter, CreateDateQuery, FilterRange, FilterTerm,
-    };
-
-    #[test]
-    fn build_filter_query() {
-        let params = SearchParams::default();
-        let parameters = &params;
-        let doc_size_to = parameters.document_size_to;
-        let doc_size_from = parameters.document_size_from;
-        let doc_ext = parameters.document_extension.as_str();
-        let doc_type = parameters.document_type.as_str();
-        let doc_type = parameters.document_type.as_str();
-
-        let common_ = CommonFilter::new()
-            .with_date::<FilterRange, CreateDateQuery>(
-                "document_created",
-                "2022-11-23 00:00:00",
-                "",
-            )
-            .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
-            .with_term::<FilterTerm>("document_extension", doc_ext)
-            .with_term::<FilterTerm>("document_type", doc_type)
-            .build();
-
-        let val = serde_json::to_value(common_).unwrap();
-        println!("{}", serde_json::to_string_pretty(&val).unwrap());
-    }
-
-    #[test]
-    fn load_directory_entity_test() {
-        let file_path = "/Users/breadrock/Downloads/elastic-docstest/second";
-        let path_object = Path::new(file_path);
-        let _documents = load_directory_entity(&path_object);
-        println!("{:?}", "sdf");
-    }
-
-    #[test]
-    fn load_file_entity_test() {
-        let file_path = "/Users/breadrock/Downloads/optikot-data/tests-dockers/fuzzer-configs/asa5516/asa5516-dhcp.py";
-        let path_object = Path::new(file_path);
-        let _documents = load_directory_entity(&path_object);
-        println!("{:?}", "sdf");
-    }
+pub fn create_bucket_scheme() -> String {
+    let schema = BucketSchema::new();
+    serde_json::to_string_pretty(&schema).unwrap()
 }
