@@ -29,14 +29,6 @@ where
 }
 
 fn format_datetime(value: &str) -> ParseResult<DateTime<Utc>> {
+    #[allow(deprecated)]
     Utc.datetime_from_str(value, "%Y-%m-%dT%H:%M:%SZ")
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        // let result = add(2, 2);
-        // assert_eq!(result, 4);
-    }
 }
