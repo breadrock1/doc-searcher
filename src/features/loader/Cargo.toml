@@ -1,5 +1,5 @@
 [package]
-name = "file_loader"
+name = "loader"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,3 +14,7 @@ tesseract = "^0.15"
 office = "^0.8"
 walkdir = "^2.4"
 hasher = { path = "../hasher" }
+
+[[test]]
+name = "test"
+path = "test/test.rs"
