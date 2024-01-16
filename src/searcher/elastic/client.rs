@@ -203,7 +203,7 @@ impl ServiceClient for ElasticContext {
 
     async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool {
         let elastic = self.get_cxt().read().await;
-        let response = elastic
+        let response_result = elastic
             .count(CountParts::Index(&[bucket_id]))
             .body(json!({
                 "query" : {
@@ -215,9 +215,24 @@ impl ServiceClient for ElasticContext {
             .send()
             .await;
 
-        let value = response.unwrap().json::<Value>().await.unwrap();
-        let count = value["count"].as_i64().unwrap_or(0);
-        count > 0
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            println!("Failed: {}", err);
+            return false;
+        }
+
+        let response = response_result.unwrap();
+        let serialize_result = response.json::<Value>().await;
+        match serialize_result {
+            Ok(value) => {
+                let count = value["count"].as_i64().unwrap_or(0);
+                count > 0
+            }
+            Err(err) => {
+                println!("{}", err);
+                false
+            }
+        }
     }
 
     async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
@@ -350,7 +365,7 @@ impl ServiceClient for ElasticContext {
             return err.error_response();
         }
 
-        let documents = loader::load_directory_entity(file_path_)
+        let documents = loader::load_passed_file_by_path(file_path_)
             .into_iter()
             .map(Document::from)
             .collect::<Vec<Document>>();
