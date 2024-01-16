@@ -1,21 +1,22 @@
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Builder, Default, Clone)]
 pub struct Cluster {
-    ip: String,
+    pub ip: String,
     #[serde(alias = "heap.percent")]
-    heap_percent: String,
+    pub heap_percent: String,
     #[serde(alias = "ram.percent")]
-    ram_percent: String,
-    cpu: String,
-    load_1m: String,
-    load_5m: String,
-    load_15m: String,
+    pub ram_percent: String,
+    pub cpu: String,
+    pub load_1m: String,
+    pub load_5m: String,
+    pub load_15m: String,
     #[serde(alias = "node.role")]
-    node_role: String,
-    master: String,
-    name: String,
+    pub node_role: String,
+    pub master: String,
+    pub name: String,
 }
 
 #[derive(Deserialize)]

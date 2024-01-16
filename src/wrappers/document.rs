@@ -4,7 +4,7 @@ use derive_builder::Builder;
 use loader::FileData;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Builder, Default)]
+#[derive(Deserialize, Serialize, Builder, Default, Clone)]
 pub struct Document {
     pub bucket_uuid: String,
     pub bucket_path: String,
