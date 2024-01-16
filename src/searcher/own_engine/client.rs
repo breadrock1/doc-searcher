@@ -206,15 +206,42 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(documents_vec))
     }
 
-    async fn similar_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
-        Ok(web::Json(Vec::default()))
+    async fn similar_all(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.documents.read().await;
+        let documents_vec = map
+            .values()
+            .filter(|document| {
+                hasher::compare_ssdeep_hashes(
+                    s_params.query.as_str(),
+                    document.document_ssdeep_hash.as_str(),
+                )
+            })
+            .cloned()
+            .collect::<Vec<Document>>();
+
+        Ok(web::Json(documents_vec))
     }
 
     async fn similar_bucket(
         &self,
-        _bucket_id: &str,
-        _s_params: &SearchParams,
+        bucket_id: &str,
+        s_params: &SearchParams,
     ) -> WebResponse<web::Json<Vec<Document>>> {
-        Ok(web::Json(Vec::default()))
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.documents.read().await;
+        let documents_vec = map
+            .values()
+            .filter(|document| document.bucket_uuid.eq(bucket_id))
+            .filter(|document| {
+                hasher::compare_ssdeep_hashes(
+                    s_params.query.as_str(),
+                    document.document_ssdeep_hash.as_str(),
+                )
+            })
+            .cloned()
+            .collect::<Vec<Document>>();
+
+        Ok(web::Json(documents_vec))
     }
 }
