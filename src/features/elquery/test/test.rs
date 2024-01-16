@@ -13,7 +13,7 @@ mod test {
         let query_value = serde_json::to_value(highlight_order).unwrap();
         let query_string = serde_json::to_string(&query_value).unwrap();
         assert_eq!(
-            "{\"fields\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]},\"order\":\"\"}",
+            "{\"fields\":{\"entity_data\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]}},\"order\":\"\"}",
             query_string
         );
     }
