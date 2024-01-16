@@ -1,33 +1,80 @@
-use crate::errors::{SuccessfulResponse, WebResponse};
+use crate::errors::{SuccessfulResponse, WebError, WebResponse};
 use crate::searcher::own_engine::context::OtherContext;
 use crate::searcher::service_client::ServiceClient;
-use crate::wrappers::bucket::{Bucket, BucketForm};
-use crate::wrappers::cluster::Cluster;
+use crate::wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
+use crate::wrappers::cluster::{Cluster, ClusterBuilder};
 use crate::wrappers::document::Document;
 use crate::wrappers::search_params::SearchParams;
 
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, ResponseError};
+use std::path::Path;
 
 #[async_trait::async_trait]
 impl ServiceClient for OtherContext {
     async fn get_all_clusters(&self) -> WebResponse<web::Json<Vec<Cluster>>> {
-        Ok(web::Json(Vec::default()))
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.clusters.read().await;
+        let clusters_vec = map
+            .values()
+            .cloned()
+            .collect::<Vec<Cluster>>();
+
+        Ok(web::Json(clusters_vec))
     }
 
-    async fn get_cluster(&self, _cluster_id: &str) -> WebResponse<web::Json<Cluster>> {
-        Ok(web::Json(Cluster::default()))
+    async fn get_cluster(&self, cluster_id: &str) -> WebResponse<web::Json<Cluster>> {
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.clusters.read().await;
+        match map.get(cluster_id) {
+            Some(cluster) => Ok(web::Json(cluster.clone())),
+            None => {
+                let msg = "failed to get cluster".to_string();
+                Err(WebError::GetCluster(msg))
+            }
+        }
     }
 
-    async fn create_cluster(&self, _cluster_id: &str) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
+    async fn create_cluster(&self, cluster_id: &str) -> HttpResponse {
+        let cluster = ClusterBuilder::default()
+            .ip("localhost".to_string())
+            .heap_percent("70%".to_string())
+            .ram_percent("70%".to_string())
+            .cpu("7/10".to_string())
+            .load_1m("anh value".to_string())
+            .load_5m("anh value".to_string())
+            .load_15m("anh value".to_string())
+            .master("master".to_string())
+            .name(cluster_id.to_string())
+            .node_role(cluster_id.to_string())
+            .build()
+            .unwrap();
+
+        let cxt = self.get_cxt().write().await;
+        let mut map = cxt.clusters.write().await;
+        match map.insert(cluster_id.to_string(), cluster) {
+            None => SuccessfulResponse::ok_response("Ok"),
+            Some(_) => SuccessfulResponse::ok_response("Updated"),
+        }
     }
 
-    async fn delete_cluster(&self, _cluster_id: &str) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
+    async fn delete_cluster(&self, cluster_id: &str) -> HttpResponse {
+        let cxt = self.get_cxt().write().await;
+        let mut map = cxt.clusters.write().await;
+        match map.remove(cluster_id) {
+            Some(_) => SuccessfulResponse::ok_response("Ok"),
+            None => SuccessfulResponse::ok_response("Not exist cluster"),
+        }
     }
 
     async fn get_all_buckets(&self) -> WebResponse<web::Json<Vec<Bucket>>> {
-        Ok(web::Json(Vec::default()))
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.buckets.read().await;
+        let buckets_vec = map
+            .values()
+            .cloned()
+            .collect::<Vec<Bucket>>();
+
+        Ok(web::Json(buckets_vec))
     }
 
     async fn get_bucket(&self, _bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
