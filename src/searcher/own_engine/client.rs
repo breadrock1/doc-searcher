@@ -77,20 +77,55 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(buckets_vec))
     }
 
-    async fn get_bucket(&self, _bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
-        Ok(web::Json(Bucket::default()))
+    async fn get_bucket(&self, bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.buckets.read().await;
+        match map.get(bucket_id) {
+            Some(bucket) => Ok(web::Json(bucket.clone())),
+            None => {
+                let msg = "failed to get bucket".to_string();
+                Err(WebError::GetBucket(msg))
+            }
+        }
     }
 
-    async fn delete_bucket(&self, _bucket_id: &str) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
+    async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse {
+        let cxt = self.get_cxt().write().await;
+        let uuid = bucket_id.to_string();
+        let mut map = cxt.buckets.write().await;
+        match map.remove(&uuid) {
+            Some(_) => SuccessfulResponse::ok_response("Ok"),
+            None => SuccessfulResponse::ok_response("Empty buckets"),
+        }
     }
 
-    async fn create_bucket(&self, _bucket_form: &BucketForm) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
+    async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse {
+        let cxt = self.get_cxt().write().await;
+        let uuid = bucket_form.get_name().to_string();
+        let built_bucket = BucketBuilder::default()
+            .health("health".to_string())
+            .status("status".to_string())
+            .index(uuid.clone())
+            .uuid(uuid.clone())
+            .docs_count("docs_count".to_string())
+            .docs_deleted("docs_deleted".to_string())
+            .store_size("store_size".to_string())
+            .pri_store_size("pri_store_size".to_string())
+            .pri(None)
+            .rep(None)
+            .build();
+
+        let mut map = cxt.buckets.write().await;
+        match map.insert(uuid, built_bucket.unwrap()) {
+            None => SuccessfulResponse::ok_response("Ok"),
+            Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
+        }
     }
 
-    async fn check_duplication(&self, _bucket_id: &str, _document_id: &str) -> bool {
-        false
+    async fn check_duplication(&self, _bucket_id: &str, document_id: &str) -> bool {
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.documents.read().await;
+        map.contains_key(document_id)
     }
 
     async fn get_document(
