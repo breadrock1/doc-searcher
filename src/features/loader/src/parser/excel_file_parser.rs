@@ -33,7 +33,7 @@ fn parse_sheet_row(range: &Range, row_index: usize, row_slice: &[DataType]) -> V
         .iter()
         .enumerate()
         .filter(|(_, cell)| cell != &&DataType::Empty)
-        .map(|(cell_index, cell)| range.get_value(row_index, cell_index))
+        .map(|(cell_index, _)| range.get_value(row_index, cell_index))
         .map(|data_type| extract_data_type_value(data_type))
         .collect::<Vec<String>>()
 }
