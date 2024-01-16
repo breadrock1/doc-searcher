@@ -45,11 +45,16 @@ services:
     volumes:
       - dsdata1:/archiver
 
-  kibana:
+  fsnotifier:
     depends_on:
-      - elasticsearch
-    image: docker.elasticsearch.co/kibana/kibana:7.3.1
-    container_name: kibana
+      - docsearcher
+    image: fs-notifier:latest
+    container_name: fs-notifier
+    restart: on-failure
+    environment:
+      - ARCHIVER_DIRECTORIES_PATH=/indexer
+      - DOC_SEARCHER_ADDRESS=http://docsearcher:2892
+      - ASSISTANT_SERVICE_ADDRESS=http://localhost:8000
     ports:
       - "5601:5601"
     environment:
