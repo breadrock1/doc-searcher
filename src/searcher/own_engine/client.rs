@@ -131,9 +131,39 @@ impl ServiceClient for OtherContext {
     async fn get_document(
         &self,
         _bucket_id: &str,
-        _doc_id: &str,
+        doc_id: &str,
     ) -> WebResponse<web::Json<Document>> {
-        Ok(web::Json(Document::default()))
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.documents.read().await;
+        match map.get(doc_id) {
+            Some(document) => Ok(web::Json(document.clone())),
+            None => {
+                let msg = "failed to get document".to_string();
+                Err(WebError::GetDocument(msg))
+            }
+        }
+    }
+
+    async fn create_document(&self, doc_form: &Document) -> HttpResponse {
+        let cxt = self.get_cxt().write().await;
+        let mut map = cxt.documents.write().await;
+        match map.insert(doc_form.document_name.clone(), doc_form.clone()) {
+            None => SuccessfulResponse::ok_response("Ok"),
+            Some(document) => SuccessfulResponse::ok_response(document.document_name.as_str()),
+        }
+    }
+
+    async fn update_document(&self, doc_form: &Document) -> HttpResponse {
+        self.create_document(doc_form).await
+    }
+
+    async fn delete_document(&self, _bucket_id: &str, doc_id: &str) -> HttpResponse {
+        let cxt = self.get_cxt().write().await;
+        let mut map = cxt.documents.write().await;
+        match map.remove(doc_id) {
+            None => SuccessfulResponse::ok_response("Not existing document"),
+            Some(document) => SuccessfulResponse::ok_response(document.document_name.as_str()),
+        }
     }
 
     async fn create_document(&self, _doc_form: &Document) -> HttpResponse {
