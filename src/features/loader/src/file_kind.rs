@@ -1,5 +1,7 @@
+use crate::parser::docx_file_parser;
+use crate::parser::excel_file_parser;
+use crate::parser::pdf_file_parser;
 use crate::parser::text_file_parser;
-use crate::parser::{docx_file_parser, excel_file_parser, pdf_file_parser};
 use std::path::Path;
 
 pub enum FileKind {

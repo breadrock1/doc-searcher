@@ -17,20 +17,20 @@ use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::time::SystemTime;
 
-pub fn load_directory_entity(directory: &Path) -> Vec<FileData> {
-    if directory.is_file() {
-        let loaded_result = load_target_file(&directory);
+pub fn load_passed_file_by_path(file_path: &Path) -> Vec<FileData> {
+    if file_path.is_file() {
+        let loaded_result = load_target_file(&file_path);
         return match loaded_result {
             Ok(document) => vec![document],
             Err(_) => Vec::default(),
         };
     }
 
-    walkdir::WalkDir::new(directory)
+    walkdir::WalkDir::new(file_path)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .flat_map(|e| load_directory_entity(e.path()))
+        .flat_map(|e| load_passed_file_by_path(e.path()))
         .collect()
 }
 
