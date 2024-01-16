@@ -166,7 +166,14 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn create_document(&self, _doc_form: &Document) -> HttpResponse {
+    async fn load_file_to_bucket(&self, _bucket_id: &str, file_path: &str) -> HttpResponse {
+        let path = Path::new(file_path);
+        let file_data_vec = loader::load_passed_file_by_path(path);
+        if file_data_vec.is_empty() {
+            let msg = "failed to load file".to_string();
+            return WebError::LoadFileFailed(msg).error_response();
+        }
+
         SuccessfulResponse::ok_response("Ok")
     }
 
