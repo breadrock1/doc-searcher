@@ -36,6 +36,11 @@ pub fn gen_hash_from_file(hash_type: HashType, file_path: &str) -> HasherResult 
     gen_hash(hash_type, buffer.as_slice())
 }
 
+pub fn compare_ssdeep_hashes(hash_1: &str, hash_2: &str) -> bool {
+    let result = ssdeep::compare(hash_1.as_bytes(), hash_2.as_bytes()).unwrap_or(0);
+    result != 0
+}
+
 fn ssdeep_hash(data: &[u8]) -> HasherResult {
     match ssdeep::hash(data) {
         None => Err(HasherError::FailedErr),
