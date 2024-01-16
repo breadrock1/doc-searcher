@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM amd64/ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -14,8 +14,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
 
 COPY . /home/docsearcher
 WORKDIR /home/docsearcher
-RUN rm -rf .env
 
-RUN cargo build
+RUN rm -rf .env && cargo build --release --manifest-path examples/elasticsearch/Cargo.toml
 
-ENTRYPOINT [ "./target/debug/searcher" ]
+ENTRYPOINT [ "./examples/elasticsearch/target/release/elastic_search" ]
