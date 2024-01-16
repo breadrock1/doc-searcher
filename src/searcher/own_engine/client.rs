@@ -177,28 +177,33 @@ impl ServiceClient for OtherContext {
         SuccessfulResponse::ok_response("Ok")
     }
 
-    async fn update_document(&self, _doc_form: &Document) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
-    }
+    async fn search_all(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.documents.read().await;
+        let documents_vec = map
+            .values()
+            .filter(|document| document.entity_data.contains(&s_params.query))
+            .cloned()
+            .collect::<Vec<Document>>();
 
-    async fn delete_document(&self, _bucket_id: &str, _doc_id: &str) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
-    }
-
-    async fn load_file_to_bucket(&self, _bucket_id: &str, _file_path: &str) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
-    }
-
-    async fn search_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
-        Ok(web::Json(Vec::default()))
+        Ok(web::Json(documents_vec))
     }
 
     async fn search_bucket(
         &self,
-        _bucket_id: &str,
-        _s_params: &SearchParams,
+        bucket_id: &str,
+        s_params: &SearchParams,
     ) -> WebResponse<web::Json<Vec<Document>>> {
-        Ok(web::Json(Vec::default()))
+        let cxt = self.get_cxt().read().await;
+        let map = cxt.documents.read().await;
+        let documents_vec = map
+            .values()
+            .filter(|document| document.bucket_uuid.eq(bucket_id))
+            .filter(|document| document.entity_data.contains(&s_params.query))
+            .cloned()
+            .collect::<Vec<Document>>();
+
+        Ok(web::Json(documents_vec))
     }
 
     async fn similar_all(&self, _s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
