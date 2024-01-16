@@ -56,6 +56,18 @@ services:
       - DOC_SEARCHER_ADDRESS=http://docsearcher:2892
       - ASSISTANT_SERVICE_ADDRESS=http://localhost:8000
     ports:
+      - "9800:9800"
+    networks:
+      - elastic-net
+    volumes:
+      - /data/archiver:/indexer
+
+  kibana:
+    depends_on:
+      - elasticsearch
+    image: kibana:8.11.2
+    container_name: kibana
+    ports:
       - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
