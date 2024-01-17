@@ -1,7 +1,8 @@
 use crate::endpoints::ContextData;
 use crate::wrappers::file_form::LoadFileForm;
 
-use actix_web::{post, web, HttpResponse};
+use actix_web::{post, web};
+use actix_web::{HttpResponse, HttpRequest};
 
 #[post("/loader/load")]
 async fn load_file(cxt: ContextData, form: web::Json<LoadFileForm>) -> HttpResponse {
@@ -9,6 +10,17 @@ async fn load_file(cxt: ContextData, form: web::Json<LoadFileForm>) -> HttpRespo
     let file_path = form.get_path();
     let bucket_name = form.get_bucket();
     client.load_file_to_bucket(bucket_name, file_path).await
+}
+
+#[post("/loader/load-file")]
+async fn download_file(cxt: ContextData, req: HttpRequest, form: web::Json<LoadFileForm>) -> HttpResponse {
+    let client = cxt.get_ref();
+    let file_path = form.get_path();
+    let bucket_name = form.get_bucket();
+    client.download_file(bucket_name, file_path)
+        .await
+        .unwrap()
+        .into_response(&req)
 }
 
 #[cfg(test)]
