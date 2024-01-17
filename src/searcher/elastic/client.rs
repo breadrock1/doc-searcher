@@ -7,6 +7,7 @@ use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
 use crate::wrappers::search_params::SearchParams;
 
+use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
@@ -391,6 +392,16 @@ impl ServiceClient for ElasticContext {
         }
 
         SuccessfulResponse::ok_response("Ok")
+    }
+
+    async fn download_file(&self, _bucket_id: &str, file_path: &str) -> Option<NamedFile> {
+        match actix_files::NamedFile::open_async(file_path).await {
+            Ok(named_file) => Some(named_file),
+            Err(err) => {
+                println!("{}", err);
+                None
+            },
+        }
     }
 
     async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {

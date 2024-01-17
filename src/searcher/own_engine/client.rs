@@ -8,6 +8,7 @@ use crate::wrappers::search_params::SearchParams;
 
 use actix_web::{web, HttpResponse, ResponseError};
 use std::path::Path;
+use actix_files::NamedFile;
 
 #[async_trait::async_trait]
 impl ServiceClient for OtherContext {
@@ -175,6 +176,16 @@ impl ServiceClient for OtherContext {
         }
 
         SuccessfulResponse::ok_response("Ok")
+    }
+
+    async fn download_file(&self, _bucket_id: &str, file_path: &str) -> Option<NamedFile> {
+        match actix_files::NamedFile::open_async(file_path).await {
+            Ok(named_file) => Some(named_file),
+            Err(err) => {
+                println!("{}", err);
+                None
+            },
+        }
     }
 
     async fn search_all(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {

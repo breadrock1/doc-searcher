@@ -5,6 +5,7 @@ use crate::wrappers::document::Document;
 use crate::wrappers::search_params::SearchParams;
 
 use actix_web::{web, HttpResponse};
+use actix_files::NamedFile;
 
 pub type JsonResponse<T> = WebResponse<web::Json<T>>;
 
@@ -28,6 +29,7 @@ pub trait ServiceClient {
     async fn delete_document(&self, bucket_id: &str, doc_id: &str) -> HttpResponse;
 
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
+    async fn download_file(&self, bucket_id: &str, file_path: &str) -> Option<NamedFile>;
 
     async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
     async fn search_bucket(
