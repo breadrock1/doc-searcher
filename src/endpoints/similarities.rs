@@ -5,6 +5,16 @@ use crate::wrappers::search_params::*;
 
 use actix_web::{post, web};
 
+#[utoipa::path(
+    post,
+    path = "/search-similar",
+    tag = "Search similar documents by passed SearchParams",
+    request_body = SearchParams,
+    responses(
+        (status = 200, description = "Successful", body = [Document]),
+        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+    )
+)]
 #[post("/search-similar")]
 async fn search_similar_docs(
     cxt: ContextData,
@@ -15,6 +25,19 @@ async fn search_similar_docs(
     client.similar_all(&search_form).await
 }
 
+#[utoipa::path(
+    post,
+    path = "/search-similar/{bucket_names}",
+    tag = "Search similar documents by passed SearchParams",
+    request_body = SearchParams,
+    params(
+        ("bucket_name" = &str, description = "Bucket name to find documents")
+    ),
+    responses(
+        (status = 200, description = "Successful", body = [Document]),
+        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+    )
+)]
 #[post("/search-similar/{bucket_names}")]
 async fn search_similar_docs_target(
     cxt: ContextData,
