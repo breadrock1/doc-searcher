@@ -1,5 +1,9 @@
 extern crate docsearcher;
+
 use docsearcher::service::*;
+use docsearcher::swagger::ApiDoc;
+use docsearcher::swagger::OpenApi;
+use docsearcher::swagger::create_service;
 use docsearcher::searcher::service_client::ServiceClient;
 use docsearcher::searcher::elastic::context::ElasticContext;
 
@@ -22,9 +26,11 @@ async fn main() -> Result<(), anyhow::Error> {
         let box_cxt: Box<dyn ServiceClient> = Box::new(cxt);
         let cors_cln = cors_origin.clone();
         let cors = build_cors_config(cors_cln.as_str());
+        let openapi = ApiDoc::openapi();
         App::new()
             .app_data(web::Data::new(box_cxt))
             .service(build_service())
+            .service(create_service(&openapi))
             .wrap(Logger::default())
             .wrap(cors)
     })
