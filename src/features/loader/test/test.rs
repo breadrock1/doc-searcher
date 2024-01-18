@@ -6,10 +6,11 @@ mod tests {
 
     #[test]
     fn load_directory_entity_test() {
-        let file_path = "./resources";
+        let file_path = "./src/features/loader/resources";
         let path_object = Path::new(file_path);
         let documents = loader::load_passed_file_by_path(&path_object)
             .into_iter()
+            .filter(|file_data| file_data.document_extension.as_str().eq("txt"))
             .map(|file_data| file_data.document_name.clone())
             .collect::<Vec<String>>();
 
