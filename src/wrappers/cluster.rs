@@ -1,8 +1,9 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, Deserialize, Builder, Default, Clone)]
+#[derive(Serialize, Deserialize, Builder, Default, Clone, ToSchema)]
 pub struct Cluster {
     pub ip: String,
     #[serde(alias = "heap.percent")]
@@ -19,7 +20,7 @@ pub struct Cluster {
     pub name: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct ClusterForm {
     cluster_name: String,
 }
