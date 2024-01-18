@@ -1,15 +1,34 @@
 use crate::endpoints::ContextData;
-use crate::errors::WebResponse;
+use crate::errors::*;
 use crate::wrappers::cluster::{Cluster, ClusterForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
 
+#[utoipa::path(
+    get,
+    path = "/searcher/clusters",
+    tag = "Get all available clusters",
+    responses(
+        (status = 200, description = "Successful", body = [Cluster]),
+        (status = 401, description = "Failed while getting clusters", body = ErrorResponse),
+    )
+)]
 #[get("/clusters")]
 async fn all_clusters(cxt: ContextData) -> WebResponse<web::Json<Vec<Cluster>>> {
     let client = cxt.get_ref();
     client.get_all_clusters().await
 }
 
+#[utoipa::path(
+    post,
+    path = "/searcher/cluster/new",
+    tag = "Create new Cluster by ClusterForm",
+    request_body = ClusterForm,
+    responses(
+        (status = 200, description = "Successful", body = SuccessfulResponse),
+        (status = 401, description = "Failed while creating cluster", body = ErrorResponse),
+    )
+)]
 #[post("/cluster/new")]
 async fn new_cluster(cxt: ContextData, form: web::Json<ClusterForm>) -> HttpResponse {
     let cluster_name = form.0.to_string();
@@ -17,6 +36,18 @@ async fn new_cluster(cxt: ContextData, form: web::Json<ClusterForm>) -> HttpResp
     client.create_cluster(cluster_name.as_str()).await
 }
 
+#[utoipa::path(
+    delete,
+    path = "/searcher/cluster/{cluster_name}",
+    tag = "Delete cluster by name",
+    params(
+        ("cluster_name" = &str, description = "Cluster name to delete")
+    ),
+    responses(
+        (status = 200, description = "Successful", body = SuccessfulResponse),
+        (status = 401, description = "Failed while deleting cluster", body = ErrorResponse),
+    )
+)]
 #[delete("/cluster/{cluster_name}")]
 async fn delete_cluster(cxt: ContextData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
@@ -24,6 +55,18 @@ async fn delete_cluster(cxt: ContextData, path: web::Path<String>) -> HttpRespon
     client.delete_cluster(cluster_name.as_str()).await
 }
 
+#[utoipa::path(
+    get,
+    path = "/searcher/cluster/{cluster_name}",
+    tag = "Getting cluster by name",
+    params(
+        ("cluster_name" = &str, description = "Cluster name to get")
+    ),
+    responses(
+        (status = 200, description = "Successful", body = Cluster),
+        (status = 401, description = "Failed while getting cluster", body = ErrorResponse),
+    )
+)]
 #[get("/cluster/{cluster_name}")]
 async fn get_cluster(cxt: ContextData, path: web::Path<String>) -> WebResponse<web::Json<Cluster>> {
     let client = cxt.get_ref();
