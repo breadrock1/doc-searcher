@@ -47,10 +47,3 @@ fn extract_data_type_value(data_type: &DataType) -> String {
         DataType::Empty | DataType::Error(_) => String::new(),
     }
 }
-
-#[test]
-fn parse_test() {
-    let file_path = Path::new("/Users/breadrock/Downloads/perechen_man_rep.xlsx");
-    let data = parse(&file_path).unwrap();
-    println!("{}", data);
-}
