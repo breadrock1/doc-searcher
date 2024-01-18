@@ -29,6 +29,7 @@ use crate::errors::*;
 use crate::wrappers::bucket::*;
 use crate::wrappers::cluster::*;
 use crate::wrappers::document::*;
+use crate::wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -67,6 +68,8 @@ use utoipa_swagger_ui::SwaggerUi;
             Bucket,
             Cluster,
             Document,
+            SearchParams,
+            HighlightEntity,
         )
     ),
     tags ((

@@ -3,7 +3,7 @@ use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
 use loader::FileData;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
 pub struct Document {
@@ -40,7 +40,7 @@ impl Document {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Default, IntoParams, ToSchema)]
 pub struct HighlightEntity {
     pub entity_data: Vec<String>,
 }
