@@ -4,6 +4,16 @@ use crate::wrappers::document::Document;
 
 use actix_web::{delete, get, post, put, web, HttpResponse};
 
+#[utoipa::path(
+    put,
+    path = "/searcher/document/update",
+    tag = "Update stored Document with passed data",
+    request_body = Document,
+    responses(
+        (status = 200, description = "Successful", body = SuccessfulResponse),
+        (status = 401, description = "Failed while updating document", body = ErrorResponse),
+    )
+)]
 #[put("/document/update")]
 async fn update_document(cxt: ContextData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
@@ -11,6 +21,16 @@ async fn update_document(cxt: ContextData, form: web::Json<Document>) -> HttpRes
     client.update_document(&doc_form).await
 }
 
+#[utoipa::path(
+    post,
+    path = "/searcher/document/new",
+    tag = "Create new Document with passed data",
+    request_body = Document,
+    responses(
+        (status = 200, description = "Successful", body = SuccessfulResponse),
+        (status = 401, description = "Failed while creating document", body = ErrorResponse),
+    )
+)]
 #[post("/document/new")]
 async fn new_document(cxt: ContextData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
@@ -18,6 +38,19 @@ async fn new_document(cxt: ContextData, form: web::Json<Document>) -> HttpRespon
     client.create_document(&doc_form).await
 }
 
+#[utoipa::path(
+    delete,
+    path = "/searcher/{bucket_name}/{document_id}",
+    tag = "Delete stored document by document id",
+    params(
+        ("bucket_name" = &str, description = "Bucket name where document is stored"),
+        ("document_id" = &str, description = "Document identifier to delete"),
+    ),
+    responses(
+        (status = 200, description = "Successful", body = SuccessfulResponse),
+        (status = 401, description = "Failed while deleting document", body = ErrorResponse),
+    )
+)]
 #[delete("/document/{bucket_name}/{document_id}")]
 async fn delete_document(cxt: ContextData, path: web::Path<(String, String)>) -> HttpResponse {
     let client = cxt.get_ref();
@@ -27,6 +60,19 @@ async fn delete_document(cxt: ContextData, path: web::Path<(String, String)>) ->
         .await
 }
 
+#[utoipa::path(
+    get,
+    path = "/searcher/{bucket_name}/{document_id}",
+    tag = "Get stored document by document id",
+    params(
+        ("bucket_name" = &str, description = "Bucket name where document is stored"),
+        ("document_id" = &str, description = "Document identifier to get"),
+    ),
+    responses(
+        (status = 200, description = "Successful", body = Document),
+        (status = 401, description = "Failed while getting document", body = ErrorResponse),
+    )
+)]
 #[get("/document/{bucket_name}/{document_id}")]
 async fn get_document(
     cxt: ContextData,
