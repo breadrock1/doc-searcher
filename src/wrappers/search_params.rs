@@ -1,7 +1,8 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+use utoipa::IntoParams;
 
-#[derive(Builder, Deserialize, Serialize)]
+#[derive(Builder, Deserialize, Serialize, IntoParams)]
 pub struct SearchParams {
     pub query: String,
     pub document_type: String,
