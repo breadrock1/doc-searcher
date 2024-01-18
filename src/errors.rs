@@ -3,6 +3,7 @@ use actix_web::{HttpResponse, ResponseError};
 use elasticsearch::Error;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use utoipa::ToSchema;
 
 pub type WebResponse<T> = Result<T, WebError>;
 
@@ -62,7 +63,7 @@ impl From<elasticsearch::Error> for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ErrorResponse {
     pub code: u16,
     pub error: String,
@@ -97,7 +98,7 @@ impl ResponseError for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SuccessfulResponse {
     pub code: u16,
     pub message: String,
