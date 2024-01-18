@@ -3,7 +3,14 @@ use docx::document::{BodyContent, ParagraphContent, TableCellContent};
 use std::path::Path;
 
 pub fn parse(file_path: &Path) -> Result<String, std::io::Error> {
-    let docx = DocxFile::from_file(file_path).unwrap();
+    let docx_result = DocxFile::from_file(file_path);
+    if docx_result.is_err() {
+        let docx_err = docx_result.err().unwrap();
+        println!("{:?}", docx_err);
+        return Ok(String::default());
+    }
+
+    let docx = docx_result.unwrap();
     let docx = docx.parse().unwrap_or_default();
     let collected_text_data = docx
         .document
