@@ -4,8 +4,8 @@ use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
 use crate::wrappers::search_params::SearchParams;
 
-use actix_web::{web, HttpResponse};
 use actix_files::NamedFile;
+use actix_web::{web, HttpResponse};
 
 pub type JsonResponse<T> = WebResponse<web::Json<T>>;
 

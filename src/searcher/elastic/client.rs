@@ -400,7 +400,7 @@ impl ServiceClient for ElasticContext {
             Err(err) => {
                 println!("{}", err);
                 None
-            },
+            }
         }
     }
 
