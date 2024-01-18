@@ -3,6 +3,7 @@ use actix_web::{HttpResponse, ResponseError};
 use elasticsearch::Error;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use utoipa::ToSchema;
 
 pub type WebResponse<T> = Result<T, WebError>;
 
@@ -20,7 +21,7 @@ pub enum WebError {
     CreateBucket(String),
     #[error("Error while deleting bucket: {0}")]
     DeleteBucket(String),
-    #[error("Error elastic response: {0}")]
+    #[error("Error elasticsearch response: {0}")]
     GetDocument(String),
     #[error("Failed while creating document: {0}")]
     CreateDocument(String),
@@ -62,7 +63,7 @@ impl From<elasticsearch::Error> for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ErrorResponse {
     pub code: u16,
     pub error: String,
@@ -97,7 +98,7 @@ impl ResponseError for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SuccessfulResponse {
     pub code: u16,
     pub message: String,

@@ -1,33 +1,36 @@
 mod file_data;
+mod file_kind;
+mod parser;
 
 pub use crate::file_data::FileData;
 use crate::file_data::FileDataBuilder;
+use crate::file_kind::FileKind;
 
 use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
 
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Error, Read};
+use std::io::Error;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::time::SystemTime;
 
-pub fn load_directory_entity(directory: &Path) -> Vec<FileData> {
-    if directory.is_file() {
-        let loaded_result = load_target_file(&directory);
+pub fn load_passed_file_by_path(file_path: &Path) -> Vec<FileData> {
+    if file_path.is_file() {
+        let loaded_result = load_target_file(&file_path);
         return match loaded_result {
             Ok(document) => vec![document],
             Err(_) => Vec::default(),
         };
     }
 
-    walkdir::WalkDir::new(directory)
+    walkdir::WalkDir::new(file_path)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .flat_map(|e| load_directory_entity(e.path()))
+        .flat_map(|e| load_passed_file_by_path(e.path()))
         .collect()
 }
 
@@ -37,7 +40,7 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
         return Err(file_res.err().unwrap());
     }
 
-    let mut file = file_res.unwrap();
+    let file = file_res.unwrap();
     let metadata_res = file.metadata();
     if metadata_res.is_err() {
         return Err(metadata_res.err().unwrap());
@@ -60,8 +63,8 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
         .to_str()
         .unwrap_or("unknown");
 
-    let mut file_data_ = String::new();
-    file.read_to_string(&mut file_data_).unwrap_or_default();
+    let file_kind = FileKind::what_kind(ext_);
+    let file_data_ = FileKind::parse_file(&file_path, &file_kind);
     let md5_hash = gen_hash(HashType::MD5, file_data_.as_bytes());
     let binding = md5_hash.unwrap();
     let md5_hash_ = binding.get_hash_data();
@@ -119,15 +122,4 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
 fn get_local_datetime(err: Error) -> SystemTime {
     println!("{:?}", err);
     SystemTime::now()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        // let result = add(2, 2);
-        // assert_eq!(result, 4);
-    }
 }

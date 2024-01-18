@@ -7,6 +7,7 @@ use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
 use crate::wrappers::search_params::SearchParams;
 
+use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
@@ -203,7 +204,7 @@ impl ServiceClient for ElasticContext {
 
     async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool {
         let elastic = self.get_cxt().read().await;
-        let response = elastic
+        let response_result = elastic
             .count(CountParts::Index(&[bucket_id]))
             .body(json!({
                 "query" : {
@@ -215,9 +216,24 @@ impl ServiceClient for ElasticContext {
             .send()
             .await;
 
-        let value = response.unwrap().json::<Value>().await.unwrap();
-        let count = value["count"].as_i64().unwrap_or(0);
-        count > 0
+        if response_result.is_err() {
+            let err = response_result.err().unwrap();
+            println!("Failed: {}", err);
+            return false;
+        }
+
+        let response = response_result.unwrap();
+        let serialize_result = response.json::<Value>().await;
+        match serialize_result {
+            Ok(value) => {
+                let count = value["count"].as_i64().unwrap_or(0);
+                count > 0
+            }
+            Err(err) => {
+                println!("{}", err);
+                false
+            }
+        }
     }
 
     async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
@@ -295,14 +311,15 @@ impl ServiceClient for ElasticContext {
         let elastic = self.get_cxt().read().await;
         let bucket_name = &doc_form.bucket_uuid;
         let document_id = &doc_form.document_md5_hash;
-        let document_json = deserialize_document(doc_form);
-        if document_json.is_err() {
-            let err = document_json.err().unwrap();
+
+        let ser_doc_result = serde_json::to_value(doc_form);
+        if ser_doc_result.is_err() {
+            let err = ser_doc_result.err().unwrap();
             let web_err = WebError::UpdateDocument(err.to_string());
             return web_err.error_response();
         }
 
-        let document_json = document_json.unwrap();
+        let document_json = ser_doc_result.unwrap();
         let s_path = format!("/{}/_doc/{}", bucket_name, document_id);
         let response_result = elastic
             .send(
@@ -349,7 +366,11 @@ impl ServiceClient for ElasticContext {
             return err.error_response();
         }
 
-        let documents = load_directory_entity(file_path_);
+        let documents = loader::load_passed_file_by_path(file_path_)
+            .into_iter()
+            .map(Document::from)
+            .collect::<Vec<Document>>();
+
         let futures_list = documents
             .iter()
             .map(|doc_form| send_document(&elastic, doc_form, bucket_id))
@@ -373,13 +394,15 @@ impl ServiceClient for ElasticContext {
         SuccessfulResponse::ok_response("Ok")
     }
 
-    // async fn upload_file_to_all(&self, mut part: Multipart) -> HttpResponse {
-    //     SuccessfulResponse::ok_response("Ok")
-    // }
-    //
-    // async fn upload_file_to_bucket(&self, bucket_id: &str, mut part: Multipart) -> HttpResponse {
-    //     SuccessfulResponse::ok_response("Ok")
-    // }
+    async fn download_file(&self, _bucket_id: &str, file_path: &str) -> Option<NamedFile> {
+        match actix_files::NamedFile::open_async(file_path).await {
+            Ok(named_file) => Some(named_file),
+            Err(err) => {
+                println!("{}", err);
+                None
+            }
+        }
+    }
 
     async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;

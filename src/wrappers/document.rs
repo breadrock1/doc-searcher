@@ -1,10 +1,11 @@
 use chrono::{DateTime, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
-use file_loader::FileData;
+use loader::FileData;
 use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize, Serialize, Builder, Default)]
+#[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
 pub struct Document {
     pub bucket_uuid: String,
     pub bucket_path: String,
@@ -39,7 +40,7 @@ impl Document {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, IntoParams, ToSchema)]
 pub struct HighlightEntity {
     pub entity_data: Vec<String>,
 }

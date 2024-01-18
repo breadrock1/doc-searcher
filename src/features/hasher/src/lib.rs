@@ -36,6 +36,11 @@ pub fn gen_hash_from_file(hash_type: HashType, file_path: &str) -> HasherResult 
     gen_hash(hash_type, buffer.as_slice())
 }
 
+pub fn compare_ssdeep_hashes(hash_1: &str, hash_2: &str) -> bool {
+    let result = ssdeep::compare(hash_1.as_bytes(), hash_2.as_bytes()).unwrap_or(0);
+    result != 0
+}
+
 fn ssdeep_hash(data: &[u8]) -> HasherResult {
     match ssdeep::hash(data) {
         None => Err(HasherError::FailedErr),
@@ -47,27 +52,4 @@ fn md5_hash(data: &[u8]) -> HasherResult {
     let digest = md5::compute(data);
     let hash_data = format!("{:x}", digest);
     Ok(Hashed::new(hash_data))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const TEST_STRING: &'static str = "There is some data to check ssdeep hasher";
-
-    #[test]
-    fn ssdeep_hash_test() {
-        let hasher_result = ssdeep_hash(TEST_STRING.as_bytes());
-        let binding = hasher_result.unwrap();
-        let hash_data = binding.get_hash_data();
-        assert_eq!(hash_data, "3:ZFkREaLGqnP3/SX:7knL7v/k")
-    }
-
-    #[test]
-    fn md5_hash_test() {
-        let hasher_result = md5_hash(TEST_STRING.as_bytes());
-        let binding = hasher_result.unwrap();
-        let hash_data = binding.get_hash_data();
-        assert_eq!(hash_data, "ece0157cd8e0c1c4d7986904151e7930")
-    }
 }

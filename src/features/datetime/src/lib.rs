@@ -1,5 +1,10 @@
 use chrono::{DateTime, ParseResult, TimeZone, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::time::SystemTime;
+
+pub fn get_local_now() -> SystemTime {
+    SystemTime::now()
+}
 
 pub fn serialize_dt<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -24,14 +29,6 @@ where
 }
 
 fn format_datetime(value: &str) -> ParseResult<DateTime<Utc>> {
+    #[allow(deprecated)]
     Utc.datetime_from_str(value, "%Y-%m-%dT%H:%M:%SZ")
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        // let result = add(2, 2);
-        // assert_eq!(result, 4);
-    }
 }
