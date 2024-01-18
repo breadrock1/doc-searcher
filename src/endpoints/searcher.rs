@@ -5,6 +5,16 @@ use crate::wrappers::search_params::*;
 
 use actix_web::{post, web};
 
+#[utoipa::path(
+    post,
+    path = "/searcher/search",
+    tag = "Search stored documents by passed query and filters",
+    request_body = SearchParams,
+    responses(
+        (status = 200, description = "Successful", body = [Document]),
+        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+    )
+)]
 #[post("/search")]
 async fn search_all(
     cxt: ContextData,
@@ -15,6 +25,19 @@ async fn search_all(
     client.search_all(&search_form).await
 }
 
+#[utoipa::path(
+    post,
+    path = "/searcher/search/{bucket_name}",
+    tag = "Load file from local file system of service by path",
+    request_body = SearchParams,
+    params(
+        ("bucket_name" = &str, description = "Bucket name to find documents")
+    ),
+    responses(
+        (status = 200, description = "Successful", body = [Document]),
+        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+    )
+)]
 #[post("/search/{bucket_names}")]
 async fn search_target(
     cxt: ContextData,
