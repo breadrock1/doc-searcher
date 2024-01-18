@@ -1,5 +1,5 @@
-use docx::DocxFile;
 use docx::document::{BodyContent, ParagraphContent, TableCellContent};
+use docx::DocxFile;
 use std::path::Path;
 
 pub fn parse(file_path: &Path) -> Result<String, std::io::Error> {
@@ -30,13 +30,12 @@ fn extract_table_text(table: &docx::document::Table) -> String {
     let table_data = table
         .rows
         .iter()
-        .flat_map(|row|
-            row
-                .cells
+        .flat_map(|row| {
+            row.cells
                 .iter()
                 .map(extract_table_cell_data)
                 .collect::<Vec<String>>()
-        )
+        })
         .collect::<Vec<String>>();
 
     table_data.join("")
@@ -46,21 +45,16 @@ fn extract_table_cell_data(table_cell: &docx::document::TableCell) -> String {
     let table_cell_data = table_cell
         .content
         .iter()
-        .flat_map(|tcc|
-            match tcc {
-                TableCellContent::Paragraph(par) => extract_cell_content(par),
-            }
-        )
+        .flat_map(|tcc| match tcc {
+            TableCellContent::Paragraph(par) => extract_cell_content(par),
+        })
         .collect::<Vec<String>>();
 
     table_cell_data.join("")
 }
 
 fn extract_cell_content(paragraph: &docx::document::Paragraph) -> Vec<String> {
-    paragraph
-        .iter_text()
-        .map(|pat| pat.to_string())
-        .collect()
+    paragraph.iter_text().map(|pat| pat.to_string()).collect()
 }
 
 fn extract_paragraph_text(paragraph: &docx::document::Paragraph) -> String {
@@ -68,24 +62,13 @@ fn extract_paragraph_text(paragraph: &docx::document::Paragraph) -> String {
         .content
         .iter()
         .map(|par| match par {
-            ParagraphContent::Run(run) => {
-                run
-                    .iter_text()
-                    .map(|cont| cont.to_string())
-                    .collect()
-            },
+            ParagraphContent::Run(run) => run.iter_text().map(|cont| cont.to_string()).collect(),
             ParagraphContent::Link(link) => {
-                link
-                    .content
-                    .iter_text()
-                    .map(|l| l.to_string())
-                    .collect()
-            },
-            _ => String::default()
+                link.content.iter_text().map(|l| l.to_string()).collect()
+            }
+            _ => String::default(),
         })
         .collect::<Vec<String>>();
 
     paragraph_data.join("")
 }
-
-

@@ -13,8 +13,8 @@ fn parse_by_pdfium(file_path: &Path) -> Result<String, PdfiumError> {
     let pdfim_lib_path: String = dotenv::var("PDFIUM_LIBRARY_PATH").unwrap_or(".".to_string());
 
     let lib_name_at_path = Pdfium::pdfium_platform_library_name_at_path(pdfim_lib_path.as_str());
-    let binds = Pdfium::bind_to_library(lib_name_at_path)
-        .or_else(|_| Pdfium::bind_to_system_library());
+    let binds =
+        Pdfium::bind_to_library(lib_name_at_path).or_else(|_| Pdfium::bind_to_system_library());
 
     if binds.is_err() {
         let _ = binds.err().unwrap();

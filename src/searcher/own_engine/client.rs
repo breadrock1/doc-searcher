@@ -6,19 +6,16 @@ use crate::wrappers::cluster::{Cluster, ClusterBuilder};
 use crate::wrappers::document::Document;
 use crate::wrappers::search_params::SearchParams;
 
+use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 use std::path::Path;
-use actix_files::NamedFile;
 
 #[async_trait::async_trait]
 impl ServiceClient for OtherContext {
     async fn get_all_clusters(&self) -> WebResponse<web::Json<Vec<Cluster>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
-        let clusters_vec = map
-            .values()
-            .cloned()
-            .collect::<Vec<Cluster>>();
+        let clusters_vec = map.values().cloned().collect::<Vec<Cluster>>();
 
         Ok(web::Json(clusters_vec))
     }
@@ -70,10 +67,7 @@ impl ServiceClient for OtherContext {
     async fn get_all_buckets(&self) -> WebResponse<web::Json<Vec<Bucket>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
-        let buckets_vec = map
-            .values()
-            .cloned()
-            .collect::<Vec<Bucket>>();
+        let buckets_vec = map.values().cloned().collect::<Vec<Bucket>>();
 
         Ok(web::Json(buckets_vec))
     }
@@ -184,7 +178,7 @@ impl ServiceClient for OtherContext {
             Err(err) => {
                 println!("{}", err);
                 None
-            },
+            }
         }
     }
 
