@@ -17,13 +17,13 @@ pub enum FileKind {
 impl FileKind {
     pub fn what_kind(extension: &str) -> FileKind {
         match extension {
-            ".pdf" => FileKind::Pdf,
-            ".txt" | ".text" => FileKind::Text,
-            ".docx" | ".doc" => FileKind::Docx,
-            ".xlsx" | ".xlsm" | ".xltx" => FileKind::Excel,
-            ".jpg" | ".jpeg" | ".webp" => FileKind::Picture,
-            ".wav" | ".mp3" => FileKind::Audio,
-            ".mpeg" => FileKind::Video,
+            "pdf" => FileKind::Pdf,
+            "txt" | "text" => FileKind::Text,
+            "docx" | "doc" => FileKind::Docx,
+            "xlsx" | "xlsm" | "xltx" | "xls" => FileKind::Excel,
+            "jpg" | "jpeg" | "webp" => FileKind::Picture,
+            "wav" | "mp3" => FileKind::Audio,
+            "mpeg" => FileKind::Video,
             _ => FileKind::Text,
         }
     }
