@@ -1,8 +1,9 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize, Builder, Default, Clone)]
+#[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
 pub struct Bucket {
     pub health: String,
     pub status: String,
@@ -22,7 +23,7 @@ pub struct Bucket {
     pub rep: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct BucketForm {
     bucket_name: String,
 }
