@@ -57,7 +57,7 @@ mod loader_endpoints {
 
     #[test]
     async fn test_load_file() {
-        let file_path = "src/features/loader/resources/test.txt";
+        let file_path = "src/crates/loader/resources/test.txt";
         let other_context = OtherContext::_new("test".to_string());
         let response = other_context
             .load_file_to_bucket("test_bucket", file_path)
