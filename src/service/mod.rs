@@ -1,3 +1,6 @@
+pub mod elastic;
+pub mod own_engine;
+
 use crate::errors::WebResponse;
 use crate::wrappers::bucket::{Bucket, BucketForm};
 use crate::wrappers::cluster::Cluster;
