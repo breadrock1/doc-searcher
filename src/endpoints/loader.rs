@@ -50,8 +50,8 @@ async fn download_file(
 
 #[cfg(test)]
 mod loader_endpoints {
-    use crate::searcher::own_engine::context::OtherContext;
-    use crate::searcher::service_client::ServiceClient;
+    use crate::service::own_engine::context::OtherContext;
+    use crate::service::ServiceClient;
 
     use actix_web::test;
 

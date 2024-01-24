@@ -7,7 +7,7 @@ use actix_web::{post, web};
 
 #[utoipa::path(
     post,
-    path = "/search-similar",
+    path = "/searcher/search-similar",
     tag = "Search similar documents by passed SearchParams",
     request_body = SearchParams,
     responses(
@@ -27,7 +27,7 @@ async fn search_similar_docs(
 
 #[utoipa::path(
     post,
-    path = "/search-similar/{bucket_names}",
+    path = "/searcher/search-similar/{bucket_names}",
     tag = "Search similar documents by passed SearchParams",
     request_body = SearchParams,
     params(
@@ -52,8 +52,8 @@ async fn search_similar_docs_target(
 
 #[cfg(test)]
 mod similar_endpoints {
-    use crate::searcher::own_engine::context::OtherContext;
-    use crate::searcher::service_client::ServiceClient;
+    use crate::service::own_engine::context::OtherContext;
+    use crate::service::ServiceClient;
     use crate::wrappers::document::{Document, DocumentBuilder};
     use crate::wrappers::search_params::SearchParams;
 

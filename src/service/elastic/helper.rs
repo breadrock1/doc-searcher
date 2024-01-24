@@ -1,5 +1,5 @@
 use crate::errors::{WebError, WebResponse};
-use crate::searcher::elastic::send_status::SendDocumentStatus;
+use crate::service::elastic::send_status::SendDocumentStatus;
 use crate::wrappers::bucket::{Bucket, BucketBuilder};
 use crate::wrappers::document::{Document, HighlightEntity};
 use crate::wrappers::schema::BucketSchema;

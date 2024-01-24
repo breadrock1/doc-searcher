@@ -53,8 +53,8 @@ async fn search_target(
 #[cfg(test)]
 mod searcher_endpoints {
 
-    use crate::searcher::own_engine::context::OtherContext;
-    use crate::searcher::service_client::ServiceClient;
+    use crate::service::own_engine::context::OtherContext;
+    use crate::service::ServiceClient;
     use crate::wrappers::document::{Document, DocumentBuilder};
     use crate::wrappers::search_params::SearchParams;
 
