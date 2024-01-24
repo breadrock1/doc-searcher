@@ -1,7 +1,7 @@
 use crate::errors::{SuccessfulResponse, WebError};
-use crate::searcher::elastic::context::ElasticContext;
-use crate::searcher::elastic::helper::*;
-use crate::searcher::service_client::{JsonResponse, ServiceClient};
+use crate::service::elastic::context::ElasticContext;
+use crate::service::elastic::helper::*;
+use crate::service::{JsonResponse, ServiceClient};
 use crate::wrappers::bucket::{Bucket, BucketForm};
 use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;

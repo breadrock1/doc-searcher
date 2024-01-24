@@ -1,6 +1,6 @@
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::searcher::own_engine::context::OtherContext;
-use crate::searcher::service_client::ServiceClient;
+use crate::service::own_engine::context::OtherContext;
+use crate::service::ServiceClient;
 use crate::wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
 use crate::wrappers::cluster::{Cluster, ClusterBuilder};
 use crate::wrappers::document::Document;

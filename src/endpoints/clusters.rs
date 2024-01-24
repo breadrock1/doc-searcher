@@ -76,8 +76,8 @@ async fn get_cluster(cxt: ContextData, path: web::Path<String>) -> WebResponse<w
 
 #[cfg(test)]
 mod cluster_endpoints {
-    use crate::searcher::own_engine::context::OtherContext;
-    use crate::searcher::service_client::ServiceClient;
+    use crate::service::own_engine::context::OtherContext;
+    use crate::service::ServiceClient;
 
     use actix_web::test;
 
