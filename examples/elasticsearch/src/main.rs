@@ -1,11 +1,11 @@
 extern crate docsearcher;
 
-use docsearcher::service::*;
+use docsearcher::init::*;
 use docsearcher::swagger::ApiDoc;
 use docsearcher::swagger::OpenApi;
 use docsearcher::swagger::create_service;
-use docsearcher::searcher::service_client::ServiceClient;
-use docsearcher::searcher::elastic::context::ElasticContext;
+use docsearcher::service::ServiceClient;
+use docsearcher::service::elastic::context::ElasticContext;
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -42,7 +42,7 @@ async fn main() -> Result<(), anyhow::Error> {
 }
 
 fn build_elastic_service(es_host: &str, es_user: &str, es_passwd: &str) -> ElasticContext {
-    use docsearcher::searcher::elastic::build_elastic_client;
+    use docsearcher::service::elastic::build_elastic_client;
     let client = build_elastic_client(es_host, es_user, es_passwd);
     ElasticContext::_new(client.unwrap())
 }
