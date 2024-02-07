@@ -27,16 +27,23 @@ async fn main() -> Result<(), anyhow::Error> {
         let cors_cln = cors_origin.clone();
         let cors = build_cors_config(cors_cln.as_str());
         let openapi = ApiDoc::openapi();
+
         App::new()
             .app_data(web::Data::new(box_cxt))
-            .service(build_service())
-            .service(create_service(&openapi))
             .wrap(Logger::default())
             .wrap(cors)
+            .service(create_service(&openapi))
+            .service(build_hello_scope())
+            .service(build_cluster_scope())
+            .service(build_bucket_scope())
+            .service(build_document_scope())
+            .service(build_search_scope())
+            .service(build_similar_scope())
+            .service(build_file_scope())
     })
-        .bind((service_addr, service_port))?
-        .run()
-        .await?;
+    .bind((service_addr, service_port))?
+    .run()
+    .await?;
 
     Ok(())
 }
