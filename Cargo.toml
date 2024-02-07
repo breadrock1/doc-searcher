@@ -6,11 +6,6 @@ edition = "2021"
 [badges]
 maintenance = { status = "actively-developed" }
 
-[features]
-elastic-search = []
-default-search = []
-default = ["elastic-search"]
-
 [dependencies]
 anyhow = "^1.0"
 actix-web = "^4.3"
@@ -33,7 +28,7 @@ walkdir = "^2.4"
 utoipa = { version = "3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 
-cachemw = { path = "src/crates/cachemw" }
+cacher = { path = "src/crates/cacher" }
 datetime = { path = "src/crates/datetime" }
 elquery = { path = "src/crates/elquery" }
 hasher = { path = "src/crates/hasher" }
