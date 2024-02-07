@@ -97,26 +97,50 @@ pub fn build_env_logger() {
     env_logger::init_from_env(env_log);
 }
 
-pub fn build_service() -> Scope {
-    web::scope("/searcher")
+pub fn build_hello_scope() -> Scope {
+    web::scope("/hello")
         .service(hello)
+}
+
+pub fn build_cluster_scope() -> Scope {
+    web::scope("/cluster")
         .service(new_cluster)
         .service(delete_cluster)
         .service(all_clusters)
         .service(get_cluster)
+}
+
+pub fn build_bucket_scope() -> Scope {
+    web::scope("/bucket")
         .service(new_bucket)
         .service(default_bucket)
         .service(delete_bucket)
         .service(all_buckets)
         .service(get_bucket)
+}
+
+pub fn build_document_scope() -> Scope {
+    web::scope("/document")
         .service(new_document)
         .service(delete_document)
         .service(update_document)
         .service(get_document)
+}
+
+pub fn build_search_scope() -> Scope {
+    web::scope("/search")
         .service(search_target)
         .service(search_all)
+}
+
+pub fn build_similar_scope() -> Scope {
+    web::scope("/similar")
         .service(search_similar_docs)
         .service(search_similar_docs_target)
+}
+
+pub fn build_file_scope() -> Scope {
+    web::scope("/file")
         .service(load_file)
         .service(download_file)
 }
