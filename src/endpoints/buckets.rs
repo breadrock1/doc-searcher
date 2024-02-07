@@ -6,14 +6,14 @@ use actix_web::{delete, get, post, web, HttpResponse};
 
 #[utoipa::path(
     post,
-    path = "/searcher/buckets",
+    path = "/bucket/all",
     tag = "Get all available buckets",
     responses(
         (status = 200, description = "Successful", body = [Bucket]),
         (status = 400, description = "Failed while getting all buckets", body = ErrorResponse),
     )
 )]
-#[get("/buckets")]
+#[get("/all")]
 async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
     let client = cxt.get_ref();
     client.get_all_buckets().await
@@ -21,7 +21,7 @@ async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
 
 #[utoipa::path(
     post,
-    path = "/searcher/bucket/new",
+    path = "/bucket/new",
     tag = "Create new bucket from BucketForm",
     request_body = BucketForm,
     responses(
@@ -29,7 +29,7 @@ async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
         (status = 400, description = "Failed while creating", body = ErrorResponse),
     )
 )]
-#[post("/bucket/new")]
+#[post("/new")]
 async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_form = form.0;
@@ -38,14 +38,14 @@ async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpRespon
 
 #[utoipa::path(
     post,
-    path = "/searcher/bucket/default",
+    path = "/bucket/default",
     tag = "Create default bucket (common for all documents)",
     responses(
         (status = 200, description = "Successful", body = SuccessfulResponse),
         (status = 400, description = "Failed while deleting", body = ErrorResponse),
     )
 )]
-#[post("/bucket/default")]
+#[post("/default")]
 async fn default_bucket(cxt: ContextData) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_form = BucketForm::default();
@@ -54,7 +54,7 @@ async fn default_bucket(cxt: ContextData) -> HttpResponse {
 
 #[utoipa::path(
     post,
-    path = "/searcher/bucket/{bucket_name}",
+    path = "/bucket/{bucket_name}",
     tag = "Delete bucket",
     params(
         ("bucket_name" = &str, description = "Passed bucket name to delete")
@@ -64,7 +64,7 @@ async fn default_bucket(cxt: ContextData) -> HttpResponse {
         (status = 400, description = "Failed while deleting", body = ErrorResponse),
     )
 )]
-#[delete("/bucket/{bucket_name}")]
+#[delete("/{bucket_name}")]
 async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_name = path.to_string();
@@ -73,7 +73,7 @@ async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpRespons
 
 #[utoipa::path(
     get,
-    path = "/searcher/bucket/{bucket_name}",
+    path = "/bucket/{bucket_name}",
     tag = "Get bucket by name",
     params(
         ("bucket_name" = &str, description = "Passed bucket name to get")
@@ -83,7 +83,7 @@ async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpRespons
         (status = 400, description = "Failed while getting bucket", body = ErrorResponse),
     )
 )]
-#[get("/bucket/{bucket_name}")]
+#[get("/{bucket_name}")]
 async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> WebResponse<web::Json<Bucket>> {
     let client = cxt.get_ref();
     let bucket_name = format!("/{}/_stats", path);
