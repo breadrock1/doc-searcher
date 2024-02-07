@@ -7,7 +7,7 @@ use actix_web::{post, web};
 
 #[utoipa::path(
     post,
-    path = "/searcher/search",
+    path = "/search/",
     tag = "Search stored documents by passed query and filters",
     request_body = SearchParams,
     responses(
@@ -15,19 +15,24 @@ use actix_web::{post, web};
         (status = 401, description = "Failed while searching documents", body = ErrorResponse),
     )
 )]
-#[post("/search")]
+#[post("/")]
 async fn search_all(
     cxt: ContextData,
     form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.search_all(&search_form).await
+    match client.load_cache(&search_form).await {
+        None => client.search_all(&search_form).await,
+        Some(documents) => {
+            Ok(web::Json(documents))
+        },
+    }
 }
 
 #[utoipa::path(
     post,
-    path = "/searcher/search/{bucket_name}",
+    path = "/search/{bucket_name}",
     tag = "Load file from local file system of service by path",
     request_body = SearchParams,
     params(
@@ -38,7 +43,7 @@ async fn search_all(
         (status = 401, description = "Failed while searching documents", body = ErrorResponse),
     )
 )]
-#[post("/search/{bucket_names}")]
+#[post("/{bucket_names}")]
 async fn search_target(
     cxt: ContextData,
     path: web::Path<String>,
@@ -47,12 +52,16 @@ async fn search_target(
     let client = cxt.get_ref();
     let search_form = form.0;
     let buckets = path.as_ref();
-    client.search_bucket(buckets.as_str(), &search_form).await
+    match client.load_cache(&search_form).await {
+        None => client.search_bucket(buckets.as_str(), &search_form).await,
+        Some(documents) => {
+            Ok(web::Json(documents))
+        },
+    }
 }
 
 #[cfg(test)]
 mod searcher_endpoints {
-
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
     use crate::wrappers::document::{Document, DocumentBuilder};

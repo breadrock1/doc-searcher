@@ -7,7 +7,7 @@ use actix_web::{post, web};
 
 #[utoipa::path(
     post,
-    path = "/searcher/search-similar",
+    path = "/similar/",
     tag = "Search similar documents by passed SearchParams",
     request_body = SearchParams,
     responses(
@@ -15,7 +15,7 @@ use actix_web::{post, web};
         (status = 401, description = "Failed while searching documents", body = ErrorResponse),
     )
 )]
-#[post("/search-similar")]
+#[post("/")]
 async fn search_similar_docs(
     cxt: ContextData,
     form: web::Json<SearchParams>,
@@ -27,7 +27,7 @@ async fn search_similar_docs(
 
 #[utoipa::path(
     post,
-    path = "/searcher/search-similar/{bucket_names}",
+    path = "/similar/{bucket_names}",
     tag = "Search similar documents by passed SearchParams",
     request_body = SearchParams,
     params(
@@ -38,7 +38,7 @@ async fn search_similar_docs(
         (status = 401, description = "Failed while searching documents", body = ErrorResponse),
     )
 )]
-#[post("/search-similar/{bucket_names}")]
+#[post("/{bucket_names}")]
 async fn search_similar_docs_target(
     cxt: ContextData,
     path: web::Path<String>,
