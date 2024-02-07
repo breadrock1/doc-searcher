@@ -4,6 +4,7 @@ use crate::wrappers::document::Document;
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use cacher::cacher::RedisService;
 use tokio::sync::RwLock;
 
 pub struct SearchEngine {
@@ -25,16 +26,24 @@ impl Default for SearchEngine {
 #[derive(Default, Clone)]
 pub struct OtherContext {
     context: Arc<RwLock<SearchEngine>>,
+    cacher: Arc<RwLock<RedisService>>,
 }
 
 impl OtherContext {
     pub fn _new(_: String) -> Self {
         let engine = SearchEngine::default();
-        let elastic = Arc::new(RwLock::new(engine));
-        OtherContext { context: elastic }
+        let cache_service = RedisService::default();
+        OtherContext {
+            context: Arc::new(RwLock::new(engine)),
+            cacher: Arc::new(RwLock::new(cache_service)),
+        }
     }
 
     pub fn get_cxt(&self) -> &Arc<RwLock<SearchEngine>> {
         &self.context
+    }
+
+    pub fn get_cacher(&self) -> &Arc<RwLock<RedisService>> {
+        &self.cacher
     }
 }
