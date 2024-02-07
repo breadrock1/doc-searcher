@@ -6,11 +6,6 @@ edition = "2021"
 [badges]
 maintenance = { status = "actively-developed" }
 
-[features]
-elastic-search = []
-default-search = []
-default = ["elastic-search"]
-
 [dependencies]
 anyhow = "^1.0"
 actix-web = "^4.3"
@@ -33,26 +28,27 @@ walkdir = "^2.4"
 utoipa = { version = "3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 
-datetime = { path = "src/features/datetime" }
-elquery = { path = "src/features/elquery" }
-hasher = { path = "src/features/hasher" }
-loader = { path = "src/features/loader" }
+cacher = { path = "src/crates/cacher" }
+datetime = { path = "src/crates/datetime" }
+elquery = { path = "src/crates/elquery" }
+hasher = { path = "src/crates/hasher" }
+loader = { path = "src/crates/loader" }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
 
 [[test]]
 name = "datetime_tests"
-path = "src/features/datetime/test/test.rs"
+path = "src/crates/datetime/test/test.rs"
 
 [[test]]
 name = "elquery_tests"
-path = "src/features/elquery/test/test.rs"
+path = "src/crates/elquery/test/test.rs"
 
 [[test]]
 name = "hasher_tests"
-path = "src/features/hasher/test/test.rs"
+path = "src/crates/hasher/test/test.rs"
 
 [[test]]
 name = "loader_tests"
-path = "src/features/loader/test/test.rs"
+path = "src/crates/loader/test/test.rs"

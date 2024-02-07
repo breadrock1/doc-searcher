@@ -8,12 +8,12 @@ chrono = "^0.4"
 derive_builder = "^0.12"
 docx = "^1.1"
 dotenv = "^0.15"
+office = "^0.8"
 lopdf = "^0.31"
+hasher = { path = "../hasher" }
 pdfium-render = "^0.8"
 tesseract = "^0.15"
-office = "^0.8"
 walkdir = "^2.4"
-hasher = { path = "../hasher" }
 
 [[test]]
 name = "test"

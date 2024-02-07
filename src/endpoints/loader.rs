@@ -6,7 +6,7 @@ use actix_web::{HttpRequest, HttpResponse};
 
 #[utoipa::path(
     post,
-    path = "/searcher/loader/load",
+    path = "/file/load",
     tag = "Load file from local file system of service by path",
     request_body = LoadFileForm,
     responses(
@@ -14,7 +14,7 @@ use actix_web::{HttpRequest, HttpResponse};
         (status = 401, description = "Failed while loading files", body = ErrorResponse),
     )
 )]
-#[post("/loader/load")]
+#[post("/load")]
 async fn load_file(cxt: ContextData, form: web::Json<LoadFileForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let file_path = form.get_path();
@@ -24,7 +24,7 @@ async fn load_file(cxt: ContextData, form: web::Json<LoadFileForm>) -> HttpRespo
 
 #[utoipa::path(
     post,
-    path = "/searcher/loader/load-file",
+    path = "/file/download",
     tag = "Download file from local system by path",
     request_body = LoadFileForm,
     responses(
@@ -32,7 +32,7 @@ async fn load_file(cxt: ContextData, form: web::Json<LoadFileForm>) -> HttpRespo
         (status = 401, description = "Failed while downloading files", body = ErrorResponse),
     )
 )]
-#[post("/loader/load-file")]
+#[post("/download")]
 async fn download_file(
     cxt: ContextData,
     req: HttpRequest,
@@ -50,14 +50,14 @@ async fn download_file(
 
 #[cfg(test)]
 mod loader_endpoints {
-    use crate::searcher::own_engine::context::OtherContext;
-    use crate::searcher::service_client::ServiceClient;
+    use crate::service::own_engine::context::OtherContext;
+    use crate::service::ServiceClient;
 
     use actix_web::test;
 
     #[test]
     async fn test_load_file() {
-        let file_path = "src/features/loader/resources/test.txt";
+        let file_path = "src/crates/loader/resources/test.txt";
         let other_context = OtherContext::_new("test".to_string());
         let response = other_context
             .load_file_to_bucket("test_bucket", file_path)

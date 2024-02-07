@@ -1,7 +1,7 @@
 use crate::errors::{SuccessfulResponse, WebError};
-use crate::searcher::elastic::context::ElasticContext;
-use crate::searcher::elastic::helper::*;
-use crate::searcher::service_client::{JsonResponse, ServiceClient};
+use crate::service::elastic::context::ElasticContext;
+use crate::service::elastic::helper::*;
+use crate::service::{JsonResponse, ServiceClient};
 use crate::wrappers::bucket::{Bucket, BucketForm};
 use crate::wrappers::cluster::Cluster;
 use crate::wrappers::document::Document;
@@ -9,6 +9,8 @@ use crate::wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
+use cacher::AnyCacherService;
+use cacher::values::{CacherDocument, CacherSearchParams};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
@@ -436,5 +438,32 @@ impl ServiceClient for ElasticContext {
         let indexes: Vec<&str> = buckets_id.split(',').collect();
         let body_value = build_search_similar_query(s_params);
         search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
+    }
+
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
+        let cacher = self.get_cacher().read().await;
+        let cacher_params = CacherSearchParams::from(s_params);
+        let documents = cacher.get_documents(&cacher_params).await;
+        if documents.is_none() {
+            return None;
+        }
+
+        Some(documents
+                 .unwrap()
+                 .into_iter()
+                 .map(Document::from)
+                 .collect()
+        )
+    }
+
+    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> () {
+        let cacher = self.get_cacher().read().await;
+        let cacher_params = CacherSearchParams::from(s_params);
+        let cacher_docs = docs
+            .into_iter()
+            .map(CacherDocument::from)
+            .collect::<Vec<CacherDocument>>();
+
+        cacher.set_documents(&cacher_params, cacher_docs).await;
     }
 }

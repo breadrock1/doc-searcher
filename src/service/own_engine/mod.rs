@@ -1,7 +1,7 @@
 pub mod client;
 pub mod context;
 
-use crate::searcher::own_engine::context::OtherContext;
+use crate::service::own_engine::context::OtherContext;
 use std::error::Error;
 
 pub type ClientBuildResult = Result<OtherContext, Box<dyn Error>>;

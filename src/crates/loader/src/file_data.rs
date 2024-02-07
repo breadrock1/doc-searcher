@@ -1,5 +1,5 @@
-use chrono::{DateTime, Utc};
 use derive_builder::Builder;
+use chrono::{DateTime, Utc};
 
 #[derive(Builder)]
 pub struct FileData {

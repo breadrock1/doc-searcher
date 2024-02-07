@@ -1,11 +1,11 @@
 extern crate docsearcher;
 
-use docsearcher::service::*;
+use docsearcher::init::*;
 use docsearcher::swagger::ApiDoc;
 use docsearcher::swagger::OpenApi;
 use docsearcher::swagger::create_service;
-use docsearcher::searcher::service_client::ServiceClient;
-use docsearcher::searcher::elastic::context::ElasticContext;
+use docsearcher::service::ServiceClient;
+use docsearcher::service::elastic::context::ElasticContext;
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -27,22 +27,29 @@ async fn main() -> Result<(), anyhow::Error> {
         let cors_cln = cors_origin.clone();
         let cors = build_cors_config(cors_cln.as_str());
         let openapi = ApiDoc::openapi();
+
         App::new()
             .app_data(web::Data::new(box_cxt))
-            .service(build_service())
-            .service(create_service(&openapi))
             .wrap(Logger::default())
             .wrap(cors)
+            .service(create_service(&openapi))
+            .service(build_hello_scope())
+            .service(build_cluster_scope())
+            .service(build_bucket_scope())
+            .service(build_document_scope())
+            .service(build_search_scope())
+            .service(build_similar_scope())
+            .service(build_file_scope())
     })
-        .bind((service_addr, service_port))?
-        .run()
-        .await?;
+    .bind((service_addr, service_port))?
+    .run()
+    .await?;
 
     Ok(())
 }
 
 fn build_elastic_service(es_host: &str, es_user: &str, es_passwd: &str) -> ElasticContext {
-    use docsearcher::searcher::elastic::build_elastic_client;
+    use docsearcher::service::elastic::build_elastic_client;
     let client = build_elastic_client(es_host, es_user, es_passwd);
     ElasticContext::_new(client.unwrap())
 }

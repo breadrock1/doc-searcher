@@ -7,7 +7,7 @@ use actix_web::{post, web};
 
 #[utoipa::path(
     post,
-    path = "/searcher/search",
+    path = "/search/",
     tag = "Search stored documents by passed query and filters",
     request_body = SearchParams,
     responses(
@@ -15,19 +15,24 @@ use actix_web::{post, web};
         (status = 401, description = "Failed while searching documents", body = ErrorResponse),
     )
 )]
-#[post("/search")]
+#[post("/")]
 async fn search_all(
     cxt: ContextData,
     form: web::Json<SearchParams>,
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.search_all(&search_form).await
+    match client.load_cache(&search_form).await {
+        None => client.search_all(&search_form).await,
+        Some(documents) => {
+            Ok(web::Json(documents))
+        },
+    }
 }
 
 #[utoipa::path(
     post,
-    path = "/searcher/search/{bucket_name}",
+    path = "/search/{bucket_name}",
     tag = "Load file from local file system of service by path",
     request_body = SearchParams,
     params(
@@ -38,7 +43,7 @@ async fn search_all(
         (status = 401, description = "Failed while searching documents", body = ErrorResponse),
     )
 )]
-#[post("/search/{bucket_names}")]
+#[post("/{bucket_names}")]
 async fn search_target(
     cxt: ContextData,
     path: web::Path<String>,
@@ -47,14 +52,18 @@ async fn search_target(
     let client = cxt.get_ref();
     let search_form = form.0;
     let buckets = path.as_ref();
-    client.search_bucket(buckets.as_str(), &search_form).await
+    match client.load_cache(&search_form).await {
+        None => client.search_bucket(buckets.as_str(), &search_form).await,
+        Some(documents) => {
+            Ok(web::Json(documents))
+        },
+    }
 }
 
 #[cfg(test)]
 mod searcher_endpoints {
-
-    use crate::searcher::own_engine::context::OtherContext;
-    use crate::searcher::service_client::ServiceClient;
+    use crate::service::own_engine::context::OtherContext;
+    use crate::service::ServiceClient;
     use crate::wrappers::document::{Document, DocumentBuilder};
     use crate::wrappers::search_params::SearchParams;
 
@@ -111,7 +120,7 @@ mod searcher_endpoints {
             "Rostov, together with his commander Vasily Denisov, comes home. The Rostov family happily welcomes Nikolai. After a period of silence, high society develops an attitude towards the recent defeat of the Russian army, placing all the blame on the Austrians. The old Count of Rostov organizes a dinner in honor of Prince Bagration at the English Club. Pierre Bezukhov is present at the dinner; he recently received an anonymous note, which directly indicates his wife’s connection with Dolokhov. Dolokhov mocks Pierre, raises a toast “to the health of beautiful women and their lovers” and snatches the cantata from Pierre’s hands, which he was given as an honored guest.",
             "皮埃尔的脑海中立刻浮现出一幅完整的画面；他意识到他的妻子是一个愚蠢、堕落的女人。 皮埃尔愤怒地向多洛霍夫发起决斗挑战。 第二天，决斗者在森林里相遇。 第一次拿起手枪的皮埃尔，一枪将经验丰富的战士多洛霍夫砍倒，重伤的多洛霍夫的回击擦肩而过。 在多洛霍夫的要求下，他的第二个罗斯托夫急忙去找他的母亲，惊讶地发现，爱打闹、粗暴的多洛霍夫“和一位年老的母亲和一个驼背的妹妹住在莫斯科，是最温柔的儿子和兄弟”。 海伦娜对皮埃尔大吵大闹，皮埃尔勃然大怒，差点杀了她。 他授权妻子管理他一半以上的财产，然后离开莫斯科。",
             "Старый князь в Лысых Горах получил известие о гибели князя Андрея в Аустерлицком сражении, но вслед за ним приходит письмо от Кутузова, где фельдмаршал высказывает сомнения в смерти своего адьютанта. У жены князя Андрея начинаются роды. вместе с доктором в имение приезжает князь Андрей. Лиза рожает сына но умирает при родах. На её мёртвом лице Андрей читает укоризненное выражение: «Что вы со мной сделали?», которое впоследствии весьма долго не оставляет его. Новорождённому сыну дают имя Николай.",
-            "An LLM model like LLaMA-2, released in July 2023, can do a lot using a correctly composed text query (prompt) without additional programming. One of the very useful features is text summarization, with which you can make a short summary of a large text, even in Russian.",
+            "An LLM model like LLaMA-2, released in July 2023, can do a lot using a correctly composed text query (prompt) without additional programming. One of the very useful crates is text summarization, with which you can make a short summary of a large text, even in Russian.",
             "The mathematical model of SSMU scientists allows us to halve the number of errors in diagnosing cardiovascular diseases. The results were published in The European Physical Journal Special Topics. The heart of a healthy person beats irregularly, that is, the timing of heart contractions can be different, scientists explained. According to experts, the degree of irregularity of heart rhythm can be used for medical purposes. ). accurate calculation of errors when measuring the spectra of a biological signal. According to them, the application of the obtained data will halve the number of incorrect cardiovascular diseases. “Accepted diagnostic methods, for example, of hypertension, as it turned out, give the correct diagnosis only in 70% of cases. The main reason for the high error is that both world and Russian standards use 3-5 minutes to analyze an electrocardiogram. Our calculations indicate that ECG data within 15–20 minutes can increase this value to 85%,” said Yuri Ishbulatov, senior researcher at the Research Institute of Cardiology of SSMU. Question: Brief summary in English.",
             "Probably the simplest thing is to split the document into proposals of less than 4K tokens and feed it into the industrial sector. Once you have all the block sums, you can run another block split if the final is larger than the context size. And if it does not exceed, then you can run the final summation. But I haven't tried that yet). Also, do not forget that if maximum quality is required, you can try versions 70B, as well as ChatGPT 4, which has a 32K context, and Claude 2, which has a 100K long context.",
             "Вероятно, самое простое — разделить документ на предложения размером менее 4 тыс. токенов и передать его промышленному сектору. Когда у вас есть все суммы блоков, вы можете запустить еще одно разделение блоков, если итоговый результат превышает размер контекста. А если не превышает, то можно провести итоговое суммирование. Но я еще не пробовал). Также не забывайте, что если требуется максимальное качество, можно попробовать версии 70B, а также ChatGPT 4, имеющий контекст длиной 32К, и Claude 2, имеющий контекст длиной 100К.",
