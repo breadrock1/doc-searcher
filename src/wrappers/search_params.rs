@@ -1,3 +1,4 @@
+use cacher::values::{CacherSearchParams, CacherSearchParamsBuilder};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -27,6 +28,23 @@ impl Default for SearchParams {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
+            .build()
+            .unwrap()
+    }
+}
+
+impl From<&SearchParams> for CacherSearchParams {
+    fn from(value: &SearchParams) -> Self {
+        CacherSearchParamsBuilder::default()
+            .query(value.query.to_owned())
+            .document_type(value.document_type.to_owned())
+            .document_extension(value.document_extension.to_owned())
+            .created_date_to(value.created_date_to.to_owned())
+            .created_date_from(value.created_date_from.to_owned())
+            .document_size_to(value.document_size_to)
+            .document_size_from(value.document_size_from)
+            .result_size(value.result_size)
+            .result_offset(value.result_offset)
             .build()
             .unwrap()
     }
