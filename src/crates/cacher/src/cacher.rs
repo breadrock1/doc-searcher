@@ -1,8 +1,9 @@
 use crate::AnyCacherService;
+use crate::values::CacherSearchParams;
 use crate::values::VecCacherDocuments;
-use crate::values::{CacherDocument, CacherSearchParams};
 
-use redis::{AsyncCommands, Value};
+use redis::RedisResult;
+use redis::{AsyncCommands, FromRedisValue};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -22,7 +23,7 @@ impl RedisService {
 
 impl Default for RedisService {
     fn default() -> Self {
-        let address = "redis://127.0.0.1";
+        let address = "redis://127.0.0.1:6379/";
         let redis_client = redis::Client::open(address);
         let client_arc = Arc::new(RwLock::new(redis_client.unwrap()));
         RedisService {
@@ -32,31 +33,37 @@ impl Default for RedisService {
 }
 
 impl AnyCacherService for RedisService {
-    async fn get_documents(&self, search_params: &CacherSearchParams) -> Option<Vec<CacherDocument>> {
+    async fn get_documents(&self, search_params: &CacherSearchParams) -> Option<VecCacherDocuments> {
         let cxt = self.client.read().await;
-        let mut conn = cxt.get_tokio_connection().await.unwrap();
-        match conn.get(search_params.query.as_str()).await.unwrap() {
-            Value::Nil => None,
-            Value::Data(value) => {
-                let docs: Vec<CacherDocument> = serde_json::from_slice(value.as_slice()).unwrap();
-                Some(docs)
+        let conn_result = cxt.get_tokio_connection().await;
+        if conn_result.is_err() {
+            let err = conn_result.err().unwrap();
+            println!("{:?}", err);
+            return None;
+        }
+
+        let mut conn = conn_result.unwrap();
+        match conn.get(search_params.query.as_str()).await {
+            Ok(redis_value) => VecCacherDocuments::from_redis_value(&redis_value).ok(),
+            Err(_) => {
+                println!("{}", "Failed while parsing RedisValue object");
+                return None;
             },
-            _ => None,
         }
     }
 
-    async fn set_documents(&self, params: &CacherSearchParams, docs: Vec<CacherDocument>) {
+    async fn set_documents(&self, params: &CacherSearchParams, docs: VecCacherDocuments) -> VecCacherDocuments {
         let cxt = self.client.read().await;
-        let mut conn = cxt.get_async_connection().await.unwrap();
-        let vec_docs = VecCacherDocuments::from(docs);
-        let vec_docs_str = serde_json::to_string(&vec_docs).unwrap();
+        let conn_result = cxt.get_tokio_connection().await;
+        if conn_result.is_err() {
+            let err = conn_result.err().unwrap();
+            println!("{:?}", err);
+            return docs;
+        }
 
-        let _: ((), i64, usize) = redis::pipe()
-            .cmd("SET")
-            .arg(params.query.as_str())
-            .arg(vec_docs_str.as_str())
-            .query_async(&mut conn)
-            .await
-            .unwrap();
+        let mut conn = conn_result.unwrap();
+        let set_result: RedisResult<()> = conn.set_ex(params, &docs, 3600).await;
+        println!("{:?}", set_result);
+        docs
     }
 }

@@ -1,7 +1,31 @@
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
-use redis::{RedisWrite, ToRedisArgs};
+use redis::{ErrorKind, RedisError, RedisResult, Value};
+use redis::{FromRedisValue, RedisWrite, ToRedisArgs};
 use serde::{Deserialize, Serialize};
+
+#[derive(Builder, Serialize, Deserialize)]
+pub struct CacherSearchParams {
+    pub query: String,
+    pub document_type: String,
+    pub document_extension: String,
+    pub document_size_to: i64,
+    pub document_size_from: i64,
+    pub created_date_to: String,
+    pub created_date_from: String,
+    pub result_size: i64,
+    pub result_offset: i64,
+}
+
+impl ToRedisArgs for &CacherSearchParams {
+    fn write_redis_args<W>(&self, out: &mut W)
+        where
+            W: ?Sized + RedisWrite
+    {
+        let json_str = serde_json::to_string(self).unwrap();
+        out.write_arg_fmt(json_str)
+    }
+}
 
 #[derive(Builder, Serialize, Deserialize)]
 pub struct CacherDocument {
@@ -21,25 +45,21 @@ pub struct CacherDocument {
     pub document_modified: Option<DateTime<Utc>>,
 }
 
-impl ToRedisArgs for &CacherDocument {
-    fn write_redis_args<W>(&self, out: &mut W)
-    where
-        W: ?Sized + RedisWrite
-    {
-        let json_str = serde_json::to_string(self).unwrap();
-        out.write_arg_fmt(json_str)
-    }
+#[derive(Default, Deserialize, Serialize)]
+pub struct VecCacherDocuments {
+    pub cacher_documents: Vec<CacherDocument>,
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct VecCacherDocuments {
-    pub docs: Vec<CacherDocument>,
+impl VecCacherDocuments {
+    pub fn get_documents(&self) -> &Vec<CacherDocument> {
+        &self.cacher_documents
+    }
 }
 
 impl From<Vec<CacherDocument>> for VecCacherDocuments {
     fn from(value: Vec<CacherDocument>) -> Self {
         VecCacherDocuments {
-            docs: value
+            cacher_documents: value
         }
     }
 }
@@ -54,25 +74,21 @@ impl ToRedisArgs for VecCacherDocuments {
     }
 }
 
-#[derive(Builder, Serialize, Deserialize, Clone, Default)]
-pub struct CacherSearchParams {
-    pub query: String,
-    pub document_type: String,
-    pub document_extension: String,
-    pub document_size_to: i64,
-    pub document_size_from: i64,
-    pub created_date_to: String,
-    pub created_date_from: String,
-    pub result_size: i64,
-    pub result_offset: i64,
-}
-
-impl ToRedisArgs for &CacherSearchParams {
-    fn write_redis_args<W>(&self, out: &mut W)
-    where
-        W: ?Sized + RedisWrite
-    {
-        let json_str = serde_json::to_string(self).unwrap();
-        out.write_arg_fmt(json_str)
+impl FromRedisValue for VecCacherDocuments {
+    fn from_redis_value(redis_value: &Value) -> RedisResult<Self> {
+        match redis_value {
+            Value::Data(data) => {
+                 serde_json::from_slice::<VecCacherDocuments>(data.as_slice())
+                     .map_err(|_| {
+                         let msg = "Faile while deserializing document from redis";
+                         RedisError::from((ErrorKind::IoError, msg))
+                     })
+            },
+            _ => {
+                let err = anyhow::Error::msg("Incorrect redis value type to desrialize");
+                let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, err);
+                Err(io_err.into())
+            }
+        }
     }
 }

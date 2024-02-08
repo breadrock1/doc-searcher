@@ -69,21 +69,21 @@ impl From<FileData> for Document {
     }
 }
 
-impl From<CacherDocument> for Document {
-    fn from(value: CacherDocument) -> Self {
+impl From<&CacherDocument> for Document {
+    fn from(value: &CacherDocument) -> Self {
         DocumentBuilder::default()
-            .bucket_uuid(value.bucket_uuid)
-            .bucket_path(value.bucket_path)
-            .document_name(value.document_name)
-            .document_path(value.document_path)
+            .bucket_uuid(value.bucket_uuid.to_owned())
+            .bucket_path(value.bucket_path.to_owned())
+            .document_name(value.document_name.to_owned())
+            .document_path(value.document_path.to_owned())
             .document_size(value.document_size)
-            .document_type(value.document_type)
-            .document_extension(value.document_extension)
+            .document_type(value.document_type.to_owned())
+            .document_extension(value.document_extension.to_owned())
             .document_permissions(value.document_permissions)
-            .document_md5_hash(value.document_md5_hash)
-            .document_ssdeep_hash(value.document_ssdeep_hash)
-            .entity_data(value.entity_data)
-            .entity_keywords(value.entity_keywords)
+            .document_md5_hash(value.document_md5_hash.to_owned())
+            .document_ssdeep_hash(value.document_ssdeep_hash.to_owned())
+            .entity_data(value.entity_data.to_owned())
+            .entity_keywords(value.entity_keywords.to_owned())
             .highlight(Option::<HighlightEntity>::None)
             .document_created(value.document_created)
             .document_modified(value.document_modified)
@@ -92,21 +92,21 @@ impl From<CacherDocument> for Document {
     }
 }
 
-impl From<Document> for CacherDocument {
-    fn from(value: Document) -> Self {
+impl From<&Document> for CacherDocument {
+    fn from(value: &Document) -> Self {
         CacherDocumentBuilder::default()
-            .bucket_uuid(value.bucket_uuid)
-            .bucket_path(value.bucket_path)
-            .document_name(value.document_name)
-            .document_path(value.document_path)
+            .bucket_uuid(value.bucket_uuid.to_owned())
+            .bucket_path(value.bucket_path.to_owned())
+            .document_name(value.document_name.to_owned())
+            .document_path(value.document_path.to_owned())
             .document_size(value.document_size)
-            .document_type(value.document_type)
-            .document_extension(value.document_extension)
+            .document_type(value.document_type.to_owned())
+            .document_extension(value.document_extension.to_owned())
             .document_permissions(value.document_permissions)
-            .document_md5_hash(value.document_md5_hash)
-            .document_ssdeep_hash(value.document_ssdeep_hash)
-            .entity_data(value.entity_data)
-            .entity_keywords(value.entity_keywords)
+            .document_md5_hash(value.document_md5_hash.to_owned())
+            .document_ssdeep_hash(value.document_ssdeep_hash.to_owned())
+            .entity_data(value.entity_data.to_owned())
+            .entity_keywords(value.entity_keywords.to_owned())
             .document_created(value.document_created)
             .document_modified(value.document_modified)
             .build()
