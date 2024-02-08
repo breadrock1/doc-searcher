@@ -4,6 +4,7 @@ use crate::values::VecCacherDocuments;
 
 use redis::RedisResult;
 use redis::{AsyncCommands, FromRedisValue};
+
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
