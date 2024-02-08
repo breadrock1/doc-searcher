@@ -9,7 +9,7 @@ use crate::wrappers::search_params::SearchParams;
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 use cacher::AnyCacherService;
-use cacher::values::{CacherDocument, CacherSearchParams};
+use cacher::values::{CacherDocument, CacherSearchParams, VecCacherDocuments};
 use std::path::Path;
 
 #[async_trait::async_trait]
@@ -255,27 +255,31 @@ impl ServiceClient for OtherContext {
     async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
         let cacher_params = CacherSearchParams::from(s_params);
-        let documents = cacher.get_documents(&cacher_params).await;
-        if documents.is_none() {
-            return None;
-        }
-
-        Some(documents
-            .unwrap()
-            .into_iter()
+        let documents_opt = cacher.get_documents(&cacher_params).await;
+        let documenst = documents_opt?
+            .get_documents()
+            .iter()
             .map(Document::from)
-            .collect()
-        )
+            .collect();
+
+        Some(documenst)
     }
 
-    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> () {
+    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
         let cacher = self.get_cacher().read().await;
         let cacher_params = CacherSearchParams::from(s_params);
         let cacher_docs = docs
-            .into_iter()
+            .iter()
             .map(CacherDocument::from)
             .collect::<Vec<CacherDocument>>();
 
-        cacher.set_documents(&cacher_params, cacher_docs).await;
+        let vec_cacher_docs = VecCacherDocuments::from(cacher_docs);
+        cacher
+            .set_documents(&cacher_params, vec_cacher_docs)
+            .await
+            .get_documents()
+            .iter()
+            .map(Document::from)
+            .collect()
     }
 }
