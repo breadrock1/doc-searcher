@@ -23,10 +23,8 @@ async fn search_all(
     let client = cxt.get_ref();
     let search_form = form.0;
     match client.load_cache(&search_form).await {
+        Some(documents) => Ok(web::Json(documents)),
         None => client.search_all(&search_form).await,
-        Some(documents) => {
-            Ok(web::Json(documents))
-        },
     }
 }
 
@@ -54,9 +52,7 @@ async fn search_target(
     let buckets = path.as_ref();
     match client.load_cache(&search_form).await {
         None => client.search_bucket(buckets.as_str(), &search_form).await,
-        Some(documents) => {
-            Ok(web::Json(documents))
-        },
+        Some(documents) => Ok(web::Json(documents)),
     }
 }
 

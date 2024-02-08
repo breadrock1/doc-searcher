@@ -49,5 +49,5 @@ pub trait ServiceClient {
     ) -> JsonResponse<Vec<Document>>;
 
     async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>>;
-    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> ();
+    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document>;
 }
