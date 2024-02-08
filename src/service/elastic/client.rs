@@ -10,7 +10,7 @@ use crate::wrappers::search_params::SearchParams;
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 use cacher::AnyCacherService;
-use cacher::values::{CacherDocument, CacherSearchParams};
+use cacher::values::{CacherDocument, CacherSearchParams, VecCacherDocuments};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
@@ -409,7 +409,13 @@ impl ServiceClient for ElasticContext {
     async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_query(s_params);
-        search_documents(&elastic, &["*"], &body_value, s_params).await
+        match search_documents(&elastic, &["*"], &body_value, s_params).await {
+            Err(err) => Err(err),
+            Ok(documents) => {
+                let vec_docs = self.insert_cache(s_params, documents.0).await;
+                Ok(web::Json(vec_docs))
+            },
+        }
     }
 
     async fn search_bucket(
@@ -420,7 +426,13 @@ impl ServiceClient for ElasticContext {
         let elastic = self.get_cxt().read().await;
         let indexes: Vec<&str> = buckets_ids.split(',').collect();
         let body_value = build_search_query(s_params);
-        search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
+        match search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
+            Err(err) => Err(err),
+            Ok(documents) => {
+                let vec_docs = self.insert_cache(s_params, documents.0).await;
+                Ok(web::Json(vec_docs))
+            },
+        }
     }
 
     async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
@@ -443,27 +455,31 @@ impl ServiceClient for ElasticContext {
     async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
         let cacher_params = CacherSearchParams::from(s_params);
-        let documents = cacher.get_documents(&cacher_params).await;
-        if documents.is_none() {
-            return None;
-        }
+        let documents_opt = cacher.get_documents(&cacher_params).await;
+        let documenst = documents_opt?
+            .get_documents()
+            .iter()
+            .map(Document::from)
+            .collect();
 
-        Some(documents
-                 .unwrap()
-                 .into_iter()
-                 .map(Document::from)
-                 .collect()
-        )
+        Some(documenst)
     }
 
-    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> () {
+    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
         let cacher = self.get_cacher().read().await;
         let cacher_params = CacherSearchParams::from(s_params);
         let cacher_docs = docs
-            .into_iter()
+            .iter()
             .map(CacherDocument::from)
             .collect::<Vec<CacherDocument>>();
 
-        cacher.set_documents(&cacher_params, cacher_docs).await;
+        let vec_cacher_docs = VecCacherDocuments::from(cacher_docs);
+        cacher
+            .set_documents(&cacher_params, vec_cacher_docs)
+            .await
+            .get_documents()
+            .iter()
+            .map(Document::from)
+            .collect()
     }
 }
