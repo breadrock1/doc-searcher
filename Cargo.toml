@@ -33,6 +33,10 @@ hasher = { path = "src/crates/hasher" }
 loader = { path = "src/crates/loader" }
 wrappers = { path = "src/crates/wrappers" }
 
+[dependencies.chrono]
+version = "^0.4"
+features = ["rustc-serialize", "serde"]
+
 [[test]]
 name = "datetime_tests"
 path = "src/crates/datetime/test/test.rs"
