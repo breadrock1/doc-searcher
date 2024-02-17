@@ -1,6 +1,6 @@
-use crate::wrappers::bucket::Bucket;
-use crate::wrappers::cluster::Cluster;
-use crate::wrappers::document::Document;
+use wrappers::bucket::Bucket;
+use wrappers::cluster::Cluster;
+use wrappers::document::Document;
 
 use std::collections::HashMap;
 use std::sync::Arc;
