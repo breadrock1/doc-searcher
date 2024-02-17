@@ -7,7 +7,6 @@ use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
 use wrappers::document::Document;
 use wrappers::document::DocumentBuilder;
-use wrappers::lang_chain::LangChainTokensBuilder;
 
 use std::ffi::OsStr;
 use std::fs::File;
@@ -100,10 +99,6 @@ fn load_target_file(file_path: &Path) -> Result<Document, Error> {
         .into();
 
     let uuid4_value = hasher::gen_uuid();
-    let token = LangChainTokensBuilder::default()
-        .my_index(uuid4_value)
-        .build()
-        .ok();
 
     let built_file_data = DocumentBuilder::default()
         .bucket_uuid("common_bucket".to_string())
@@ -114,12 +109,15 @@ fn load_target_file(file_path: &Path) -> Result<Document, Error> {
         .document_type("document".to_string())
         .document_extension(ext_.to_string())
         .document_permissions(perms_ as i32)
+        .document_uuid(uuid4_value)
         .document_md5_hash(md5_hash_.to_string())
         .document_ssdeep_hash(ssdeep_hash_.to_string())
-        .entity_data(file_data_)
-        .ml_tokens(token)
+        .content_uuid(hasher::gen_uuid())
+        .content(file_data_)
+        .content_vector(Vec::default())
         .document_created(Some(dt_cr_utc))
         .document_modified(Some(dt_md_utc))
+        .highlight(None)
         .build();
 
     Ok(built_file_data.unwrap())
