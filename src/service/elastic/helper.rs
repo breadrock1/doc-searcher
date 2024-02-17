@@ -1,9 +1,9 @@
 use crate::errors::{WebError, WebResponse};
 use crate::service::elastic::send_status::SendDocumentStatus;
-use crate::wrappers::bucket::{Bucket, BucketBuilder};
-use crate::wrappers::document::{Document, HighlightEntity};
-use crate::wrappers::schema::BucketSchema;
-use crate::wrappers::search_params::SearchParams;
+use wrappers::bucket::{Bucket, BucketBuilder};
+use wrappers::document::{Document, HighlightEntity};
+use wrappers::schema::BucketSchema;
+use wrappers::search_params::SearchParams;
 
 use actix_web::web;
 use elasticsearch::http::request::JsonBody;

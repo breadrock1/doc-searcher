@@ -2,15 +2,15 @@ use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
 use crate::service::elastic::helper::*;
 use crate::service::{JsonResponse, ServiceClient};
-use crate::wrappers::bucket::{Bucket, BucketForm};
-use crate::wrappers::cluster::Cluster;
-use crate::wrappers::document::Document;
-use crate::wrappers::search_params::SearchParams;
+use wrappers::bucket::{Bucket, BucketForm};
+use wrappers::cluster::Cluster;
+use wrappers::document::Document;
+use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 use cacher::AnyCacherService;
-use cacher::values::{CacherDocument, CacherSearchParams, VecCacherDocuments};
+use cacher::values::VecCacherDocuments;
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
@@ -454,32 +454,21 @@ impl ServiceClient for ElasticContext {
 
     async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
-        let cacher_params = CacherSearchParams::from(s_params);
-        let documents_opt = cacher.get_documents(&cacher_params).await;
+        let documents_opt = cacher.get_documents(&s_params).await;
         let documenst = documents_opt?
             .get_documents()
-            .iter()
-            .map(Document::from)
-            .collect();
+            .to_owned();
 
         Some(documenst)
     }
 
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
         let cacher = self.get_cacher().read().await;
-        let cacher_params = CacherSearchParams::from(s_params);
-        let cacher_docs = docs
-            .iter()
-            .map(CacherDocument::from)
-            .collect::<Vec<CacherDocument>>();
-
-        let vec_cacher_docs = VecCacherDocuments::from(cacher_docs);
+        let vec_cacher_docs = VecCacherDocuments::from(docs);
         cacher
-            .set_documents(&cacher_params, vec_cacher_docs)
+            .set_documents(&s_params, vec_cacher_docs)
             .await
             .get_documents()
-            .iter()
-            .map(Document::from)
-            .collect()
+            .to_owned()
     }
 }
