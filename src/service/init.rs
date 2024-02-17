@@ -98,8 +98,7 @@ pub fn build_env_logger() {
 }
 
 pub fn build_hello_scope() -> Scope {
-    web::scope("/hello")
-        .service(hello)
+    web::scope("/hello").service(hello)
 }
 
 pub fn build_cluster_scope() -> Scope {

@@ -26,15 +26,15 @@ pub struct Document {
     pub document_md5_hash: String,
     pub document_ssdeep_hash: String,
     #[serde(
-    serialize_with = "serialize_dt",
-    deserialize_with = "deserialize_dt",
-    skip_serializing_if = "Option::is_none"
+        serialize_with = "serialize_dt",
+        deserialize_with = "deserialize_dt",
+        skip_serializing_if = "Option::is_none"
     )]
     pub document_created: Option<DateTime<Utc>>,
     #[serde(
-    serialize_with = "serialize_dt",
-    deserialize_with = "deserialize_dt",
-    skip_serializing_if = "Option::is_none"
+        serialize_with = "serialize_dt",
+        deserialize_with = "deserialize_dt",
+        skip_serializing_if = "Option::is_none"
     )]
     pub document_modified: Option<DateTime<Utc>>,
     pub highlight: Option<HighlightEntity>,
