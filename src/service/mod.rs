@@ -1,11 +1,13 @@
 pub mod elastic;
 pub mod own_engine;
+pub mod init;
 
 use crate::errors::WebResponse;
-use crate::wrappers::bucket::{Bucket, BucketForm};
-use crate::wrappers::cluster::Cluster;
-use crate::wrappers::document::Document;
-use crate::wrappers::search_params::SearchParams;
+
+use wrappers::bucket::{Bucket, BucketForm};
+use wrappers::cluster::Cluster;
+use wrappers::document::Document;
+use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
