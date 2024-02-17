@@ -29,6 +29,7 @@ impl ServiceClient for OtherContext {
         match map.get(cluster_id) {
             Some(cluster) => Ok(web::Json(cluster.clone())),
             None => {
+                println!("Failed while getting cluster: {}", cluster_id);
                 let msg = "failed to get cluster".to_string();
                 Err(WebError::GetCluster(msg))
             }
@@ -81,6 +82,7 @@ impl ServiceClient for OtherContext {
         match map.get(bucket_id) {
             Some(bucket) => Ok(web::Json(bucket.clone())),
             None => {
+                println!("Failed while getting bucket {}", bucket_id);
                 let msg = "failed to get bucket".to_string();
                 Err(WebError::GetBucket(msg))
             }
@@ -164,11 +166,12 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn load_file_to_bucket(&self, _bucket_id: &str, file_path: &str) -> HttpResponse {
+    async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
         let path = Path::new(file_path);
         let file_data_vec = loader::load_passed_file_by_path(path);
         if file_data_vec.is_empty() {
             let msg = "failed to load file".to_string();
+            println!("Failed load file to bucket `{}`: {}", bucket_id, msg);
             return WebError::LoadFileFailed(msg).error_response();
         }
 
@@ -179,7 +182,7 @@ impl ServiceClient for OtherContext {
         match actix_files::NamedFile::open_async(file_path).await {
             Ok(named_file) => Some(named_file),
             Err(err) => {
-                println!("{}", err);
+                println!("Failed while opening async streaming: {}", err);
                 None
             }
         }
@@ -255,10 +258,8 @@ impl ServiceClient for OtherContext {
 
     async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
-        let documents_opt = cacher.get_documents(&s_params).await;
-        let documenst = documents_opt?
-            .get_documents()
-            .to_owned();
+        let documents_opt = cacher.get_documents(s_params).await;
+        let documenst = documents_opt?.get_documents().to_owned();
 
         Some(documenst)
     }
@@ -267,7 +268,7 @@ impl ServiceClient for OtherContext {
         let cacher = self.get_cacher().read().await;
         let vec_cacher_docs = VecCacherDocuments::from(docs);
         cacher
-            .set_documents(&s_params, vec_cacher_docs)
+            .set_documents(s_params, vec_cacher_docs)
             .await
             .get_documents()
             .to_owned()
