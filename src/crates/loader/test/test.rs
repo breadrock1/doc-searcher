@@ -23,7 +23,7 @@ mod tests {
         let path_object = Path::new(file_path);
         let documents = loader::load_passed_file_by_path(&path_object)
             .into_iter()
-            .map(|file_data| file_data.entity_data.clone())
+            .map(|file_data| file_data.content.clone())
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
@@ -36,7 +36,7 @@ mod tests {
         let path_object = Path::new(file_path);
         let documents = loader::load_passed_file_by_path(&path_object)
             .into_iter()
-            .map(|file_data| file_data.entity_data.clone())
+            .map(|file_data| file_data.content.clone())
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
@@ -49,7 +49,7 @@ mod tests {
         let path_object = Path::new(file_path);
         let documents = loader::load_passed_file_by_path(&path_object)
             .into_iter()
-            .map(|file_data| file_data.entity_data.clone())
+            .map(|file_data| file_data.content.clone())
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
@@ -62,7 +62,7 @@ mod tests {
         let path_object = Path::new(file_path);
         let documents = loader::load_passed_file_by_path(&path_object)
             .into_iter()
-            .map(|file_data| file_data.entity_data.clone())
+            .map(|file_data| file_data.content.clone())
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
