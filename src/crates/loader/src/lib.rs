@@ -1,13 +1,13 @@
-mod file_data;
 mod file_kind;
 mod parser;
 
-pub use crate::file_data::FileData;
-use crate::file_data::FileDataBuilder;
 use crate::file_kind::FileKind;
 
 use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
+use wrappers::document::Document;
+use wrappers::document::DocumentBuilder;
+use wrappers::lang_chain::LangChainTokensBuilder;
 
 use std::ffi::OsStr;
 use std::fs::File;
@@ -17,7 +17,7 @@ use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::time::SystemTime;
 
-pub fn load_passed_file_by_path(file_path: &Path) -> Vec<FileData> {
+pub fn load_passed_file_by_path(file_path: &Path) -> Vec<Document> {
     if file_path.is_file() {
         let loaded_result = load_target_file(&file_path);
         return match loaded_result {
@@ -34,7 +34,7 @@ pub fn load_passed_file_by_path(file_path: &Path) -> Vec<FileData> {
         .collect()
 }
 
-fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
+fn load_target_file(file_path: &Path) -> Result<Document, Error> {
     let file_res = File::open(file_path);
     if file_res.is_err() {
         return Err(file_res.err().unwrap());
@@ -99,7 +99,13 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
         .unwrap_or_else(get_local_datetime)
         .into();
 
-    let built_file_data = FileDataBuilder::default()
+    let uuid4_value = hasher::gen_uuid();
+    let token = LangChainTokensBuilder::default()
+        .my_index(uuid4_value)
+        .build()
+        .ok();
+
+    let built_file_data = DocumentBuilder::default()
         .bucket_uuid("common_bucket".to_string())
         .bucket_path("/".to_string())
         .document_name(file_name_.to_string())
@@ -111,7 +117,7 @@ fn load_target_file(file_path: &Path) -> Result<FileData, Error> {
         .document_md5_hash(md5_hash_.to_string())
         .document_ssdeep_hash(ssdeep_hash_.to_string())
         .entity_data(file_data_)
-        .entity_keywords(Vec::<String>::default())
+        .ml_tokens(token)
         .document_created(Some(dt_cr_utc))
         .document_modified(Some(dt_md_utc))
         .build();
