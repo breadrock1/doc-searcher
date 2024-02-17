@@ -89,7 +89,8 @@ async fn get_document(
 mod documents_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    use crate::wrappers::document::{Document, DocumentBuilder, DocumentBuilderError};
+    
+    use wrappers::document::{Document, DocumentBuilder, DocumentBuilderError};
 
     use actix_web::test;
 
@@ -105,11 +106,13 @@ mod documents_endpoints {
             .document_permissions(777)
             .document_md5_hash("md5 hash".to_string())
             .document_ssdeep_hash("ssdeep hash".to_string())
-            .entity_data("Any document text".to_string())
-            .entity_keywords(Vec::default())
-            .highlight(None)
+            .document_uuid("doc_uuid".to_string())
+            .content_uuid("content_uuid".to_string())
+            .content("Any document text".to_string())
+            .content_vector(Vec::default())
             .document_created(None)
             .document_modified(None)
+            .highlight(None)
             .build()
     }
 

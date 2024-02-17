@@ -60,8 +60,9 @@ async fn search_target(
 mod searcher_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    use crate::wrappers::document::{Document, DocumentBuilder};
-    use crate::wrappers::search_params::SearchParams;
+
+    use wrappers::document::{Document, DocumentBuilder};
+    use wrappers::search_params::SearchParams;
 
     use actix_web::test;
 
@@ -173,8 +174,10 @@ mod searcher_endpoints {
                 .document_permissions(document_size)
                 .document_md5_hash(test_document_name.clone())
                 .document_ssdeep_hash(ssdeep_hash.to_string())
-                .entity_data(entity_data.to_string())
-                .entity_keywords(Vec::default())
+                .document_uuid(hasher::gen_uuid())
+                .content_uuid(hasher::gen_uuid())
+                .content(entity_data.to_string())
+                .content_vector(Vec::default())
                 .highlight(None)
                 .document_created(None)
                 .document_modified(None)

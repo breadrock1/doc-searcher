@@ -54,19 +54,31 @@ async fn search_similar_docs_target(
 mod similar_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    use crate::wrappers::document::{Document, DocumentBuilder};
-    use crate::wrappers::search_params::SearchParams;
+
+    use wrappers::document::{Document, DocumentBuilder};
+    use wrappers::search_params::SearchParamsBuilder;
 
     use actix_web::test;
 
-    const SSDEEP_HASH_CMP: &'static str =
+    const SSDEEP_HASH_CMP: &str =
         "12:JOGngjFtLax3bQrZvuwRZVZXwUSpUmHWAURnwP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y";
 
     #[test]
     async fn test_search_similar_docs() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        search_params.query = "unknown".to_string();
+        let mut search_params = SearchParamsBuilder::default()
+            .query("unknown".to_string())
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
         let founded = other_context.similar_all(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
@@ -87,8 +99,19 @@ mod similar_endpoints {
     #[test]
     async fn test_search_similar_docs_target() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        search_params.query = "unknown".to_string();
+        let mut search_params = SearchParamsBuilder::default()
+            .query("unknown".to_string())
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
         let founded = other_context
             .similar_bucket("test_bucket", &search_params)
             .await;
@@ -175,8 +198,10 @@ mod similar_endpoints {
                 .document_permissions(document_size)
                 .document_md5_hash(test_document_name.clone())
                 .document_ssdeep_hash(ssdeep_hash.to_string())
-                .entity_data(entity_data.to_string())
-                .entity_keywords(Vec::default())
+                .document_uuid(hasher::gen_uuid())
+                .content_uuid(hasher::gen_uuid())
+                .content(entity_data.to_string())
+                .content_vector(Vec::default())
                 .highlight(None)
                 .document_created(None)
                 .document_modified(None)
