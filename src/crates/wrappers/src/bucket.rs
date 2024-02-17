@@ -1,9 +1,10 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 use utoipa::ToSchema;
 
-#[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
+use std::fmt::Display;
+
+#[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
 pub struct Bucket {
     pub health: String,
     pub status: String,
@@ -37,9 +38,7 @@ impl Display for BucketForm {
 
 impl Default for BucketForm {
     fn default() -> Self {
-        BucketForm {
-            bucket_name: "common_bucket".to_string(),
-        }
+        BucketForm::new("common_bucket")
     }
 }
 

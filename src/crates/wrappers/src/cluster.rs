@@ -1,7 +1,8 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 use utoipa::{IntoParams, ToSchema};
+
+use std::fmt::Display;
 
 #[derive(Serialize, Deserialize, Builder, Default, Clone, ToSchema)]
 pub struct Cluster {
