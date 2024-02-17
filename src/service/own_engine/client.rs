@@ -189,7 +189,7 @@ impl ServiceClient for OtherContext {
         let map = cxt.documents.read().await;
         let documents_vec = map
             .values()
-            .filter(|document| document.entity_data.contains(&s_params.query))
+            .filter(|document| document.content.contains(&s_params.query))
             .cloned()
             .collect::<Vec<Document>>();
 
@@ -206,7 +206,7 @@ impl ServiceClient for OtherContext {
         let documents_vec = map
             .values()
             .filter(|document| document.bucket_uuid.eq(bucket_id))
-            .filter(|document| document.entity_data.contains(&s_params.query))
+            .filter(|document| document.content.contains(&s_params.query))
             .cloned()
             .collect::<Vec<Document>>();
 
