@@ -1,10 +1,10 @@
 extern crate docsearcher;
 
-use docsearcher::init::*;
+use docsearcher::service::init::*;
 use docsearcher::swagger::ApiDoc;
 use docsearcher::swagger::OpenApi;
-use docsearcher::swagger::create_service;
 use docsearcher::service::ServiceClient;
+use docsearcher::swagger::create_service;
 use docsearcher::service::own_engine::context::OtherContext;
 
 use actix_web::middleware::Logger;
