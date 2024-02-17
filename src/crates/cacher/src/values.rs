@@ -11,8 +11,8 @@ pub struct MaybeSearchParams {
 
 impl ToRedisArgs for &MaybeSearchParams {
     fn write_redis_args<W>(&self, out: &mut W)
-        where
-            W: ?Sized + RedisWrite
+    where
+        W: ?Sized + RedisWrite,
     {
         let json_str = serde_json::to_string(&self.search_params).unwrap();
         out.write_arg_fmt(json_str)
@@ -41,7 +41,7 @@ impl VecCacherDocuments {
 impl From<Vec<Document>> for VecCacherDocuments {
     fn from(value: Vec<Document>) -> Self {
         VecCacherDocuments {
-            cacher_documents: value
+            cacher_documents: value,
         }
     }
 }
@@ -49,7 +49,7 @@ impl From<Vec<Document>> for VecCacherDocuments {
 impl ToRedisArgs for VecCacherDocuments {
     fn write_redis_args<W>(&self, out: &mut W)
     where
-        W: ?Sized + RedisWrite
+        W: ?Sized + RedisWrite,
     {
         let json_str = serde_json::to_string(self).unwrap();
         out.write_arg_fmt(json_str)
@@ -59,13 +59,11 @@ impl ToRedisArgs for VecCacherDocuments {
 impl FromRedisValue for VecCacherDocuments {
     fn from_redis_value(redis_value: &Value) -> RedisResult<Self> {
         match redis_value {
-            Value::Data(data) => {
-                 serde_json::from_slice::<VecCacherDocuments>(data.as_slice())
-                     .map_err(|_| {
-                         let msg = "Faile while deserializing document from redis";
-                         RedisError::from((ErrorKind::IoError, msg))
-                     })
-            },
+            Value::Data(data) => serde_json::from_slice::<VecCacherDocuments>(data.as_slice())
+                .map_err(|_| {
+                    let msg = "Faile while deserializing document from redis";
+                    RedisError::from((ErrorKind::IoError, msg))
+                }),
             _ => {
                 let err = anyhow::Error::msg("Incorrect redis value type to desrialize");
                 let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, err);

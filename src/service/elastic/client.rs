@@ -2,6 +2,10 @@ use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
 use crate::service::elastic::helper::*;
 use crate::service::{JsonResponse, ServiceClient};
+
+use cacher::values::VecCacherDocuments;
+use cacher::AnyCacherService;
+use hasher::{gen_hash, HashType};
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
@@ -9,15 +13,13 @@ use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
-use cacher::AnyCacherService;
-use cacher::values::VecCacherDocuments;
+
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
 use elasticsearch::{BulkParts, CountParts, IndexParts};
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
-use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -51,14 +53,13 @@ impl ServiceClient for ElasticContext {
     async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
         let cluster_name = format!("/_nodes/{}", cluster_id);
-        let body = b"";
         let response_result = elastic
             .send(
                 Method::Get,
                 cluster_name.as_str(),
                 HeaderMap::new(),
                 Option::<&Value>::None,
-                Some(body.as_ref()),
+                Some(b"".as_ref()),
                 None,
             )
             .await;

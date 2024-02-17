@@ -2,9 +2,9 @@ use wrappers::bucket::Bucket;
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
 
+use cacher::cacher::RedisService;
 use std::collections::HashMap;
 use std::sync::Arc;
-use cacher::cacher::RedisService;
 use tokio::sync::RwLock;
 
 pub struct SearchEngine {

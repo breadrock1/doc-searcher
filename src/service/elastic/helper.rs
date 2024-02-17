@@ -1,5 +1,10 @@
 use crate::errors::{WebError, WebResponse};
 use crate::service::elastic::send_status::SendDocumentStatus;
+
+use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use elquery::highlight_query::HighlightOrder;
+use elquery::search_query::MultiMatchQuery;
+use elquery::similar_query::SimilarQuery;
 use wrappers::bucket::{Bucket, BucketBuilder};
 use wrappers::document::{Document, HighlightEntity};
 use wrappers::schema::BucketSchema;
@@ -9,10 +14,6 @@ use actix_web::web;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
-use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
-use elquery::highlight_query::HighlightOrder;
-use elquery::search_query::MultiMatchQuery;
-use elquery::similar_query::SimilarQuery;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::string::ToString;

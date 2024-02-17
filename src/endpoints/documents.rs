@@ -89,7 +89,7 @@ async fn get_document(
 mod documents_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    
+
     use wrappers::document::{Document, DocumentBuilder, DocumentBuilderError};
 
     use actix_web::test;

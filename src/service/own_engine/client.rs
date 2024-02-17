@@ -1,6 +1,9 @@
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
 use crate::service::own_engine::context::OtherContext;
 use crate::service::ServiceClient;
+
+use cacher::values::VecCacherDocuments;
+use cacher::AnyCacherService;
 use wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
 use wrappers::cluster::{Cluster, ClusterBuilder};
 use wrappers::document::Document;
@@ -8,8 +11,6 @@ use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
-use cacher::AnyCacherService;
-use cacher::values::VecCacherDocuments;
 use std::path::Path;
 
 #[async_trait::async_trait]
