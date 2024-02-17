@@ -26,10 +26,10 @@ use crate::endpoints::similarities::__path_search_similar_docs;
 use crate::endpoints::similarities::__path_search_similar_docs_target;
 
 use crate::errors::*;
-use crate::wrappers::bucket::*;
-use crate::wrappers::cluster::*;
-use crate::wrappers::document::*;
-use crate::wrappers::search_params::*;
+use wrappers::bucket::*;
+use wrappers::cluster::*;
+use wrappers::document::*;
+use wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;

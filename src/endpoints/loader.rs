@@ -1,5 +1,5 @@
 use crate::endpoints::ContextData;
-use crate::wrappers::file_form::LoadFileForm;
+use wrappers::file_form::LoadFileForm;
 
 use actix_web::{post, web};
 use actix_web::{HttpRequest, HttpResponse};

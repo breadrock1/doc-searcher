@@ -1,6 +1,6 @@
 use crate::endpoints::ContextData;
 use crate::errors::*;
-use crate::wrappers::cluster::{Cluster, ClusterForm};
+use wrappers::cluster::{Cluster, ClusterForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
 
