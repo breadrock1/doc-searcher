@@ -10,10 +10,12 @@ docx = "^1.1"
 dotenv = "^0.15"
 office = "^0.8"
 lopdf = "^0.31"
-hasher = { path = "../hasher" }
 pdfium-render = "^0.8"
 tesseract = "^0.15"
 walkdir = "^2.4"
+
+hasher = { path = "../hasher" }
+wrappers = { path = "../wrappers" }
 
 [[test]]
 name = "test"
