@@ -1,6 +1,6 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
-use crate::wrappers::document::Document;
+use wrappers::document::Document;
 
 use actix_web::{delete, get, post, put, web, HttpResponse};
 

@@ -1,7 +1,7 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
-use crate::wrappers::document::Document;
-use crate::wrappers::search_params::*;
+use wrappers::document::Document;
+use wrappers::search_params::*;
 
 use actix_web::{post, web};
 
