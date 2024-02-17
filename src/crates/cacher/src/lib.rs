@@ -1,10 +1,12 @@
 pub mod cacher;
 pub mod values;
 
-use crate::values::{VecCacherDocuments, CacherSearchParams};
+use crate::values::VecCacherDocuments;
 
-// #[async_trait::async_trait]
+use wrappers::search_params::*;
+
+#[async_trait::async_trait]
 pub trait AnyCacherService {
-    async fn get_documents(&self, params: &CacherSearchParams) -> Option<VecCacherDocuments>;
-    async fn set_documents(&self, params: &CacherSearchParams, docs: VecCacherDocuments) -> VecCacherDocuments;
+    async fn get_documents(&self, params: &SearchParams) -> Option<VecCacherDocuments>;
+    async fn set_documents(&self, params: &SearchParams, docs: VecCacherDocuments) -> VecCacherDocuments;
 }
