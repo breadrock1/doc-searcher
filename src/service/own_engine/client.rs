@@ -219,7 +219,7 @@ impl ServiceClient for OtherContext {
             .filter(|document| {
                 hasher::compare_ssdeep_hashes(
                     s_params.query.as_str(),
-                    document.document_ssdeep_hash.as_str(),
+                    document.document_ssdeep.as_str(),
                 )
             })
             .cloned()
@@ -241,7 +241,7 @@ impl ServiceClient for OtherContext {
             .filter(|document| {
                 hasher::compare_ssdeep_hashes(
                     s_params.query.as_str(),
-                    document.document_ssdeep_hash.as_str(),
+                    document.document_ssdeep.as_str(),
                 )
             })
             .cloned()

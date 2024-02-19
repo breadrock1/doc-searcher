@@ -361,10 +361,7 @@ impl ServiceClient for ElasticContext {
         let file_path_ = std::path::Path::new(file_path);
         if !file_path_.exists() {
             let err = WebError::LoadFileFailed(file_path.to_string());
-            println!(
-                "Failed while loading file `{}` to bucket: {}",
-                file_path, err
-            );
+            println!("Failed to load file `{}` to bucket: {}", file_path, err);
             return err.error_response();
         }
 
