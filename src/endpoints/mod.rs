@@ -7,6 +7,7 @@ pub mod searcher;
 pub mod similarities;
 
 use crate::service::ServiceClient;
+
 use actix_web::web;
 
 pub type ContextData = web::Data<Box<dyn ServiceClient>>;

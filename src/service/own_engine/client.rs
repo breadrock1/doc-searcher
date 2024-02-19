@@ -1,6 +1,10 @@
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::service::elastic::helper;
 use crate::service::own_engine::context::OtherContext;
 use crate::service::ServiceClient;
+
+use cacher::values::VecCacherDocuments;
+use cacher::AnyCacherService;
 use wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
 use wrappers::cluster::{Cluster, ClusterBuilder};
 use wrappers::document::Document;
@@ -8,8 +12,8 @@ use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
-use cacher::AnyCacherService;
-use cacher::values::VecCacherDocuments;
+
+use std::collections::HashMap;
 use std::path::Path;
 
 #[async_trait::async_trait]
@@ -28,6 +32,7 @@ impl ServiceClient for OtherContext {
         match map.get(cluster_id) {
             Some(cluster) => Ok(web::Json(cluster.clone())),
             None => {
+                println!("Failed while getting cluster: {}", cluster_id);
                 let msg = "failed to get cluster".to_string();
                 Err(WebError::GetCluster(msg))
             }
@@ -80,6 +85,7 @@ impl ServiceClient for OtherContext {
         match map.get(bucket_id) {
             Some(bucket) => Ok(web::Json(bucket.clone())),
             None => {
+                println!("Failed while getting bucket {}", bucket_id);
                 let msg = "failed to get bucket".to_string();
                 Err(WebError::GetBucket(msg))
             }
@@ -117,12 +123,6 @@ impl ServiceClient for OtherContext {
             None => SuccessfulResponse::ok_response("Ok"),
             Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
         }
-    }
-
-    async fn check_duplication(&self, _bucket_id: &str, document_id: &str) -> bool {
-        let cxt = self.get_cxt().read().await;
-        let map = cxt.documents.read().await;
-        map.contains_key(document_id)
     }
 
     async fn get_document(
@@ -163,11 +163,12 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn load_file_to_bucket(&self, _bucket_id: &str, file_path: &str) -> HttpResponse {
+    async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
         let path = Path::new(file_path);
         let file_data_vec = loader::load_passed_file_by_path(path);
         if file_data_vec.is_empty() {
             let msg = "failed to load file".to_string();
+            println!("Failed load file to bucket `{}`: {}", bucket_id, msg);
             return WebError::LoadFileFailed(msg).error_response();
         }
 
@@ -178,50 +179,58 @@ impl ServiceClient for OtherContext {
         match actix_files::NamedFile::open_async(file_path).await {
             Ok(named_file) => Some(named_file),
             Err(err) => {
-                println!("{}", err);
+                println!("Failed while opening async streaming: {}", err);
                 None
             }
         }
     }
 
-    async fn search_all(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn search(
+        &self,
+        s_params: &SearchParams,
+    ) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
+        let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
-            .filter(|document| document.entity_data.contains(&s_params.query))
+            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
+            .filter(|document| document.content.contains(&s_params.query))
             .cloned()
             .collect::<Vec<Document>>();
 
-        Ok(web::Json(documents_vec))
+        let grouped_docs = helper::group_document_chunks(documents_vec);
+        Ok(web::Json(grouped_docs))
     }
 
-    async fn search_bucket(
+    async fn search_tokens(
         &self,
-        bucket_id: &str,
         s_params: &SearchParams,
     ) -> WebResponse<web::Json<Vec<Document>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
+        let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
-            .filter(|document| document.bucket_uuid.eq(bucket_id))
-            .filter(|document| document.entity_data.contains(&s_params.query))
+            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
+            .filter(|doc| doc.content.contains(&s_params.query))
             .cloned()
             .collect::<Vec<Document>>();
 
         Ok(web::Json(documents_vec))
     }
 
-    async fn similar_all(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn similarity(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
+        let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
+            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
             .filter(|document| {
                 hasher::compare_ssdeep_hashes(
                     s_params.query.as_str(),
-                    document.document_ssdeep_hash.as_str(),
+                    document.document_ssdeep.as_str(),
                 )
             })
             .cloned()
@@ -230,43 +239,19 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(documents_vec))
     }
 
-    async fn similar_bucket(
-        &self,
-        bucket_id: &str,
-        s_params: &SearchParams,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
-        let cxt = self.get_cxt().read().await;
-        let map = cxt.documents.read().await;
-        let documents_vec = map
-            .values()
-            .filter(|document| document.bucket_uuid.eq(bucket_id))
-            .filter(|document| {
-                hasher::compare_ssdeep_hashes(
-                    s_params.query.as_str(),
-                    document.document_ssdeep_hash.as_str(),
-                )
-            })
-            .cloned()
-            .collect::<Vec<Document>>();
-
-        Ok(web::Json(documents_vec))
-    }
-
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>> {
         let cacher = self.get_cacher().read().await;
-        let documents_opt = cacher.get_documents(&s_params).await;
-        let documenst = documents_opt?
-            .get_documents()
-            .to_owned();
-
-        Some(documenst)
+        let documents_opt = cacher.get_documents(s_params).await;
+        let documents = documents_opt?.get_documents().to_owned();
+        let grouped_docs = helper::group_document_chunks(documents);
+        Some(grouped_docs)
     }
 
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
         let cacher = self.get_cacher().read().await;
         let vec_cacher_docs = VecCacherDocuments::from(docs);
         cacher
-            .set_documents(&s_params, vec_cacher_docs)
+            .set_documents(s_params, vec_cacher_docs)
             .await
             .get_documents()
             .to_owned()

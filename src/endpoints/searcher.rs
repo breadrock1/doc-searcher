@@ -1,9 +1,11 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
+
 use wrappers::document::Document;
 use wrappers::search_params::*;
 
 use actix_web::{post, web};
+use std::collections::HashMap;
 
 #[utoipa::path(
     post,
@@ -19,39 +21,11 @@ use actix_web::{post, web};
 async fn search_all(
     cxt: ContextData,
     form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
+) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     match client.load_cache(&search_form).await {
-        Some(documents) => Ok(web::Json(documents)),
-        None => client.search_all(&search_form).await,
-    }
-}
-
-#[utoipa::path(
-    post,
-    path = "/search/{bucket_name}",
-    tag = "Load file from local file system of service by path",
-    request_body = SearchParams,
-    params(
-        ("bucket_name" = &str, description = "Bucket name to find documents")
-    ),
-    responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
-    )
-)]
-#[post("/{bucket_names}")]
-async fn search_target(
-    cxt: ContextData,
-    path: web::Path<String>,
-    form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-    let buckets = path.as_ref();
-    match client.load_cache(&search_form).await {
-        None => client.search_bucket(buckets.as_str(), &search_form).await,
+        None => client.search(&search_form).await,
         Some(documents) => Ok(web::Json(documents)),
     }
 }
@@ -60,17 +34,30 @@ async fn search_target(
 mod searcher_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    use crate::wrappers::document::{Document, DocumentBuilder};
-    use crate::wrappers::search_params::SearchParams;
+
+    use wrappers::document::{Document, DocumentBuilder};
+    use wrappers::search_params::SearchParamsBuilder;
 
     use actix_web::test;
 
     #[test]
     async fn test_search_all() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        search_params.query = "text".to_string();
-        let founded = other_context.search_all(&search_params).await;
+        let mut search_params = SearchParamsBuilder::default()
+            .query("text".to_string())
+            .buckets(Some("test_bucket".to_string()))
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -79,17 +66,28 @@ mod searcher_endpoints {
         }
 
         search_params.query = "proposals".to_string();
-        let founded = other_context.search_all(&search_params).await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 1);
     }
 
     #[test]
     async fn test_search_bucket() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        let founded = other_context
-            .search_bucket("test_bucket", &search_params)
-            .await;
+        let mut search_params = SearchParamsBuilder::default()
+            .query("unknown-data".to_string())
+            .buckets(Some("test_bucket".to_string()))
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -98,15 +96,11 @@ mod searcher_endpoints {
         }
 
         search_params.query = "unknown".to_string();
-        let founded = other_context
-            .search_bucket("unknown_bucket", &search_params)
-            .await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = "proposals".to_string();
-        let founded = other_context
-            .search_bucket("test_bucket", &search_params)
-            .await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 1);
     }
 
@@ -165,16 +159,18 @@ mod searcher_endpoints {
             let document = DocumentBuilder::default()
                 .bucket_uuid(test_bucket_name.to_string())
                 .bucket_path("/".to_string())
+                .content_md5(test_document_name.clone())
+                .content_uuid(hasher::gen_uuid())
+                .content(entity_data.to_string())
+                .content_vector(Vec::default())
                 .document_name(test_document_name.clone())
                 .document_path("/".to_string())
                 .document_size(document_size)
                 .document_type("document".to_string())
                 .document_extension(".txt".to_string())
                 .document_permissions(document_size)
-                .document_md5_hash(test_document_name.clone())
-                .document_ssdeep_hash(ssdeep_hash.to_string())
-                .entity_data(entity_data.to_string())
-                .entity_keywords(Vec::default())
+                .document_md5(test_document_name.clone())
+                .document_ssdeep(ssdeep_hash.to_string())
                 .highlight(None)
                 .document_created(None)
                 .document_modified(None)

@@ -1,5 +1,6 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
+
 use wrappers::document::Document;
 use wrappers::search_params::*;
 
@@ -22,52 +23,40 @@ async fn search_similar_docs(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.similar_all(&search_form).await
-}
-
-#[utoipa::path(
-    post,
-    path = "/similar/{bucket_names}",
-    tag = "Search similar documents by passed SearchParams",
-    request_body = SearchParams,
-    params(
-        ("bucket_name" = &str, description = "Bucket name to find documents")
-    ),
-    responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
-    )
-)]
-#[post("/{bucket_names}")]
-async fn search_similar_docs_target(
-    cxt: ContextData,
-    path: web::Path<String>,
-    form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-    let buckets = path.as_ref();
-    client.similar_bucket(buckets.as_str(), &search_form).await
+    client.similarity(&search_form).await
 }
 
 #[cfg(test)]
 mod similar_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    use crate::wrappers::document::{Document, DocumentBuilder};
-    use crate::wrappers::search_params::SearchParams;
+
+    use wrappers::document::{Document, DocumentBuilder};
+    use wrappers::search_params::SearchParamsBuilder;
 
     use actix_web::test;
 
-    const SSDEEP_HASH_CMP: &'static str =
+    const SSDEEP_HASH_CMP: &str =
         "12:JOGngjFtLax3bQrZvuwRZVZXwUSpUmHWAURnwP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y";
 
     #[test]
     async fn test_search_similar_docs() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        search_params.query = "unknown".to_string();
-        let founded = other_context.similar_all(&search_params).await;
+        let mut search_params = SearchParamsBuilder::default()
+            .query("unknown".to_string())
+            .buckets(Some("test_bucket".to_string()))
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -76,22 +65,32 @@ mod similar_endpoints {
         }
 
         search_params.query = "unknown".to_string();
-        let founded = other_context.similar_all(&search_params).await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = SSDEEP_HASH_CMP.to_string();
-        let founded = other_context.similar_all(&search_params).await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 2);
     }
 
     #[test]
     async fn test_search_similar_docs_target() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        search_params.query = "unknown".to_string();
-        let founded = other_context
-            .similar_bucket("test_bucket", &search_params)
-            .await;
+        let mut search_params = SearchParamsBuilder::default()
+            .query("unknown".to_string())
+            .buckets(Some("test_bucket".to_string()))
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -100,15 +99,11 @@ mod similar_endpoints {
         }
 
         search_params.query = "unknown".to_string();
-        let founded = other_context
-            .similar_bucket("test_bucket", &search_params)
-            .await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = SSDEEP_HASH_CMP.to_string();
-        let founded = other_context
-            .similar_bucket("test_bucket", &search_params)
-            .await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 2);
     }
 
@@ -173,10 +168,12 @@ mod similar_endpoints {
                 .document_type("document".to_string())
                 .document_extension(".txt".to_string())
                 .document_permissions(document_size)
-                .document_md5_hash(test_document_name.clone())
-                .document_ssdeep_hash(ssdeep_hash.to_string())
-                .entity_data(entity_data.to_string())
-                .entity_keywords(Vec::default())
+                .document_md5(test_document_name.clone())
+                .document_ssdeep(ssdeep_hash.to_string())
+                .content_md5(test_document_name.clone())
+                .content_uuid(hasher::gen_uuid())
+                .content(entity_data.to_string())
+                .content_vector(Vec::default())
                 .highlight(None)
                 .document_created(None)
                 .document_modified(None)

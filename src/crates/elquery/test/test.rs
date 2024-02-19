@@ -13,7 +13,7 @@ mod test {
         let query_value = serde_json::to_value(highlight_order).unwrap();
         let query_string = serde_json::to_string(&query_value).unwrap();
         assert_eq!(
-            "{\"fields\":{\"entity_data\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]}},\"order\":\"\"}",
+            "{\"fields\":{\"content\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]}},\"order\":\"\"}",
             query_string
         );
     }
@@ -23,7 +23,7 @@ mod test {
         let match_query = MultiMatchQuery::new("Some query string");
         let query_value = serde_json::to_value(match_query).unwrap();
         let query_string = serde_json::to_string(&query_value).unwrap();
-        assert_eq!("{\"multi_match\":{\"fields\":[\"entity_data\",\"document_path\"],\"operator\":\"or\",\"query\":\"Some query string\"}}", query_string);
+        assert_eq!("{\"multi_match\":{\"fields\":[\"content\",\"document_path\"],\"operator\":\"or\",\"query\":\"Some query string\"}}", query_string);
     }
 
     #[test]

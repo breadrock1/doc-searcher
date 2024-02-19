@@ -43,9 +43,7 @@ pub fn compare_ssdeep_hashes(hash_1: &str, hash_2: &str) -> bool {
 
 #[inline]
 pub fn gen_uuid() -> String {
-    uuid7::uuid4()
-        .encode_hex()
-        .to_string()
+    uuid7::uuid4().encode_hex().to_string()
 }
 
 fn ssdeep_hash(data: &[u8]) -> HasherResult {

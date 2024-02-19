@@ -94,7 +94,8 @@ async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> WebResponse<we
 mod buckets_endpoints {
     use crate::service::own_engine::context::OtherContext;
     use crate::service::ServiceClient;
-    use crate::wrappers::bucket::BucketForm;
+
+    use wrappers::bucket::BucketForm;
 
     use actix_web::test;
 

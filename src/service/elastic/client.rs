@@ -1,23 +1,26 @@
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
+use crate::service::elastic::helper;
 use crate::service::elastic::helper::*;
 use crate::service::{JsonResponse, ServiceClient};
+use std::collections::HashMap;
+
+use cacher::values::VecCacherDocuments;
+use cacher::AnyCacherService;
+use hasher::{gen_hash, HashType};
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
+use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
-use cacher::AnyCacherService;
-use cacher::values::VecCacherDocuments;
 use elasticsearch::http::headers::HeaderMap;
-use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
-use elasticsearch::{BulkParts, CountParts, IndexParts};
+use elasticsearch::IndexParts;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
-use hasher::{gen_hash, HashType};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -38,40 +41,47 @@ impl ServiceClient for ElasticContext {
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
+            println!("Failed while getting clusters: {}", err);
             return Err(WebError::GetCluster(err.to_string()));
         }
 
         let response = response_result.unwrap();
         match response.json::<Vec<Cluster>>().await {
-            Err(err) => Err(WebError::from(err)),
             Ok(clusters) => Ok(web::Json(clusters)),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                Err(WebError::from(err))
+            }
         }
     }
 
     async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
         let cluster_name = format!("/_nodes/{}", cluster_id);
-        let body = b"";
         let response_result = elastic
             .send(
                 Method::Get,
                 cluster_name.as_str(),
                 HeaderMap::new(),
                 Option::<&Value>::None,
-                Some(body.as_ref()),
+                Some(b"".as_ref()),
                 None,
             )
             .await;
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
+            println!("Failed while getting cluster {}: {}", cluster_id, err);
             return Err(WebError::DeletingCluster(err.to_string()));
         }
 
         let response = response_result.unwrap();
         match response.json::<Cluster>().await {
-            Err(err) => Err(WebError::from(err)),
             Ok(cluster) => Ok(web::Json(cluster)),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                Err(WebError::from(err))
+            }
         }
     }
 
@@ -90,7 +100,8 @@ impl ServiceClient for ElasticContext {
 
         let body = json_data.as_str();
         if body.is_none() {
-            let msg = String::from("Json body is None");
+            let msg = "Json body is None".to_string();
+            println!("Failed while building jsob body: {}", msg);
             return WebError::DeletingCluster(msg).error_response();
         }
 
@@ -108,7 +119,10 @@ impl ServiceClient for ElasticContext {
 
         match response_result {
             Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => WebError::DeletingCluster(err.to_string()).error_response(),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                WebError::DeletingCluster(err.to_string()).error_response()
+            }
         }
     }
 
@@ -127,13 +141,17 @@ impl ServiceClient for ElasticContext {
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
+            println!("Failed while getting buckets: {}", err);
             return Err(WebError::from(err));
         }
 
         let response = response_result.unwrap();
         match response.json::<Vec<Bucket>>().await {
-            Err(err) => Err(WebError::from(err)),
             Ok(buckets) => Ok(web::Json(buckets)),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                Err(WebError::from(err))
+            }
         }
     }
 
@@ -153,14 +171,22 @@ impl ServiceClient for ElasticContext {
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
+            println!("Failed while getting bucket {}: {}", bucket_id, err);
             return Err(WebError::from(err));
         }
 
         let response = response_result.unwrap();
-        let json_value = response.json::<Value>().await.unwrap();
+        let json_value = response
+            .json::<Value>()
+            .await
+            .expect("Failed whie serding response...");
+
         match extract_bucket_stats(&json_value) {
             Ok(bucket) => Ok(web::Json(bucket)),
-            Err(err) => Err(err),
+            Err(err) => {
+                println!("Failed while extracting buckets stats: {}", err);
+                Err(err)
+            }
         }
     }
 
@@ -179,7 +205,10 @@ impl ServiceClient for ElasticContext {
 
         match response_result {
             Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => WebError::DeleteBucket(err.to_string()).error_response(),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                WebError::DeleteBucket(err.to_string()).error_response()
+            }
         }
     }
 
@@ -189,7 +218,9 @@ impl ServiceClient for ElasticContext {
         let hasher_res = gen_hash(HashType::MD5, bucket_name.as_bytes());
         let binding = hasher_res.unwrap();
         let id_str = binding.get_hash_data();
-        let bucket_schema: Value = serde_json::from_str(create_bucket_scheme().as_str()).unwrap();
+        let bucket_schema: Value = serde_json::from_str(create_bucket_scheme().as_str())
+            .expect("Failed while creating bucket scheme.");
+
         let response_result = elastic
             .index(IndexParts::IndexId(bucket_name, id_str))
             .body(json!({
@@ -200,40 +231,9 @@ impl ServiceClient for ElasticContext {
 
         match response_result {
             Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => WebError::CreateBucket(err.to_string()).error_response(),
-        }
-    }
-
-    async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool {
-        let elastic = self.get_cxt().read().await;
-        let response_result = elastic
-            .count(CountParts::Index(&[bucket_id]))
-            .body(json!({
-                "query" : {
-                    "term" : {
-                        "document_md5_hash" : document_id
-                    }
-                }
-            }))
-            .send()
-            .await;
-
-        if response_result.is_err() {
-            let err = response_result.err().unwrap();
-            println!("Failed: {}", err);
-            return false;
-        }
-
-        let response = response_result.unwrap();
-        let serialize_result = response.json::<Value>().await;
-        match serialize_result {
-            Ok(value) => {
-                let count = value["count"].as_i64().unwrap_or(0);
-                count > 0
-            }
             Err(err) => {
-                println!("{}", err);
-                false
+                println!("Failed while parsing elastic response: {}", err);
+                WebError::CreateBucket(err.to_string()).error_response()
             }
         }
     }
@@ -254,6 +254,7 @@ impl ServiceClient for ElasticContext {
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
+            println!("Failed while getting document {}: {}", doc_id, err);
             return Err(WebError::GetDocument(err.to_string()));
         }
 
@@ -262,61 +263,51 @@ impl ServiceClient for ElasticContext {
         let document_json = &common_object[&"_source"];
         match Document::deserialize(document_json) {
             Ok(document) => Ok(web::Json(document)),
-            Err(err) => Err(WebError::GetDocument(err.to_string())),
+            Err(err) => {
+                println!("Failed while parsing document from response: {}", err);
+                Err(WebError::GetDocument(err.to_string()))
+            }
         }
     }
 
     async fn create_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
-        let bucket_name = &doc_form.bucket_uuid;
-        let document_id = &doc_form.document_md5_hash;
+        let bucket_id = &doc_form.bucket_uuid;
+        let doc_id = &doc_form.content_md5;
         let to_value_result = serde_json::to_value(doc_form);
         if to_value_result.is_err() {
             let err = to_value_result.err().unwrap();
+            println!("Failed while creating document: {}", err);
             let web_err = WebError::DocumentSerializing(err.to_string());
             return web_err.error_response();
         }
 
-        if self
-            .check_duplication(bucket_name.as_str(), document_id.as_str())
-            .await
-        {
-            let msg = format!("Passed document: {} already exists", document_id);
+        if helper::check_duplication(&elastic, bucket_id.as_str(), doc_id.as_str()).await {
+            let msg = format!("Passed document: {} already exists", doc_id);
             return WebError::CreateDocument(msg).error_response();
         }
 
-        let document_json = to_value_result.unwrap();
-        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        body.push(
-            json!({
-                "index": {
-                    "_id": document_id.as_str()
-                }
-            })
-            .into(),
-        );
-        body.push(document_json.into());
-
-        let response_result = elastic
-            .bulk(BulkParts::Index(bucket_name.as_str()))
-            .body(body)
-            .send()
-            .await;
-
-        match response_result {
-            Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => WebError::CreateDocument(err.to_string()).error_response(),
+        let status = send_document(&elastic, doc_form, bucket_id.as_str()).await;
+        match status.is_success() {
+            true => HttpResponse::new(StatusCode::OK),
+            false => {
+                let msg = format!("Failed while parsing elastic response: {}", doc_id);
+                println!("Failed while creating doc: {}", msg);
+                WebError::CreateDocument(msg).error_response()
+            }
         }
     }
 
     async fn update_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let bucket_name = &doc_form.bucket_uuid;
-        let document_id = &doc_form.document_md5_hash;
+        let document_id = &doc_form.document_md5;
 
         let ser_doc_result = serde_json::to_value(doc_form);
         if ser_doc_result.is_err() {
             let err = ser_doc_result.err().unwrap();
+            let doc_name = doc_form.document_name.as_str();
+            println!("Failed while updating document {}: {}", doc_name, err);
             let web_err = WebError::UpdateDocument(err.to_string());
             return web_err.error_response();
         }
@@ -336,7 +327,10 @@ impl ServiceClient for ElasticContext {
 
         match response_result {
             Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => WebError::UpdateDocument(err.to_string()).error_response(),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                WebError::UpdateDocument(err.to_string()).error_response()
+            }
         }
     }
 
@@ -356,7 +350,10 @@ impl ServiceClient for ElasticContext {
 
         match response_result {
             Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => WebError::DeleteDocument(err.to_string()).error_response(),
+            Err(err) => {
+                println!("Failed while parsing elastic response: {}", err);
+                WebError::DeleteDocument(err.to_string()).error_response()
+            }
         }
     }
 
@@ -365,6 +362,7 @@ impl ServiceClient for ElasticContext {
         let file_path_ = std::path::Path::new(file_path);
         if !file_path_.exists() {
             let err = WebError::LoadFileFailed(file_path.to_string());
+            println!("Failed to load file `{}` to bucket: {}", file_path, err);
             return err.error_response();
         }
 
@@ -373,9 +371,20 @@ impl ServiceClient for ElasticContext {
             .map(Document::from)
             .collect::<Vec<Document>>();
 
+        let mut docs_to_remove: Vec<usize> = Vec::default();
+        for (doc_index, doc_item) in documents.iter().enumerate() {
+            let bucket_id = doc_item.bucket_uuid.as_str();
+            let content_id = doc_item.content_md5.as_str();
+            if helper::check_duplication(&elastic, bucket_id, content_id).await {
+                docs_to_remove.push(doc_index);
+            }
+        }
+
         let futures_list = documents
             .iter()
-            .map(|doc_form| send_document(&elastic, doc_form, bucket_id))
+            .enumerate()
+            .filter(|(index, _)| !docs_to_remove.contains(index))
+            .map(|(_, doc_form)| send_document(&elastic, doc_form, bucket_id))
             .collect::<FuturesUnordered<_>>()
             .collect::<Vec<_>>()
             .await;
@@ -400,73 +409,73 @@ impl ServiceClient for ElasticContext {
         match actix_files::NamedFile::open_async(file_path).await {
             Ok(named_file) => Some(named_file),
             Err(err) => {
-                println!("{}", err);
+                println!("Failed while opening async streaming: {}", err);
                 None
             }
         }
     }
 
-    async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
-        let elastic = self.get_cxt().read().await;
-        let body_value = build_search_query(s_params);
-        match search_documents(&elastic, &["*"], &body_value, s_params).await {
-            Err(err) => Err(err),
-            Ok(documents) => {
-                let vec_docs = self.insert_cache(s_params, documents.0).await;
-                Ok(web::Json(vec_docs))
-            },
-        }
-    }
-
-    async fn search_bucket(
+    async fn search(
         &self,
-        buckets_ids: &str,
         s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>> {
+    ) -> JsonResponse<HashMap<String, Vec<Document>>> {
         let elastic = self.get_cxt().read().await;
-        let indexes: Vec<&str> = buckets_ids.split(',').collect();
         let body_value = build_search_query(s_params);
+        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let indexes = buckets.split(',').collect::<Vec<&str>>();
         match search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
-            Err(err) => Err(err),
             Ok(documents) => {
-                let vec_docs = self.insert_cache(s_params, documents.0).await;
-                Ok(web::Json(vec_docs))
-            },
+                let documents = self.insert_cache(s_params, documents.0).await;
+                let grouped_docs = helper::group_document_chunks(documents);
+                Ok(web::Json(grouped_docs))
+            }
+            Err(err) => {
+                println!("Failed while searching documents: {}", err);
+                Err(err)
+            }
         }
     }
 
-    async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
-        let body_value = build_search_similar_query(s_params);
-        search_documents(&elastic, &["*"], &body_value, s_params).await
+        let body_value = build_search_query(s_params);
+        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let indexes = buckets.split(',').collect::<Vec<&str>>();
+        match search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
+            Ok(documents) => {
+                let vec_docs = self.insert_cache(s_params, documents.0).await;
+                Ok(web::Json(vec_docs))
+            }
+            Err(err) => {
+                println!("Failed while searching documents: {}", err);
+                Err(err)
+            }
+        }
     }
 
-    async fn similar_bucket(
-        &self,
-        buckets_id: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>> {
+    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
-        let indexes: Vec<&str> = buckets_id.split(',').collect();
         let body_value = build_search_similar_query(s_params);
+
+        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let indexes = buckets.split(',').collect::<Vec<&str>>();
+
         search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>> {
         let cacher = self.get_cacher().read().await;
-        let documents_opt = cacher.get_documents(&s_params).await;
-        let documenst = documents_opt?
-            .get_documents()
-            .to_owned();
-
-        Some(documenst)
+        let documents_opt = cacher.get_documents(s_params).await;
+        let documents = documents_opt?.get_documents().to_owned();
+        let grouped_docs = helper::group_document_chunks(documents);
+        Some(grouped_docs)
     }
 
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
         let cacher = self.get_cacher().read().await;
         let vec_cacher_docs = VecCacherDocuments::from(docs);
         cacher
-            .set_documents(&s_params, vec_cacher_docs)
+            .set_documents(s_params, vec_cacher_docs)
             .await
             .get_documents()
             .to_owned()
