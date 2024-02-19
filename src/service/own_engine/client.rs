@@ -1,7 +1,7 @@
 use crate::errors::{SuccessfulResponse, WebError, WebResponse};
-use crate::service::ServiceClient;
 use crate::service::elastic::helper;
 use crate::service::own_engine::context::OtherContext;
+use crate::service::ServiceClient;
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -185,13 +185,16 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn search(&self, s_params: &SearchParams) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
+    async fn search(
+        &self,
+        s_params: &SearchParams,
+    ) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
-            .filter(|document| document.bucket_uuid.eq(bucket_id.as_str()))
+            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
             .filter(|document| document.content.contains(&s_params.query))
             .cloned()
             .collect::<Vec<Document>>();
@@ -200,14 +203,17 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(grouped_docs))
     }
 
-    async fn search_tokens(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn search_tokens(
+        &self,
+        s_params: &SearchParams,
+    ) -> WebResponse<web::Json<Vec<Document>>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
-            .filter(|document| document.bucket_uuid.eq(bucket_id.as_str()))
-            .filter(|document| document.content.contains(&s_params.query))
+            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
+            .filter(|doc| doc.content.contains(&s_params.query))
             .cloned()
             .collect::<Vec<Document>>();
 
@@ -220,7 +226,7 @@ impl ServiceClient for OtherContext {
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
-            .filter(|document| document.bucket_uuid.eq(bucket_id.as_str()))
+            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
             .filter(|document| {
                 hasher::compare_ssdeep_hashes(
                     s_params.query.as_str(),

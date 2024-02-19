@@ -127,13 +127,11 @@ pub fn build_document_scope() -> Scope {
 }
 
 pub fn build_search_scope() -> Scope {
-    web::scope("/search")
-        .service(search_all)
+    web::scope("/search").service(search_all)
 }
 
 pub fn build_similar_scope() -> Scope {
-    web::scope("/similar")
-        .service(search_similar_docs)
+    web::scope("/similar").service(search_similar_docs)
 }
 
 pub fn build_file_scope() -> Scope {
