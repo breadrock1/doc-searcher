@@ -5,6 +5,7 @@ use crate::file_kind::FileKind;
 
 use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
+use text_splitter::TextSplitter;
 use wrappers::document::Document;
 use wrappers::document::DocumentBuilder;
 
@@ -15,6 +16,8 @@ use std::os::unix::fs::MetadataExt;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::time::SystemTime;
+
+const MAX_TOKEN_SIZE: usize = 1000;
 
 pub fn load_passed_file_by_path(file_path: &Path) -> Vec<Document> {
     if file_path.is_file() {
@@ -98,10 +101,10 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
         .unwrap_or_else(get_local_datetime)
         .into();
 
-    let chunks_data = file_data_.chars()
-        .collect::<Vec<char>>()
-        .chunks(1000)
-        .map(|c| c.iter().collect::<String>())
+    let chunks_data = TextSplitter::default()
+        .with_trim_chunks(true)
+        .chunks(file_data_.as_str(), MAX_TOKEN_SIZE)
+        .map(String::from)
         .collect::<Vec<String>>();
 
     let mut doc_vector: Vec<Document> = Vec::with_capacity(chunks_data.len());

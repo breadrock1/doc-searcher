@@ -17,6 +17,10 @@ walkdir = "^2.4"
 hasher = { path = "../hasher" }
 wrappers = { path = "../wrappers" }
 
+[dependencies.text-splitter]
+version = "^0.6"
+features = ["tokenizers"]
+
 [[test]]
 name = "test"
 path = "test/test.rs"

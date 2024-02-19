@@ -5,6 +5,7 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema, Clone)]
 pub struct SearchParams {
     pub query: String,
+    pub buckets: Option<String>,
     pub document_type: String,
     pub document_extension: String,
     pub document_size_to: i64,
@@ -19,6 +20,7 @@ impl Default for SearchParams {
     fn default() -> Self {
         SearchParamsBuilder::default()
             .query("*".to_string())
+            .buckets(Some("common_bucket".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
