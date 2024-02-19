@@ -122,12 +122,6 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn check_duplication(&self, _bucket_id: &str, document_id: &str) -> bool {
-        let cxt = self.get_cxt().read().await;
-        let map = cxt.documents.read().await;
-        map.contains_key(document_id)
-    }
-
     async fn get_document(
         &self,
         _bucket_id: &str,

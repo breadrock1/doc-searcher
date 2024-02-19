@@ -26,8 +26,6 @@ pub trait ServiceClient {
     async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse;
     async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse;
 
-    async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool;
-
     async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document>;
     async fn create_document(&self, doc_form: &Document) -> HttpResponse;
     async fn update_document(&self, doc_form: &Document) -> HttpResponse;
