@@ -13,7 +13,7 @@ use wrappers::search_params::SearchParams;
 use actix_web::web;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
-use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
+use elasticsearch::{BulkParts, CountParts, Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::string::ToString;
@@ -24,11 +24,13 @@ pub async fn send_document(
     doc_form: &Document,
     bucket_id: &str,
 ) -> SendDocumentStatus {
+    let document_id = doc_form.content_md5.as_str();
+
     let to_value_result = serde_json::to_value(doc_form);
     let document_json = to_value_result.unwrap();
     let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
 
-    body.push(json!({"index": { "_id": doc_form.document_md5_hash.as_str() }}).into());
+    body.push(json!({"index": { "_id": document_id }}).into());
     body.push(document_json.into());
 
     let response_result = elastic
@@ -44,6 +46,55 @@ pub async fn send_document(
             SendDocumentStatus::new(false, err_msg.as_str())
         }
     }
+}
+
+pub async fn check_duplication(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    bucket_id: &str,
+    document_id: &str
+) -> bool {
+    let response_result = elastic
+        .count(CountParts::Index(&[bucket_id]))
+        .body(json!({
+                "query" : {
+                    "term" : {
+                        "content_md5" : document_id
+                    }
+                }
+            }))
+        .send()
+        .await;
+
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        println!("Failed while checking duplicate: {}", err);
+        return false;
+    }
+
+    let response = response_result.unwrap();
+    let serialize_result = response.json::<Value>().await;
+    match serialize_result {
+        Ok(value) => {
+            let count = value["count"].as_i64().unwrap_or(0);
+            count > 0
+        }
+        Err(err) => {
+            println!("Failed to check duplicate for {}: {}", document_id, err);
+            false
+        }
+    }
+}
+
+pub fn remove_duplicates(documents: &mut Vec<Document>, indexes: &[usize]) {
+    indexes.to_owned().reverse();
+    for doc_id in indexes {
+        let _ = documents.remove(doc_id.to_owned());
+    }
+    // indexes
+    //     .iter()
+    //     .for_each(|doc_id| {
+    //         let _ = documents.remove(doc_id.to_owned());
+    //     })
 }
 
 pub async fn search_documents(

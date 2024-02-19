@@ -1,3 +1,4 @@
+use crate::service::elastic::helper;
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
 use crate::service::elastic::helper::*;
@@ -13,11 +14,10 @@ use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
-
-use elasticsearch::http::headers::HeaderMap;
-use elasticsearch::http::request::JsonBody;
+use actix_web::http::StatusCode;
+use elasticsearch::IndexParts;
 use elasticsearch::http::Method;
-use elasticsearch::{BulkParts, CountParts, IndexParts};
+use elasticsearch::http::headers::HeaderMap;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use serde::Deserialize;
@@ -237,43 +237,6 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool {
-        let elastic = self.get_cxt().read().await;
-        let response_result = elastic
-            .count(CountParts::Index(&[bucket_id]))
-            .body(json!({
-                "query" : {
-                    "term" : {
-                        "document_md5_hash" : document_id
-                    }
-                }
-            }))
-            .send()
-            .await;
-
-        if response_result.is_err() {
-            let err = response_result.err().unwrap();
-            println!("Failed while checking duplicate: {}", err);
-            return false;
-        }
-
-        let response = response_result.unwrap();
-        let serialize_result = response.json::<Value>().await;
-        match serialize_result {
-            Ok(value) => {
-                let count = value["count"].as_i64().unwrap_or(0);
-                count > 0
-            }
-            Err(err) => {
-                println!(
-                    "Failed while checking duplicate for {}: {}",
-                    document_id, err
-                );
-                false
-            }
-        }
-    }
-
     async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let elastic = self.get_cxt().read().await;
         let s_path = format!("/{}/_doc/{}", bucket_id, doc_id);
@@ -308,8 +271,8 @@ impl ServiceClient for ElasticContext {
 
     async fn create_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
-        let bucket_name = &doc_form.bucket_uuid;
-        let document_id = &doc_form.document_md5_hash;
+        let bucket_id = &doc_form.bucket_uuid;
+        let doc_id = &doc_form.content_md5;
         let to_value_result = serde_json::to_value(doc_form);
         if to_value_result.is_err() {
             let err = to_value_result.err().unwrap();
@@ -318,45 +281,26 @@ impl ServiceClient for ElasticContext {
             return web_err.error_response();
         }
 
-        if self
-            .check_duplication(bucket_name.as_str(), document_id.as_str())
-            .await
-        {
-            let msg = format!("Passed document: {} already exists", document_id);
+        if helper::check_duplication(&elastic, bucket_id.as_str(), doc_id.as_str()).await {
+            let msg = format!("Passed document: {} already exists", doc_id);
             return WebError::CreateDocument(msg).error_response();
         }
 
-        let document_json = to_value_result.unwrap();
-        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        body.push(
-            json!({
-                "index": {
-                    "_id": document_id.as_str()
-                }
-            })
-            .into(),
-        );
-        body.push(document_json.into());
-
-        let response_result = elastic
-            .bulk(BulkParts::Index(bucket_name.as_str()))
-            .body(body)
-            .send()
-            .await;
-
-        match response_result {
-            Ok(_) => SuccessfulResponse::ok_response("Ok"),
-            Err(err) => {
-                println!("Failed while parsing elastic response: {}", err);
-                WebError::CreateDocument(err.to_string()).error_response()
-            }
+        let status = send_document(&elastic, doc_form, bucket_id.as_str()).await;
+        match status.is_success() {
+            true => HttpResponse::new(StatusCode::OK),
+            false => {
+                let msg = format!("Failed while parsing elastic response: {}", doc_id);
+                println!("Failed while creating doc: {}", msg);
+                WebError::CreateDocument(msg).error_response()
+            },
         }
     }
 
     async fn update_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let bucket_name = &doc_form.bucket_uuid;
-        let document_id = &doc_form.document_md5_hash;
+        let document_id = &doc_form.document_md5;
 
         let ser_doc_result = serde_json::to_value(doc_form);
         if ser_doc_result.is_err() {
@@ -429,9 +373,20 @@ impl ServiceClient for ElasticContext {
             .map(Document::from)
             .collect::<Vec<Document>>();
 
+        let mut docs_to_remove: Vec<usize> = Vec::default();
+        for (doc_index, doc_item) in documents.iter().enumerate() {
+            let bucket_id = doc_item.bucket_uuid.as_str();
+            let content_id = doc_item.content_md5.as_str();
+            if helper::check_duplication(&elastic, bucket_id, content_id).await {
+                docs_to_remove.push(doc_index);
+            }
+        }
+
         let futures_list = documents
             .iter()
-            .map(|doc_form| send_document(&elastic, doc_form, bucket_id))
+            .enumerate()
+            .filter(|(index, _)| !docs_to_remove.contains(index))
+            .map(|(_, doc_form)| send_document(&elastic, doc_form, bucket_id))
             .collect::<FuturesUnordered<_>>()
             .collect::<Vec<_>>()
             .await;
