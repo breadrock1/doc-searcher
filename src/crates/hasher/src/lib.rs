@@ -41,6 +41,11 @@ pub fn compare_ssdeep_hashes(hash_1: &str, hash_2: &str) -> bool {
     result != 0
 }
 
+#[inline]
+pub fn gen_uuid() -> String {
+    uuid7::uuid4().encode_hex().to_string()
+}
+
 fn ssdeep_hash(data: &[u8]) -> HasherResult {
     match ssdeep::hash(data) {
         None => Err(HasherError::FailedErr),

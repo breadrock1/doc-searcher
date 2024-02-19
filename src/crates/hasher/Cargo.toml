@@ -6,9 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-md5 = "0.7.0"
-ssdeep = "0.2.0"
+md5 = "^0.7"
+ssdeep = "^0.2"
 thiserror = "^1.0"
+uuid7 = "^0.7"
 
 [[test]]
 name = "test"

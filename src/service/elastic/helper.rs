@@ -1,20 +1,22 @@
 use crate::errors::{WebError, WebResponse};
 use crate::service::elastic::send_status::SendDocumentStatus;
-use crate::wrappers::bucket::{Bucket, BucketBuilder};
-use crate::wrappers::document::{Document, HighlightEntity};
-use crate::wrappers::schema::BucketSchema;
-use crate::wrappers::search_params::SearchParams;
 
-use actix_web::web;
-use elasticsearch::http::request::JsonBody;
-use elasticsearch::http::response::Response;
-use elasticsearch::{BulkParts, Elasticsearch, SearchParts};
 use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
 use elquery::similar_query::SimilarQuery;
+use wrappers::bucket::{Bucket, BucketBuilder};
+use wrappers::document::{Document, HighlightEntity};
+use wrappers::schema::BucketSchema;
+use wrappers::search_params::SearchParams;
+
+use actix_web::web;
+use elasticsearch::http::request::JsonBody;
+use elasticsearch::http::response::Response;
+use elasticsearch::{BulkParts, CountParts, Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::string::ToString;
 use tokio::sync::RwLockReadGuard;
 
@@ -23,11 +25,13 @@ pub async fn send_document(
     doc_form: &Document,
     bucket_id: &str,
 ) -> SendDocumentStatus {
+    let document_id = doc_form.content_md5.as_str();
+
     let to_value_result = serde_json::to_value(doc_form);
     let document_json = to_value_result.unwrap();
     let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
 
-    body.push(json!({"index": { "_id": doc_form.document_md5_hash.as_str() }}).into());
+    body.push(json!({"index": { "_id": document_id }}).into());
     body.push(document_json.into());
 
     let response_result = elastic
@@ -41,6 +45,43 @@ pub async fn send_document(
         Err(err) => {
             let err_msg = format!("Failed while loading file: {:?}", err);
             SendDocumentStatus::new(false, err_msg.as_str())
+        }
+    }
+}
+
+pub async fn check_duplication(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    bucket_id: &str,
+    document_id: &str,
+) -> bool {
+    let response_result = elastic
+        .count(CountParts::Index(&[bucket_id]))
+        .body(json!({
+                "query" : {
+                    "term" : {
+                        "content_md5" : document_id
+                    }
+                }
+        }))
+        .send()
+        .await;
+
+    if response_result.is_err() {
+        let err = response_result.err().unwrap();
+        println!("Failed while checking duplicate: {}", err);
+        return false;
+    }
+
+    let response = response_result.unwrap();
+    let serialize_result = response.json::<Value>().await;
+    match serialize_result {
+        Ok(value) => {
+            let count = value["count"].as_i64().unwrap_or(0);
+            count > 0
+        }
+        Err(err) => {
+            println!("Failed to check duplicate for {}: {}", document_id, err);
+            false
         }
     }
 }
@@ -179,4 +220,16 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
 pub fn create_bucket_scheme() -> String {
     let schema = BucketSchema::new();
     serde_json::to_string_pretty(&schema).unwrap()
+}
+
+pub fn group_document_chunks(documents: Vec<Document>) -> HashMap<String, Vec<Document>> {
+    let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
+    documents.into_iter().for_each(|doc| {
+        grouped_documents
+            .entry(doc.content_md5.clone())
+            .or_default()
+            .push(doc)
+    });
+
+    grouped_documents
 }

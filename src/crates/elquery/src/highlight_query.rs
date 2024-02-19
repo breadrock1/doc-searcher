@@ -8,7 +8,7 @@ pub struct HighlightOrder {
 
 #[derive(Serialize)]
 struct DocumentEntity {
-    entity_data: HighlightTags,
+    content: HighlightTags,
 }
 
 #[derive(Serialize)]
@@ -24,7 +24,7 @@ impl Default for DocumentEntity {
             post_tags: vec!["".to_string()],
         };
         DocumentEntity {
-            entity_data: highlight_tags,
+            content: highlight_tags,
         }
     }
 }

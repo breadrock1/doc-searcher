@@ -30,18 +30,18 @@ impl EnabledFlag {
     }
 }
 
+enum FieldType {
+    Date,
+    Integer,
+    String,
+}
+
 #[derive(Serialize)]
 struct SchemaFieldType {
     #[serde(alias = "type")]
     _type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     index: Option<String>,
-}
-
-enum FieldType {
-    Date,
-    Integer,
-    String,
 }
 
 impl SchemaFieldType {

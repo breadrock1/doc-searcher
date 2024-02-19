@@ -20,16 +20,14 @@ use crate::endpoints::loader::__path_download_file;
 use crate::endpoints::loader::__path_load_file;
 
 use crate::endpoints::searcher::__path_search_all;
-use crate::endpoints::searcher::__path_search_target;
 
 use crate::endpoints::similarities::__path_search_similar_docs;
-use crate::endpoints::similarities::__path_search_similar_docs_target;
 
 use crate::errors::*;
-use crate::wrappers::bucket::*;
-use crate::wrappers::cluster::*;
-use crate::wrappers::document::*;
-use crate::wrappers::search_params::*;
+use wrappers::bucket::*;
+use wrappers::cluster::*;
+use wrappers::document::*;
+use wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -57,9 +55,7 @@ use utoipa_swagger_ui::SwaggerUi;
         load_file,
         download_file,
         search_all,
-        search_target,
         search_similar_docs,
-        search_similar_docs_target,
     ),
     components(
         schemas(

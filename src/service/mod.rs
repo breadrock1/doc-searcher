@@ -1,14 +1,18 @@
 pub mod elastic;
 pub mod own_engine;
+pub mod init;
 
 use crate::errors::WebResponse;
-use crate::wrappers::bucket::{Bucket, BucketForm};
-use crate::wrappers::cluster::Cluster;
-use crate::wrappers::document::Document;
-use crate::wrappers::search_params::SearchParams;
+
+use wrappers::bucket::{Bucket, BucketForm};
+use wrappers::cluster::Cluster;
+use wrappers::document::Document;
+use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
+
+use std::collections::HashMap;
 
 pub type JsonResponse<T> = WebResponse<web::Json<T>>;
 
@@ -24,8 +28,6 @@ pub trait ServiceClient {
     async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse;
     async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse;
 
-    async fn check_duplication(&self, bucket_id: &str, document_id: &str) -> bool;
-
     async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document>;
     async fn create_document(&self, doc_form: &Document) -> HttpResponse;
     async fn update_document(&self, doc_form: &Document) -> HttpResponse;
@@ -34,20 +36,11 @@ pub trait ServiceClient {
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
     async fn download_file(&self, bucket_id: &str, file_path: &str) -> Option<NamedFile>;
 
-    async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
-    async fn search_bucket(
-        &self,
-        bucket_id: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>>;
+    async fn search(&self, s_params: &SearchParams)
+        -> JsonResponse<HashMap<String, Vec<Document>>>;
+    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
+    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
 
-    async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
-    async fn similar_bucket(
-        &self,
-        bucket_id: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>>;
-
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>>;
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>>;
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document>;
 }
