@@ -121,7 +121,7 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
             .content_uuid(chunk_uuid4)
             .content_md5(md5_hash_chunk.to_string())
             .content(doc_chunk.clone())
-            .content_vector(doc_chunk)
+            .content_vector(Vec::default())
             .document_name(file_name_.to_string())
             .document_path(file_path_.to_string())
             .document_size(file_metadata.size() as i32)

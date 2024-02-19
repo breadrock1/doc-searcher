@@ -101,7 +101,7 @@ mod documents_endpoints {
             .content_uuid("content_uuid".to_string())
             .content_md5("md5 hash".to_string())
             .content("Any document text".to_string())
-            .content_vector("Any document text".to_string())
+            .content_vector(Vec::default())
             .document_name(document_name.to_string())
             .document_path("/".to_string())
             .document_size(1024)
