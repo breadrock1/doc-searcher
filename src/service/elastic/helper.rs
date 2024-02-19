@@ -52,7 +52,7 @@ pub async fn send_document(
 pub async fn check_duplication(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
     bucket_id: &str,
-    document_id: &str
+    document_id: &str,
 ) -> bool {
     let response_result = elastic
         .count(CountParts::Index(&[bucket_id]))
@@ -224,14 +224,12 @@ pub fn create_bucket_scheme() -> String {
 
 pub fn group_document_chunks(documents: Vec<Document>) -> HashMap<String, Vec<Document>> {
     let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
-    documents
-        .into_iter()
-        .for_each(|doc| {
-            grouped_documents
-                .entry(doc.content_md5.clone())
-                .or_default()
-                .push(doc)
-        });
+    documents.into_iter().for_each(|doc| {
+        grouped_documents
+            .entry(doc.content_md5.clone())
+            .or_default()
+            .push(doc)
+    });
 
     grouped_documents
 }

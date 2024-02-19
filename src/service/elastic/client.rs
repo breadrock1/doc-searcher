@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use crate::service::elastic::helper;
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
+use crate::service::elastic::helper;
 use crate::service::elastic::helper::*;
 use crate::service::{JsonResponse, ServiceClient};
+use std::collections::HashMap;
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -14,11 +14,11 @@ use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
-use actix_web::{web, HttpResponse, ResponseError};
 use actix_web::http::StatusCode;
-use elasticsearch::IndexParts;
-use elasticsearch::http::Method;
+use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
+use elasticsearch::http::Method;
+use elasticsearch::IndexParts;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use serde::Deserialize;
@@ -294,7 +294,7 @@ impl ServiceClient for ElasticContext {
                 let msg = format!("Failed while parsing elastic response: {}", doc_id);
                 println!("Failed while creating doc: {}", msg);
                 WebError::CreateDocument(msg).error_response()
-            },
+            }
         }
     }
 
@@ -415,7 +415,10 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn search(&self, s_params: &SearchParams) -> JsonResponse<HashMap<String, Vec<Document>>> {
+    async fn search(
+        &self,
+        s_params: &SearchParams,
+    ) -> JsonResponse<HashMap<String, Vec<Document>>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_query(s_params);
         let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
@@ -454,13 +457,8 @@ impl ServiceClient for ElasticContext {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_similar_query(s_params);
 
-        let buckets = s_params
-            .buckets
-            .to_owned()
-            .unwrap_or("*".to_string());
-        let indexes = buckets
-            .split(',')
-            .collect::<Vec<&str>>();
+        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let indexes = buckets.split(',').collect::<Vec<&str>>();
 
         search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
     }
