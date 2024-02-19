@@ -6,7 +6,7 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, Deserialize, Clone, Default, IntoParams, ToSchema)]
 pub struct HighlightEntity {
-    pub entity_data: Vec<String>,
+    pub content: Vec<String>,
 }
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]

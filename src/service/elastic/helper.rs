@@ -16,6 +16,7 @@ use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, CountParts, Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::string::ToString;
 use tokio::sync::RwLockReadGuard;
 
@@ -61,7 +62,7 @@ pub async fn check_duplication(
                         "content_md5" : document_id
                     }
                 }
-            }))
+        }))
         .send()
         .await;
 
@@ -83,18 +84,6 @@ pub async fn check_duplication(
             false
         }
     }
-}
-
-pub fn remove_duplicates(documents: &mut Vec<Document>, indexes: &[usize]) {
-    indexes.to_owned().reverse();
-    for doc_id in indexes {
-        let _ = documents.remove(doc_id.to_owned());
-    }
-    // indexes
-    //     .iter()
-    //     .for_each(|doc_id| {
-    //         let _ = documents.remove(doc_id.to_owned());
-    //     })
 }
 
 pub async fn search_documents(
@@ -231,4 +220,18 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
 pub fn create_bucket_scheme() -> String {
     let schema = BucketSchema::new();
     serde_json::to_string_pretty(&schema).unwrap()
+}
+
+pub fn group_document_chunks(documents: Vec<Document>) -> HashMap<String, Vec<Document>> {
+    let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
+    documents
+        .into_iter()
+        .for_each(|doc| {
+            grouped_documents
+                .entry(doc.content_md5.clone())
+                .or_default()
+                .push(doc)
+        });
+
+    grouped_documents
 }

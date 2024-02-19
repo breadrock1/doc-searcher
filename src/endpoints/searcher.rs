@@ -1,9 +1,11 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
+
 use wrappers::document::Document;
 use wrappers::search_params::*;
 
 use actix_web::{post, web};
+use std::collections::HashMap;
 
 #[utoipa::path(
     post,
@@ -19,39 +21,11 @@ use actix_web::{post, web};
 async fn search_all(
     cxt: ContextData,
     form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
+) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     match client.load_cache(&search_form).await {
-        Some(documents) => Ok(web::Json(documents)),
-        None => client.search_all(&search_form).await,
-    }
-}
-
-#[utoipa::path(
-    post,
-    path = "/search/{bucket_name}",
-    tag = "Load file from local file system of service by path",
-    request_body = SearchParams,
-    params(
-        ("bucket_name" = &str, description = "Bucket name to find documents")
-    ),
-    responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
-    )
-)]
-#[post("/{bucket_names}")]
-async fn search_target(
-    cxt: ContextData,
-    path: web::Path<String>,
-    form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-    let buckets = path.as_ref();
-    match client.load_cache(&search_form).await {
-        None => client.search_bucket(buckets.as_str(), &search_form).await,
+        None => client.search(&search_form).await,
         Some(documents) => Ok(web::Json(documents)),
     }
 }
@@ -71,7 +45,7 @@ mod searcher_endpoints {
         let other_context = OtherContext::_new("test".to_string());
         let mut search_params = SearchParams::default();
         search_params.query = "text".to_string();
-        let founded = other_context.search_all(&search_params).await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -80,7 +54,7 @@ mod searcher_endpoints {
         }
 
         search_params.query = "proposals".to_string();
-        let founded = other_context.search_all(&search_params).await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 1);
     }
 
@@ -89,7 +63,7 @@ mod searcher_endpoints {
         let other_context = OtherContext::_new("test".to_string());
         let mut search_params = SearchParams::default();
         let founded = other_context
-            .search_bucket("test_bucket", &search_params)
+            .search(&search_params)
             .await;
         assert_eq!(founded.unwrap().len(), 0);
 
@@ -100,13 +74,13 @@ mod searcher_endpoints {
 
         search_params.query = "unknown".to_string();
         let founded = other_context
-            .search_bucket("unknown_bucket", &search_params)
+            .search(&search_params)
             .await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = "proposals".to_string();
         let founded = other_context
-            .search_bucket("test_bucket", &search_params)
+            .search(&search_params)
             .await;
         assert_eq!(founded.unwrap().len(), 1);
     }

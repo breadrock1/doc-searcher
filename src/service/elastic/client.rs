@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::service::elastic::helper;
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
@@ -414,10 +415,30 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn search(&self, s_params: &SearchParams) -> JsonResponse<HashMap<String, Vec<Document>>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_query(s_params);
-        match search_documents(&elastic, &["*"], &body_value, s_params).await {
+        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let indexes = buckets.split(',').collect::<Vec<&str>>();
+        match search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
+            Ok(documents) => {
+                let documents = self.insert_cache(s_params, documents.0).await;
+                let grouped_docs = helper::group_document_chunks(documents);
+                Ok(web::Json(grouped_docs))
+            }
+            Err(err) => {
+                println!("Failed while searching documents: {}", err);
+                Err(err)
+            }
+        }
+    }
+
+    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+        let elastic = self.get_cxt().read().await;
+        let body_value = build_search_query(s_params);
+        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let indexes = buckets.split(',').collect::<Vec<&str>>();
+        match search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => {
                 let vec_docs = self.insert_cache(s_params, documents.0).await;
                 Ok(web::Json(vec_docs))
@@ -429,49 +450,27 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn search_bucket(
-        &self,
-        buckets_ids: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>> {
-        let elastic = self.get_cxt().read().await;
-        let indexes: Vec<&str> = buckets_ids.split(',').collect();
-        let body_value = build_search_query(s_params);
-        match search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
-            Ok(documents) => {
-                let vec_docs = self.insert_cache(s_params, documents.0).await;
-                Ok(web::Json(vec_docs))
-            }
-            Err(err) => {
-                println!("Failed search docs into buckets [{}]: {}", buckets_ids, err);
-                Err(err)
-            }
-        }
-    }
-
-    async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = build_search_similar_query(s_params);
-        search_documents(&elastic, &["*"], &body_value, s_params).await
-    }
 
-    async fn similar_bucket(
-        &self,
-        buckets_id: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>> {
-        let elastic = self.get_cxt().read().await;
-        let indexes: Vec<&str> = buckets_id.split(',').collect();
-        let body_value = build_search_similar_query(s_params);
+        let buckets = s_params
+            .buckets
+            .to_owned()
+            .unwrap_or("*".to_string());
+        let indexes = buckets
+            .split(',')
+            .collect::<Vec<&str>>();
+
         search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>> {
         let cacher = self.get_cacher().read().await;
         let documents_opt = cacher.get_documents(s_params).await;
-        let documenst = documents_opt?.get_documents().to_owned();
-
-        Some(documenst)
+        let documents = documents_opt?.get_documents().to_owned();
+        let grouped_docs = helper::group_document_chunks(documents);
+        Some(grouped_docs)
     }
 
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {

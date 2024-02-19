@@ -12,6 +12,8 @@ use wrappers::search_params::SearchParams;
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse};
 
+use std::collections::HashMap;
+
 pub type JsonResponse<T> = WebResponse<web::Json<T>>;
 
 #[async_trait::async_trait]
@@ -34,20 +36,10 @@ pub trait ServiceClient {
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
     async fn download_file(&self, bucket_id: &str, file_path: &str) -> Option<NamedFile>;
 
-    async fn search_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
-    async fn search_bucket(
-        &self,
-        bucket_id: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>>;
+    async fn search(&self, s_params: &SearchParams) -> JsonResponse<HashMap<String, Vec<Document>>>;
+    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
+    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
 
-    async fn similar_all(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
-    async fn similar_bucket(
-        &self,
-        bucket_id: &str,
-        s_params: &SearchParams,
-    ) -> JsonResponse<Vec<Document>>;
-
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>>;
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>>;
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document>;
 }

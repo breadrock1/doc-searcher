@@ -1,5 +1,6 @@
 use crate::endpoints::ContextData;
 use crate::errors::WebResponse;
+
 use wrappers::document::Document;
 use wrappers::search_params::*;
 
@@ -22,32 +23,7 @@ async fn search_similar_docs(
 ) -> WebResponse<web::Json<Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.similar_all(&search_form).await
-}
-
-#[utoipa::path(
-    post,
-    path = "/similar/{bucket_names}",
-    tag = "Search similar documents by passed SearchParams",
-    request_body = SearchParams,
-    params(
-        ("bucket_name" = &str, description = "Bucket name to find documents")
-    ),
-    responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
-    )
-)]
-#[post("/{bucket_names}")]
-async fn search_similar_docs_target(
-    cxt: ContextData,
-    path: web::Path<String>,
-    form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-    let buckets = path.as_ref();
-    client.similar_bucket(buckets.as_str(), &search_form).await
+    client.similarity(&search_form).await
 }
 
 #[cfg(test)]
@@ -79,7 +55,7 @@ mod similar_endpoints {
             .build()
             .unwrap();
 
-        let founded = other_context.similar_all(&search_params).await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -88,11 +64,11 @@ mod similar_endpoints {
         }
 
         search_params.query = "unknown".to_string();
-        let founded = other_context.similar_all(&search_params).await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = SSDEEP_HASH_CMP.to_string();
-        let founded = other_context.similar_all(&search_params).await;
+        let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().len(), 2);
     }
 
@@ -113,7 +89,7 @@ mod similar_endpoints {
             .unwrap();
 
         let founded = other_context
-            .similar_bucket("test_bucket", &search_params)
+            .similarity(&search_params)
             .await;
         assert_eq!(founded.unwrap().len(), 0);
 
@@ -124,13 +100,13 @@ mod similar_endpoints {
 
         search_params.query = "unknown".to_string();
         let founded = other_context
-            .similar_bucket("test_bucket", &search_params)
+            .similarity(&search_params)
             .await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = SSDEEP_HASH_CMP.to_string();
         let founded = other_context
-            .similar_bucket("test_bucket", &search_params)
+            .similarity(&search_params)
             .await;
         assert_eq!(founded.unwrap().len(), 2);
     }
