@@ -36,15 +36,27 @@ mod searcher_endpoints {
     use crate::service::ServiceClient;
 
     use wrappers::document::{Document, DocumentBuilder};
-    use wrappers::search_params::SearchParams;
+    use wrappers::search_params::SearchParamsBuilder;
 
     use actix_web::test;
 
     #[test]
     async fn test_search_all() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        search_params.query = "text".to_string();
+        let mut search_params = SearchParamsBuilder::default()
+            .query("text".to_string())
+            .buckets(Some("test_bucket".to_string()))
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
         let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
@@ -61,10 +73,21 @@ mod searcher_endpoints {
     #[test]
     async fn test_search_bucket() {
         let other_context = OtherContext::_new("test".to_string());
-        let mut search_params = SearchParams::default();
-        let founded = other_context
-            .search(&search_params)
-            .await;
+        let mut search_params = SearchParamsBuilder::default()
+            .query("unknown-data".to_string())
+            .buckets(Some("test_bucket".to_string()))
+            .document_type(String::default())
+            .document_extension(String::default())
+            .created_date_to(String::default())
+            .created_date_from(String::default())
+            .document_size_to(0)
+            .document_size_from(0)
+            .result_size(25)
+            .result_offset(0)
+            .build()
+            .unwrap();
+
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         let build_documents = create_documents_integration_test();
@@ -73,15 +96,11 @@ mod searcher_endpoints {
         }
 
         search_params.query = "unknown".to_string();
-        let founded = other_context
-            .search(&search_params)
-            .await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 0);
 
         search_params.query = "proposals".to_string();
-        let founded = other_context
-            .search(&search_params)
-            .await;
+        let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().len(), 1);
     }
 
@@ -143,7 +162,7 @@ mod searcher_endpoints {
                 .content_md5(test_document_name.clone())
                 .content_uuid(hasher::gen_uuid())
                 .content(entity_data.to_string())
-                .content_vector(entity_data.to_string())
+                .content_vector(Vec::default())
                 .document_name(test_document_name.clone())
                 .document_path("/".to_string())
                 .document_size(document_size)
