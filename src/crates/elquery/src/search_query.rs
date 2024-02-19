@@ -12,7 +12,7 @@ impl QueryString {
         QueryString {
             query: value.to_string(),
             operator: "or".to_string(),
-            fields: vec!["entity_data".to_string(), "document_path".to_string()],
+            fields: vec!["content".to_string(), "document_path".to_string()],
         }
     }
 }
