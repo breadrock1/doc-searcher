@@ -27,7 +27,7 @@ mod tests {
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
-        assert_eq!(extracted_data_size, 5891);
+        assert_eq!(extracted_data_size, 1000);
     }
 
     #[test]
@@ -40,7 +40,7 @@ mod tests {
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
-        assert_eq!(extracted_data_size, 5633);
+        assert_eq!(extracted_data_size, 1000);
     }
 
     #[test]
@@ -66,6 +66,6 @@ mod tests {
             .collect::<Vec<String>>();
 
         let extracted_data_size = documents.first().unwrap().len();
-        assert_eq!(extracted_data_size, 6345);
+        assert_eq!(extracted_data_size, 1006);
     }
 }

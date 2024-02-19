@@ -20,7 +20,7 @@ pub fn load_passed_file_by_path(file_path: &Path) -> Vec<Document> {
     if file_path.is_file() {
         let loaded_result = load_target_file(&file_path);
         return match loaded_result {
-            Ok(document) => vec![document],
+            Ok(document) => document,
             Err(_) => Vec::default(),
         };
     }
@@ -33,7 +33,7 @@ pub fn load_passed_file_by_path(file_path: &Path) -> Vec<Document> {
         .collect()
 }
 
-fn load_target_file(file_path: &Path) -> Result<Document, Error> {
+fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
     let file_res = File::open(file_path);
     if file_res.is_err() {
         return Err(file_res.err().unwrap());
@@ -98,29 +98,45 @@ fn load_target_file(file_path: &Path) -> Result<Document, Error> {
         .unwrap_or_else(get_local_datetime)
         .into();
 
-    let uuid4_value = hasher::gen_uuid();
+    let chunks_data = file_data_.chars()
+        .collect::<Vec<char>>()
+        .chunks(1000)
+        .map(|c| c.iter().collect::<String>())
+        .collect::<Vec<String>>();
 
-    let built_file_data = DocumentBuilder::default()
-        .bucket_uuid("common_bucket".to_string())
-        .bucket_path("/".to_string())
-        .document_name(file_name_.to_string())
-        .document_path(file_path_.to_string())
-        .document_size(file_metadata.size() as i32)
-        .document_type("document".to_string())
-        .document_extension(ext_.to_string())
-        .document_permissions(perms_ as i32)
-        .document_uuid(uuid4_value)
-        .document_md5_hash(md5_hash_.to_string())
-        .document_ssdeep_hash(ssdeep_hash_.to_string())
-        .content_uuid(hasher::gen_uuid())
-        .content(file_data_)
-        .content_vector(Vec::default())
-        .document_created(Some(dt_cr_utc))
-        .document_modified(Some(dt_md_utc))
-        .highlight(None)
-        .build();
+    let mut doc_vector: Vec<Document> = Vec::with_capacity(chunks_data.len());
+    for doc_chunk in chunks_data.into_iter() {
+        let chunk_uuid4 = hasher::gen_uuid();
 
-    Ok(built_file_data.unwrap())
+        let md5_hash_chunk = gen_hash(HashType::MD5, doc_chunk.as_bytes());
+        let binding = md5_hash_chunk.unwrap();
+        let md5_hash_chunk = binding.get_hash_data();
+
+        let built_file_data = DocumentBuilder::default()
+            .bucket_uuid("common_bucket".to_string())
+            .bucket_path("/".to_string())
+            .content_uuid(chunk_uuid4)
+            .content_md5(md5_hash_chunk.to_string())
+            .content(doc_chunk.clone())
+            .content_vector(doc_chunk)
+            .document_name(file_name_.to_string())
+            .document_path(file_path_.to_string())
+            .document_size(file_metadata.size() as i32)
+            .document_type("document".to_string())
+            .document_extension(ext_.to_string())
+            .document_permissions(perms_ as i32)
+            .document_md5(md5_hash_.to_string())
+            .document_ssdeep(ssdeep_hash_.to_string())
+            .document_created(Some(dt_cr_utc))
+            .document_modified(Some(dt_md_utc))
+            .highlight(None)
+            .build()
+            .unwrap();
+
+        doc_vector.push(built_file_data);
+    }
+
+    Ok(doc_vector)
 }
 
 fn get_local_datetime(err: Error) -> SystemTime {
