@@ -28,6 +28,7 @@ jobs:
       run: cargo fmt --all --verbose
     
   test:
+    needs: [build, fmt]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
