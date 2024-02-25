@@ -1,5 +1,5 @@
 use crate::endpoints::ContextData;
-use crate::errors::*;
+use crate::errors::SuccessfulResponse;
 
 use actix_web::{get, HttpResponse};
 

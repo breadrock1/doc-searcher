@@ -1,8 +1,8 @@
 pub mod elastic;
-pub mod own_engine;
 pub mod init;
+pub mod own_engine;
 
-use crate::errors::WebResponse;
+use crate::errors::JsonResponse;
 
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
@@ -10,11 +10,11 @@ use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
-use actix_web::{web, HttpResponse};
+use actix_web::HttpResponse;
 
 use std::collections::HashMap;
 
-pub type JsonResponse<T> = WebResponse<web::Json<T>>;
+pub(crate) type GroupedDocs = HashMap<String, Vec<Document>>;
 
 #[async_trait::async_trait]
 pub trait ServiceClient {
@@ -36,11 +36,10 @@ pub trait ServiceClient {
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
     async fn download_file(&self, bucket_id: &str, file_path: &str) -> Option<NamedFile>;
 
-    async fn search(&self, s_params: &SearchParams)
-        -> JsonResponse<HashMap<String, Vec<Document>>>;
+    async fn search(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
     async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
     async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>>;
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs>;
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document>;
 }

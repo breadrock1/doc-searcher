@@ -1,5 +1,6 @@
 use crate::endpoints::ContextData;
-use crate::errors::*;
+use crate::errors::JsonResponse;
+
 use wrappers::cluster::{Cluster, ClusterForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
@@ -14,7 +15,7 @@ use actix_web::{delete, get, post, web, HttpResponse};
     )
 )]
 #[get("/all")]
-async fn all_clusters(cxt: ContextData) -> WebResponse<web::Json<Vec<Cluster>>> {
+async fn all_clusters(cxt: ContextData) -> JsonResponse<Vec<Cluster>> {
     let client = cxt.get_ref();
     client.get_all_clusters().await
 }
@@ -68,7 +69,7 @@ async fn delete_cluster(cxt: ContextData, path: web::Path<String>) -> HttpRespon
     )
 )]
 #[get("/{cluster_name}")]
-async fn get_cluster(cxt: ContextData, path: web::Path<String>) -> WebResponse<web::Json<Cluster>> {
+async fn get_cluster(cxt: ContextData, path: web::Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
     let cluster_name = format!("/_nodes/{}", path);
     client.get_cluster(cluster_name.as_str()).await

@@ -1,7 +1,7 @@
-use crate::errors::{SuccessfulResponse, WebError, WebResponse};
+use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
 use crate::service::elastic::helper;
 use crate::service::own_engine::context::OtherContext;
-use crate::service::ServiceClient;
+use crate::service::{GroupedDocs, ServiceClient};
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -13,12 +13,11 @@ use wrappers::search_params::SearchParams;
 use actix_files::NamedFile;
 use actix_web::{web, HttpResponse, ResponseError};
 
-use std::collections::HashMap;
 use std::path::Path;
 
 #[async_trait::async_trait]
 impl ServiceClient for OtherContext {
-    async fn get_all_clusters(&self) -> WebResponse<web::Json<Vec<Cluster>>> {
+    async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
         let clusters_vec = map.values().cloned().collect::<Vec<Cluster>>();
@@ -26,7 +25,7 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(clusters_vec))
     }
 
-    async fn get_cluster(&self, cluster_id: &str) -> WebResponse<web::Json<Cluster>> {
+    async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
         match map.get(cluster_id) {
@@ -71,7 +70,7 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn get_all_buckets(&self) -> WebResponse<web::Json<Vec<Bucket>>> {
+    async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
         let buckets_vec = map.values().cloned().collect::<Vec<Bucket>>();
@@ -79,7 +78,7 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(buckets_vec))
     }
 
-    async fn get_bucket(&self, bucket_id: &str) -> WebResponse<web::Json<Bucket>> {
+    async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
         match map.get(bucket_id) {
@@ -110,10 +109,10 @@ impl ServiceClient for OtherContext {
             .status("status".to_string())
             .index(uuid.clone())
             .uuid(uuid.clone())
-            .docs_count("docs_count".to_string())
-            .docs_deleted("docs_deleted".to_string())
-            .store_size("store_size".to_string())
-            .pri_store_size("pri_store_size".to_string())
+            .docs_count(Some("docs_count".to_string()))
+            .store_size(Some("store_size".to_string()))
+            .docs_deleted(Some("docs_deleted".to_string()))
+            .pri_store_size(Some("pri_store_size".to_string()))
             .pri(None)
             .rep(None)
             .build();
@@ -125,11 +124,7 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn get_document(
-        &self,
-        _bucket_id: &str,
-        doc_id: &str,
-    ) -> WebResponse<web::Json<Document>> {
+    async fn get_document(&self, _bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         match map.get(doc_id) {
@@ -185,10 +180,7 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn search(
-        &self,
-        s_params: &SearchParams,
-    ) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
+    async fn search(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -203,10 +195,7 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(grouped_docs))
     }
 
-    async fn search_tokens(
-        &self,
-        s_params: &SearchParams,
-    ) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -220,7 +209,7 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(documents_vec))
     }
 
-    async fn similarity(&self, s_params: &SearchParams) -> WebResponse<web::Json<Vec<Document>>> {
+    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -239,7 +228,7 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(documents_vec))
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<HashMap<String, Vec<Document>>> {
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs> {
         let cacher = self.get_cacher().read().await;
         let documents_opt = cacher.get_documents(s_params).await;
         let documents = documents_opt?.get_documents().to_owned();

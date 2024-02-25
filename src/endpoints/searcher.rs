@@ -1,8 +1,8 @@
 use crate::endpoints::ContextData;
-use crate::errors::WebResponse;
+use crate::errors::JsonResponse;
 
 use wrappers::document::Document;
-use wrappers::search_params::*;
+use wrappers::search_params::SearchParams;
 
 use actix_web::{post, web};
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ use std::collections::HashMap;
 async fn search_all(
     cxt: ContextData,
     form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<HashMap<String, Vec<Document>>>> {
+) -> JsonResponse<HashMap<String, Vec<Document>>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     match client.load_cache(&search_form).await {
