@@ -10,18 +10,18 @@ pub struct Bucket {
     pub status: String,
     pub index: String,
     pub uuid: String,
-    #[serde(alias = "docs.count")]
-    pub docs_count: String,
-    #[serde(alias = "docs.deleted")]
-    pub docs_deleted: String,
-    #[serde(alias = "store.size")]
-    pub store_size: String,
-    #[serde(alias = "pri.store.size")]
-    pub pri_store_size: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pri: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rep: Option<String>,
+    #[serde(alias = "docs.count", skip_serializing_if = "Option::is_none")]
+    pub docs_count: Option<String>,
+    #[serde(alias = "docs.deleted", skip_serializing_if = "Option::is_none")]
+    pub docs_deleted: Option<String>,
+    #[serde(alias = "store.size", skip_serializing_if = "Option::is_none")]
+    pub store_size: Option<String>,
+    #[serde(alias = "pri.store.size", skip_serializing_if = "Option::is_none")]
+    pub pri_store_size: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
