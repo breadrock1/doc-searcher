@@ -1,8 +1,8 @@
 use crate::endpoints::ContextData;
-use crate::errors::WebResponse;
+use crate::errors::JsonResponse;
 
 use wrappers::document::Document;
-use wrappers::search_params::*;
+use wrappers::search_params::SearchParams;
 
 use actix_web::{post, web};
 
@@ -20,7 +20,7 @@ use actix_web::{post, web};
 async fn search_similar_docs(
     cxt: ContextData,
     form: web::Json<SearchParams>,
-) -> WebResponse<web::Json<Vec<Document>>> {
+) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     client.similarity(&search_form).await

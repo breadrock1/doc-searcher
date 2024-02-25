@@ -1,4 +1,4 @@
-use crate::errors::{WebError, WebResponse};
+use crate::errors::{JsonResponse, WebError};
 use crate::service::elastic::send_status::SendDocumentStatus;
 
 use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
@@ -91,7 +91,7 @@ pub async fn search_documents(
     indexes: &[&str],
     body_value: &Value,
     es_params: &SearchParams,
-) -> WebResponse<web::Json<Vec<Document>>> {
+) -> JsonResponse<Vec<Document>> {
     let result_size = es_params.result_size;
     let result_offset = es_params.result_offset;
     let response_result = elastic
@@ -206,10 +206,10 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
         .status(status.to_string())
         .index(bucket_id.to_string())
         .uuid(uuid.to_string())
-        .docs_count(docs_count.to_string())
-        .docs_deleted(docs_deleted.to_string())
-        .store_size(store_size.to_string())
-        .pri_store_size(pri_store_size.to_string())
+        .docs_count(Some(docs_count.to_string()))
+        .docs_deleted(Some(docs_deleted.to_string()))
+        .store_size(Some(store_size.to_string()))
+        .pri_store_size(Some(pri_store_size.to_string()))
         .pri(None)
         .rep(None)
         .build();
@@ -218,7 +218,7 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
 }
 
 pub fn create_bucket_scheme() -> String {
-    let schema = BucketSchema::new();
+    let schema = BucketSchema::default();
     serde_json::to_string_pretty(&schema).unwrap()
 }
 

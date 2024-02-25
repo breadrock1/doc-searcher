@@ -1,5 +1,6 @@
 use crate::endpoints::ContextData;
-use crate::errors::WebResponse;
+use crate::errors::JsonResponse;
+
 use wrappers::bucket::{Bucket, BucketForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
@@ -14,7 +15,7 @@ use actix_web::{delete, get, post, web, HttpResponse};
     )
 )]
 #[get("/all")]
-async fn all_buckets(cxt: ContextData) -> WebResponse<web::Json<Vec<Bucket>>> {
+async fn all_buckets(cxt: ContextData) -> JsonResponse<Vec<Bucket>> {
     let client = cxt.get_ref();
     client.get_all_buckets().await
 }
@@ -84,7 +85,7 @@ async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpRespons
     )
 )]
 #[get("/{bucket_name}")]
-async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> WebResponse<web::Json<Bucket>> {
+async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> JsonResponse<Bucket> {
     let client = cxt.get_ref();
     let bucket_name = format!("/{}/_stats", path);
     client.get_bucket(bucket_name.as_str()).await

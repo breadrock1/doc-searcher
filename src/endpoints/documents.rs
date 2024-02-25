@@ -1,5 +1,6 @@
 use crate::endpoints::ContextData;
-use crate::errors::WebResponse;
+use crate::errors::JsonResponse;
+
 use wrappers::document::Document;
 
 use actix_web::{delete, get, post, put, web, HttpResponse};
@@ -77,7 +78,7 @@ async fn delete_document(cxt: ContextData, path: web::Path<(String, String)>) ->
 async fn get_document(
     cxt: ContextData,
     path: web::Path<(String, String)>,
-) -> WebResponse<web::Json<Document>> {
+) -> JsonResponse<Document> {
     let client = cxt.get_ref();
     let (bucket_name, doc_id) = path.as_ref();
     client
