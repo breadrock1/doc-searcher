@@ -1,11 +1,10 @@
 use actix_web::http::StatusCode;
-use actix_web::{HttpResponse, ResponseError};
-use elasticsearch::Error;
+use actix_web::{web, HttpResponse, ResponseError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
 
-pub type WebResponse<T> = Result<T, WebError>;
+pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
 
 #[derive(Error, Debug)]
 pub enum WebError {
@@ -58,13 +57,19 @@ impl WebError {
 }
 
 impl From<elasticsearch::Error> for WebError {
-    fn from(value: Error) -> Self {
+    fn from(value: elasticsearch::Error) -> Self {
+        WebError::ResponseError(value.to_string())
+    }
+}
+
+impl From<serde_json::Error> for WebError {
+    fn from(value: serde_json::Error) -> Self {
         WebError::ResponseError(value.to_string())
     }
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct ErrorResponse {
+pub(crate) struct ErrorResponse {
     pub code: u16,
     pub error: String,
     pub message: String,
@@ -99,7 +104,7 @@ impl ResponseError for WebError {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct SuccessfulResponse {
+pub(crate) struct SuccessfulResponse {
     pub code: u16,
     pub message: String,
 }
