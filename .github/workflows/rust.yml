@@ -14,14 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Apt dependencies
-      run: |
-        sudo apt-get install -y build-essential pkg-config  \
-            libssl-dev libopencv-dev libcanberra-gtk3-module \
-            liblept5 libleptonica-dev tesseract-ocr
-            libtesseract-dev libsdl-pango-dev libicu-dev \
-            libcairo2-dev bc ssdeep
-            
     - name: Build
       run: cargo build --verbose
   
