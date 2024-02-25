@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Download dependencies
+      run: |
+        sudo apt-get install pkg-config liblept5 libleptonica-dev
     - name: Build
       run: cargo build --verbose
   
