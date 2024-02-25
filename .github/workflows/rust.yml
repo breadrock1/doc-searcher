@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Fmt
-      run: cargo fmr --all --verbose
+      run: cargo fmt --all --verbose
     
   test:
     runs-on: ubuntu-latest
