@@ -31,6 +31,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "docx")]
     fn test_load_docx_file_entity() {
         let file_path = "./src/crates/loader/resources/test.docx";
         let path_object = Path::new(file_path);
@@ -44,6 +45,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "excel")]
     fn test_load_excel_file_entity() {
         let file_path = "./src/crates/loader/resources/test.xls";
         let path_object = Path::new(file_path);
@@ -57,6 +59,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "pdf")]
     fn test_load_pdf_file_entity() {
         let file_path = "./src/crates/loader/resources/test.pdf";
         let path_object = Path::new(file_path);

@@ -1,3 +1,5 @@
+#![allow(unused_imports, dead_code)]
+
 use docx::document::{BodyContent, ParagraphContent, TableCellContent};
 use docx::DocxFile;
 use std::path::Path;

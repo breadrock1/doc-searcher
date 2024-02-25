@@ -1,3 +1,5 @@
+#![allow(unused_imports, dead_code)]
+
 use office::{DataType, Excel, Range};
 
 use std::io::Error;
