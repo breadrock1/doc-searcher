@@ -1,21 +1,12 @@
 use serde_derive::Serialize;
 
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 pub struct BucketSchema {
     _source: EnabledFlag,
     properties: PropertiesSchema,
 }
 
-impl BucketSchema {
-    pub fn new() -> Self {
-        BucketSchema {
-            _source: EnabledFlag::disabled(),
-            properties: PropertiesSchema::default(),
-        }
-    }
-}
-
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 struct EnabledFlag {
     enabled: bool,
 }
@@ -25,7 +16,7 @@ impl EnabledFlag {
         EnabledFlag { enabled: true }
     }
 
-    pub fn disabled() -> Self {
+    pub fn _disabled() -> Self {
         EnabledFlag { enabled: false }
     }
 }

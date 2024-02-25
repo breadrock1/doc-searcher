@@ -1,6 +1,9 @@
+#![allow(unused_imports, dead_code)]
+
 use dotenv::dotenv;
 use pdfium_render::prelude::Pdfium;
 use pdfium_render::prelude::PdfiumError;
+
 use std::io::ErrorKind;
 use std::path::Path;
 

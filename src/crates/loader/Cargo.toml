@@ -3,6 +3,15 @@ name = "loader"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+docx = []
+excel = []
+pdf = []
+video = []
+audio = []
+image = []
+default = []
+
 [dependencies]
 chrono = "^0.4"
 derive_builder = "^0.12"
