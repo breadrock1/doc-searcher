@@ -1,3 +1,5 @@
+use crate::bucket::DEFAULT_BUCKET_NAME;
+
 use serde_derive::Deserialize;
 use utoipa::IntoParams;
 
@@ -15,7 +17,7 @@ impl LoadFileForm {
 
     pub fn get_bucket(&self) -> &str {
         match self.bucket_name.as_ref() {
-            None => "common_bucket",
+            None => DEFAULT_BUCKET_NAME,
             Some(name) => name.as_str(),
         }
     }

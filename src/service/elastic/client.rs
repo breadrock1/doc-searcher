@@ -6,6 +6,7 @@ use crate::service::{GroupedDocs, JsonResponse, ServiceClient};
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
 use hasher::{gen_hash, HashType};
+use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
@@ -426,11 +427,15 @@ impl ServiceClient for ElasticContext {
     async fn search(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_search_query(s_params);
-        let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
+        let buckets = s_params
+            .buckets
+            .to_owned()
+            .unwrap_or(DEFAULT_BUCKET_NAME.to_string());
         let indexes = buckets.split(',').collect::<Vec<&str>>();
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => {
-                let documents = self.insert_cache(s_params, documents.0).await;
+                let mut documents = self.insert_cache(s_params, documents.0).await;
+                documents.iter_mut().for_each(Document::exclude_tokens);
                 let grouped_docs = helper::group_document_chunks(documents);
                 Ok(web::Json(grouped_docs))
             }

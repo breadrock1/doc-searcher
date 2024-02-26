@@ -44,4 +44,8 @@ impl Document {
     pub fn append_highlight(&mut self, highlight: Option<HighlightEntity>) {
         self.highlight = highlight
     }
+
+    pub fn exclude_tokens(&mut self) {
+        self.content_vector = Vec::default();
+    }
 }

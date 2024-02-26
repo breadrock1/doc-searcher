@@ -6,7 +6,7 @@ use crate::endpoints::documents::{delete_document, get_document, new_document, u
 use crate::endpoints::hello::hello;
 
 use crate::endpoints::loader::{download_file, load_file};
-use crate::endpoints::searcher::search_all;
+use crate::endpoints::searcher::{search_all, search_tokens};
 use crate::endpoints::similarities::search_similar_docs;
 
 use actix_cors::Cors;
@@ -127,7 +127,9 @@ pub fn build_document_scope() -> Scope {
 }
 
 pub fn build_search_scope() -> Scope {
-    web::scope("/search").service(search_all)
+    web::scope("/search")
+        .service(search_all)
+        .service(search_tokens)
 }
 
 pub fn build_similar_scope() -> Scope {
