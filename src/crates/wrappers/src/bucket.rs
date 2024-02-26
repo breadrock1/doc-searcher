@@ -4,6 +4,8 @@ use utoipa::ToSchema;
 
 use std::fmt::Display;
 
+pub const DEFAULT_BUCKET_NAME: &str = "common_bucket";
+
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
 pub struct Bucket {
     pub health: String,
@@ -38,7 +40,7 @@ impl Display for BucketForm {
 
 impl Default for BucketForm {
     fn default() -> Self {
-        BucketForm::new("common_bucket")
+        BucketForm::new(DEFAULT_BUCKET_NAME)
     }
 }
 

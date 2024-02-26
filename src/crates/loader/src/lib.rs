@@ -6,6 +6,7 @@ use crate::file_kind::FileKind;
 use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
 use text_splitter::TextSplitter;
+use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::document::Document;
 use wrappers::document::DocumentBuilder;
 
@@ -116,7 +117,7 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
         let md5_hash_chunk = binding.get_hash_data();
 
         let built_file_data = DocumentBuilder::default()
-            .bucket_uuid("common_bucket".to_string())
+            .bucket_uuid(DEFAULT_BUCKET_NAME.to_string())
             .bucket_path("/".to_string())
             .content_uuid(chunk_uuid4)
             .content_md5(md5_hash_chunk.to_string())

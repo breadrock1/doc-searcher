@@ -30,6 +30,34 @@ async fn search_all(
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/search/tokens",
+    tag = "Search stored documents tokens by passed query and filters",
+    request_body = SearchParams,
+    responses(
+        (status = 200, description = "Successful", body = [Document]),
+        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+    )
+)]
+#[post("/tokens")]
+async fn search_tokens(
+    cxt: ContextData,
+    form: web::Json<SearchParams>,
+) -> JsonResponse<Vec<Document>> {
+    let client = cxt.get_ref();
+    let search_form = form.0;
+    match client.load_cache(&search_form).await {
+        None => client.search_tokens(&search_form).await,
+        Some(documents) => Ok(web::Json(
+            documents
+                .values()
+                .flat_map(|test| test.to_owned())
+                .collect::<Vec<Document>>(),
+        )),
+    }
+}
+
 #[cfg(test)]
 mod searcher_endpoints {
     use crate::service::own_engine::context::OtherContext;
