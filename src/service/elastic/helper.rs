@@ -134,8 +134,14 @@ pub async fn parse_search_result(response: Response) -> Vec<Document> {
 
 fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
     let source_value = value[&"_source"].to_owned();
-    let mut document = Document::deserialize(source_value)?;
+    let document_result = Document::deserialize(source_value);
+    if document_result.is_err() {
+        let err = document_result.err().unwrap();
+        println!("Failed while deserialize doc: {}", err);
+        return Err(err);
+    }
 
+    let mut document = document_result?;
     let highlight_value = value[&"highlight"].to_owned();
     let highlight_entity = HighlightEntity::deserialize(highlight_value).ok();
 
@@ -226,7 +232,7 @@ pub fn group_document_chunks(documents: Vec<Document>) -> HashMap<String, Vec<Do
     let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
     documents.into_iter().for_each(|doc| {
         grouped_documents
-            .entry(doc.content_md5.clone())
+            .entry(doc.content_md5.to_owned())
             .or_default()
             .push(doc)
     });
