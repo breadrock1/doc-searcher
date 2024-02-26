@@ -1,3 +1,5 @@
+use crate::bucket::DEFAULT_BUCKET_NAME;
+
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -20,7 +22,7 @@ impl Default for SearchParams {
     fn default() -> Self {
         SearchParamsBuilder::default()
             .query("*".to_string())
-            .buckets(Some("common_bucket".to_string()))
+            .buckets(Some(DEFAULT_BUCKET_NAME.to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
