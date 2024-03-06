@@ -1,7 +1,6 @@
 use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
-use crate::service::elastic::helper;
 use crate::service::own_engine::context::OtherContext;
-use crate::service::{GroupedDocs, ServiceClient};
+use crate::service::ServiceClient;
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -180,7 +179,7 @@ impl ServiceClient for OtherContext {
         }
     }
 
-    async fn search(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn search(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -191,8 +190,7 @@ impl ServiceClient for OtherContext {
             .cloned()
             .collect::<Vec<Document>>();
 
-        let grouped_docs = helper::group_document_chunks(documents_vec);
-        Ok(web::Json(grouped_docs))
+        Ok(web::Json(documents_vec))
     }
 
     async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
@@ -228,12 +226,11 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(documents_vec))
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs> {
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
         let documents_opt = cacher.get_documents(s_params).await;
         let documents = documents_opt?.get_documents().to_owned();
-        let grouped_docs = helper::group_document_chunks(documents);
-        Some(grouped_docs)
+        Some(documents)
     }
 
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
