@@ -1,6 +1,6 @@
 [package]
-name = "docsearcher"
-version = "0.1.0"
+name = "doc-search"
+version = "0.1.20"
 edition = "2021"
 
 [badges]
@@ -22,10 +22,7 @@ serde = "^1.0"
 serde_derive = "^1.0"
 serde_json = "^1.0"
 thiserror = "^1.0"
-tokio = { version = "^1.32", features = ["full"] }
 walkdir = "^2.4"
-utoipa = { version = "3", features = ["actix_extras"] }
-utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 
 cacher = { path = "src/crates/cacher" }
 datetime = { path = "src/crates/datetime" }
@@ -37,6 +34,18 @@ wrappers = { path = "src/crates/wrappers" }
 [dependencies.chrono]
 version = "^0.4"
 features = ["rustc-serialize", "serde"]
+
+[dependencies.tokio]
+version = "^1.36"
+features = ["full"]
+
+[dependencies.utoipa]
+version = "^3.5"
+features = ["actix_extras"]
+
+[dependencies.utoipa-swagger-ui]
+version = "^3.1"
+features = ["actix-web"]
 
 [[test]]
 name = "datetime_tests"
