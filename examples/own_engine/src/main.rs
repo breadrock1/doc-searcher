@@ -1,11 +1,11 @@
-extern crate docsearcher;
+extern crate doc_search;
 
-use docsearcher::service::init::*;
-use docsearcher::swagger::ApiDoc;
-use docsearcher::swagger::OpenApi;
-use docsearcher::service::ServiceClient;
-use docsearcher::swagger::create_service;
-use docsearcher::service::own_engine::context::OtherContext;
+use doc_search::service::init::*;
+use doc_search::swagger::ApiDoc;
+use doc_search::swagger::OpenApi;
+use doc_search::service::ServiceClient;
+use doc_search::swagger::create_service;
+use doc_search::service::own_engine::context::OtherContext;
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -49,7 +49,7 @@ async fn main() -> Result<(), anyhow::Error> {
 }
 
 fn build_client_service(es_host: &str, es_user: &str, es_passwd: &str) -> OtherContext {
-    use docsearcher::service::own_engine::build_own_client;
+    use doc_search::service::own_engine::build_own_client;
     let client = build_own_client(es_host, es_user, es_passwd);
     client.unwrap()
 }
