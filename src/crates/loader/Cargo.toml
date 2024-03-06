@@ -17,6 +17,7 @@ chrono = "^0.4"
 derive_builder = "^0.12"
 dotenv = "^0.15"
 walkdir = "^2.4"
+
 hasher = { path = "../hasher" }
 wrappers = { path = "../wrappers" }
 
