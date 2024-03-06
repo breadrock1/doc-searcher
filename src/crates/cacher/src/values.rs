@@ -32,6 +32,14 @@ pub struct VecCacherDocuments {
     pub cacher_documents: Vec<Document>,
 }
 
+pub(crate) fn from_redis_value_to_doc_vec(value: &Value) -> RedisResult<VecCacherDocuments> {
+    VecCacherDocuments::from_redis_value(value)
+}
+
+pub(crate) fn from_redis_value_to_doc_vec_2(value: Value) -> RedisResult<VecCacherDocuments> {
+    VecCacherDocuments::from_redis_value(&value)
+}
+
 impl VecCacherDocuments {
     pub fn get_documents(&self) -> &Vec<Document> {
         &self.cacher_documents
