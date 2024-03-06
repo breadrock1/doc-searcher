@@ -7,12 +7,9 @@ services:
     container_name: elasticsearch
     restart: on-failure
     environment:
-      - "ES_JAVA_OPTS=-Xmx2048m -Xms2048m"
-      - bootstrap.memory_lock=true
       - discovery.type=single-node
-      - cluster.name=main-cluster
+      - cluster.name=master
       - ELASTIC_PASSWORD=elasticsearch
-      - DISABLE_SECURITY_PLUGIN=true
     ulimits:
       memlock:
         soft: -1
@@ -20,17 +17,15 @@ services:
     ports:
       - "9200:9200"
     networks:
-      - elastic-net
+      - elasticnet
     volumes:
       - esdata1:/usr/share/elasticsearch/data
 
   docsearcher:
     depends_on:
       - elasticsearch
-    build:
-      context: ./
-      dockerfile: ./Dockerfile
-    container_name: searcher
+    image: doc-searcher:latest
+    container_name: docsearcher
     environment:
       - ELASTIC_HOST=http://elasticsearch:9200
       - ELASTIC_PASSWORD=elasticsearch
@@ -41,24 +36,27 @@ services:
     ports:
       - "2892:2892"
     networks:
-      - elastic-net
+      - elasticnet
     volumes:
       - dsdata1:/archiver
 
-  fsnotifier:
+  docnotifier:
     depends_on:
       - docsearcher
-    image: fs-notifier:latest
-    container_name: fs-notifier
+    image: doc-notifier:latest
+    container_name: docnotifier
     restart: on-failure
     environment:
-      - ARCHIVER_DIRECTORIES_PATH=/indexer
-      - DOC_SEARCHER_ADDRESS=http://docsearcher:2892
-      - ASSISTANT_SERVICE_ADDRESS=http://localhost:8000
+      - IS_LOAD_CHUNKS=true
+      - READ_RAW_FILE=false
+      - LLM_ADDRESS=http://llm:8001
+      - OCR_ADDRESS=http://ocr:9092
+      - DOC_ADDRESS=http://docsearcher:2892
+      - WATCHER_DIR_PATHS=/indexer
     ports:
       - "9800:9800"
     networks:
-      - elastic-net
+      - elasticnet
     volumes:
       - /data/archiver:/indexer
 
@@ -67,11 +65,13 @@ services:
       - elasticsearch
     image: kibana:8.11.2
     container_name: kibana
-    ports:
-      - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - elasticnet
 
 volumes:
   esdata1:
@@ -80,4 +80,4 @@ volumes:
     driver: local
 
 networks:
-  elastic-net:
+  elasticnet:
