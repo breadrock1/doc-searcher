@@ -5,7 +5,6 @@ use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_web::{post, web};
-use std::collections::HashMap;
 
 #[utoipa::path(
     post,
@@ -21,7 +20,7 @@ use std::collections::HashMap;
 async fn search_all(
     cxt: ContextData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<HashMap<String, Vec<Document>>> {
+) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     match client.load_cache(&search_form).await {
@@ -49,12 +48,7 @@ async fn search_tokens(
     let search_form = form.0;
     match client.load_cache(&search_form).await {
         None => client.search_tokens(&search_form).await,
-        Some(documents) => Ok(web::Json(
-            documents
-                .values()
-                .flat_map(|test| test.to_owned())
-                .collect::<Vec<Document>>(),
-        )),
+        Some(documents) => Ok(web::Json(documents)),
     }
 }
 

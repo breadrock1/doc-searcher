@@ -1,7 +1,7 @@
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
 use crate::service::elastic::helper;
-use crate::service::{GroupedDocs, JsonResponse, ServiceClient};
+use crate::service::{JsonResponse, ServiceClient};
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -302,7 +302,7 @@ impl ServiceClient for ElasticContext {
             true => HttpResponse::new(StatusCode::OK),
             false => {
                 let msg = format!("Failed while parsing elastic response: {}", doc_id);
-                println!("Failed while creating doc: {}", msg);
+                println!("Failed while sending doc to elastic: {}", msg);
                 WebError::CreateDocument(msg).error_response()
             }
         }
@@ -424,7 +424,7 @@ impl ServiceClient for ElasticContext {
         }
     }
 
-    async fn search(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn search(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_search_query(s_params);
         let buckets = s_params
@@ -434,10 +434,8 @@ impl ServiceClient for ElasticContext {
         let indexes = buckets.split(',').collect::<Vec<&str>>();
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => {
-                let mut documents = self.insert_cache(s_params, documents.0).await;
-                documents.iter_mut().for_each(Document::exclude_tokens);
-                let grouped_docs = helper::group_document_chunks(documents);
-                Ok(web::Json(grouped_docs))
+                let documents = self.insert_cache(s_params, documents.0).await;
+                Ok(web::Json(documents))
             }
             Err(err) => {
                 println!("Failed while searching documents: {}", err);
@@ -473,12 +471,11 @@ impl ServiceClient for ElasticContext {
         helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs> {
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
         let documents_opt = cacher.get_documents(s_params).await;
         let documents = documents_opt?.get_documents().to_owned();
-        let grouped_docs = helper::group_document_chunks(documents);
-        Some(grouped_docs)
+        Some(documents)
     }
 
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
