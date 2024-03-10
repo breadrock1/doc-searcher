@@ -26,6 +26,8 @@ pub struct ServiceParameters {
     service_addr: String,
     service_port: u16,
     cors_origin: String,
+    logger_mw_addr: String,
+    cacher_addr: String,
 }
 
 impl ServiceParameters {
@@ -43,6 +45,18 @@ impl ServiceParameters {
 
     pub fn service_address(&self) -> &str {
         self.service_addr.as_str()
+    }
+
+    pub fn cors_origin(&self) -> &str {
+        self.cors_origin.as_str()
+    }
+
+    pub fn logger_mw(&self) -> &str {
+        self.logger_mw_addr.as_str()
+    }
+
+    pub fn cacher_addr(&self) -> &str {
+        self.cacher_addr.as_str()
     }
 
     pub fn service_port(&self) -> u16 {
@@ -63,6 +77,8 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     let es_passwd = var("ELASTIC_PASSWORD").expect("There is not ELASTIC_PASSWORD env variable!");
     let client_addr = var("SEARCHER_ADDRESS").expect("There is not SEARCHER_ADDRESS env variable!");
     let client_port = var("SEARCHER_PORT").expect("There is not SEARCHER_PORT env variable!");
+    let logger_wm = var("LOGGER_ADDR").expect("There is not LOGGER_ADDR env variable!");
+    let cacher_addr = var("CACHER_HOST").expect("There is not CACHER_HOST env variable!");
     let cors_origins: String = var("CORS_ORIGIN").expect("There is not CORS_ORIGIN env variable!");
     let client_port =
         u16::from_str(client_port.as_str()).expect("Failed while parsing port number.");
@@ -71,9 +87,11 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
         .es_host(es_host)
         .es_user(es_user)
         .es_passwd(es_passwd)
+        .cacher_addr(cacher_addr)
         .service_addr(client_addr)
         .service_port(client_port)
         .cors_origin(cors_origins)
+        .logger_mw_addr(logger_wm)
         .build();
 
     Ok(service.unwrap())
