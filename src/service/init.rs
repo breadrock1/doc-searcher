@@ -9,6 +9,11 @@ use crate::endpoints::loader::{download_file, load_file};
 use crate::endpoints::searcher::{search_all, search_tokens};
 use crate::endpoints::similarities::search_similar_docs;
 
+#[cfg(feature = "chunked")]
+use crate::endpoints::searcher::{search_chunked, search_chunked_tokens};
+#[cfg(feature = "chunked")]
+use crate::endpoints::similarities::search_similar_chunkec_docs;
+
 use actix_cors::Cors;
 use actix_web::http::header;
 use actix_web::{web, Scope};
@@ -145,12 +150,24 @@ pub fn build_document_scope() -> Scope {
 }
 
 pub fn build_search_scope() -> Scope {
+    #[cfg(feature = "chunked")]
+    if cfg!(feature = "chunked") {
+        return web::scope("/search")
+            .service(search_chunked)
+            .service(search_chunked_tokens);
+    }
+
     web::scope("/search")
         .service(search_all)
         .service(search_tokens)
 }
 
 pub fn build_similar_scope() -> Scope {
+    #[cfg(feature = "chunked")]
+    if cfg!(feature = "chunked") {
+        return web::scope("/similar").service(search_similar_chunkec_docs);
+    }
+
     web::scope("/similar").service(search_similar_docs)
 }
 

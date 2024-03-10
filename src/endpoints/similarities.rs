@@ -1,6 +1,9 @@
 use crate::endpoints::ContextData;
 use crate::errors::JsonResponse;
 
+#[cfg(feature = "chunked")]
+use crate::service::GroupedDocs;
+
 use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
@@ -23,7 +26,36 @@ async fn search_similar_docs(
 ) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.similarity(&search_form).await
+
+    #[cfg(feature = "no-cache")]
+    if cfg!(feature = "no-cache") {
+        return client.similarity(&search_form).await;
+    }
+
+    match client.load_cache(&search_form).await {
+        None => client.similarity(&search_form).await,
+        Some(documents) => Ok(web::Json(documents)),
+    }
+}
+
+#[cfg(feature = "chunked")]
+#[post("/")]
+async fn search_similar_chunkec_docs(
+    cxt: ContextData,
+    form: web::Json<SearchParams>,
+) -> JsonResponse<GroupedDocs> {
+    let client = cxt.get_ref();
+    let search_form = form.0;
+
+    #[cfg(feature = "no-cache")]
+    if cfg!(feature = "no-cache") {
+        return client.similarity_chunked(&search_form).await;
+    }
+
+    match client.load_chunked_cache(&search_form).await {
+        None => client.similarity_chunked(&search_form).await,
+        Some(documents) => Ok(web::Json(documents)),
+    }
 }
 
 #[cfg(test)]
