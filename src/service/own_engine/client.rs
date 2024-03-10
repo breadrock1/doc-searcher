@@ -1,6 +1,9 @@
 use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
 use crate::service::own_engine::context::OtherContext;
-use crate::service::{GroupedDocs, ServiceClient};
+use crate::service::ServiceClient;
+
+#[cfg(feature = "chunked")]
+use crate::service::GroupedDocs;
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -156,7 +159,7 @@ impl ServiceClient for OtherContext {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.documents.write().await;
         match map.insert(doc_form.document_name.clone(), doc_form.clone()) {
-            Some(document) => SuccessfulResponse::ok_response("Ok"),
+            Some(_document) => SuccessfulResponse::ok_response("Ok"),
             None => {
                 let msg = "Something wrong".to_string();
                 log::warn!("Failed while creating document: {}", msg.as_str());
