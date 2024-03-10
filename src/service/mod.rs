@@ -10,7 +10,11 @@ use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
-use actix_web::HttpResponse;
+use actix_web::{web, HttpResponse};
+
+use std::collections::HashMap;
+
+pub type GroupedDocs = HashMap<String, Vec<Document>>;
 
 #[async_trait::async_trait]
 pub trait ServiceClient {
@@ -36,6 +40,30 @@ pub trait ServiceClient {
     async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
     async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>>;
     async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document>;
+    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>>;
+
+    #[cfg(feature = "chunked")]
+    async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
+
+    #[cfg(feature = "chunked")]
+    async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
+
+    #[cfg(feature = "chunked")]
+    async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
+
+    #[cfg(feature = "chunked")]
+    async fn load_chunked_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs>;
+
+    fn group_document_chunks(&self, documents: Vec<Document>) -> HashMap<String, Vec<Document>> {
+        let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
+        documents.into_iter().for_each(|doc| {
+            grouped_documents
+                .entry(doc.content_md5.to_owned())
+                .or_default()
+                .push(doc)
+        });
+
+        grouped_documents
+    }
 }

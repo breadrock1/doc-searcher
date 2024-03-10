@@ -1,6 +1,6 @@
 use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
 use crate::service::own_engine::context::OtherContext;
-use crate::service::ServiceClient;
+use crate::service::{GroupedDocs, ServiceClient};
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
@@ -30,7 +30,7 @@ impl ServiceClient for OtherContext {
         match map.get(cluster_id) {
             Some(cluster) => Ok(web::Json(cluster.clone())),
             None => {
-                println!("Failed while getting cluster: {}", cluster_id);
+                log::warn!("Failed while getting cluster: {}", cluster_id);
                 let msg = "failed to get cluster".to_string();
                 Err(WebError::GetCluster(msg))
             }
@@ -55,8 +55,12 @@ impl ServiceClient for OtherContext {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.clusters.write().await;
         match map.insert(cluster_id.to_string(), cluster) {
-            None => SuccessfulResponse::ok_response("Ok"),
             Some(_) => SuccessfulResponse::ok_response("Updated"),
+            None => {
+                let msg = "Somthing wrong".to_string();
+                log::warn!("Failed while creating cluster: {}", msg.as_str());
+                WebError::CreateCluster(msg).error_response()
+            }
         }
     }
 
@@ -65,7 +69,11 @@ impl ServiceClient for OtherContext {
         let mut map = cxt.clusters.write().await;
         match map.remove(cluster_id) {
             Some(_) => SuccessfulResponse::ok_response("Ok"),
-            None => SuccessfulResponse::ok_response("Not exist cluster"),
+            None => {
+                let msg = "Not exist cluster".to_string();
+                log::warn!("Failed while deleting cluster: {}", msg.as_str());
+                WebError::DeletingCluster(msg).error_response()
+            }
         }
     }
 
@@ -83,8 +91,8 @@ impl ServiceClient for OtherContext {
         match map.get(bucket_id) {
             Some(bucket) => Ok(web::Json(bucket.clone())),
             None => {
-                println!("Failed while getting bucket {}", bucket_id);
-                let msg = "failed to get bucket".to_string();
+                let msg = "Not exists".to_string();
+                log::warn!("Failed while getting bucket {}", bucket_id);
                 Err(WebError::GetBucket(msg))
             }
         }
@@ -96,7 +104,11 @@ impl ServiceClient for OtherContext {
         let mut map = cxt.buckets.write().await;
         match map.remove(&uuid) {
             Some(_) => SuccessfulResponse::ok_response("Ok"),
-            None => SuccessfulResponse::ok_response("Empty buckets"),
+            None => {
+                let msg = "Does not exist".to_string();
+                log::warn!("Failed while deleting bucket: {}", msg.as_str());
+                WebError::DeleteBucket(msg).error_response()
+            }
         }
     }
 
@@ -118,8 +130,12 @@ impl ServiceClient for OtherContext {
 
         let mut map = cxt.buckets.write().await;
         match map.insert(uuid, built_bucket.unwrap()) {
-            None => SuccessfulResponse::ok_response("Ok"),
             Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
+            None => {
+                let msg = "Something wrong".to_string();
+                log::warn!("Failed while creating bucket: {}", msg.as_str());
+                WebError::CreateBucket(msg).error_response()
+            }
         }
     }
 
@@ -129,7 +145,8 @@ impl ServiceClient for OtherContext {
         match map.get(doc_id) {
             Some(document) => Ok(web::Json(document.clone())),
             None => {
-                let msg = "failed to get document".to_string();
+                let msg = "Does not exist".to_string();
+                log::warn!("Failed while getting bucket: {}", msg.as_str());
                 Err(WebError::GetDocument(msg))
             }
         }
@@ -139,8 +156,12 @@ impl ServiceClient for OtherContext {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.documents.write().await;
         match map.insert(doc_form.document_name.clone(), doc_form.clone()) {
-            None => SuccessfulResponse::ok_response("Ok"),
-            Some(document) => SuccessfulResponse::ok_response(document.document_name.as_str()),
+            Some(document) => SuccessfulResponse::ok_response("Ok"),
+            None => {
+                let msg = "Something wrong".to_string();
+                log::warn!("Failed while creating document: {}", msg.as_str());
+                WebError::CreateDocument(msg).error_response()
+            }
         }
     }
 
@@ -152,8 +173,12 @@ impl ServiceClient for OtherContext {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.documents.write().await;
         match map.remove(doc_id) {
-            None => SuccessfulResponse::ok_response("Not existing document"),
-            Some(document) => SuccessfulResponse::ok_response(document.document_name.as_str()),
+            Some(_) => SuccessfulResponse::ok_response("Ok"),
+            None => {
+                let msg = "Does not exist".to_string();
+                log::warn!("Failed while deleting document: {}", msg.as_str());
+                WebError::DeleteDocument(msg).error_response()
+            }
         }
     }
 
@@ -161,8 +186,8 @@ impl ServiceClient for OtherContext {
         let path = Path::new(file_path);
         let file_data_vec = loader::load_passed_file_by_path(path);
         if file_data_vec.is_empty() {
-            let msg = "failed to load file".to_string();
-            println!("Failed load file to bucket `{}`: {}", bucket_id, msg);
+            let msg = "Failed to load file".to_string();
+            log::warn!("Failed load file to bucket `{}`: {}", bucket_id, msg);
             return WebError::LoadFileFailed(msg).error_response();
         }
 
@@ -173,7 +198,7 @@ impl ServiceClient for OtherContext {
         match actix_files::NamedFile::open_async(file_path).await {
             Ok(named_file) => Some(named_file),
             Err(err) => {
-                println!("Failed while opening async streaming: {}", err);
+                log::error!("Failed while opening async streaming: {}", err);
                 None
             }
         }
@@ -228,8 +253,8 @@ impl ServiceClient for OtherContext {
 
     async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
         let cacher = self.get_cacher().read().await;
-        let documents_opt = cacher.get_documents(s_params).await;
-        let documents = documents_opt?.get_documents().to_owned();
+        let documents_opt = cacher.get_documents(s_params).await?;
+        let documents = documents_opt.get_documents().to_owned();
         Some(documents)
     }
 
@@ -241,5 +266,59 @@ impl ServiceClient for OtherContext {
             .await
             .get_documents()
             .to_owned()
+    }
+
+    #[cfg(feature = "chunked")]
+    async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+        match self.search(s_params).await {
+            Err(err) => {
+                log::error!("Failed while searchcing documents: {}", err);
+                Err(err)
+            }
+            Ok(docs) => {
+                let grouped_docs = self.group_document_chunks(docs.0);
+                Ok(web::Json(grouped_docs))
+            }
+        }
+    }
+
+    #[cfg(feature = "chunked")]
+    async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+        match self.search_tokens(s_params).await {
+            Err(err) => {
+                log::error!("Failed while searchcing documents tokens: {}", err);
+                Err(err)
+            }
+            Ok(docs) => {
+                let grouped_docs = self.group_document_chunks(docs.0);
+                Ok(web::Json(grouped_docs))
+            }
+        }
+    }
+
+    #[cfg(feature = "chunked")]
+    async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+        match self.similarity(s_params).await {
+            Err(err) => {
+                log::error!("Failed while searchcing similar documents: {}", err);
+                Err(err)
+            }
+            Ok(docs) => {
+                let grouped_docs = self.group_document_chunks(docs.0);
+                Ok(web::Json(grouped_docs))
+            }
+        }
+    }
+
+    #[cfg(feature = "chunked")]
+    async fn load_chunked_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs> {
+        let cached_opt = self.load_cache(s_params).await;
+        if cached_opt.is_none() {
+            let query_str = s_params.query.as_str();
+            log::warn!("Returned empty data from cache for: {}", query_str);
+            return None;
+        }
+
+        Some(self.group_document_chunks(cached_opt?))
     }
 }

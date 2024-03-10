@@ -16,7 +16,6 @@ use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, CountParts, Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::collections::HashMap;
 use std::string::ToString;
 use tokio::sync::RwLockReadGuard;
 
@@ -226,16 +225,4 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
 pub fn create_bucket_scheme() -> String {
     let schema = BucketSchema::default();
     serde_json::to_string_pretty(&schema).unwrap()
-}
-
-pub fn group_document_chunks(documents: Vec<Document>) -> HashMap<String, Vec<Document>> {
-    let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
-    documents.into_iter().for_each(|doc| {
-        grouped_documents
-            .entry(doc.content_md5.to_owned())
-            .or_default()
-            .push(doc)
-    });
-
-    grouped_documents
 }

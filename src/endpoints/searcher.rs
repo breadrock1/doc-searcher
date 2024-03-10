@@ -1,6 +1,9 @@
 use crate::endpoints::ContextData;
 use crate::errors::JsonResponse;
 
+#[cfg(feature = "chunked")]
+use crate::service::GroupedDocs;
+
 use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
@@ -23,9 +26,35 @@ async fn search_all(
 ) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
+
+    #[cfg(feature = "no-cache")]
+    if cfg!(feature = "no-cache") {
+        return client.search(&search_form).await;
+    }
+
     match client.load_cache(&search_form).await {
         None => client.search(&search_form).await,
         Some(documents) => Ok(web::Json(documents)),
+    }
+}
+
+#[cfg(feature = "chunked")]
+#[post("/")]
+async fn search_chunked(
+    cxt: ContextData,
+    form: web::Json<SearchParams>,
+) -> JsonResponse<GroupedDocs> {
+    let client = cxt.get_ref();
+    let search_form = form.0;
+
+    #[cfg(feature = "no-cache")]
+    if cfg!(feature = "no-cache") {
+        return client.search_chunked(&search_form).await;
+    }
+
+    match client.load_cache(&search_form).await {
+        None => client.search_chunked(&search_form).await,
+        Some(documents) => Ok(web::Json(client.group_document_chunks(documents))),
     }
 }
 
@@ -46,9 +75,35 @@ async fn search_tokens(
 ) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
+
+    #[cfg(feature = "no-cache")]
+    if cfg!(feature = "no-cache") {
+        return client.search_tokens(&search_form).await;
+    }
+
     match client.load_cache(&search_form).await {
         None => client.search_tokens(&search_form).await,
         Some(documents) => Ok(web::Json(documents)),
+    }
+}
+
+#[cfg(feature = "chunked")]
+#[post("/tokens")]
+async fn search_chunked_tokens(
+    cxt: ContextData,
+    form: web::Json<SearchParams>,
+) -> JsonResponse<GroupedDocs> {
+    let client = cxt.get_ref();
+    let search_form = form.0;
+
+    #[cfg(feature = "no-cache")]
+    if cfg!(feature = "no-cache") {
+        return client.search_chunked_tokens(&search_form).await;
+    }
+
+    match client.load_cache(&search_form).await {
+        None => client.search_chunked_tokens(&search_form).await,
+        Some(documents) => Ok(web::Json(client.group_document_chunks(documents))),
     }
 }
 
