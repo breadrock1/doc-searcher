@@ -67,10 +67,6 @@ impl ServiceParameters {
     pub fn service_port(&self) -> u16 {
         self.service_port
     }
-
-    pub fn cors_origin(&self) -> String {
-        self.cors_origin.clone()
-    }
 }
 
 pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {

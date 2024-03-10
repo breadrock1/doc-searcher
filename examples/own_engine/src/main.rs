@@ -1,5 +1,6 @@
 extern crate doc_search;
 
+use doc_search::middlewares::*;
 use doc_search::service::init::*;
 use doc_search::swagger::ApiDoc;
 use doc_search::swagger::OpenApi;
@@ -12,25 +13,26 @@ use actix_web::{web, App, HttpServer};
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let service_parameters = init_service_parameters()?;
-    let es_host = service_parameters.es_host();
-    let es_user = service_parameters.es_user();
-    let es_passwd = service_parameters.es_passwd();
-    let service_port = service_parameters.service_port();
-    let service_addr = service_parameters.service_address();
-    let cors_origin = service_parameters.cors_origin();
-    let search_context = build_client_service(es_host, es_user, es_passwd);
+    let sv_params = init_service_parameters()?;
+
+    let service_port = sv_params.service_port();
+    let service_addr = sv_params.service_address();
+    let logger_mw_addr = sv_params.logger_mw().to_owned();
+    let cors_origin = sv_params.cors_origin().to_owned();
+
+    let search_context = build_client_service(&sv_params);
 
     HttpServer::new(move || {
         let cxt = search_context.clone();
         let box_cxt: Box<dyn ServiceClient> = Box::new(cxt);
-        let cors_cln = cors_origin.clone();
-        let cors = build_cors_config(cors_cln.as_str());
+
         let openapi = ApiDoc::openapi();
+        let cors = build_cors_config(cors_origin.as_str());
 
         App::new()
             .app_data(web::Data::new(box_cxt))
             .wrap(Logger::default())
+            .wrap(logger::LoggerMiddlewareFactory::new(logger_mw_addr.as_str()))
             .wrap(cors)
             .service(create_service(&openapi))
             .service(build_hello_scope())
@@ -48,8 +50,12 @@ async fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn build_client_service(es_host: &str, es_user: &str, es_passwd: &str) -> OtherContext {
+fn build_client_service(service_params: &ServiceParameters) -> OtherContext {
     use doc_search::service::own_engine::build_own_client;
-    let client = build_own_client(es_host, es_user, es_passwd);
+    let client = build_own_client(
+        service_params.es_host(),
+        service_params.es_user(),
+        service_params.es_passwd(),
+    );
     client.unwrap()
 }
