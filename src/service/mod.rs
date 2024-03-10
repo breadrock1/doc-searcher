@@ -10,7 +10,7 @@ use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
-use actix_web::{web, HttpResponse};
+use actix_web::HttpResponse;
 
 use std::collections::HashMap;
 

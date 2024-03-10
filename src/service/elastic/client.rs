@@ -1,7 +1,10 @@
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::service::elastic::context::ElasticContext;
 use crate::service::elastic::helper;
-use crate::service::{GroupedDocs, JsonResponse, ServiceClient};
+use crate::service::{JsonResponse, ServiceClient};
+
+#[cfg(feature = "chunked")]
+use crate::service::GroupedDocs;
 
 use cacher::values::VecCacherDocuments;
 use cacher::AnyCacherService;
