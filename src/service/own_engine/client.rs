@@ -60,9 +60,9 @@ impl ServiceClient for OtherContext {
         match map.insert(cluster_id.to_string(), cluster) {
             Some(_) => SuccessfulResponse::ok_response("Updated"),
             None => {
-                let msg = "Somthing wrong".to_string();
-                log::warn!("Failed while creating cluster: {}", msg.as_str());
-                WebError::CreateCluster(msg).error_response()
+                let msg = format!("Created {}", cluster_id);
+                log::info!("New cluster has been created: {}", msg);
+                SuccessfulResponse::ok_response(msg.as_str())
             }
         }
     }
@@ -135,9 +135,9 @@ impl ServiceClient for OtherContext {
         match map.insert(uuid, built_bucket.unwrap()) {
             Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
             None => {
-                let msg = "Something wrong".to_string();
-                log::warn!("Failed while creating bucket: {}", msg.as_str());
-                WebError::CreateBucket(msg).error_response()
+                let msg = format!("Created {}", bucket_form.bucket_name.as_str());
+                log::warn!("New bucket has been created: {}", msg.as_str());
+                SuccessfulResponse::ok_response(msg.as_str())
             }
         }
     }
@@ -161,9 +161,9 @@ impl ServiceClient for OtherContext {
         match map.insert(doc_form.document_name.clone(), doc_form.clone()) {
             Some(_document) => SuccessfulResponse::ok_response("Ok"),
             None => {
-                let msg = "Something wrong".to_string();
+                let msg = format!("Created {}", doc_form.document_name.as_str());
                 log::warn!("Failed while creating document: {}", msg.as_str());
-                WebError::CreateDocument(msg).error_response()
+                SuccessfulResponse::ok_response(msg.as_str())
             }
         }
     }
