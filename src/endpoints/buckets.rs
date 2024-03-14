@@ -110,8 +110,13 @@ mod buckets_endpoints {
 
     #[test]
     async fn test_delete_bucket() {
-        let bucket_form = BucketForm::new("test_bucket");
         let other_context = OtherContext::_new("test".to_string());
+
+        let response = other_context.delete_bucket("test_bucket").await;
+        assert_eq!(response.status().as_u16(), 400_u16);
+
+        let bucket_form = BucketForm::new("test_bucket");
+
         let response = other_context.create_bucket(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
 
@@ -121,8 +126,8 @@ mod buckets_endpoints {
 
     #[test]
     async fn test_get_buckets() {
-        let bucket_form = BucketForm::new("test_bucket");
         let other_context = OtherContext::_new("test".to_string());
+        let bucket_form = BucketForm::new("test_bucket");
         let response = other_context.create_bucket(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
 
