@@ -1,5 +1,6 @@
 extern crate doc_search;
 
+use doc_search::actors::cacher::*;
 use doc_search::middlewares::*;
 use doc_search::service::init::*;
 use doc_search::swagger::ApiDoc;
@@ -8,8 +9,10 @@ use doc_search::service::ServiceClient;
 use doc_search::swagger::create_service;
 use doc_search::service::own_engine::context::OtherContext;
 
+use actix::Actor;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
+use doc_search::actors::cacher;
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -26,11 +29,14 @@ async fn main() -> Result<(), anyhow::Error> {
         let cxt = search_context.clone();
         let box_cxt: Box<dyn ServiceClient> = Box::new(cxt);
 
+        let cacher = cacher::messages::CacheActor::default().start();
+
         let openapi = ApiDoc::openapi();
         let cors = build_cors_config(cors_origin.as_str());
 
         App::new()
             .app_data(web::Data::new(box_cxt))
+            .app_data(web::Data::new(cacher))
             .wrap(Logger::default())
             .wrap(logger::LoggerMiddlewareFactory::new(logger_mw_addr.as_str()))
             .wrap(cors)
