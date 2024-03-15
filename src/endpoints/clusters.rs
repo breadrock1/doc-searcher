@@ -93,7 +93,7 @@ mod cluster_endpoints {
     async fn delete_cluster() {
         let other_context = OtherContext::_new("test".to_string());
         let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.delete_bucket("test_cluster").await;
+        let response = other_context.delete_cluster("test_cluster").await;
         assert_eq!(response.status().as_u16(), 200_u16);
     }
 
