@@ -25,13 +25,15 @@ services:
     depends_on:
       - elasticsearch
     image: doc-searcher:latest
-    container_name: docsearcher
+    container_name: doc-searcher
     environment:
       - ELASTIC_HOST=http://elasticsearch:9200
       - ELASTIC_PASSWORD=elasticsearch
       - ELASTIC_USER=elasticsearch
       - SEARCHER_ADDRESS=0.0.0.0
       - SEARCHER_PORT=2892
+      - CACHER_HOST=redis://cacher:6379
+      - CACHER_EXPIRE=3600
       - CORS_ORIGIN=http://localhost:3000
     ports:
       - "2892:2892"
@@ -44,13 +46,13 @@ services:
     depends_on:
       - docsearcher
     image: doc-notifier:latest
-    container_name: docnotifier
+    container_name: doc-notifier
     restart: on-failure
     environment:
       - IS_LOAD_CHUNKS=true
       - READ_RAW_FILE=false
-      - LLM_ADDRESS=http://llm:8001
-      - OCR_ADDRESS=http://ocr:9092
+      - LLM_ADDRESS=http://localhost:8000
+      - OCR_ADDRESS=http://localhost:9091
       - DOC_ADDRESS=http://docsearcher:2892
       - WATCHER_DIR_PATHS=/indexer
     ports:
@@ -58,7 +60,19 @@ services:
     networks:
       - elasticnet
     volumes:
-      - /data/archiver:/indexer
+      - notifier1:/indexer
+
+  cacher:
+    depends_on:
+      - docsearcher
+    image: redis:latest
+    restart: on-failure
+    ports:
+      - "6379:6379"
+    networks:
+      - elasticnet
+    volumes:
+      - cacher1:/data/cacher
 
   kibana:
     depends_on:
@@ -66,8 +80,8 @@ services:
     image: kibana:8.11.2
     container_name: kibana
     environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      ELASTICSEARCH_URL: http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
     ports:
       - "5601:5601"
     networks:
@@ -78,6 +92,11 @@ volumes:
     driver: local
   dsdata1:
     driver: local
+  cacher1:
+    driver: local
+  notifier1:
+    driver: local
 
 networks:
   elasticnet:
+
