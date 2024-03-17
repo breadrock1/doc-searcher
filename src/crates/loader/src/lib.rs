@@ -144,6 +144,6 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
 }
 
 fn get_local_datetime(err: Error) -> SystemTime {
-    println!("{:?}", err);
+    log::warn!("{:?}", err);
     SystemTime::now()
 }

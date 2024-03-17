@@ -1,33 +1,44 @@
 [package]
-name = "docsearcher"
-version = "0.1.0"
+name = "doc-search"
+version = "0.1.21"
 edition = "2021"
 
 [badges]
 maintenance = { status = "actively-developed" }
 
+[features]
+enable-parse-pdf        = ["loader/enable-pdf"]
+enable-parse-audio      = ["loader/enable-audio"]
+enable-parse-video      = ["loader/enable-video"]
+enable-parse-image      = ["loader/enable-image"]
+enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
+
+enable-dotenv   = ["dep:dotenv"]
+enable-chunked  = []
+disable-caching = []
+
+default = []
+
 [dependencies]
-anyhow = "^1.0"
+actix = "^0.13"
 actix-web = "^4.3"
 actix-cors = "^0.6"
+actix-http = "^3.6"
 actix-files = "^0.6"
+anyhow = "^1.0"
 async-trait = "^0.1"
 derive_builder = "^0.12"
-dotenv = "^0.15"
 elasticsearch = "8.5.0-alpha.1"
 env_logger = "^0.10"
 futures = "^0.3"
 log = "^0.4"
+reqwest = "^0.11"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_json = "^1.0"
 thiserror = "^1.0"
-tokio = { version = "^1.32", features = ["full"] }
 walkdir = "^2.4"
-utoipa = { version = "3", features = ["actix_extras"] }
-utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 
-cacher = { path = "src/crates/cacher" }
 datetime = { path = "src/crates/datetime" }
 elquery = { path = "src/crates/elquery" }
 hasher = { path = "src/crates/hasher" }
@@ -37,6 +48,30 @@ wrappers = { path = "src/crates/wrappers" }
 [dependencies.chrono]
 version = "^0.4"
 features = ["rustc-serialize", "serde"]
+
+[dependencies.dotenv]
+version = "^0.15"
+optional = true
+
+[dependencies.redis]
+version = "^0.24"
+features = ["aio", "tokio-comp", "connection-manager"]
+
+[dependencies.tokio]
+version = "^1.36"
+features = ["full"]
+
+[dependencies.utoipa]
+version = "^3.5"
+features = ["actix_extras"]
+
+[dependencies.utoipa-swagger-ui]
+version = "^3.1"
+features = ["actix-web"]
+
+[[bin]]
+name = "elastic-main"
+path = "src/bin/main.rs"
 
 [[test]]
 name = "datetime_tests"

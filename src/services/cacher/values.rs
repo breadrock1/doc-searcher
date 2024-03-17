@@ -5,11 +5,26 @@ use redis::{ErrorKind, RedisError, RedisResult, Value};
 use redis::{FromRedisValue, RedisWrite, ToRedisArgs};
 use serde::{Deserialize, Serialize};
 
-pub struct MaybeSearchParams {
-    pub search_params: Option<SearchParams>,
+#[derive(Serialize)]
+pub(crate) struct CacherSearchParams {
+    search_params: SearchParams,
 }
 
-impl ToRedisArgs for &MaybeSearchParams {
+impl From<&SearchParams> for CacherSearchParams {
+    fn from(value: &SearchParams) -> Self {
+        CacherSearchParams {
+            search_params: value.to_owned(),
+        }
+    }
+}
+
+impl From<CacherSearchParams> for SearchParams {
+    fn from(value: CacherSearchParams) -> SearchParams {
+        value.search_params
+    }
+}
+
+impl ToRedisArgs for CacherSearchParams {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,
@@ -19,34 +34,26 @@ impl ToRedisArgs for &MaybeSearchParams {
     }
 }
 
-impl From<&SearchParams> for MaybeSearchParams {
-    fn from(value: &SearchParams) -> Self {
-        MaybeSearchParams {
-            search_params: Some(value.clone()),
+#[derive(Deserialize, Serialize)]
+pub(crate) struct CacherDocuments {
+    documents: Vec<Document>,
+}
+
+impl From<&Vec<Document>> for CacherDocuments {
+    fn from(value: &Vec<Document>) -> Self {
+        CacherDocuments {
+            documents: value.to_owned(),
         }
     }
 }
 
-#[derive(Default, Deserialize, Serialize)]
-pub struct VecCacherDocuments {
-    pub cacher_documents: Vec<Document>,
-}
-
-impl VecCacherDocuments {
-    pub fn get_documents(&self) -> &Vec<Document> {
-        &self.cacher_documents
+impl From<CacherDocuments> for Vec<Document> {
+    fn from(value: CacherDocuments) -> Vec<Document> {
+        value.documents
     }
 }
 
-impl From<Vec<Document>> for VecCacherDocuments {
-    fn from(value: Vec<Document>) -> Self {
-        VecCacherDocuments {
-            cacher_documents: value,
-        }
-    }
-}
-
-impl ToRedisArgs for VecCacherDocuments {
+impl ToRedisArgs for CacherDocuments {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,
@@ -56,10 +63,10 @@ impl ToRedisArgs for VecCacherDocuments {
     }
 }
 
-impl FromRedisValue for VecCacherDocuments {
-    fn from_redis_value(redis_value: &Value) -> RedisResult<Self> {
-        match redis_value {
-            Value::Data(data) => serde_json::from_slice::<VecCacherDocuments>(data.as_slice())
+impl FromRedisValue for CacherDocuments {
+    fn from_redis_value(value: &Value) -> RedisResult<Self> {
+        match value {
+            Value::Data(data) => serde_json::from_slice::<CacherDocuments>(data.as_slice())
                 .map_err(|_| {
                     let msg = "Faile while deserializing document from redis";
                     RedisError::from((ErrorKind::IoError, msg))

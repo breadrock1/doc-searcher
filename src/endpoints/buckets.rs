@@ -1,4 +1,4 @@
-use crate::endpoints::ContextData;
+use crate::endpoints::SearcherData;
 use crate::errors::JsonResponse;
 
 use wrappers::bucket::{Bucket, BucketForm};
@@ -15,7 +15,7 @@ use actix_web::{delete, get, post, web, HttpResponse};
     )
 )]
 #[get("/all")]
-async fn all_buckets(cxt: ContextData) -> JsonResponse<Vec<Bucket>> {
+async fn all_buckets(cxt: SearcherData) -> JsonResponse<Vec<Bucket>> {
     let client = cxt.get_ref();
     client.get_all_buckets().await
 }
@@ -31,7 +31,7 @@ async fn all_buckets(cxt: ContextData) -> JsonResponse<Vec<Bucket>> {
     )
 )]
 #[post("/new")]
-async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpResponse {
+async fn new_bucket(cxt: SearcherData, form: web::Json<BucketForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_form = form.0;
     client.create_bucket(&bucket_form).await
@@ -47,7 +47,7 @@ async fn new_bucket(cxt: ContextData, form: web::Json<BucketForm>) -> HttpRespon
     )
 )]
 #[post("/default")]
-async fn default_bucket(cxt: ContextData) -> HttpResponse {
+async fn default_bucket(cxt: SearcherData) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_form = BucketForm::default();
     client.create_bucket(&bucket_form).await
@@ -66,7 +66,7 @@ async fn default_bucket(cxt: ContextData) -> HttpResponse {
     )
 )]
 #[delete("/{bucket_name}")]
-async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpResponse {
+async fn delete_bucket(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
     let bucket_name = path.to_string();
     client.delete_bucket(bucket_name.as_str()).await
@@ -85,7 +85,7 @@ async fn delete_bucket(cxt: ContextData, path: web::Path<String>) -> HttpRespons
     )
 )]
 #[get("/{bucket_name}")]
-async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> JsonResponse<Bucket> {
+async fn get_bucket(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Bucket> {
     let client = cxt.get_ref();
     let bucket_name = format!("/{}/_stats", path);
     client.get_bucket(bucket_name.as_str()).await
@@ -93,8 +93,8 @@ async fn get_bucket(cxt: ContextData, path: web::Path<String>) -> JsonResponse<B
 
 #[cfg(test)]
 mod buckets_endpoints {
-    use crate::service::own_engine::context::OtherContext;
-    use crate::service::ServiceClient;
+    use crate::services::own_engine::context::OtherContext;
+    use crate::services::SearcherService;
 
     use wrappers::bucket::BucketForm;
 
@@ -103,15 +103,20 @@ mod buckets_endpoints {
     #[test]
     async fn test_create_bucket() {
         let bucket_form = BucketForm::new("test_bucket");
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_bucket(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
     }
 
     #[test]
     async fn test_delete_bucket() {
+        let other_context = OtherContext::new("test".to_string());
+
+        let response = other_context.delete_bucket("test_bucket").await;
+        assert_eq!(response.status().as_u16(), 400_u16);
+
         let bucket_form = BucketForm::new("test_bucket");
-        let other_context = OtherContext::_new("test".to_string());
+
         let response = other_context.create_bucket(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
 
@@ -121,8 +126,8 @@ mod buckets_endpoints {
 
     #[test]
     async fn test_get_buckets() {
+        let other_context = OtherContext::new("test".to_string());
         let bucket_form = BucketForm::new("test_bucket");
-        let other_context = OtherContext::_new("test".to_string());
         let response = other_context.create_bucket(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
 
@@ -134,7 +139,7 @@ mod buckets_endpoints {
     #[test]
     async fn test_get_bucket_by_id() {
         let bucket_form = BucketForm::new("test_bucket");
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_bucket(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
 

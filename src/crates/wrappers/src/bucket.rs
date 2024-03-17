@@ -28,7 +28,7 @@ pub struct Bucket {
 
 #[derive(Deserialize, ToSchema)]
 pub struct BucketForm {
-    bucket_name: String,
+    pub bucket_name: String,
 }
 
 impl Display for BucketForm {
