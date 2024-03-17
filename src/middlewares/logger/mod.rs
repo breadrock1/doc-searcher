@@ -109,10 +109,7 @@ where
         async move {
             let service_response: Result<Self::Response, Self::Error> = srv.call(req).await;
             match service_response {
-                Err(err) => {
-                    println!("{:?}", err);
-                    Err(err)
-                }
+                Err(err) => Err(err),
                 Ok(response) => {
                     if !response.status().is_success() {
                         let err_req = ErrorRequest::from(&response);
