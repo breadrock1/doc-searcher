@@ -1,5 +1,5 @@
 use crate::errors::{JsonResponse, WebError};
-use crate::service::elastic::send_status::SendDocumentStatus;
+use crate::services::elastic::send_status::SendDocumentStatus;
 
 use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
@@ -67,7 +67,7 @@ pub async fn check_duplication(
 
     if response_result.is_err() {
         let err = response_result.err().unwrap();
-        println!("Failed while checking duplicate: {}", err);
+        log::error!("Failed while checking duplicate: {}", err);
         return false;
     }
 
@@ -79,7 +79,7 @@ pub async fn check_duplication(
             count > 0
         }
         Err(err) => {
-            println!("Failed to check duplicate for {}: {}", document_id, err);
+            log::error!("Failed to check duplicate for {}: {}", document_id, err);
             false
         }
     }
@@ -136,7 +136,7 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
     let document_result = Document::deserialize(source_value);
     if document_result.is_err() {
         let err = document_result.err().unwrap();
-        println!("Failed while deserialize doc: {}", err);
+        log::error!("Failed while deserialize doc: {}", err);
         return Err(err);
     }
 

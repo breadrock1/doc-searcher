@@ -1,13 +1,11 @@
 use crate::errors::{SuccessfulResponse, WebError};
-use crate::service::elastic::context::ElasticContext;
-use crate::service::elastic::helper;
-use crate::service::{JsonResponse, ServiceClient};
+use crate::services::elastic::context::ElasticContext;
+use crate::services::elastic::helper;
+use crate::services::{JsonResponse, SearcherService};
 
-#[cfg(feature = "chunked")]
-use crate::service::GroupedDocs;
+#[cfg(feature = "enable-chunked")]
+use crate::services::GroupedDocs;
 
-use cacher::values::VecCacherDocuments;
-use cacher::AnyCacherService;
 use hasher::{gen_hash, HashType};
 use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::bucket::{Bucket, BucketForm};
@@ -27,7 +25,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 #[async_trait::async_trait]
-impl ServiceClient for ElasticContext {
+impl SearcherService for ElasticContext {
     async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
@@ -435,12 +433,10 @@ impl ServiceClient for ElasticContext {
             .buckets
             .to_owned()
             .unwrap_or(DEFAULT_BUCKET_NAME.to_string());
+
         let indexes = buckets.split(',').collect::<Vec<&str>>();
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
-            Ok(documents) => {
-                let documents = self.insert_cache(s_params, documents.0).await;
-                Ok(web::Json(documents))
-            }
+            Ok(documents) => Ok(documents),
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
                 Err(err)
@@ -454,10 +450,7 @@ impl ServiceClient for ElasticContext {
         let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
         let indexes = buckets.split(',').collect::<Vec<&str>>();
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
-            Ok(documents) => {
-                let vec_docs = self.insert_cache(s_params, documents.0).await;
-                Ok(web::Json(vec_docs))
-            }
+            Ok(documents) => Ok(documents),
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
                 Err(err)
@@ -472,77 +465,45 @@ impl ServiceClient for ElasticContext {
         let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
         let indexes = buckets.split(',').collect::<Vec<&str>>();
 
-        helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await
+        match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
+            Ok(documents) => Ok(documents),
+            Err(err) => {
+                log::error!("Failed while searching similar documents: {}", err);
+                Err(err)
+            }
+        }
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
-        let cacher = self.get_cacher().read().await;
-        let documents_opt = cacher.get_documents(s_params).await;
-        let documents = documents_opt?.get_documents().to_owned();
-        Some(documents)
-    }
-
-    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
-        let cacher = self.get_cacher().read().await;
-        let vec_cacher_docs = VecCacherDocuments::from(docs);
-        cacher
-            .set_documents(s_params, vec_cacher_docs)
-            .await
-            .get_documents()
-            .to_owned()
-    }
-
-    #[cfg(feature = "chunked")]
+    #[cfg(feature = "enable-chunked")]
     async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         match self.search(s_params).await {
+            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
             Err(err) => {
                 log::error!("Failed while searchcing documents: {}", err);
                 Err(err)
             }
-            Ok(docs) => {
-                let grouped_docs = self.group_document_chunks(docs.0);
-                Ok(web::Json(grouped_docs))
-            }
         }
     }
 
-    #[cfg(feature = "chunked")]
+    #[cfg(feature = "enable-chunked")]
     async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         match self.search_tokens(s_params).await {
+            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
             Err(err) => {
                 log::error!("Failed while searchcing documents tokens: {}", err);
                 Err(err)
             }
-            Ok(docs) => {
-                let grouped_docs = self.group_document_chunks(docs.0);
-                Ok(web::Json(grouped_docs))
-            }
         }
     }
 
-    #[cfg(feature = "chunked")]
+    #[cfg(feature = "enable-chunked")]
     async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         match self.similarity(s_params).await {
+            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
             Err(err) => {
                 log::error!("Failed while searchcing similar documents: {}", err);
                 Err(err)
             }
-            Ok(docs) => {
-                let grouped_docs = self.group_document_chunks(docs.0);
-                Ok(web::Json(grouped_docs))
-            }
         }
-    }
-
-    #[cfg(feature = "chunked")]
-    async fn load_chunked_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs> {
-        let cached_opt = self.load_cache(s_params).await;
-        if cached_opt.is_none() {
-            let query_str = s_params.query.as_str();
-            log::warn!("Returned empty data from cache for: {}", query_str);
-            return None;
-        }
-
-        Some(self.group_document_chunks(cached_opt?))
     }
 }

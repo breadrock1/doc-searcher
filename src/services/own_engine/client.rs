@@ -1,12 +1,10 @@
 use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
-use crate::service::own_engine::context::OtherContext;
-use crate::service::ServiceClient;
+use crate::services::own_engine::context::OtherContext;
+use crate::services::SearcherService;
 
-#[cfg(feature = "chunked")]
-use crate::service::GroupedDocs;
+#[cfg(feature = "enable-chunked")]
+use crate::services::GroupedDocs;
 
-use cacher::values::VecCacherDocuments;
-use cacher::AnyCacherService;
 use wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
 use wrappers::cluster::{Cluster, ClusterBuilder};
 use wrappers::document::Document;
@@ -18,7 +16,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use std::path::Path;
 
 #[async_trait::async_trait]
-impl ServiceClient for OtherContext {
+impl SearcherService for OtherContext {
     async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
@@ -254,74 +252,36 @@ impl ServiceClient for OtherContext {
         Ok(web::Json(documents_vec))
     }
 
-    async fn load_cache(&self, s_params: &SearchParams) -> Option<Vec<Document>> {
-        let cacher = self.get_cacher().read().await;
-        let documents_opt = cacher.get_documents(s_params).await?;
-        let documents = documents_opt.get_documents().to_owned();
-        Some(documents)
-    }
-
-    async fn insert_cache(&self, s_params: &SearchParams, docs: Vec<Document>) -> Vec<Document> {
-        let cacher = self.get_cacher().read().await;
-        let vec_cacher_docs = VecCacherDocuments::from(docs);
-        cacher
-            .set_documents(s_params, vec_cacher_docs)
-            .await
-            .get_documents()
-            .to_owned()
-    }
-
-    #[cfg(feature = "chunked")]
+    #[cfg(feature = "enable-chunked")]
     async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         match self.search(s_params).await {
+            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
             Err(err) => {
                 log::error!("Failed while searchcing documents: {}", err);
                 Err(err)
             }
-            Ok(docs) => {
-                let grouped_docs = self.group_document_chunks(docs.0);
-                Ok(web::Json(grouped_docs))
-            }
         }
     }
 
-    #[cfg(feature = "chunked")]
+    #[cfg(feature = "enable-chunked")]
     async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         match self.search_tokens(s_params).await {
+            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
             Err(err) => {
                 log::error!("Failed while searchcing documents tokens: {}", err);
                 Err(err)
             }
-            Ok(docs) => {
-                let grouped_docs = self.group_document_chunks(docs.0);
-                Ok(web::Json(grouped_docs))
-            }
         }
     }
 
-    #[cfg(feature = "chunked")]
+    #[cfg(feature = "enable-chunked")]
     async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
         match self.similarity(s_params).await {
+            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
             Err(err) => {
                 log::error!("Failed while searchcing similar documents: {}", err);
                 Err(err)
             }
-            Ok(docs) => {
-                let grouped_docs = self.group_document_chunks(docs.0);
-                Ok(web::Json(grouped_docs))
-            }
         }
-    }
-
-    #[cfg(feature = "chunked")]
-    async fn load_chunked_cache(&self, s_params: &SearchParams) -> Option<GroupedDocs> {
-        let cached_opt = self.load_cache(s_params).await;
-        if cached_opt.is_none() {
-            let query_str = s_params.query.as_str();
-            log::warn!("Returned empty data from cache for: {}", query_str);
-            return None;
-        }
-
-        Some(self.group_document_chunks(cached_opt?))
     }
 }

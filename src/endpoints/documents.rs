@@ -1,4 +1,4 @@
-use crate::endpoints::ContextData;
+use crate::endpoints::SearcherData;
 use crate::errors::JsonResponse;
 
 use wrappers::document::Document;
@@ -16,7 +16,7 @@ use actix_web::{delete, get, post, put, web, HttpResponse};
     )
 )]
 #[put("/update")]
-async fn update_document(cxt: ContextData, form: web::Json<Document>) -> HttpResponse {
+async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
     client.update_document(&doc_form).await
@@ -33,7 +33,7 @@ async fn update_document(cxt: ContextData, form: web::Json<Document>) -> HttpRes
     )
 )]
 #[post("/new")]
-async fn new_document(cxt: ContextData, form: web::Json<Document>) -> HttpResponse {
+async fn new_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
     client.create_document(&doc_form).await
@@ -53,7 +53,7 @@ async fn new_document(cxt: ContextData, form: web::Json<Document>) -> HttpRespon
     )
 )]
 #[delete("/{bucket_name}/{document_id}")]
-async fn delete_document(cxt: ContextData, path: web::Path<(String, String)>) -> HttpResponse {
+async fn delete_document(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
     let client = cxt.get_ref();
     let (bucket_name, doc_id) = path.as_ref();
     client
@@ -76,7 +76,7 @@ async fn delete_document(cxt: ContextData, path: web::Path<(String, String)>) ->
 )]
 #[get("/{bucket_name}/{document_id}")]
 async fn get_document(
-    cxt: ContextData,
+    cxt: SearcherData,
     path: web::Path<(String, String)>,
 ) -> JsonResponse<Document> {
     let client = cxt.get_ref();
@@ -88,8 +88,8 @@ async fn get_document(
 
 #[cfg(test)]
 mod documents_endpoints {
-    use crate::service::own_engine::context::OtherContext;
-    use crate::service::ServiceClient;
+    use crate::services::own_engine::context::OtherContext;
+    use crate::services::SearcherService;
 
     use wrappers::document::{Document, DocumentBuilder, DocumentBuilderError};
 
@@ -119,7 +119,7 @@ mod documents_endpoints {
 
     #[test]
     async fn test_create_document() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let res_document = create_default_document("test_doc");
         let document = res_document.unwrap();
         let response = other_context.create_document(&document).await;
@@ -128,7 +128,7 @@ mod documents_endpoints {
 
     #[test]
     async fn test_delete_document() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let document_name = "test_document";
         let document = create_default_document(document_name).unwrap();
         let _ = other_context.create_document(&document).await;
@@ -141,7 +141,7 @@ mod documents_endpoints {
 
     #[test]
     async fn test_update_document() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let document_name = "test_document";
         let mut document = create_default_document(document_name).unwrap();
         let _ = other_context.create_document(&document).await;
@@ -153,7 +153,7 @@ mod documents_endpoints {
 
     #[test]
     async fn test_get_document() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let document_name = "test_document";
         let document = create_default_document(document_name).unwrap();
         let _ = other_context.create_document(&document).await;

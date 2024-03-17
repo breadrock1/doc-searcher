@@ -1,18 +1,14 @@
 extern crate doc_search;
 
-use doc_search::actors::cacher::*;
-use doc_search::middlewares::*;
-use doc_search::service::init::*;
-use doc_search::swagger::ApiDoc;
-use doc_search::swagger::OpenApi;
-use doc_search::service::ServiceClient;
+use doc_search::middlewares::logger::logger::LoggerMiddlewareFactory;
+use doc_search::services::init::*;
+use doc_search::services::{CacherClient, SearcherService};
+use doc_search::services::own_engine::build_own_service;
+use doc_search::swagger::{ApiDoc, OpenApi};
 use doc_search::swagger::create_service;
-use doc_search::service::own_engine::context::OtherContext;
 
-use actix::Actor;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
-use doc_search::actors::cacher;
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -22,23 +18,26 @@ async fn main() -> Result<(), anyhow::Error> {
     let service_addr = sv_params.service_address();
     let logger_mw_addr = sv_params.logger_mw().to_owned();
     let cors_origin = sv_params.cors_origin().to_owned();
+    let cacher_addr = sv_params.cacher_addr().to_owned();
+    let cacher_expire = sv_params.cacher_expire();
 
-    let search_context = build_client_service(&sv_params);
+    let search_context = build_own_service(&sv_params)
+        .expect("Failed while initializing own search services");
 
     HttpServer::new(move || {
         let cxt = search_context.clone();
-        let box_cxt: Box<dyn ServiceClient> = Box::new(cxt);
+        let box_cxt: Box<dyn SearcherService> = Box::new(cxt);
 
-        let cacher = cacher::messages::CacheActor::default().start();
+        let cacher_cxt = CacherClient::new(cacher_addr.as_str(), cacher_expire);
 
         let openapi = ApiDoc::openapi();
         let cors = build_cors_config(cors_origin.as_str());
 
         App::new()
             .app_data(web::Data::new(box_cxt))
-            .app_data(web::Data::new(cacher))
+            .app_data(web::Data::new(cacher_cxt))
             .wrap(Logger::default())
-            .wrap(logger::LoggerMiddlewareFactory::new(logger_mw_addr.as_str()))
+            .wrap(LoggerMiddlewareFactory::new(logger_mw_addr.as_str()))
             .wrap(cors)
             .service(create_service(&openapi))
             .service(build_hello_scope())
@@ -54,14 +53,4 @@ async fn main() -> Result<(), anyhow::Error> {
         .await?;
 
     Ok(())
-}
-
-fn build_client_service(service_params: &ServiceParameters) -> OtherContext {
-    use doc_search::service::own_engine::build_own_client;
-    let client = build_own_client(
-        service_params.es_host(),
-        service_params.es_user(),
-        service_params.es_passwd(),
-    );
-    client.unwrap()
 }
