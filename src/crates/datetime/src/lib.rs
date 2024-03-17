@@ -32,13 +32,6 @@ fn format_datetime(value: &str) -> ParseResult<DateTime<Utc>> {
     #[allow(deprecated)]
     match Utc.datetime_from_str(value, "%Y-%m-%dT%H:%M:%SZ") {
         Ok(datetime) => Ok(datetime),
-        Err(err) => {
-            println!(
-                "Failed while parsing datetime {}: {}",
-                value,
-                err.to_string()
-            );
-            Err(err)
-        }
+        Err(err) => Err(err),
     }
 }
