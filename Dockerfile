@@ -7,8 +7,16 @@ RUN apt-get update && apt-get install -y liblept5 libleptonica-dev
 WORKDIR /home/docsearch
 COPY . .
 
-RUN rm -rf .env && cd ./examples/elasticsearch && cargo install --path .
+RUN cargo install --path .
 
-WORKDIR /home/docsearch/examples/elasticsearch
+FROM rust:latest
 
-ENTRYPOINT [ "./target/release/elastic_search" ]
+WORKDIR /app
+
+COPY --from=builder /home/docsearch/target/release .
+
+RUN apt install -y openssl
+
+ENTRYPOINT ["/app/elastic-main"]
+
+EXPOSE 2892

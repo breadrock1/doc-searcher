@@ -9,7 +9,7 @@ pub(crate) mod docx_parser {
         let docx_result = DocxFile::from_file(file_path);
         if docx_result.is_err() {
             let docx_err = docx_result.err().unwrap();
-            println!("{:?}", docx_err);
+            log::error!("Failed while opening docx: {}", docx_err);
             return Ok(String::default());
         }
 

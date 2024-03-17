@@ -1,4 +1,4 @@
-use crate::endpoints::ContextData;
+use crate::endpoints::SearcherData;
 use crate::errors::SuccessfulResponse;
 
 use actix_web::{get, HttpResponse};
@@ -13,7 +13,7 @@ use actix_web::{get, HttpResponse};
     ),
 )]
 #[get("/")]
-async fn hello(cxt: ContextData) -> HttpResponse {
+async fn hello(cxt: SearcherData) -> HttpResponse {
     let _client = cxt.get_ref();
     SuccessfulResponse::ok_response("Ok")
 }

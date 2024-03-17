@@ -1,11 +1,11 @@
 extern crate doc_search;
 
-use doc_search::middlewares::logger::logger::LoggerMiddlewareFactory;
+use doc_search::middlewares::logger::LoggerMiddlewareFactory;
+use doc_search::services::elastic::build_elastic_service;
 use doc_search::services::init::*;
 use doc_search::services::{CacherClient, SearcherService};
-use doc_search::services::own_engine::build_own_service;
-use doc_search::swagger::{ApiDoc, OpenApi};
 use doc_search::swagger::create_service;
+use doc_search::swagger::{ApiDoc, OpenApi};
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -21,13 +21,12 @@ async fn main() -> Result<(), anyhow::Error> {
     let cacher_addr = sv_params.cacher_addr().to_owned();
     let cacher_expire = sv_params.cacher_expire();
 
-    let search_context = build_own_service(&sv_params)
-        .expect("Failed while initializing own search services");
+    let search_context = build_elastic_service(&sv_params)
+        .expect("Failed while initializing elasticsearch context!");
 
     HttpServer::new(move || {
         let cxt = search_context.clone();
         let box_cxt: Box<dyn SearcherService> = Box::new(cxt);
-
         let cacher_cxt = CacherClient::new(cacher_addr.as_str(), cacher_expire);
 
         let openapi = ApiDoc::openapi();
@@ -48,9 +47,9 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(build_similar_scope())
             .service(build_file_scope())
     })
-        .bind((service_addr, service_port))?
-        .run()
-        .await?;
+    .bind((service_addr, service_port))?
+    .run()
+    .await?;
 
     Ok(())
 }

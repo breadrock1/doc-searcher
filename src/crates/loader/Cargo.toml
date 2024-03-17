@@ -4,19 +4,23 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-docx = []
-excel = []
-pdf = []
-video = []
-audio = []
-image = []
+enable-docx    = ["dep:docx"]
+enable-excel   = ["dep:office"]
+enable-pdf     = ["dep:lopdf", "dep:pdfium-render"]
+enable-video   = []
+enable-audio   = []
+enable-image   = []
+
 default = []
 
 [dependencies]
 chrono = "^0.4"
 derive_builder = "^0.12"
 dotenv = "^0.15"
+log = "^0.4"
+tesseract = "^0.15"
 walkdir = "^2.4"
+
 hasher = { path = "../hasher" }
 wrappers = { path = "../wrappers" }
 
@@ -24,16 +28,21 @@ wrappers = { path = "../wrappers" }
 version = "^0.6"
 features = ["tokenizers"]
 
-[target.'cfg(feature = "docx")'.dependencies]
-docx = "^1.1"
+[dependencies.docx]
+version = "^1.1"
+optional = true
 
-[target.'cfg(feature = "excel")'.dependencies]
-office = "^0.8"
+[dependencies.office]
+version = "^0.8"
+optional = true
 
-[target.'cfg(feature = "pdf")'.dependencies]
-lopdf = "^0.31"
-pdfium-render = "^0.8"
-tesseract = "^0.15"
+[dependencies.lopdf]
+version = "^0.31"
+optional = true
+
+[dependencies.pdfium-render]
+version = "^0.8"
+optional = true
 
 [[test]]
 name = "test"

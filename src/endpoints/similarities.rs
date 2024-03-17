@@ -1,5 +1,10 @@
-use crate::endpoints::ContextData;
+use crate::endpoints::{CacherData, SearcherData};
 use crate::errors::JsonResponse;
+use crate::services::cacher::values::{CacherDocuments, CacherSearchParams};
+use crate::services::CacherService;
+
+#[cfg(feature = "enable-chunked")]
+use crate::services::GroupedDocs;
 
 use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
@@ -18,18 +23,62 @@ use actix_web::{post, web};
 )]
 #[post("/")]
 async fn search_similar_docs(
-    cxt: ContextData,
+    cxt: SearcherData,
+    cacher: CacherData,
     form: web::Json<SearchParams>,
 ) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    client.similarity(&search_form).await
+
+    #[cfg(feature = "disable-caching")]
+    if cfg!(feature = "disable-caching") {
+        return client.similarity(&search_form).await;
+    }
+
+    let cacher_params = CacherSearchParams::from(&search_form);
+    match cacher
+        .service
+        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
+        .await
+    {
+        None => client.search(&search_form).await,
+        Some(documents) => Ok(web::Json(documents.into())),
+    }
+}
+
+#[cfg(feature = "enable-chunked")]
+#[post("/")]
+async fn search_similar_chunkec_docs(
+    cxt: SearcherData,
+    cacher: CacherData,
+    form: web::Json<SearchParams>,
+) -> JsonResponse<GroupedDocs> {
+    let client = cxt.get_ref();
+    let search_form = form.0;
+
+    #[cfg(feature = "disable-caching")]
+    if cfg!(feature = "disable-caching") {
+        return client.similarity_chunked(&search_form).await;
+    }
+
+    let cacher_params = CacherSearchParams::from(&search_form);
+    match cacher
+        .service
+        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
+        .await
+    {
+        None => client.similarity_chunked(&search_form).await,
+        Some(documents) => {
+            let grouped = client.group_document_chunks(documents.into());
+            Ok(web::Json(grouped))
+        }
+    }
 }
 
 #[cfg(test)]
 mod similar_endpoints {
-    use crate::service::own_engine::context::OtherContext;
-    use crate::service::ServiceClient;
+    use crate::services::own_engine::context::OtherContext;
+    use crate::services::SearcherService;
 
     use wrappers::document::{Document, DocumentBuilder};
     use wrappers::search_params::SearchParamsBuilder;
@@ -41,7 +90,7 @@ mod similar_endpoints {
 
     #[test]
     async fn test_search_similar_docs() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let mut search_params = SearchParamsBuilder::default()
             .query("unknown".to_string())
             .buckets(Some("test_bucket".to_string()))
@@ -75,7 +124,7 @@ mod similar_endpoints {
 
     #[test]
     async fn test_search_similar_docs_target() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let mut search_params = SearchParamsBuilder::default()
             .query("unknown".to_string())
             .buckets(Some("test_bucket".to_string()))
