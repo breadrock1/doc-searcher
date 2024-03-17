@@ -9,16 +9,10 @@ use crate::endpoints::loader::{download_file, load_file};
 use crate::endpoints::searcher::{search_all, search_tokens};
 use crate::endpoints::similarities::search_similar_docs;
 
-#[cfg(feature = "chunked")]
-use crate::endpoints::searcher::{search_chunked, search_chunked_tokens};
-#[cfg(feature = "chunked")]
-use crate::endpoints::similarities::search_similar_chunkec_docs;
-
 use actix_cors::Cors;
 use actix_web::http::header;
 use actix_web::{web, Scope};
 use derive_builder::Builder;
-use dotenv::dotenv;
 
 use std::env::var;
 use std::str::FromStr;
@@ -33,6 +27,7 @@ pub struct ServiceParameters {
     cors_origin: String,
     logger_mw_addr: String,
     cacher_addr: String,
+    cacher_expire: u64,
 }
 
 impl ServiceParameters {
@@ -67,10 +62,19 @@ impl ServiceParameters {
     pub fn service_port(&self) -> u16 {
         self.service_port
     }
+
+    pub fn cacher_expire(&self) -> u64 {
+        self.cacher_expire
+    }
 }
 
 pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
-    dotenv().ok();
+    #[cfg(feature = "enable-dotenv")]
+    {
+        use dotenv::dotenv;
+        dotenv().ok();
+    }
+
     build_env_logger();
 
     let es_host = var("ELASTIC_HOST").expect("There is not ELASTIC_HOST env variable!");
@@ -81,8 +85,13 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     let logger_wm = var("LOGGER_ADDR").expect("There is not LOGGER_ADDR env variable!");
     let cacher_addr = var("CACHER_HOST").expect("There is not CACHER_HOST env variable!");
     let cors_origins: String = var("CORS_ORIGIN").expect("There is not CORS_ORIGIN env variable!");
+    let cacher_expire = var("CACHER_EXPIRE").expect("There is not CACHER_EXPIRE env variable!");
+
     let client_port =
         u16::from_str(client_port.as_str()).expect("Failed while parsing port number.");
+
+    let cacher_expire_int =
+        u64::from_str(cacher_expire.as_str()).expect("Failed while parsing cacher expire value.");
 
     let service = ServiceParametersBuilder::default()
         .es_host(es_host)
@@ -93,6 +102,7 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
         .service_port(client_port)
         .cors_origin(cors_origins)
         .logger_mw_addr(logger_wm)
+        .cacher_expire(cacher_expire_int)
         .build();
 
     Ok(service.unwrap())
@@ -146,8 +156,9 @@ pub fn build_document_scope() -> Scope {
 }
 
 pub fn build_search_scope() -> Scope {
-    #[cfg(feature = "chunked")]
-    if cfg!(feature = "chunked") {
+    #[cfg(feature = "enable-chunked")]
+    if cfg!(feature = "enable-chunked") {
+        use crate::endpoints::searcher::{search_chunked, search_chunked_tokens};
         return web::scope("/search")
             .service(search_chunked)
             .service(search_chunked_tokens);
@@ -159,8 +170,9 @@ pub fn build_search_scope() -> Scope {
 }
 
 pub fn build_similar_scope() -> Scope {
-    #[cfg(feature = "chunked")]
-    if cfg!(feature = "chunked") {
+    #[cfg(feature = "enable-chunked")]
+    if cfg!(feature = "enable-chunked") {
+        use crate::endpoints::similarities::search_similar_chunkec_docs;
         return web::scope("/similar").service(search_similar_chunkec_docs);
     }
 

@@ -1,13 +1,15 @@
-use crate::endpoints::ContextData;
+use crate::endpoints::{CacherData, SearcherData};
 use crate::errors::JsonResponse;
+use crate::services::cacher::values::*;
+use crate::services::CacherService;
 
-#[cfg(feature = "chunked")]
-use crate::service::GroupedDocs;
+#[cfg(feature = "enable-chunked")]
+use crate::services::GroupedDocs;
+
+use actix_web::{post, web};
 
 use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
-
-use actix_web::{post, web};
 
 #[utoipa::path(
     post,
@@ -21,40 +23,26 @@ use actix_web::{post, web};
 )]
 #[post("/")]
 async fn search_all(
-    cxt: ContextData,
+    cxt: SearcherData,
+    cacher: CacherData,
     form: web::Json<SearchParams>,
 ) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
-    #[cfg(feature = "no-cache")]
-    if cfg!(feature = "no-cache") {
+    #[cfg(feature = "disable-caching")]
+    if cfg!(feature = "disable-caching") {
         return client.search(&search_form).await;
     }
 
-    match client.load_cache(&search_form).await {
+    let cacher_params = CacherSearchParams::from(&search_form);
+    match cacher
+        .service
+        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
+        .await
+    {
         None => client.search(&search_form).await,
-        Some(documents) => Ok(web::Json(documents)),
-    }
-}
-
-#[cfg(feature = "chunked")]
-#[post("/")]
-async fn search_chunked(
-    cxt: ContextData,
-    form: web::Json<SearchParams>,
-) -> JsonResponse<GroupedDocs> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-
-    #[cfg(feature = "no-cache")]
-    if cfg!(feature = "no-cache") {
-        return client.search_chunked(&search_form).await;
-    }
-
-    match client.load_cache(&search_form).await {
-        None => client.search_chunked(&search_form).await,
-        Some(documents) => Ok(web::Json(client.group_document_chunks(documents))),
+        Some(documents) => Ok(web::Json(documents.into())),
     }
 }
 
@@ -70,47 +58,91 @@ async fn search_chunked(
 )]
 #[post("/tokens")]
 async fn search_tokens(
-    cxt: ContextData,
+    cxt: SearcherData,
+    cacher: CacherData,
     form: web::Json<SearchParams>,
 ) -> JsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
-    #[cfg(feature = "no-cache")]
-    if cfg!(feature = "no-cache") {
+    #[cfg(feature = "disable-caching")]
+    if cfg!(feature = "disable-caching") {
         return client.search_tokens(&search_form).await;
     }
 
-    match client.load_cache(&search_form).await {
+    let cacher_params = CacherSearchParams::from(&search_form);
+    match cacher
+        .service
+        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
+        .await
+    {
         None => client.search_tokens(&search_form).await,
-        Some(documents) => Ok(web::Json(documents)),
+        Some(documents) => Ok(web::Json(documents.into())),
     }
 }
 
-#[cfg(feature = "chunked")]
-#[post("/tokens")]
-async fn search_chunked_tokens(
-    cxt: ContextData,
+#[cfg(feature = "enable-chunked")]
+#[post("/")]
+async fn search_chunked(
+    cxt: SearcherData,
+    cacher: CacherData,
     form: web::Json<SearchParams>,
 ) -> JsonResponse<GroupedDocs> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
-    #[cfg(feature = "no-cache")]
-    if cfg!(feature = "no-cache") {
+    #[cfg(feature = "disable-caching")]
+    if cfg!(feature = "disable-caching") {
+        return client.search_chunked(&search_form).await;
+    }
+
+    let cacher_params = CacherSearchParams::from(&search_form);
+    match cacher
+        .service
+        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
+        .await
+    {
+        None => client.search_chunked(&search_form).await,
+        Some(documents) => {
+            let grouped = client.group_document_chunks(documents.into());
+            Ok(web::Json(grouped))
+        }
+    }
+}
+
+#[cfg(feature = "enable-chunked")]
+#[post("/tokens")]
+async fn search_chunked_tokens(
+    cxt: SearcherData,
+    cacher: CacherData,
+    form: web::Json<SearchParams>,
+) -> JsonResponse<GroupedDocs> {
+    let client = cxt.get_ref();
+    let search_form = form.0;
+
+    #[cfg(feature = "disable-caching")]
+    if cfg!(feature = "disable-caching") {
         return client.search_chunked_tokens(&search_form).await;
     }
 
-    match client.load_cache(&search_form).await {
+    let cacher_params = CacherSearchParams::from(&search_form);
+    match cacher
+        .service
+        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
+        .await
+    {
         None => client.search_chunked_tokens(&search_form).await,
-        Some(documents) => Ok(web::Json(client.group_document_chunks(documents))),
+        Some(documents) => {
+            let grouped = client.group_document_chunks(documents.into());
+            Ok(web::Json(grouped))
+        }
     }
 }
 
 #[cfg(test)]
 mod searcher_endpoints {
-    use crate::service::own_engine::context::OtherContext;
-    use crate::service::ServiceClient;
+    use crate::services::own_engine::context::OtherContext;
+    use crate::services::SearcherService;
 
     use wrappers::document::{Document, DocumentBuilder};
     use wrappers::search_params::SearchParamsBuilder;
@@ -119,7 +151,7 @@ mod searcher_endpoints {
 
     #[test]
     async fn test_search_all() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let mut search_params = SearchParamsBuilder::default()
             .query("text".to_string())
             .buckets(Some("test_bucket".to_string()))
@@ -149,7 +181,7 @@ mod searcher_endpoints {
 
     #[test]
     async fn test_search_bucket() {
-        let other_context = OtherContext::_new("test".to_string());
+        let other_context = OtherContext::new("test".to_string());
         let mut search_params = SearchParamsBuilder::default()
             .query("unknown-data".to_string())
             .buckets(Some("test_bucket".to_string()))
