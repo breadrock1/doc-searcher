@@ -7,8 +7,16 @@ edition = "2021"
 maintenance = { status = "actively-developed" }
 
 [features]
-chunked = []
-no-cache = []
+enable-parse-pdf        = ["loader/enable-pdf"]
+enable-parse-audio      = ["loader/enable-audio"]
+enable-parse-video      = ["loader/enable-video"]
+enable-parse-image      = ["loader/enable-image"]
+enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
+
+enable-dotenv   = ["dep:dotenv"]
+enable-chunked  = []
+disable-caching = []
+
 default = []
 
 [dependencies]
@@ -20,7 +28,6 @@ actix-files = "^0.6"
 anyhow = "^1.0"
 async-trait = "^0.1"
 derive_builder = "^0.12"
-dotenv = "^0.15"
 elasticsearch = "8.5.0-alpha.1"
 env_logger = "^0.10"
 futures = "^0.3"
@@ -32,7 +39,6 @@ serde_json = "^1.0"
 thiserror = "^1.0"
 walkdir = "^2.4"
 
-cacher = { path = "src/crates/cacher" }
 datetime = { path = "src/crates/datetime" }
 elquery = { path = "src/crates/elquery" }
 hasher = { path = "src/crates/hasher" }
@@ -42,6 +48,14 @@ wrappers = { path = "src/crates/wrappers" }
 [dependencies.chrono]
 version = "^0.4"
 features = ["rustc-serialize", "serde"]
+
+[dependencies.dotenv]
+version = "^0.15"
+optional = true
+
+[dependencies.redis]
+version = "^0.24"
+features = ["aio", "tokio-comp", "connection-manager"]
 
 [dependencies.tokio]
 version = "^1.36"
