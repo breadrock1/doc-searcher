@@ -4,8 +4,8 @@ use crate::endpoints::buckets::{
 use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::hello::hello;
-
 use crate::endpoints::loader::{download_file, load_file};
+use crate::endpoints::paginator::{delete_expired_ids, get_pagination_ids, next_pagination_result};
 use crate::endpoints::searcher::{search_all, search_tokens};
 use crate::endpoints::similarities::search_similar_docs;
 
@@ -172,8 +172,8 @@ pub fn build_search_scope() -> Scope {
 pub fn build_similar_scope() -> Scope {
     #[cfg(feature = "enable-chunked")]
     if cfg!(feature = "enable-chunked") {
-        use crate::endpoints::similarities::search_similar_chunkec_docs;
-        return web::scope("/similar").service(search_similar_chunkec_docs);
+        use crate::endpoints::similarities::search_similar_chunked_docs;
+        return web::scope("/similar").service(search_similar_chunked_docs);
     }
 
     web::scope("/similar").service(search_similar_docs)
@@ -183,4 +183,20 @@ pub fn build_file_scope() -> Scope {
     web::scope("/file")
         .service(load_file)
         .service(download_file)
+}
+
+pub fn build_pagination_scope() -> Scope {
+    #[cfg(feature = "enable-chunked")]
+    if cfg!(feature = "enable-chunked") {
+        use crate::endpoints::paginator::next_pagination_chunked_result;
+        return web::scope("/pagination")
+            .service(get_pagination_ids)
+            .service(delete_expired_ids)
+            .service(next_pagination_chunked_result);
+    }
+
+    web::scope("/pagination")
+        .service(get_pagination_ids)
+        .service(delete_expired_ids)
+        .service(next_pagination_result)
 }

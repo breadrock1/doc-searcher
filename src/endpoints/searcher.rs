@@ -1,5 +1,5 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::JsonResponse;
+use crate::errors::PaginateJsonResponse;
 use crate::services::cacher::values::*;
 use crate::services::CacherService;
 
@@ -9,6 +9,7 @@ use crate::services::GroupedDocs;
 use actix_web::{post, web};
 
 use wrappers::document::Document;
+use wrappers::scroll::PagintatedResult;
 use wrappers::search_params::SearchParams;
 
 #[utoipa::path(
@@ -26,7 +27,7 @@ async fn search_all(
     cxt: SearcherData,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<Vec<Document>> {
+) -> PaginateJsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -42,7 +43,17 @@ async fn search_all(
         .await
     {
         None => client.search(&search_form).await,
-        Some(documents) => Ok(web::Json(documents.into())),
+        Some(documents) => {
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let scroll = PagintatedResult::new(docs);
+            Ok(web::Json(scroll))
+        }
     }
 }
 
@@ -61,7 +72,7 @@ async fn search_tokens(
     cxt: SearcherData,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<Vec<Document>> {
+) -> PaginateJsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -77,7 +88,17 @@ async fn search_tokens(
         .await
     {
         None => client.search_tokens(&search_form).await,
-        Some(documents) => Ok(web::Json(documents.into())),
+        Some(documents) => {
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let scroll = PagintatedResult::new(docs);
+            Ok(web::Json(scroll))
+        }
     }
 }
 
@@ -87,7 +108,7 @@ async fn search_chunked(
     cxt: SearcherData,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<GroupedDocs> {
+) -> PaginateJsonResponse<GroupedDocs> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -104,8 +125,16 @@ async fn search_chunked(
     {
         None => client.search_chunked(&search_form).await,
         Some(documents) => {
-            let grouped = client.group_document_chunks(documents.into());
-            Ok(web::Json(grouped))
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let grouped = client.group_document_chunks(&docs);
+            let scroll = PagintatedResult::new(grouped);
+            Ok(web::Json(scroll))
         }
     }
 }
@@ -116,7 +145,7 @@ async fn search_chunked_tokens(
     cxt: SearcherData,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<GroupedDocs> {
+) -> PaginateJsonResponse<GroupedDocs> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -133,8 +162,16 @@ async fn search_chunked_tokens(
     {
         None => client.search_chunked_tokens(&search_form).await,
         Some(documents) => {
-            let grouped = client.group_document_chunks(documents.into());
-            Ok(web::Json(grouped))
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let grouped = client.group_document_chunks(&docs);
+            let scroll = PagintatedResult::new(grouped);
+            Ok(web::Json(scroll))
         }
     }
 }
@@ -163,11 +200,12 @@ mod searcher_endpoints {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
+            .scroll_timelife("1m".to_string())
             .build()
             .unwrap();
 
         let founded = other_context.search(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         let build_documents = create_documents_integration_test();
         for doc in build_documents.iter() {
@@ -176,7 +214,7 @@ mod searcher_endpoints {
 
         search_params.query = "proposals".to_string();
         let founded = other_context.search(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 1);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 1);
     }
 
     #[test]
@@ -193,11 +231,12 @@ mod searcher_endpoints {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
+            .scroll_timelife("1m".to_string())
             .build()
             .unwrap();
 
         let founded = other_context.search(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         let build_documents = create_documents_integration_test();
         for doc in build_documents.iter() {
@@ -206,11 +245,11 @@ mod searcher_endpoints {
 
         search_params.query = "unknown".to_string();
         let founded = other_context.search(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         search_params.query = "proposals".to_string();
         let founded = other_context.search(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 1);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 1);
     }
 
     fn create_documents_integration_test() -> Vec<Document> {

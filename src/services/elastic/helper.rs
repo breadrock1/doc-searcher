@@ -8,6 +8,7 @@ use elquery::similar_query::SimilarQuery;
 use wrappers::bucket::{Bucket, BucketBuilder};
 use wrappers::document::{Document, HighlightEntity};
 use wrappers::schema::BucketSchema;
+use wrappers::scroll::PagintatedResult;
 use wrappers::search_params::SearchParams;
 
 use actix_web::web;
@@ -90,7 +91,7 @@ pub async fn search_documents(
     indexes: &[&str],
     body_value: &Value,
     es_params: &SearchParams,
-) -> JsonResponse<Vec<Document>> {
+) -> JsonResponse<PagintatedResult<Vec<Document>>> {
     let result_size = es_params.result_size;
     let result_offset = es_params.result_offset;
     let response_result = elastic
@@ -99,15 +100,13 @@ pub async fn search_documents(
         .size(result_size)
         .body(body_value)
         .pretty(true)
+        .scroll(es_params.get_scroll())
         .allow_no_indices(true)
         .send()
         .await;
 
     match response_result {
-        Err(err) => {
-            let web_err = WebError::SearchFailed(err.to_string());
-            Err(web_err)
-        }
+        Err(err) => Err(WebError::SearchFailed(err.to_string())),
         Ok(response) => {
             let documents = parse_search_result(response).await;
             Ok(web::Json(documents))
@@ -115,20 +114,26 @@ pub async fn search_documents(
     }
 }
 
-pub async fn parse_search_result(response: Response) -> Vec<Document> {
+pub async fn parse_search_result(response: Response) -> PagintatedResult<Vec<Document>> {
     let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"hits"][&"hits"];
+    let scroll_id = common_object[&"_scroll_id"]
+        .as_str()
+        .map_or_else(|| None, |x| Some(x.to_string()));
+
     let own_document = document_json.to_owned();
     let default_vec: Vec<Value> = Vec::default();
     let json_array = own_document.as_array().unwrap_or(&default_vec);
 
-    json_array
+    let founded_documents = json_array
         .iter()
         .map(parse_document_highlight)
         .map(Result::ok)
         .filter(Option::is_some)
         .flatten()
-        .collect()
+        .collect::<Vec<Document>>();
+
+    PagintatedResult::new_with_opt_id(founded_documents, scroll_id)
 }
 
 fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {

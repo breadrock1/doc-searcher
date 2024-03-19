@@ -1,4 +1,4 @@
-use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
+use crate::errors::{JsonResponse, PaginateJsonResponse, SuccessfulResponse, WebError};
 use crate::services::own_engine::context::OtherContext;
 use crate::services::SearcherService;
 
@@ -8,6 +8,7 @@ use crate::services::GroupedDocs;
 use wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
 use wrappers::cluster::{Cluster, ClusterBuilder};
 use wrappers::document::Document;
+use wrappers::scroll::{AllScrolls, NextScroll, PagintatedResult};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -196,7 +197,7 @@ impl SearcherService for OtherContext {
     }
 
     async fn download_file(&self, _bucket_id: &str, file_path: &str) -> Option<NamedFile> {
-        match actix_files::NamedFile::open_async(file_path).await {
+        match NamedFile::open_async(file_path).await {
             Ok(named_file) => Some(named_file),
             Err(err) => {
                 log::error!("Failed while opening async streaming: {}", err);
@@ -205,7 +206,25 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn search(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
+        let def_vals: Vec<String> = Vec::default();
+        Ok(web::Json(def_vals))
+    }
+    async fn delete_pagination_ids(&self, _ids: &AllScrolls) -> HttpResponse {
+        SuccessfulResponse::ok_response("Ok")
+    }
+
+    async fn next_pagination_result(
+        &self,
+        _curr_scroll: &NextScroll,
+    ) -> PaginateJsonResponse<Vec<Document>> {
+        Ok(web::Json(PagintatedResult::new_with_id(
+            Vec::default(),
+            "id".to_string(),
+        )))
+    }
+
+    async fn search(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -216,10 +235,10 @@ impl SearcherService for OtherContext {
             .cloned()
             .collect::<Vec<Document>>();
 
-        Ok(web::Json(documents_vec))
+        Ok(web::Json(PagintatedResult::new(documents_vec)))
     }
 
-    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -230,10 +249,10 @@ impl SearcherService for OtherContext {
             .cloned()
             .collect::<Vec<Document>>();
 
-        Ok(web::Json(documents_vec))
+        Ok(web::Json(PagintatedResult::new(documents_vec)))
     }
 
-    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn similarity(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
@@ -249,37 +268,55 @@ impl SearcherService for OtherContext {
             .cloned()
             .collect::<Vec<Document>>();
 
-        Ok(web::Json(documents_vec))
+        Ok(web::Json(PagintatedResult::new(documents_vec)))
     }
 
     #[cfg(feature = "enable-chunked")]
-    async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn search_chunked(&self, s_params: &SearchParams) -> PaginateJsonResponse<GroupedDocs> {
         match self.search(s_params).await {
-            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
+            Ok(docs) => {
+                let documents = docs.0.get_founded();
+                let grouped = self.group_document_chunks(documents);
+                Ok(web::Json(PagintatedResult::new(grouped)))
+            }
             Err(err) => {
-                log::error!("Failed while searchcing documents: {}", err);
+                log::error!("Failed while searching documents: {}", err);
                 Err(err)
             }
         }
     }
 
     #[cfg(feature = "enable-chunked")]
-    async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn search_chunked_tokens(
+        &self,
+        s_params: &SearchParams,
+    ) -> PaginateJsonResponse<GroupedDocs> {
         match self.search_tokens(s_params).await {
-            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
+            Ok(docs) => {
+                let documents = docs.0.get_founded();
+                let grouped = self.group_document_chunks(documents);
+                Ok(web::Json(PagintatedResult::new(grouped)))
+            }
             Err(err) => {
-                log::error!("Failed while searchcing documents tokens: {}", err);
+                log::error!("Failed while searching documents tokens: {}", err);
                 Err(err)
             }
         }
     }
 
     #[cfg(feature = "enable-chunked")]
-    async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn similarity_chunked(
+        &self,
+        s_params: &SearchParams,
+    ) -> PaginateJsonResponse<GroupedDocs> {
         match self.similarity(s_params).await {
-            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
+            Ok(docs) => {
+                let documents = docs.0.get_founded();
+                let grouped = self.group_document_chunks(documents);
+                Ok(web::Json(PagintatedResult::new(grouped)))
+            }
             Err(err) => {
-                log::error!("Failed while searchcing similar documents: {}", err);
+                log::error!("Failed while searching similar documents: {}", err);
                 Err(err)
             }
         }
