@@ -3,7 +3,7 @@ pub mod elastic;
 pub mod init;
 pub mod own_engine;
 
-use crate::errors::JsonResponse;
+use crate::errors::{JsonResponse, PaginateJsonResponse};
 
 use actix_files::NamedFile;
 use actix_web::HttpResponse;
@@ -14,12 +14,20 @@ use std::collections::HashMap;
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
+use wrappers::scroll::{AllScrolls, NextScroll};
 use wrappers::search_params::SearchParams;
 
 pub type GroupedDocs = HashMap<String, Vec<Document>>;
 
+#[derive(Clone)]
 pub struct CacherClient<D: CacherService> {
-    pub service: Box<D>,
+    pub service: D,
+}
+
+impl<D: CacherService> CacherClient<D> {
+    pub fn new(service: D) -> Self {
+        CacherClient { service }
+    }
 }
 
 #[async_trait::async_trait]
@@ -55,26 +63,36 @@ pub trait SearcherService {
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
     async fn download_file(&self, bucket_id: &str, file_path: &str) -> Option<NamedFile>;
 
-    async fn search(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
-    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
-    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>>;
+    async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>>;
+    async fn delete_pagination_ids(&self, ids: &AllScrolls) -> HttpResponse;
+    async fn next_pagination_result(&self, curr_scroll: &NextScroll) -> PaginateJsonResponse<Vec<Document>>;
+
+    async fn search(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>>;
+    async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>>;
+    async fn similarity(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>>;
 
     #[cfg(feature = "enable-chunked")]
-    async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
+    async fn search_chunked(&self, s_params: &SearchParams) -> PaginateJsonResponse<GroupedDocs>;
 
     #[cfg(feature = "enable-chunked")]
-    async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
+    async fn search_chunked_tokens(
+        &self,
+        s_params: &SearchParams,
+    ) -> PaginateJsonResponse<GroupedDocs>;
 
     #[cfg(feature = "enable-chunked")]
-    async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs>;
+    async fn similarity_chunked(
+        &self,
+        s_params: &SearchParams,
+    ) -> PaginateJsonResponse<GroupedDocs>;
 
-    fn group_document_chunks(&self, documents: Vec<Document>) -> HashMap<String, Vec<Document>> {
+    fn group_document_chunks(&self, documents: &[Document]) -> HashMap<String, Vec<Document>> {
         let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
-        documents.into_iter().for_each(|doc| {
+        documents.iter().for_each(|doc| {
             grouped_documents
                 .entry(doc.content_md5.to_owned())
                 .or_default()
-                .push(doc)
+                .push(doc.to_owned())
         });
 
         grouped_documents

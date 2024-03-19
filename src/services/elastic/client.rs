@@ -1,7 +1,7 @@
 use crate::errors::{SuccessfulResponse, WebError};
-use crate::services::elastic::context::ElasticContext;
+use crate::services::elastic::context;
 use crate::services::elastic::helper;
-use crate::services::{JsonResponse, SearcherService};
+use crate::services::{JsonResponse, PaginateJsonResponse, SearcherService};
 
 #[cfg(feature = "enable-chunked")]
 use crate::services::GroupedDocs;
@@ -11,6 +11,7 @@ use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
+use wrappers::scroll::{AllScrolls, PagintatedResult, NextScroll};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -18,14 +19,14 @@ use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::Method;
-use elasticsearch::IndexParts;
+use elasticsearch::{ClearScrollParts, IndexParts, ScrollParts};
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
 #[async_trait::async_trait]
-impl SearcherService for ElasticContext {
+impl SearcherService for context::ElasticContext {
     async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
@@ -417,7 +418,7 @@ impl SearcherService for ElasticContext {
     }
 
     async fn download_file(&self, _bucket_id: &str, file_path: &str) -> Option<NamedFile> {
-        match actix_files::NamedFile::open_async(file_path).await {
+        match NamedFile::open_async(file_path).await {
             Ok(named_file) => Some(named_file),
             Err(err) => {
                 log::error!("Failed while opening async streaming: {}", err);
@@ -426,7 +427,67 @@ impl SearcherService for ElasticContext {
         }
     }
 
-    async fn search(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
+        let elastic = self.get_cxt().read().await;
+        let response_result = elastic
+            .send(
+                Method::Post,
+                "/_search/scroll=1m",
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(b"".as_ref()),
+                None,
+            )
+            .await;
+
+        match response_result {
+            Ok(_response) => {
+                let def_vals: Vec<String> = Vec::default();
+                Ok(web::Json(def_vals))
+            }
+            Err(err) => {
+                log::error!("Failed while searching documents: {}", err);
+                Err(WebError::SearchFailed(err.to_string()))
+            }
+        }
+    }
+    async fn delete_pagination_ids(&self, ids: &AllScrolls) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let response_result = elastic
+            .clear_scroll(ClearScrollParts::ScrollId(&ids.as_slice()))
+            .send()
+            .await;
+
+        match response_result {
+            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Err(err) => {
+                log::error!("Failed while searching documents: {}", err);
+                WebError::SearchFailed(err.to_string()).error_response()
+            }
+        }
+    }
+
+    async fn next_pagination_result(&self, curr_scroll: &NextScroll) -> PaginateJsonResponse<Vec<Document>> {
+        let elastic = self.get_cxt().read().await;
+        let response_result = elastic
+            .scroll(ScrollParts::ScrollId(curr_scroll.get_scroll_id()))
+            .pretty(true)
+            .send()
+            .await;
+
+        match response_result {
+            Ok(response) => {
+                let documents = helper::parse_search_result(response).await;
+                Ok(web::Json(documents))
+            }
+            Err(err) => {
+                log::error!("Failed while searching documents: {}", err);
+                Err(WebError::SearchFailed(err.to_string()))
+            }
+        }
+    }
+
+    async fn search(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_search_query(s_params);
         let buckets = s_params
@@ -435,6 +496,7 @@ impl SearcherService for ElasticContext {
             .unwrap_or(DEFAULT_BUCKET_NAME.to_string());
 
         let indexes = buckets.split(',').collect::<Vec<&str>>();
+
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
@@ -444,11 +506,13 @@ impl SearcherService for ElasticContext {
         }
     }
 
-    async fn search_tokens(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_search_query(s_params);
+
         let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
         let indexes = buckets.split(',').collect::<Vec<&str>>();
+
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
@@ -458,7 +522,7 @@ impl SearcherService for ElasticContext {
         }
     }
 
-    async fn similarity(&self, s_params: &SearchParams) -> JsonResponse<Vec<Document>> {
+    async fn similarity(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_search_similar_query(s_params);
 
@@ -475,33 +539,51 @@ impl SearcherService for ElasticContext {
     }
 
     #[cfg(feature = "enable-chunked")]
-    async fn search_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn search_chunked(&self, s_params: &SearchParams) -> PaginateJsonResponse<GroupedDocs> {
         match self.search(s_params).await {
-            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
+            Ok(docs) => {
+                let documents = docs.0.get_founded();
+                let grouped = self.group_document_chunks(documents);
+                Ok(web::Json(PagintatedResult::new(grouped)))
+            }
             Err(err) => {
-                log::error!("Failed while searchcing documents: {}", err);
+                log::error!("Failed while searching documents: {}", err);
                 Err(err)
             }
         }
     }
 
     #[cfg(feature = "enable-chunked")]
-    async fn search_chunked_tokens(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn search_chunked_tokens(
+        &self,
+        s_params: &SearchParams,
+    ) -> PaginateJsonResponse<GroupedDocs> {
         match self.search_tokens(s_params).await {
-            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
+            Ok(docs) => {
+                let documents = docs.0.get_founded();
+                let grouped = self.group_document_chunks(documents);
+                Ok(web::Json(PagintatedResult::new(grouped)))
+            }
             Err(err) => {
-                log::error!("Failed while searchcing documents tokens: {}", err);
+                log::error!("Failed while searching documents tokens: {}", err);
                 Err(err)
             }
         }
     }
 
     #[cfg(feature = "enable-chunked")]
-    async fn similarity_chunked(&self, s_params: &SearchParams) -> JsonResponse<GroupedDocs> {
+    async fn similarity_chunked(
+        &self,
+        s_params: &SearchParams,
+    ) -> PaginateJsonResponse<GroupedDocs> {
         match self.similarity(s_params).await {
-            Ok(docs) => Ok(web::Json(self.group_document_chunks(docs.0))),
+            Ok(docs) => {
+                let documents = docs.0.get_founded();
+                let grouped = self.group_document_chunks(documents);
+                Ok(web::Json(PagintatedResult::new(grouped)))
+            }
             Err(err) => {
-                log::error!("Failed while searchcing similar documents: {}", err);
+                log::error!("Failed while searching similar documents: {}", err);
                 Err(err)
             }
         }
