@@ -65,7 +65,10 @@ pub trait SearcherService {
 
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>>;
     async fn delete_pagination_ids(&self, ids: &AllScrolls) -> HttpResponse;
-    async fn next_pagination_result(&self, curr_scroll: &NextScroll) -> PaginateJsonResponse<Vec<Document>>;
+    async fn next_pagination_result(
+        &self,
+        curr_scroll: &NextScroll,
+    ) -> PaginateJsonResponse<Vec<Document>>;
 
     async fn search(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>>;
     async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>>;

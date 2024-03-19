@@ -5,9 +5,9 @@ use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_
 use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
 use crate::endpoints::hello::hello;
 use crate::endpoints::loader::{download_file, load_file};
+use crate::endpoints::paginator::{delete_expired_ids, get_pagination_ids, next_pagination_result};
 use crate::endpoints::searcher::{search_all, search_tokens};
 use crate::endpoints::similarities::search_similar_docs;
-use crate::endpoints::paginator::{delete_expired_ids, get_pagination_ids, next_pagination_result};
 
 use actix_cors::Cors;
 use actix_web::http::header;

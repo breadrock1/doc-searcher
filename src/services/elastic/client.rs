@@ -11,7 +11,7 @@ use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, PagintatedResult, NextScroll};
+use wrappers::scroll::{AllScrolls, NextScroll, PagintatedResult};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -467,7 +467,10 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn next_pagination_result(&self, curr_scroll: &NextScroll) -> PaginateJsonResponse<Vec<Document>> {
+    async fn next_pagination_result(
+        &self,
+        curr_scroll: &NextScroll,
+    ) -> PaginateJsonResponse<Vec<Document>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .scroll(ScrollParts::ScrollId(curr_scroll.get_scroll_id()))
