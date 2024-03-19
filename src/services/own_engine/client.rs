@@ -8,7 +8,7 @@ use crate::services::GroupedDocs;
 use wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
 use wrappers::cluster::{Cluster, ClusterBuilder};
 use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, PagintatedResult, NextScroll};
+use wrappers::scroll::{AllScrolls, NextScroll, PagintatedResult};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -214,7 +214,10 @@ impl SearcherService for OtherContext {
         SuccessfulResponse::ok_response("Ok")
     }
 
-    async fn next_pagination_result(&self, _curr_scroll: &NextScroll) -> PaginateJsonResponse<Vec<Document>> {
+    async fn next_pagination_result(
+        &self,
+        _curr_scroll: &NextScroll,
+    ) -> PaginateJsonResponse<Vec<Document>> {
         Ok(web::Json(PagintatedResult::new_with_id(
             Vec::default(),
             "id".to_string(),

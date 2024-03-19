@@ -2,10 +2,9 @@ use crate::endpoints::SearcherData;
 use crate::errors::{JsonResponse, PaginateJsonResponse};
 use crate::services::GroupedDocs;
 
-use actix_web::{delete, get, HttpResponse, post, web};
+use actix_web::{delete, get, post, web, HttpResponse};
 use wrappers::document::Document;
 use wrappers::scroll::{AllScrolls, NextScroll, PagintatedResult};
-
 
 #[get("/")]
 async fn get_pagination_ids(cxt: SearcherData) -> JsonResponse<Vec<String>> {
@@ -14,10 +13,7 @@ async fn get_pagination_ids(cxt: SearcherData) -> JsonResponse<Vec<String>> {
 }
 
 #[delete("/")]
-async fn delete_expired_ids(
-    cxt: SearcherData,
-    form: web::Json<AllScrolls>,
-) -> HttpResponse {
+async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrolls>) -> HttpResponse {
     let client = cxt.get_ref();
     let pagination_form = form.0;
     client.delete_pagination_ids(&pagination_form).await
@@ -46,7 +42,7 @@ async fn next_pagination_chunked_result(
             let grouped = client.group_document_chunks(documents.get_founded());
             let scroll = PagintatedResult::new(grouped);
             Ok(web::Json(scroll))
-        },
-        Err(err) => Err(err)
+        }
+        Err(err) => Err(err),
     }
 }
