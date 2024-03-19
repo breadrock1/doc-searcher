@@ -43,7 +43,17 @@ async fn search_all(
         .await
     {
         None => client.search(&search_form).await,
-        Some(documents) => Ok(web::Json(documents.into())),
+        Some(documents) => {
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let scroll = PagintatedResult::new(docs);
+            Ok(web::Json(scroll))
+        }
     }
 }
 
@@ -78,7 +88,17 @@ async fn search_tokens(
         .await
     {
         None => client.search_tokens(&search_form).await,
-        Some(documents) => Ok(web::Json(documents.into())),
+        Some(documents) => {
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let scroll = PagintatedResult::new(docs);
+            Ok(web::Json(scroll))
+        }
     }
 }
 
@@ -105,8 +125,16 @@ async fn search_chunked(
     {
         None => client.search_chunked(&search_form).await,
         Some(documents) => {
-            let grouped = client.group_document_chunks(documents.into());
-            Ok(web::Json(grouped))
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let grouped = client.group_document_chunks(&docs);
+            let scroll = PagintatedResult::new(grouped);
+            Ok(web::Json(scroll))
         }
     }
 }
@@ -134,8 +162,16 @@ async fn search_chunked_tokens(
     {
         None => client.search_chunked_tokens(&search_form).await,
         Some(documents) => {
-            let grouped = client.group_document_chunks(documents.into());
-            Ok(web::Json(grouped))
+            let cacher_params = CacherSearchParams::from(&search_form);
+            let docs = cacher
+                .service
+                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
+                .await;
+
+            let docs = Vec::from(docs);
+            let grouped = client.group_document_chunks(&docs);
+            let scroll = PagintatedResult::new(grouped);
+            Ok(web::Json(scroll))
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::services::{CacherClient, CacherService};
+use crate::services::CacherService;
 
 use redis::RedisResult;
 use redis::{AsyncCommands, FromRedisValue, ToRedisArgs};
@@ -9,15 +9,6 @@ use tokio::sync::RwLock;
 pub struct RedisService {
     cacher_client: Arc<RwLock<redis::Client>>,
     expire_time: u64,
-}
-
-impl CacherClient<RedisService> {
-    pub fn new(addr: &str, expire: u64) -> Self {
-        let service = RedisService::new(addr, expire);
-        CacherClient {
-            service: Box::new(service),
-        }
-    }
 }
 
 impl RedisService {
