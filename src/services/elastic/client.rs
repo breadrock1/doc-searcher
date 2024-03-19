@@ -11,7 +11,7 @@ use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, NextScroll, PagintatedResult};
+use wrappers::scroll::{AllScrolls, NextScroll};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -547,7 +547,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -565,7 +565,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents tokens: {}", err);
@@ -583,7 +583,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching similar documents: {}", err);
