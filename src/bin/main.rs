@@ -1,9 +1,10 @@
 extern crate doc_search;
 
 use doc_search::middlewares::logger::LoggerMiddlewareFactory;
+use doc_search::services::cacher::build_redis_service;
 use doc_search::services::elastic::build_elastic_service;
 use doc_search::services::init::*;
-use doc_search::services::{CacherClient, SearcherService};
+use doc_search::services::SearcherService;
 use doc_search::swagger::create_service;
 use doc_search::swagger::{ApiDoc, OpenApi};
 
@@ -18,25 +19,28 @@ async fn main() -> Result<(), anyhow::Error> {
     let service_addr = sv_params.service_address();
     let logger_mw_addr = sv_params.logger_mw().to_owned();
     let cors_origin = sv_params.cors_origin().to_owned();
-    let cacher_addr = sv_params.cacher_addr().to_owned();
-    let cacher_expire = sv_params.cacher_expire();
 
-    let search_context = build_elastic_service(&sv_params)
-        .expect("Failed while initializing elasticsearch context!");
+    let search_context =
+        build_elastic_service(&sv_params).expect("Failed while initializing elasticsearch client!");
+
+    let redis_context =
+        build_redis_service(&sv_params).expect("Failed while initializing redis client");
 
     HttpServer::new(move || {
-        let cxt = search_context.clone();
-        let box_cxt: Box<dyn SearcherService> = Box::new(cxt);
-        let cacher_cxt = CacherClient::new(cacher_addr.as_str(), cacher_expire);
+        let searcher = search_context.clone();
+        let searcher_cxt: Box<dyn SearcherService> = Box::new(searcher);
+
+        let redis = redis_context.clone();
+        let redis_cxt = Box::new(redis);
 
         let openapi = ApiDoc::openapi();
         let cors = build_cors_config(cors_origin.as_str());
 
         App::new()
-            .app_data(web::Data::new(box_cxt))
-            .app_data(web::Data::new(cacher_cxt))
-            .wrap(Logger::default())
+            .app_data(web::Data::new(searcher_cxt))
+            .app_data(web::Data::new(redis_cxt))
             .wrap(LoggerMiddlewareFactory::new(logger_mw_addr.as_str()))
+            .wrap(Logger::default())
             .wrap(cors)
             .service(create_service(&openapi))
             .service(build_hello_scope())
@@ -45,6 +49,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(build_document_scope())
             .service(build_search_scope())
             .service(build_similar_scope())
+            .service(build_pagination_scope())
             .service(build_file_scope())
     })
     .bind((service_addr, service_port))?
