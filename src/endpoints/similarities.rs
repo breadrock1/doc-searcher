@@ -1,5 +1,5 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::JsonResponse;
+use crate::errors::PaginateJsonResponse;
 use crate::services::cacher::values::{CacherDocuments, CacherSearchParams};
 use crate::services::CacherService;
 
@@ -10,6 +10,7 @@ use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
 
 use actix_web::{post, web};
+use wrappers::scroll::PagintatedResult;
 
 #[utoipa::path(
     post,
@@ -26,7 +27,7 @@ async fn search_similar_docs(
     cxt: SearcherData,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<Vec<Document>> {
+) -> PaginateJsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -48,11 +49,11 @@ async fn search_similar_docs(
 
 #[cfg(feature = "enable-chunked")]
 #[post("/")]
-async fn search_similar_chunkec_docs(
+async fn search_similar_chunked_docs(
     cxt: SearcherData,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> JsonResponse<GroupedDocs> {
+) -> PaginateJsonResponse<GroupedDocs> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -102,11 +103,12 @@ mod similar_endpoints {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
+            .scroll_timelife("1m".to_string())
             .build()
             .unwrap();
 
         let founded = other_context.similarity(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         let build_documents = create_documents_integration_test();
         for doc in build_documents.iter() {
@@ -115,11 +117,11 @@ mod similar_endpoints {
 
         search_params.query = "unknown".to_string();
         let founded = other_context.similarity(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         search_params.query = SSDEEP_HASH_CMP.to_string();
         let founded = other_context.similarity(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 2);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 2);
     }
 
     #[test]
@@ -136,11 +138,12 @@ mod similar_endpoints {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
+            .scroll_timelife("1m".to_string())
             .build()
             .unwrap();
 
         let founded = other_context.similarity(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         let build_documents = create_documents_integration_test();
         for doc in build_documents.iter() {
@@ -149,11 +152,11 @@ mod similar_endpoints {
 
         search_params.query = "unknown".to_string();
         let founded = other_context.similarity(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 0);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
         search_params.query = SSDEEP_HASH_CMP.to_string();
         let founded = other_context.similarity(&search_params).await;
-        assert_eq!(founded.unwrap().len(), 2);
+        assert_eq!(founded.unwrap().0.get_founded().len(), 2);
     }
 
     fn create_documents_integration_test() -> Vec<Document> {

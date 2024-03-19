@@ -16,6 +16,13 @@ pub struct SearchParams {
     pub created_date_from: String,
     pub result_size: i64,
     pub result_offset: i64,
+    pub scroll_timelife: String,
+}
+
+impl SearchParams {
+    pub fn get_scroll(&self) -> &str {
+        self.scroll_timelife.as_str()
+    }
 }
 
 impl Default for SearchParams {
@@ -31,6 +38,7 @@ impl Default for SearchParams {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
+            .scroll_timelife("30m".to_string())
             .build()
             .unwrap()
     }
