@@ -87,8 +87,7 @@ async fn delete_bucket(cxt: SearcherData, path: web::Path<String>) -> HttpRespon
 #[get("/{bucket_name}")]
 async fn get_bucket(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Bucket> {
     let client = cxt.get_ref();
-    let bucket_name = format!("/{}/_stats", path);
-    client.get_bucket(bucket_name.as_str()).await
+    client.get_bucket(path.as_str()).await
 }
 
 #[cfg(test)]
