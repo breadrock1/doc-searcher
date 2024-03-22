@@ -71,8 +71,7 @@ async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpRespo
 #[get("/{cluster_name}")]
 async fn get_cluster(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
-    let cluster_name = format!("/_nodes/{}", path);
-    client.get_cluster(cluster_name.as_str()).await
+    client.get_cluster(path.as_str()).await
 }
 
 #[cfg(test)]
