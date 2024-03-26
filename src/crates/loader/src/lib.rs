@@ -68,6 +68,7 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
 
     let file_kind = FileKind::what_kind(ext_);
     let file_data_ = FileKind::parse_file(&file_path, &file_kind);
+    let document_type_ = FileKind::document_type(&file_kind);
     let md5_hash = gen_hash(HashType::MD5, file_data_.as_bytes());
     let binding = md5_hash.unwrap();
     let md5_hash_ = binding.get_hash_data();
@@ -126,7 +127,7 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
             .document_name(file_name_.to_string())
             .document_path(file_path_.to_string())
             .document_size(file_metadata.size() as i32)
-            .document_type("document".to_string())
+            .document_type(document_type_.clone())
             .document_extension(ext_.to_string())
             .document_permissions(perms_ as i32)
             .document_md5(md5_hash_.to_string())
