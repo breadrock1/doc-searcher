@@ -186,7 +186,7 @@ impl SearcherService for OtherContext {
 
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
         let path = Path::new(file_path);
-        let file_data_vec = loader::load_passed_file_by_path(path);
+        let file_data_vec = loader::load_passed_file_by_path(bucket_id, path);
         if file_data_vec.is_empty() {
             let msg = "Failed to load file".to_string();
             log::warn!("Failed load file to bucket `{}`: {}", bucket_id, msg);
