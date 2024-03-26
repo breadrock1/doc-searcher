@@ -31,7 +31,7 @@ impl FileKind {
             _ => FileKind::Text,
         }
     }
-    
+
     pub fn document_type(kind: &FileKind) -> String {
         match kind {
             FileKind::Audio => "audio",
@@ -41,7 +41,8 @@ impl FileKind {
             FileKind::Picture => "image",
             FileKind::Text => "document",
             FileKind::Video => "video",
-        }.to_string()
+        }
+        .to_string()
     }
 
     pub fn parse_file(file_path: &Path, kind: &FileKind) -> String {
