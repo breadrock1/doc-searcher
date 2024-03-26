@@ -93,7 +93,7 @@ pub trait SearcherService {
         let mut grouped_documents: HashMap<String, Vec<Document>> = HashMap::new();
         documents.iter().for_each(|doc| {
             grouped_documents
-                .entry(doc.content_md5.to_owned())
+                .entry(doc.document_md5.to_owned())
                 .or_default()
                 .push(doc.to_owned())
         });

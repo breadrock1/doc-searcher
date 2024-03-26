@@ -379,7 +379,7 @@ impl SearcherService for context::ElasticContext {
             return err.error_response();
         }
 
-        let documents = loader::load_passed_file_by_path(file_path_)
+        let documents = loader::load_passed_file_by_path(bucket_id, file_path_)
             .into_iter()
             .map(Document::from)
             .collect::<Vec<Document>>();
