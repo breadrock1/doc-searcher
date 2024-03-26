@@ -6,7 +6,6 @@ use crate::file_kind::FileKind;
 use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
 use text_splitter::TextSplitter;
-use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::document::Document;
 use wrappers::document::DocumentBuilder;
 
@@ -27,9 +26,13 @@ pub fn load_passed_file_by_path(bucket_name: &str, file_path: &Path) -> Vec<Docu
         return match loaded_result {
             Ok(document) => document,
             Err(err) => {
-                log::warn!("Failed while loading file {}: {}", file_path.to_str().unwrap(), err);
+                log::warn!(
+                    "Failed while loading file {}: {}",
+                    file_path.to_str().unwrap(),
+                    err
+                );
                 Vec::default()
-            },
+            }
         };
     }
 
