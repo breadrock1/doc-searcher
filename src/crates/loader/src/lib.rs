@@ -20,12 +20,16 @@ use std::time::SystemTime;
 
 const MAX_TOKEN_SIZE: usize = 1000;
 
-pub fn load_passed_file_by_path(file_path: &Path) -> Vec<Document> {
+pub fn load_passed_file_by_path(bucket_name: &str, file_path: &Path) -> Vec<Document> {
     if file_path.is_file() {
-        let loaded_result = load_target_file(&file_path);
+        log::info!("Loading file by path: {}", file_path.to_str().unwrap());
+        let loaded_result = load_target_file(bucket_name, &file_path);
         return match loaded_result {
             Ok(document) => document,
-            Err(_) => Vec::default(),
+            Err(err) => {
+                log::warn!("Failed while loading file {}: {}", file_path.to_str().unwrap(), err);
+                Vec::default()
+            },
         };
     }
 
@@ -33,11 +37,11 @@ pub fn load_passed_file_by_path(file_path: &Path) -> Vec<Document> {
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .flat_map(|e| load_passed_file_by_path(e.path()))
+        .flat_map(|e| load_passed_file_by_path(bucket_name, e.path()))
         .collect()
 }
 
-fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
+fn load_target_file(bucket_name: &str, file_path: &Path) -> Result<Vec<Document>, Error> {
     let file_res = File::open(file_path);
     if file_res.is_err() {
         return Err(file_res.err().unwrap());
@@ -118,7 +122,7 @@ fn load_target_file(file_path: &Path) -> Result<Vec<Document>, Error> {
         let md5_hash_chunk = binding.get_hash_data();
 
         let built_file_data = DocumentBuilder::default()
-            .bucket_uuid(DEFAULT_BUCKET_NAME.to_string())
+            .bucket_uuid(bucket_name.to_string())
             .bucket_path("/".to_string())
             .content_uuid(chunk_uuid4)
             .content_md5(md5_hash_chunk.to_string())
