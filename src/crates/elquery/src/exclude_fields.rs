@@ -7,8 +7,6 @@ pub struct ExcludeFields {
 
 impl ExcludeFields {
     pub fn new(values: Option<Vec<String>>) -> Self {
-        ExcludeFields {
-            exclude: values,
-        }
+        ExcludeFields { exclude: values }
     }
 }
