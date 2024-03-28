@@ -172,6 +172,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let match_query = MultiMatchQuery::new(parameters.query.as_str());
     let highlight_order = HighlightOrder::default();
 
+    let cont_vector = Some(vec!["content_vector".to_string()]);
     let exclude_fields = ExcludeFields::new(cont_vector);
     
     json!({
