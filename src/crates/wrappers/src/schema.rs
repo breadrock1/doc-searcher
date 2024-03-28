@@ -62,7 +62,6 @@ enum FieldType {
     Dense,
     Integer,
     String,
-    Keyword,
 }
 
 #[derive(Serialize)]
@@ -112,7 +111,6 @@ impl SchemaFieldType {
 
     fn get_type_str(type_value: FieldType) -> String {
         match type_value {
-            FieldType::Keyword => "keyword",
             FieldType::Integer => "integer",
             FieldType::String => "string",
             FieldType::Dense => "dense_vector",

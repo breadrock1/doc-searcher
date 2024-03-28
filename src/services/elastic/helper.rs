@@ -175,7 +175,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let cont_vector = Some(vec!["content_vector".to_string()]);
     let exclude_fields = ExcludeFields::new(cont_vector);
     
-    json!({
+    let query_json_object = json!({
         "_source": exclude_fields,
         "query": {
             "bool": {
@@ -184,7 +184,15 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
             }
         },
         "highlight": highlight_order
-    })
+    });
+    
+    // TODO: Implement generating cosine searching.
+    #[cfg(feature = "enable-semantic")]
+    if cfg!(feature = "enable-semantic") {
+        query_json_object[&"test"] = json!({});
+    }
+    
+    query_json_object
 }
 
 pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
