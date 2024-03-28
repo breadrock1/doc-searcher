@@ -116,7 +116,7 @@ impl SchemaFieldType {
             FieldType::Dense => "dense_vector",
             FieldType::Date => "date",
         }
-            .to_string()
+        .to_string()
     }
 }
 
