@@ -13,9 +13,10 @@ enable-parse-video      = ["loader/enable-video"]
 enable-parse-image      = ["loader/enable-image"]
 enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
 
-enable-dotenv   = ["dep:dotenv"]
-enable-chunked  = []
-disable-caching = []
+enable-dotenv    = ["dep:dotenv"]
+enable-chunked   = []
+enable-semantic  = []
+disable-caching  = []
 
 default = []
 

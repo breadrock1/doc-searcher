@@ -1,6 +1,7 @@
 use crate::errors::{JsonResponse, WebError};
 use crate::services::elastic::send_status::SendDocumentStatus;
 
+use elquery::exclude_fields::ExcludeFields;
 use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
@@ -171,7 +172,11 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let match_query = MultiMatchQuery::new(parameters.query.as_str());
     let highlight_order = HighlightOrder::default();
 
-    json!({
+    let cont_vector = Some(vec!["content_vector".to_string()]);
+    let exclude_fields = ExcludeFields::new(cont_vector);
+
+    let query_json_object = json!({
+        "_source": exclude_fields,
         "query": {
             "bool": {
                 "must": match_query,
@@ -179,7 +184,15 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
             }
         },
         "highlight": highlight_order
-    })
+    });
+
+    // TODO: Implement generating cosine searching.
+    #[cfg(feature = "enable-semantic")]
+    if cfg!(feature = "enable-semantic") {
+        query_json_object[&"test"] = json!({});
+    }
+
+    query_json_object
 }
 
 pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
