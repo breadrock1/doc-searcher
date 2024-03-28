@@ -1,6 +1,7 @@
 use crate::errors::{JsonResponse, WebError};
 use crate::services::elastic::send_status::SendDocumentStatus;
 
+use elquery::exclude_fields::ExcludeFields;
 use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
@@ -171,7 +172,10 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let match_query = MultiMatchQuery::new(parameters.query.as_str());
     let highlight_order = HighlightOrder::default();
 
+    let exclude_fields = ExcludeFields::new(cont_vector);
+    
     json!({
+        "_source": exclude_fields,
         "query": {
             "bool": {
                 "must": match_query,
