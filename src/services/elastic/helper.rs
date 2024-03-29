@@ -110,6 +110,14 @@ pub async fn search_documents(
         Err(err) => Err(WebError::SearchFailed(err.to_string())),
         Ok(response) => {
             let documents = parse_search_result(response).await;
+
+            #[cfg(feature = "enable-semantic")]
+            if cfg!(feature = "enable-semantic") {
+                let mut documents = documents;
+                sort_by_cosine(es_params.get_query(), documents.get_founded_mut()).await;
+                return Ok(web::Json(documents));
+            }
+
             Ok(web::Json(documents))
         }
     }
@@ -154,6 +162,52 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
     Ok(document)
 }
 
+#[cfg(feature = "enable-semantic")]
+pub async fn sort_by_cosine(query: &str, documents: &mut [Document]) {
+    use simsimd::SpatialSimilarity;
+
+    let query_tokens_result = load_query_tokens(query).await;
+    if query_tokens_result.is_err() {
+        let err = query_tokens_result.err().unwrap();
+        log::warn!("Failed while getting query tokens: {}", err);
+        return;
+    }
+
+    let query_tokens = query_tokens_result.unwrap();
+    documents.sort_by_key(
+        |doc| match f64::cosine(&query_tokens, &doc.content_vector) {
+            None => 0i32,
+            Some(dist) => dist.cos() as i32,
+        },
+    );
+
+    documents
+        .iter_mut()
+        .for_each(|doc| doc.content_vector = Vec::default());
+}
+
+#[cfg(feature = "enable-semantic")]
+async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
+    let client = reqwest::Client::new();
+    let response = client
+        .post("http://192.168.0.110:8085/embed")
+        .json(&json!({
+            "inputs": query,
+            "truncate": false
+        }))
+        .send()
+        .await?;
+
+    let query_tokens = response.json::<Vec<Vec<f64>>>().await?;
+    match query_tokens.first() {
+        None => {
+            let msg = "Failed while sending request";
+            Err(anyhow::Error::msg(msg.to_string()))
+        }
+        Some(vector) => Ok(vector.to_owned()),
+    }
+}
+
 pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_size_to = parameters.document_size_to;
     let doc_size_from = parameters.document_size_from;
@@ -172,11 +226,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
     let match_query = MultiMatchQuery::new(parameters.query.as_str());
     let highlight_order = HighlightOrder::default();
 
-    let cont_vector = Some(vec!["content_vector".to_string()]);
-    let exclude_fields = ExcludeFields::new(cont_vector);
-
-    let query_json_object = json!({
-        "_source": exclude_fields,
+    let mut query_json_object = json!({
         "query": {
             "bool": {
                 "must": match_query,
@@ -186,10 +236,11 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         "highlight": highlight_order
     });
 
-    // TODO: Implement generating cosine searching.
-    #[cfg(feature = "enable-semantic")]
-    if cfg!(feature = "enable-semantic") {
-        query_json_object[&"test"] = json!({});
+    if !cfg!(feature = "enable-semantic") {
+        let cont_vector = Some(vec!["content_vector".to_string()]);
+        let exclude_fields = ExcludeFields::new(cont_vector);
+        let exclude_value = serde_json::to_value(exclude_fields).unwrap();
+        query_json_object[&"_source"] = exclude_value;
     }
 
     query_json_object
