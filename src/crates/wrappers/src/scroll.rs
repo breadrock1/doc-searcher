@@ -33,6 +33,10 @@ impl<D> PagintatedResult<D> {
     pub fn get_founded(&self) -> &D {
         &self.founded
     }
+
+    pub fn get_founded_mut(&mut self) -> &mut D {
+        &mut self.founded
+    }
 }
 
 #[derive(Deserialize)]
