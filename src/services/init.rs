@@ -28,6 +28,7 @@ pub struct ServiceParameters {
     logger_mw_addr: String,
     cacher_addr: String,
     cacher_expire: u64,
+    embeddings_url: String,
 }
 
 impl ServiceParameters {
@@ -66,6 +67,10 @@ impl ServiceParameters {
     pub fn cacher_expire(&self) -> u64 {
         self.cacher_expire
     }
+
+    pub fn embeddings_url(&self) -> &str {
+        self.embeddings_url.as_str()
+    }
 }
 
 pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
@@ -86,6 +91,7 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
     let cacher_addr = var("CACHER_HOST").expect("There is not CACHER_HOST env variable!");
     let cors_origins: String = var("CORS_ORIGIN").expect("There is not CORS_ORIGIN env variable!");
     let cacher_expire = var("CACHER_EXPIRE").expect("There is not CACHER_EXPIRE env variable!");
+    let embeddings_url = var("EMBEDDINGS_URL").expect("There is not EMBEDDINGS_URL env variable!");
 
     let client_port =
         u16::from_str(client_port.as_str()).expect("Failed while parsing port number.");
@@ -103,6 +109,7 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
         .cors_origin(cors_origins)
         .logger_mw_addr(logger_wm)
         .cacher_expire(cacher_expire_int)
+        .embeddings_url(embeddings_url)
         .build();
 
     Ok(service.unwrap())
