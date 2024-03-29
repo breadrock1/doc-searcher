@@ -6,7 +6,7 @@ use wrappers::bucket::{Bucket, BucketForm};
 use actix_web::{delete, get, post, web, HttpResponse};
 
 #[utoipa::path(
-    post,
+    get,
     path = "/bucket/all",
     tag = "Get all available buckets",
     responses(
@@ -54,7 +54,7 @@ async fn default_bucket(cxt: SearcherData) -> HttpResponse {
 }
 
 #[utoipa::path(
-    post,
+    delete,
     path = "/bucket/{bucket_name}",
     tag = "Delete bucket",
     params(
