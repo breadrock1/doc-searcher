@@ -24,6 +24,7 @@ pub struct Document {
     pub content_md5: String,
     pub content_uuid: String,
     pub content: String,
+    #[serde(default)]
     pub content_vector: Vec<f64>,
     #[serde(
         serialize_with = "serialize_dt",

@@ -20,6 +20,10 @@ pub struct SearchParams {
 }
 
 impl SearchParams {
+    pub fn get_query(&self) -> &str {
+        self.query.as_str()
+    }
+
     pub fn get_scroll(&self) -> &str {
         self.scroll_timelife.as_str()
     }
