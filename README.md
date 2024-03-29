@@ -1,16 +1,17 @@
 # Doc-Searcher
 
 Doc-Searcher is a simple and flexible document search application, leveraging the capabilities of Rust and Elasticsearch (by default)
-to provide efficient and effective full-text search in documents. This project aims to offer a straightforward solution for 
+to provide efficient and effective full-text search in documents. This project aims to offer a straightforward solution for
 indexing and searching through a large corpus of documents with the speed and accuracy provided by Elasticsearch.
 
-The maing goal - implement simple but powerful system of storing and indexing documents with searhing functionality (full-text, semantic). 
-I decided to use elasticsearch as default searching engine but you may using own solutions by implementing `SearcherService` async trait 
+The maing goal - implement simple but powerful system of storing and indexing documents with searhing functionality (full-text, semantic).
+I decided to use elasticsearch as default searching engine but you may using own solutions by implementing `SearcherService` async trait
 for Tantiby, QDrant or own solution...
 
 ## Features
 
-- **Full-Text Search**: Quickly find documents based on contentb based on choosed searching engine;
+- **Full-Text Search**: Quickly find documents based on content based on choosed searching engine;
+- **Semantic Search**: Fast semantic searching by external embeddings service;
 - **Rust Performance**: Benefit from the speed and safety of Rust;
 - **REST API**: Easy to use REST API for searching documents and control management of indexing;
 - **Docker Support**: Easy deployment with Docker and docker-compose;
@@ -48,6 +49,7 @@ Features to parse and store documents localy from current service (Not stable):
 
 - enable-dotenv   : enable parsing service options from .env file.
 - disable-caching : disable using cache service.
-- enable-chunked  : enable storing document to db by chunks. It helps for tokenizer limitations. 
+- enable-semantic : enable semantic searching. Need pass additional env variables.
+- enable-chunked  : enable storing document to db by chunks. It helps for tokenizer limitations.
 
 default = []
