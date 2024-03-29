@@ -1,5 +1,6 @@
 use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, Builder)]
 pub struct PagintatedResult<D> {
@@ -39,7 +40,7 @@ impl<D> PagintatedResult<D> {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams, ToSchema)]
 pub struct NextScroll {
     scroll_id: String,
     scroll: String,
@@ -62,7 +63,7 @@ impl NextScroll {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams, ToSchema)]
 pub struct AllScrolls {
     scroll_ids: Vec<String>,
 }

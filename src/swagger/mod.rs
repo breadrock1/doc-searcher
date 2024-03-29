@@ -19,6 +19,10 @@ use crate::endpoints::hello::__path_hello;
 use crate::endpoints::loader::__path_download_file;
 use crate::endpoints::loader::__path_load_file;
 
+use crate::endpoints::paginator::__path_delete_expired_ids;
+use crate::endpoints::paginator::__path_get_pagination_ids;
+use crate::endpoints::paginator::__path_next_pagination_result;
+
 use crate::endpoints::searcher::__path_search_all;
 
 use crate::endpoints::similarities::__path_search_similar_docs;
@@ -27,6 +31,7 @@ use crate::errors::*;
 use wrappers::bucket::*;
 use wrappers::cluster::*;
 use wrappers::document::*;
+use wrappers::scroll::*;
 use wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
@@ -54,6 +59,9 @@ use utoipa_swagger_ui::SwaggerUi;
         delete_document,
         load_file,
         download_file,
+        get_pagination_ids,
+        delete_expired_ids,
+        next_pagination_result,
         search_all,
         search_similar_docs,
     ),
@@ -65,6 +73,8 @@ use utoipa_swagger_ui::SwaggerUi;
             Cluster,
             Document,
             SearchParams,
+            NextScroll,
+            AllScrolls,
             HighlightEntity,
         )
     ),
