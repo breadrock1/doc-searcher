@@ -188,9 +188,10 @@ pub async fn sort_by_cosine(query: &str, documents: &mut [Document]) {
 
 #[cfg(feature = "enable-semantic")]
 async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
+    let embeddings_url = std::env::var("EMBEDDINGS_URL").unwrap_or_default();
     let client = reqwest::Client::new();
     let response = client
-        .post("http://192.168.0.110:8085/embed")
+        .post(embeddings_url)
         .json(&json!({
             "inputs": query,
             "truncate": false
