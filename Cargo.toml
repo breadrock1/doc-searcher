@@ -15,7 +15,7 @@ enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
 
 enable-dotenv    = ["dep:dotenv"]
 enable-chunked   = []
-enable-semantic  = []
+enable-semantic  = ["dep:simsimd"]
 disable-caching  = []
 
 default = []
@@ -57,6 +57,10 @@ optional = true
 [dependencies.redis]
 version = "^0.24"
 features = ["aio", "tokio-comp", "connection-manager"]
+
+[dependencies.simsimd]
+version = "^4.2"
+optional = true
 
 [dependencies.tokio]
 version = "^1.36"
