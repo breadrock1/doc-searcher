@@ -52,6 +52,7 @@ pub trait SearcherService {
 
     async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>>;
     async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket>;
+    async fn get_bucket_documents(&self, bucket_id: &str) -> PaginateJsonResponse<Vec<Document>>;
     async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse;
     async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse;
 

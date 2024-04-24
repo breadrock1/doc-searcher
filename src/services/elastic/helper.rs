@@ -209,6 +209,14 @@ async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
     }
 }
 
+pub fn build_match_all_query() -> Value {
+    json!({
+        "query": {
+            "match_all": {}
+        }
+    })
+}
+
 pub fn build_search_query(parameters: &SearchParams) -> Value {
     let doc_size_to = parameters.document_size_to;
     let doc_size_from = parameters.document_size_from;

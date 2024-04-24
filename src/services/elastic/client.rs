@@ -197,6 +197,22 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
+    async fn get_bucket_documents(&self, bucket_id: &str) -> PaginateJsonResponse<Vec<Document>> {
+        let elastic = self.get_cxt().read().await;
+        let body_value = helper::build_match_all_query();
+
+        let mut s_params = SearchParams::default();
+        s_params.result_size = 1000;
+
+        match helper::search_documents(&elastic, &[bucket_id], &body_value, &s_params).await {
+            Ok(documents) => Ok(documents),
+            Err(err) => {
+                log::error!("Failed while searching documents: {}", err);
+                Err(err)
+            }
+        }
+    }
+
     async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic

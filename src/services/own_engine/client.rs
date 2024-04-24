@@ -100,6 +100,11 @@ impl SearcherService for OtherContext {
         }
     }
 
+    async fn get_bucket_documents(&self, _bucket_id: &str) -> PaginateJsonResponse<Vec<Document>> {
+        let documents_vec = Vec::default();
+        Ok(web::Json(PagintatedResult::new(documents_vec)))
+    }
+
     async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse {
         let cxt = self.get_cxt().write().await;
         let uuid = bucket_id.to_string();

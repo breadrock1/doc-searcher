@@ -1,9 +1,10 @@
 use crate::endpoints::SearcherData;
-use crate::errors::JsonResponse;
+use crate::errors::{JsonResponse, PaginateJsonResponse};
 
 use wrappers::bucket::{Bucket, BucketForm};
 
 use actix_web::{delete, get, post, web, HttpResponse};
+use wrappers::document::Document;
 
 #[utoipa::path(
     get,
@@ -88,6 +89,24 @@ async fn delete_bucket(cxt: SearcherData, path: web::Path<String>) -> HttpRespon
 async fn get_bucket(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Bucket> {
     let client = cxt.get_ref();
     client.get_bucket(path.as_str()).await
+}
+
+#[utoipa::path(
+    get,
+    path = "/bucket/{bucket_name}/documents",
+    tag = "Get bucket stored documents by name",
+    params(
+        ("bucket_name" = &str, description = "Passed bucket name to get documents")
+    ),
+    responses(
+        (status = 200, description = "Successful", body = [Document]),
+        (status = 400, description = "Failed while getting bucket documents", body = ErrorResponse),
+    )
+)]
+#[get("/{bucket_name}/documents")]
+async fn get_bucket_documents(cxt: SearcherData, path: web::Path<String>) -> PaginateJsonResponse<Vec<Document>> {
+    let client = cxt.get_ref();
+    client.get_bucket_documents(path.as_str()).await
 }
 
 #[cfg(test)]
