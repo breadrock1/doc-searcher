@@ -114,6 +114,7 @@ mod documents_endpoints {
             .document_created(None)
             .document_modified(None)
             .highlight(None)
+            .ocr_metadata(None)
             .build()
     }
 

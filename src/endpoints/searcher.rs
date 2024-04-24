@@ -322,6 +322,7 @@ mod searcher_endpoints {
                 .highlight(None)
                 .document_created(None)
                 .document_modified(None)
+                .ocr_metadata(None)
                 .build()
                 .unwrap();
 
