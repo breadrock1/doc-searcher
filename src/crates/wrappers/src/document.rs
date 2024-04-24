@@ -39,6 +39,8 @@ pub struct Document {
     )]
     pub document_modified: Option<DateTime<Utc>>,
     pub highlight: Option<HighlightEntity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ocr_metadata: Option<OcrMetadata>,
 }
 
 impl Document {
@@ -49,4 +51,56 @@ impl Document {
     pub fn exclude_tokens(&mut self) {
         self.content_vector = Vec::default();
     }
+}
+
+#[derive(Builder, Clone, Deserialize, Serialize)]
+pub struct OcrMetadata {
+    pub job_id: String,
+    pub text: String,
+    pub pages_count: i32,
+    pub doc_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artifacts: Option<Artifacts>,
+}
+
+#[derive(Builder, Clone, Deserialize, Serialize)]
+pub struct Artifacts {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transport_invoice_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transport_invoice_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub carrier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vehicle_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cargo_date_arrival: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cargo_aate_departure: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub address_redirection: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date_redirection: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cargo_issue_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cargo_issue_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cargo_weight: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cargo_places_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_receipt_act_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_receipt_act_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub terminal_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ktk_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub driver_full_name: Option<String>,
 }
