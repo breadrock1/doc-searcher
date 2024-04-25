@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::JsonResponse;
+use crate::errors::{JsonResponse, SuccessfulResponse};
 
 use wrappers::document::Document;
 
@@ -59,6 +59,32 @@ async fn delete_document(cxt: SearcherData, path: web::Path<(String, String)>) -
     client
         .delete_document(bucket_name.as_str(), doc_id.as_str())
         .await
+}
+
+#[utoipa::path(
+    delete,
+    path = "/document/{bucket_name}/{document_id}",
+    tag = "Delete stored documents by ids",
+    params(
+        ("bucket_name" = &str, description = "Bucket name where documents is stored"),
+        ("document_id" = &str, description = "Document identifiers to delete"),
+    ),
+    responses(
+        (status = 200, description = "Successful", body = SuccessfulResponse),
+        (status = 401, description = "Failed while deleting documents", body = ErrorResponse),
+    )
+)]
+#[delete("/{bucket_name}/{document_ids}")]
+async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
+    let client = cxt.get_ref();
+    let (bucket_name, doc_ids) = path.as_ref();
+    for id in doc_ids.split(",") {
+        client
+            .delete_document(bucket_name.as_str(), id)
+            .await;
+    }
+
+    SuccessfulResponse::ok_response("Done")
 }
 
 #[utoipa::path(

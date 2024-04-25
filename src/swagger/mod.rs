@@ -3,6 +3,7 @@ use crate::endpoints::buckets::__path_default_bucket;
 use crate::endpoints::buckets::__path_delete_bucket;
 use crate::endpoints::buckets::__path_get_bucket;
 use crate::endpoints::buckets::__path_new_bucket;
+use crate::endpoints::buckets::__path_get_bucket_documents;
 
 use crate::endpoints::clusters::__path_all_clusters;
 use crate::endpoints::clusters::__path_delete_cluster;
@@ -10,6 +11,7 @@ use crate::endpoints::clusters::__path_get_cluster;
 use crate::endpoints::clusters::__path_new_cluster;
 
 use crate::endpoints::documents::__path_delete_document;
+use crate::endpoints::documents::__path_delete_documents;
 use crate::endpoints::documents::__path_get_document;
 use crate::endpoints::documents::__path_new_document;
 use crate::endpoints::documents::__path_update_document;
@@ -49,6 +51,7 @@ use utoipa_swagger_ui::SwaggerUi;
         delete_bucket,
         get_bucket,
         new_bucket,
+        get_bucket_documents,
         all_clusters,
         delete_cluster,
         get_cluster,
@@ -57,6 +60,7 @@ use utoipa_swagger_ui::SwaggerUi;
         get_document,
         new_document,
         delete_document,
+        delete_documents,
         load_file,
         download_file,
         get_pagination_ids,

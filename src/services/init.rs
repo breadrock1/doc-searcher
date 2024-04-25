@@ -1,12 +1,10 @@
-use crate::endpoints::buckets::{
-    all_buckets, default_bucket, delete_bucket, get_bucket, new_bucket,
-};
-use crate::endpoints::clusters::{all_clusters, delete_cluster, get_cluster, new_cluster};
-use crate::endpoints::documents::{delete_document, get_document, new_document, update_document};
+use crate::endpoints::buckets;
+use crate::endpoints::clusters;
+use crate::endpoints::documents;
 use crate::endpoints::hello::hello;
-use crate::endpoints::loader::{download_file, load_file};
-use crate::endpoints::paginator::{delete_expired_ids, get_pagination_ids, next_pagination_result};
-use crate::endpoints::searcher::{search_all, search_tokens};
+use crate::endpoints::loader;
+use crate::endpoints::paginator;
+use crate::endpoints::searcher;
 use crate::endpoints::similarities::search_similar_docs;
 
 use actix_cors::Cors;
@@ -139,27 +137,29 @@ pub fn build_hello_scope() -> Scope {
 
 pub fn build_cluster_scope() -> Scope {
     web::scope("/cluster")
-        .service(new_cluster)
-        .service(delete_cluster)
-        .service(all_clusters)
-        .service(get_cluster)
+        .service(clusters::new_cluster)
+        .service(clusters::delete_cluster)
+        .service(clusters::all_clusters)
+        .service(clusters::get_cluster)
 }
 
 pub fn build_bucket_scope() -> Scope {
     web::scope("/bucket")
-        .service(new_bucket)
-        .service(default_bucket)
-        .service(delete_bucket)
-        .service(all_buckets)
-        .service(get_bucket)
+        .service(buckets::new_bucket)
+        .service(buckets::default_bucket)
+        .service(buckets::delete_bucket)
+        .service(buckets::all_buckets)
+        .service(buckets::get_bucket)
+        .service(buckets::get_bucket_documents)
 }
 
 pub fn build_document_scope() -> Scope {
     web::scope("/document")
-        .service(new_document)
-        .service(delete_document)
-        .service(update_document)
-        .service(get_document)
+        .service(documents::new_document)
+        .service(documents::delete_document)
+        .service(documents::delete_documents)
+        .service(documents::update_document)
+        .service(documents::get_document)
 }
 
 pub fn build_search_scope() -> Scope {
@@ -172,8 +172,8 @@ pub fn build_search_scope() -> Scope {
     }
 
     web::scope("/search")
-        .service(search_all)
-        .service(search_tokens)
+        .service(searcher::search_all)
+        .service(searcher::search_tokens)
 }
 
 pub fn build_similar_scope() -> Scope {
@@ -188,8 +188,8 @@ pub fn build_similar_scope() -> Scope {
 
 pub fn build_file_scope() -> Scope {
     web::scope("/file")
-        .service(load_file)
-        .service(download_file)
+        .service(loader::load_file)
+        .service(loader::download_file)
 }
 
 pub fn build_pagination_scope() -> Scope {
@@ -197,13 +197,13 @@ pub fn build_pagination_scope() -> Scope {
     if cfg!(feature = "enable-chunked") {
         use crate::endpoints::paginator::next_pagination_chunked_result;
         return web::scope("/pagination")
-            .service(get_pagination_ids)
-            .service(delete_expired_ids)
+            .service(paginator::get_pagination_ids)
+            .service(paginator::delete_expired_ids)
             .service(next_pagination_chunked_result);
     }
 
     web::scope("/pagination")
-        .service(get_pagination_ids)
-        .service(delete_expired_ids)
-        .service(next_pagination_result)
+        .service(paginator::get_pagination_ids)
+        .service(paginator::delete_expired_ids)
+        .service(paginator::next_pagination_result)
 }
