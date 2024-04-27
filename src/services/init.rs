@@ -156,7 +156,6 @@ pub fn build_bucket_scope() -> Scope {
 pub fn build_document_scope() -> Scope {
     web::scope("/document")
         .service(documents::new_document)
-        .service(documents::delete_document)
         .service(documents::delete_documents)
         .service(documents::update_document)
         .service(documents::get_document)

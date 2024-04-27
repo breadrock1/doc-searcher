@@ -50,7 +50,7 @@ impl CacherService for RedisService {
         U: ToRedisArgs + Send + Sync,
     {
         let cxt = self.cacher_client.read().await;
-        let connection_res = cxt.get_tokio_connection().await;
+        let connection_res = cxt.get_multiplexed_tokio_connection().await;
         if connection_res.is_err() {
             let err = connection_res.err().unwrap();
             log::warn!("Failed to get redis service connection {}", err);
@@ -68,7 +68,7 @@ impl CacherService for RedisService {
         U: FromRedisValue + Send + Sync,
     {
         let cxt = self.cacher_client.read().await;
-        let connection_res = cxt.get_tokio_connection().await;
+        let connection_res = cxt.get_multiplexed_tokio_connection().await;
         if connection_res.is_err() {
             let err = connection_res.err().unwrap();
             log::warn!("Failed to get redis service connection {}", err);
