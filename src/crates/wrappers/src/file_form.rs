@@ -1,9 +1,9 @@
 use crate::bucket::DEFAULT_BUCKET_NAME;
 
 use serde_derive::Deserialize;
-use utoipa::IntoParams;
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize, IntoParams)]
+#[derive(Deserialize, IntoParams, ToSchema)]
 pub struct LoadFileForm {
     file_path: String,
     #[serde(skip_serializing_if = "Option::is_none")]

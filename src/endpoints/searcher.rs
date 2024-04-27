@@ -1,5 +1,5 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::PaginateJsonResponse;
+use crate::errors::{PaginateJsonResponse, ErrorResponse};
 use crate::services::cacher::values::*;
 use crate::services::CacherService;
 
@@ -15,11 +15,31 @@ use wrappers::search_params::SearchParams;
 #[utoipa::path(
     post,
     path = "/search/",
-    tag = "Search stored documents by passed query and filters",
-    request_body = SearchParams,
+    tag = "Search",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_example())
+    ),
     responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+        (
+            status = 200, 
+            description = "Successful", 
+            body = PagintatedResult<Vec<Document>>,
+            example = json!(PagintatedResult::<Vec<Document>>::new_with_id(
+                vec![Document::test_example()], 
+                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            ))
+        ),
+        (
+            status = 400,
+            description = "Failed while searching documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+            code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while searching documents".to_string(),
+            })
+        ),
     )
 )]
 #[post("/")]
@@ -60,11 +80,31 @@ async fn search_all(
 #[utoipa::path(
     post,
     path = "/search/tokens",
-    tag = "Search stored documents tokens by passed query and filters",
-    request_body = SearchParams,
+    tag = "Search",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_example())
+    ),
     responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = [Document],
+            example = json!(PagintatedResult::<Vec<Document>>::new_with_id(
+                vec![Document::test_example()],
+                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            ))
+        ),
+        (
+            status = 400,
+            description = "Failed while searching tokens",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while searching tokens".to_string(),
+            })
+        ),
     )
 )]
 #[post("/tokens")]

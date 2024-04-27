@@ -2,8 +2,9 @@ use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, Builder)]
+#[derive(Serialize, Builder, ToSchema)]
 pub struct PagintatedResult<D> {
+    #[schema(value_type = PagintatedResult<Vec<Document>>)]
     founded: D,
     #[serde(skip_serializing_if = "Option::is_none")]
     scroll_id: Option<String>,
@@ -42,7 +43,9 @@ impl<D> PagintatedResult<D> {
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct NextScroll {
+    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmZsdnhOSWhk")]
     scroll_id: String,
+    #[schema(example = "1m")]
     scroll: String,
 }
 

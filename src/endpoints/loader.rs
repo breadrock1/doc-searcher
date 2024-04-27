@@ -1,18 +1,42 @@
 use crate::endpoints::SearcherData;
-
-use wrappers::file_form::LoadFileForm;
+use crate::errors::{ErrorResponse, SuccessfulResponse};
 
 use actix_web::{post, web};
 use actix_web::{HttpRequest, HttpResponse};
 
+use wrappers::file_form::LoadFileForm;
+
 #[utoipa::path(
     post,
     path = "/file/load",
-    tag = "Load file from local file system of services by path",
-    request_body = LoadFileForm,
+    tag = "Files",
+    request_body(
+        content = LoadFileForm,
+        example = json!({
+            "file_path": "/tmp/test.txt",
+            "bucket_name": "test_bucket",
+        }),
+    ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while loading files", body = ErrorResponse),
+        (
+            status = 200, 
+            description = "Successful", 
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400, 
+            description = "Failed while loading files", 
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while loading files".to_string(),
+            })
+        ),
     )
 )]
 #[post("/load")]
@@ -26,11 +50,34 @@ async fn load_file(cxt: SearcherData, form: web::Json<LoadFileForm>) -> HttpResp
 #[utoipa::path(
     post,
     path = "/file/download",
-    tag = "Download file from local system by path",
-    request_body = LoadFileForm,
+    tag = "Files",
+    request_body(
+        content = LoadFileForm,
+        example = json!({
+            "file_path": "/tmp/test.txt",
+            "bucket_name": "test_bucket",
+        }),
+    ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while downloading files", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400, 
+            description = "Failed while downloading files", 
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while downloading files".to_string(),
+            })
+        ),
     )
 )]
 #[post("/download")]
