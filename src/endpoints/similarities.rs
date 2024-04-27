@@ -1,25 +1,45 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::PaginateJsonResponse;
+use crate::errors::{PaginateJsonResponse, ErrorResponse};
 use crate::services::cacher::values::{CacherDocuments, CacherSearchParams};
 use crate::services::CacherService;
 
 #[cfg(feature = "enable-chunked")]
 use crate::services::GroupedDocs;
 
+use actix_web::{post, web};
+
 use wrappers::document::Document;
 use wrappers::search_params::SearchParams;
-
-use actix_web::{post, web};
 use wrappers::scroll::PagintatedResult;
 
 #[utoipa::path(
     post,
     path = "/similar/",
-    tag = "Search similar documents by passed SearchParams",
-    request_body = SearchParams,
+    tag = "Similarity",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_similar_example())
+    ),
     responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = [Document],
+            example = json!(PagintatedResult::<Vec<Document>>::new_with_id(
+                vec![Document::test_example()],
+                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            ))
+        ),
+        (
+            status = 400,
+            description = "Failed while searching similar documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while searching similar documents".to_string(),
+            })
+        ),
     )
 )]
 #[post("/")]

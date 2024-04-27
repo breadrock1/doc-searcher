@@ -1,18 +1,39 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{JsonResponse, SuccessfulResponse};
+use crate::errors::{JsonResponse, SuccessfulResponse, ErrorResponse, WebError};
+
+use actix_web::{delete, get, post, put, web};
+use actix_web::{HttpResponse, ResponseError};
 
 use wrappers::document::Document;
-
-use actix_web::{delete, get, post, put, web, HttpResponse};
 
 #[utoipa::path(
     put,
     path = "/document/update",
-    tag = "Update stored Document with passed data",
-    request_body = Document,
+    tag = "Documents",
+    request_body(
+        content = Document,
+        example = json!(Document::test_example()),
+    ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while updating document", body = ErrorResponse),
+        (
+            status = 200, 
+            description = "Successful", 
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400, 
+            description = "Failed while updating document", 
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while updating document".to_string(),
+            })
+        ),
     )
 )]
 #[put("/update")]
@@ -25,11 +46,31 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
 #[utoipa::path(
     post,
     path = "/document/new",
-    tag = "Create new Document with passed data",
-    request_body = Document,
+    tag = "Documents",
+    request_body(
+        content = Document,
+        example = json!(Document::test_example()),
+    ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while creating document", body = ErrorResponse),
+        (
+            status = 200, 
+            description = "Successful", 
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400, 
+            description = "Failed while creating document", 
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while creating document".to_string(),
+            })
+        ),
     )
 )]
 #[post("/new")]
@@ -41,47 +82,62 @@ async fn new_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRespo
 
 #[utoipa::path(
     delete,
-    path = "/document/{bucket_name}/{document_id}",
-    tag = "Delete stored document by document id",
+    path = "/document/{bucket_name}/{document_ids}",
+    tag = "Documents",
     params(
-        ("bucket_name" = &str, description = "Bucket name where document is stored"),
-        ("document_id" = &str, description = "Document identifier to delete"),
+        (
+            "bucket_name" = &str, 
+            description = "Bucket name where documents is stored",
+            example = "test_bucket",
+        ),
+        (
+            "document_ids" = &str, 
+            description = "Document identifiers to delete",
+            example = "<document-md5-sum>",
+        ),
     ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while deleting document", body = ErrorResponse),
-    )
-)]
-#[delete("/{bucket_name}/{document_id}")]
-async fn delete_document(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
-    let client = cxt.get_ref();
-    let (bucket_name, doc_id) = path.as_ref();
-    client
-        .delete_document(bucket_name.as_str(), doc_id.as_str())
-        .await
-}
-
-#[utoipa::path(
-    delete,
-    path = "/document/{bucket_name}/{document_id}",
-    tag = "Delete stored documents by ids",
-    params(
-        ("bucket_name" = &str, description = "Bucket name where documents is stored"),
-        ("document_id" = &str, description = "Document identifiers to delete"),
-    ),
-    responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while deleting documents", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while deleting documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while deleting document".to_string(),
+            })
+        )
     )
 )]
 #[delete("/{bucket_name}/{document_ids}")]
 async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
     let client = cxt.get_ref();
     let (bucket_name, doc_ids) = path.as_ref();
-    for id in doc_ids.split(",") {
-        client
+    
+    let documents_id = doc_ids.split(',').collect::<Vec<&str>>();
+    let mut failed_tasks: Vec<&str> = Vec::with_capacity(documents_id.len());
+    for id in documents_id.into_iter() {
+        let result = client
             .delete_document(bucket_name.as_str(), id)
             .await;
+        
+        if !result.status().is_success() {
+            failed_tasks.push(id);
+        }
+    }
+    
+    if !failed_tasks.is_empty() {
+        let msg = failed_tasks.join(",");
+        return WebError::DeletingCluster(msg).error_response();
     }
 
     SuccessfulResponse::ok_response("Done")
@@ -90,14 +146,40 @@ async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) 
 #[utoipa::path(
     get,
     path = "/document/{bucket_name}/{document_id}",
-    tag = "Get stored document by document id",
+    tag = "Documents",
     params(
-        ("bucket_name" = &str, description = "Bucket name where document is stored"),
-        ("document_id" = &str, description = "Document identifier to get"),
+        (
+            "bucket_name" = &str, 
+            description = "Bucket name where document is stored",
+            example = "test_bucket",
+        ),
+        (
+            "document_id" = &str, 
+            description = "Document identifier to get",
+            example = "<document-md5-sum>",
+        ),
     ),
     responses(
-        (status = 200, description = "Successful", body = Document),
-        (status = 401, description = "Failed while getting document", body = ErrorResponse),
+
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while deleting documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while getting document".to_string(),
+            })
+        )
     )
 )]
 #[get("/{bucket_name}/{document_id}")]

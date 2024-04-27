@@ -10,7 +10,6 @@ use crate::endpoints::clusters::__path_delete_cluster;
 use crate::endpoints::clusters::__path_get_cluster;
 use crate::endpoints::clusters::__path_new_cluster;
 
-use crate::endpoints::documents::__path_delete_document;
 use crate::endpoints::documents::__path_delete_documents;
 use crate::endpoints::documents::__path_get_document;
 use crate::endpoints::documents::__path_new_document;
@@ -30,10 +29,12 @@ use crate::endpoints::searcher::__path_search_all;
 use crate::endpoints::similarities::__path_search_similar_docs;
 
 use crate::errors::*;
+
 use wrappers::bucket::*;
 use wrappers::cluster::*;
 use wrappers::document::*;
 use wrappers::scroll::*;
+use wrappers::file_form::*;
 use wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
@@ -59,7 +60,6 @@ use utoipa_swagger_ui::SwaggerUi;
         update_document,
         get_document,
         new_document,
-        delete_document,
         delete_documents,
         load_file,
         download_file,
@@ -74,21 +74,30 @@ use utoipa_swagger_ui::SwaggerUi;
             ErrorResponse,
             SuccessfulResponse,
             Bucket,
+            BucketForm,
             Cluster,
+            ClusterForm,
             Document,
+            HighlightEntity,
+            OcrMetadata,
+            Artifacts,
+            LoadFileForm,
             SearchParams,
+            PagintatedResult<Vec<Document>>,
             NextScroll,
             AllScrolls,
             HighlightEntity,
         )
     ),
-    tags ((
-        name = "DocSearcher REST API",
-        description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
-    ))
+    tags (
+        (
+            name = "DocSearcher REST API",
+            description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
+        )
+    )
 )]
 pub struct ApiDoc;
 
-pub fn create_service(openapi: &utoipa::openapi::OpenApi) -> SwaggerUi {
-    SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
+pub fn create_service(openapi: &openapi::OpenApi) -> SwaggerUi {
+    SwaggerUi::new("/docs/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
 }

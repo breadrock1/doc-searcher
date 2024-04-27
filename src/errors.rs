@@ -70,7 +70,7 @@ impl From<serde_json::Error> for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct ErrorResponse {
     pub code: u16,
     pub error: String,
@@ -105,7 +105,7 @@ impl ResponseError for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct SuccessfulResponse {
     pub code: u16,
     pub message: String,
