@@ -210,11 +210,18 @@ async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
 }
 
 pub fn build_match_all_query() -> Value {
-    json!({
+    let mut query_json_object = json!({
         "query": {
             "match_all": {}
         }
-    })
+    });
+
+    let cont_vector = Some(vec!["content_vector".to_string()]);
+    let exclude_fields = ExcludeFields::new(cont_vector);
+    let exclude_value = serde_json::to_value(exclude_fields).unwrap();
+    query_json_object[&"_source"] = exclude_value;
+    
+    query_json_object
 }
 
 pub fn build_search_query(parameters: &SearchParams) -> Value {
@@ -256,7 +263,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
 }
 
 pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
-    let fields = vec!["entity_data".to_string(), "documen_ssdeep_hash".to_string()];
+    let fields = vec!["content".to_string(), "document_ssdeep".to_string()];
     let ssdeep_hash = &parameters.query;
     let similar_query = SimilarQuery::new(ssdeep_hash.clone(), fields);
     json!({ "query": similar_query })

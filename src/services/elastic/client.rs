@@ -59,11 +59,10 @@ impl SearcherService for context::ElasticContext {
 
     async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
-        let cluster_name = format!("/_nodes/{}", cluster_id);
         let response_result = elastic
             .send(
                 Method::Get,
-                cluster_name.as_str(),
+                "/_cat/nodes",
                 HeaderMap::new(),
                 Option::<&Value>::None,
                 Some(b"".as_ref()),
@@ -79,8 +78,23 @@ impl SearcherService for context::ElasticContext {
 
         let response = response_result.unwrap();
         let resp_json = response.json::<Value>().await?;
-        match serde_json::from_value::<Cluster>(resp_json) {
-            Ok(cluster) => Ok(web::Json(cluster)),
+        match serde_json::from_value::<Vec<Cluster>>(resp_json) {
+            Ok(clusters) => {
+                let founded_cluster = clusters
+                    .iter()
+                    .filter(|cluster| cluster.name.eq(cluster_id))
+                    .map(|cluster| cluster.to_owned())
+                    .collect::<Vec<Cluster>>();
+                
+                match founded_cluster.first() {
+                    Some(value) => Ok(web::Json(value.to_owned())),
+                    None => {
+                        let msg = format!("There is no cluster with passed name: {}", cluster_id);
+                        log::error!("{}", msg.as_str());
+                        Err(WebError::GetCluster(msg))
+                    }
+                }
+            },
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
                 Err(WebError::from(err))
@@ -201,9 +215,7 @@ impl SearcherService for context::ElasticContext {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_match_all_query();
 
-        let mut s_params = SearchParams::default();
-        s_params.result_size = 1000;
-
+        let s_params = SearchParams { result_size: 1000, ..Default::default() };
         match helper::search_documents(&elastic, &[bucket_id], &body_value, &s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {

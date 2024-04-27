@@ -139,7 +139,7 @@ impl SearcherService for OtherContext {
         match map.insert(uuid, built_bucket.unwrap()) {
             Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
             None => {
-                let msg = format!("Created {}", bucket_form.bucket_name.as_str());
+                let msg = format!("Created {}", bucket_form.get_name());
                 log::warn!("New bucket has been created: {}", msg.as_str());
                 SuccessfulResponse::ok_response(msg.as_str())
             }
