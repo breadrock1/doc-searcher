@@ -35,7 +35,7 @@ use wrappers::search_params::SearchParams;
             description = "Failed while searching documents",
             body = ErrorResponse,
             example = json!(ErrorResponse {
-            code: 400,
+                code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while searching documents".to_string(),
             })
