@@ -132,7 +132,7 @@ async fn next_pagination_chunked_result(
     match client.next_pagination_result(&pagination_form).await {
         Ok(documents) => {
             let grouped = client.group_document_chunks(documents.get_founded());
-            let scroll = wrappers::scroll::PagintatedResult::new(grouped);
+            let scroll = wrappers::scroll::PaginatedResult::new(grouped);
             Ok(web::Json(scroll))
         }
         Err(err) => Err(err),

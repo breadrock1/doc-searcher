@@ -78,7 +78,7 @@ impl SchemaFieldType {
     pub fn new(type_value: FieldType) -> Self {
         let field_type = Self::get_type_str(type_value);
         SchemaFieldType {
-            field_type: field_type,
+            field_type,
             index: None,
             dims: None,
         }
@@ -87,7 +87,7 @@ impl SchemaFieldType {
     pub fn new_analyzed(type_value: FieldType, analyzed: bool) -> Self {
         let field_type = Self::get_type_str(type_value);
         SchemaFieldType {
-            field_type: field_type,
+            field_type,
             dims: None,
             index: {
                 let is_analyzed = match analyzed {
@@ -103,7 +103,7 @@ impl SchemaFieldType {
     pub fn new_dense(type_value: FieldType, dense_size: u32) -> Self {
         let field_type = Self::get_type_str(type_value);
         SchemaFieldType {
-            field_type: field_type,
+            field_type,
             index: None,
             dims: Some(dense_size),
         }
