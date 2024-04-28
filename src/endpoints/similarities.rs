@@ -18,7 +18,7 @@ use wrappers::scroll::PagintatedResult;
     tag = "Similarity",
     request_body(
         content = SearchParams,
-        example = json!(SearchParams::test_similar_example())
+        example = json!(SearchParams::test_example("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y"))
     ),
     responses(
         (
