@@ -68,11 +68,11 @@ impl FromRedisValue for CacherDocuments {
         match value {
             Value::Data(data) => serde_json::from_slice::<CacherDocuments>(data.as_slice())
                 .map_err(|_| {
-                    let msg = "Faile while deserializing document from redis";
+                    let msg = "Failed while deserializing document from redis";
                     RedisError::from((ErrorKind::IoError, msg))
                 }),
             _ => {
-                let err = anyhow::Error::msg("Incorrect redis value type to desrialize");
+                let err = anyhow::Error::msg("Incorrect redis value type to deserialize");
                 let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, err);
                 Err(io_err.into())
             }

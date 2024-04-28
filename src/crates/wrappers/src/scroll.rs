@@ -3,30 +3,30 @@ use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, Builder, ToSchema)]
-pub struct PagintatedResult<D> {
+pub struct PaginatedResult<D> {
     #[schema(value_type = PagintatedResult<Vec<Document>>)]
     founded: D,
     #[serde(skip_serializing_if = "Option::is_none")]
     scroll_id: Option<String>,
 }
 
-impl<D> PagintatedResult<D> {
+impl<D> PaginatedResult<D> {
     pub fn new(founded: D) -> Self {
-        PagintatedResult {
+        PaginatedResult {
             founded: founded,
             scroll_id: None,
         }
     }
 
     pub fn new_with_id(founded: D, id: String) -> Self {
-        PagintatedResult {
+        PaginatedResult {
             founded: founded,
             scroll_id: Some(id),
         }
     }
 
     pub fn new_with_opt_id(founded: D, opt_id: Option<String>) -> Self {
-        PagintatedResult {
+        PaginatedResult {
             founded: founded,
             scroll_id: opt_id,
         }

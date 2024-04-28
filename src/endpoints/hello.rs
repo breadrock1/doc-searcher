@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{SuccessfulResponse, ErrorResponse};
+use crate::errors::{ErrorResponse, SuccessfulResponse};
 
 use actix_web::{get, HttpResponse};
 
@@ -9,8 +9,8 @@ use actix_web::{get, HttpResponse};
     tag = "Hello",
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
                 code: 200,
@@ -18,8 +18,8 @@ use actix_web::{get, HttpResponse};
             })
         ),
         (
-            status = 503, 
-            description = "Server does not available", 
+            status = 503,
+            description = "Server does not available",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 503,

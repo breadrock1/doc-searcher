@@ -2,8 +2,8 @@ use crate::endpoints::buckets::__path_all_buckets;
 use crate::endpoints::buckets::__path_default_bucket;
 use crate::endpoints::buckets::__path_delete_bucket;
 use crate::endpoints::buckets::__path_get_bucket;
-use crate::endpoints::buckets::__path_new_bucket;
 use crate::endpoints::buckets::__path_get_bucket_documents;
+use crate::endpoints::buckets::__path_new_bucket;
 
 use crate::endpoints::clusters::__path_all_clusters;
 use crate::endpoints::clusters::__path_delete_cluster;
@@ -33,8 +33,8 @@ use crate::errors::*;
 use wrappers::bucket::*;
 use wrappers::cluster::*;
 use wrappers::document::*;
-use wrappers::scroll::*;
 use wrappers::file_form::*;
+use wrappers::scroll::*;
 use wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
@@ -83,7 +83,7 @@ use utoipa_swagger_ui::SwaggerUi;
             Artifacts,
             LoadFileForm,
             SearchParams,
-            PagintatedResult<Vec<Document>>,
+            PaginatedResult<Vec<Document>>,
             NextScroll,
             AllScrolls,
             HighlightEntity,

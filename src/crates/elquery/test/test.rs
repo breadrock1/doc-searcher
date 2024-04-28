@@ -29,11 +29,11 @@ mod test {
     #[test]
     fn build_similar_query() {
         let some_hash = "ssdeep_hash".to_string();
-        let some_field = vec!["hash_dield".to_string()];
+        let some_field = vec!["hash_field".to_string()];
         let similar_query = SimilarQuery::new(some_hash, some_field);
         let query_value = serde_json::to_value(similar_query).unwrap();
         let query_string = serde_json::to_string(&query_value).unwrap();
-        assert_eq!("{\"more_like_this\":{\"fields\":[\"hash_dield\"],\"like\":\"ssdeep_hash\",\"max_query_terms\":25,\"min_doc_freq\":1,\"min_term_freq\":1}}", query_string);
+        assert_eq!("{\"more_like_this\":{\"fields\":[\"hash_field\"],\"like\":\"ssdeep_hash\",\"max_query_terms\":25,\"min_doc_freq\":1,\"min_term_freq\":1}}", query_string);
     }
 
     #[test]

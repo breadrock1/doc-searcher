@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{JsonResponse, SuccessfulResponse, ErrorResponse, WebError};
+use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
 
 use actix_web::{delete, get, post, put, web};
 use actix_web::{HttpResponse, ResponseError};
@@ -16,8 +16,8 @@ use wrappers::document::Document;
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
                 code: 200,
@@ -25,8 +25,8 @@ use wrappers::document::Document;
             })
         ),
         (
-            status = 400, 
-            description = "Failed while updating document", 
+            status = 400,
+            description = "Failed while updating document",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -53,8 +53,8 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
                 code: 200,
@@ -62,8 +62,8 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
             })
         ),
         (
-            status = 400, 
-            description = "Failed while creating document", 
+            status = 400,
+            description = "Failed while creating document",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -122,19 +122,17 @@ async fn new_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRespo
 async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
     let client = cxt.get_ref();
     let (bucket_name, doc_ids) = path.as_ref();
-    
+
     let documents_id = doc_ids.split(',').collect::<Vec<&str>>();
     let mut failed_tasks: Vec<&str> = Vec::with_capacity(documents_id.len());
     for id in documents_id.into_iter() {
-        let result = client
-            .delete_document(bucket_name.as_str(), id)
-            .await;
-        
+        let result = client.delete_document(bucket_name.as_str(), id).await;
+
         if !result.status().is_success() {
             failed_tasks.push(id);
         }
     }
-    
+
     if !failed_tasks.is_empty() {
         let msg = failed_tasks.join(",");
         return WebError::DeletingCluster(msg).error_response();

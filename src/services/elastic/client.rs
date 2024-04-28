@@ -85,7 +85,7 @@ impl SearcherService for context::ElasticContext {
                     .filter(|cluster| cluster.name.eq(cluster_id))
                     .map(|cluster| cluster.to_owned())
                     .collect::<Vec<Cluster>>();
-                
+
                 match founded_cluster.first() {
                     Some(value) => Ok(web::Json(value.to_owned())),
                     None => {
@@ -94,7 +94,7 @@ impl SearcherService for context::ElasticContext {
                         Err(WebError::GetCluster(msg))
                     }
                 }
-            },
+            }
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
                 Err(WebError::from(err))
@@ -119,7 +119,7 @@ impl SearcherService for context::ElasticContext {
         let body = json_data.as_str();
         if body.is_none() {
             let msg = "Json body is None".to_string();
-            log::error!("Failed while building jsob body: {}", msg);
+            log::error!("Failed while building json body: {}", msg);
             return WebError::DeletingCluster(msg).error_response();
         }
 
@@ -190,7 +190,7 @@ impl SearcherService for context::ElasticContext {
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
-            log::error!("Failed while getting bucket {}: {}", bucket_id, err);
+            log::error!("Returned failed response from elastic: {}", err);
             return Err(WebError::from(err));
         }
 
@@ -198,7 +198,7 @@ impl SearcherService for context::ElasticContext {
         let json_value = response.json::<Value>().await;
         if json_value.is_err() {
             let err = json_value.err().unwrap();
-            log::error!("Failed while getting bucket {}: {}", bucket_id, err);
+            log::error!("Failed while parsing bucket {}: {}", bucket_id, err);
             return Err(WebError::from(err));
         }
 
@@ -215,7 +215,10 @@ impl SearcherService for context::ElasticContext {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_match_all_query();
 
-        let s_params = SearchParams { result_size: 1000, ..Default::default() };
+        let s_params = SearchParams {
+            result_size: 1000,
+            ..Default::default()
+        };
         match helper::search_documents(&elastic, &[bucket_id], &body_value, &s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
@@ -527,7 +530,6 @@ impl SearcherService for context::ElasticContext {
             .unwrap_or(DEFAULT_BUCKET_NAME.to_string());
 
         let indexes = buckets.split(',').collect::<Vec<&str>>();
-
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
@@ -543,11 +545,10 @@ impl SearcherService for context::ElasticContext {
 
         let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
         let indexes = buckets.split(',').collect::<Vec<&str>>();
-
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
-                log::error!("Failed while searching documents: {}", err);
+                log::error!("Failed while searching documents tokens: {}", err);
                 Err(err)
             }
         }
@@ -575,7 +576,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -593,7 +594,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents tokens: {}", err);
@@ -611,7 +612,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching similar documents: {}", err);

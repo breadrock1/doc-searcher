@@ -1,5 +1,5 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::{PaginateJsonResponse, ErrorResponse};
+use crate::errors::{ErrorResponse, PaginateJsonResponse};
 use crate::services::cacher::values::{CacherDocuments, CacherSearchParams};
 use crate::services::CacherService;
 
@@ -9,8 +9,8 @@ use crate::services::GroupedDocs;
 use actix_web::{post, web};
 
 use wrappers::document::Document;
+use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
-use wrappers::scroll::PagintatedResult;
 
 #[utoipa::path(
     post,
@@ -25,7 +25,7 @@ use wrappers::scroll::PagintatedResult;
             status = 200,
             description = "Successful",
             body = [Document],
-            example = json!(PagintatedResult::<Vec<Document>>::new_with_id(
+            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
                 vec![Document::test_example()],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
@@ -71,7 +71,7 @@ async fn search_similar_docs(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PagintatedResult::new(docs);
+            let scroll = PaginatedResult::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -108,7 +108,7 @@ async fn search_similar_chunked_docs(
 
             let docs = Vec::from(docs);
             let grouped = client.group_document_chunks(&docs);
-            let scroll = PagintatedResult::new(grouped);
+            let scroll = PaginatedResult::new(grouped);
             Ok(web::Json(scroll))
         }
     }
@@ -120,17 +120,15 @@ mod similar_endpoints {
     use crate::services::SearcherService;
 
     use wrappers::document::{Document, DocumentBuilder};
-    use wrappers::search_params::SearchParamsBuilder;
+    use wrappers::search_params::{SearchParams, SearchParamsBuilder, SearchParamsBuilderError};
 
     use actix_web::test;
 
     const SSDEEP_HASH_CMP: &str =
         "12:JOGngjFtLax3bQrZvuwRZVZXwUSpUmHWAURnwP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y";
 
-    #[test]
-    async fn test_search_similar_docs() {
-        let other_context = OtherContext::new("test".to_string());
-        let mut search_params = SearchParamsBuilder::default()
+    fn build_default_search_params() -> Result<SearchParams, SearchParamsBuilderError> {
+        SearchParamsBuilder::default()
             .query("unknown".to_string())
             .buckets(Some("test_bucket".to_string()))
             .document_type(String::default())
@@ -143,7 +141,12 @@ mod similar_endpoints {
             .result_offset(0)
             .scroll_timelife("1m".to_string())
             .build()
-            .unwrap();
+    }
+
+    #[test]
+    async fn test_search_similar_docs() {
+        let other_context = OtherContext::new("test".to_string());
+        let mut search_params = build_default_search_params().unwrap();
 
         let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 0);
@@ -165,20 +168,7 @@ mod similar_endpoints {
     #[test]
     async fn test_search_similar_docs_target() {
         let other_context = OtherContext::new("test".to_string());
-        let mut search_params = SearchParamsBuilder::default()
-            .query("unknown".to_string())
-            .buckets(Some("test_bucket".to_string()))
-            .document_type(String::default())
-            .document_extension(String::default())
-            .created_date_to(String::default())
-            .created_date_from(String::default())
-            .document_size_to(0)
-            .document_size_from(0)
-            .result_size(25)
-            .result_offset(0)
-            .scroll_timelife("1m".to_string())
-            .build()
-            .unwrap();
+        let mut search_params = build_default_search_params().unwrap();
 
         let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 0);

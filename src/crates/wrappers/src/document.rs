@@ -1,4 +1,4 @@
-use chrono::{Datelike, DateTime, NaiveDateTime, Timelike, Utc};
+use chrono::{DateTime, Datelike, NaiveDateTime, Timelike, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -61,26 +61,38 @@ impl Document {
     pub fn exclude_tokens(&mut self) {
         self.content_vector = Vec::default();
     }
-    
+
     pub fn test_example() -> Self {
         let created = NaiveDateTime::default()
-            .with_year(2024).unwrap()
-            .with_month(4).unwrap()
-            .with_day(3).unwrap()
-            .with_hour(13).unwrap()
-            .with_minute(51).unwrap()
-            .with_second(32).unwrap()
+            .with_year(2024)
+            .unwrap()
+            .with_month(4)
+            .unwrap()
+            .with_day(3)
+            .unwrap()
+            .with_hour(13)
+            .unwrap()
+            .with_minute(51)
+            .unwrap()
+            .with_second(32)
+            .unwrap()
             .and_utc();
 
         let modified = NaiveDateTime::default()
-            .with_year(2024).unwrap()
-            .with_month(4).unwrap()
-            .with_day(25).unwrap()
-            .with_hour(11).unwrap()
-            .with_minute(14).unwrap()
-            .with_second(55).unwrap()
+            .with_year(2024)
+            .unwrap()
+            .with_month(4)
+            .unwrap()
+            .with_day(25)
+            .unwrap()
+            .with_hour(11)
+            .unwrap()
+            .with_minute(14)
+            .unwrap()
+            .with_second(55)
+            .unwrap()
             .and_utc();
-        
+
         DocumentBuilder::default()
             .bucket_uuid("test_bucket".to_string())
             .bucket_path("/".to_string())
@@ -94,12 +106,14 @@ impl Document {
             .document_permissions(777)
             .content_md5("98ac9896be35f47fb8442580cd9839b4".to_string())
             .content_uuid("a9850114-5903-465a-bfc5-8d9e28110be8".to_string())
-            .content("The Ocean Carrier has signed the above mentioned number of originals.".to_string())
+            .content(
+                "The Ocean Carrier has signed the above mentioned number of originals.".to_string(),
+            )
             .content_vector(Vec::default())
             .document_created(Some(created))
             .document_modified(Some(modified))
             .highlight(Some(HighlightEntity {
-                content: vec!["Ocean Carrier".to_string()]
+                content: vec!["Ocean Carrier".to_string()],
             }))
             .ocr_metadata(Some(OcrMetadata {
                 job_id: "c643c506-f5c3-4262-991d-bbe847035499".to_string(),
@@ -107,8 +121,9 @@ impl Document {
                 pages_count: 1,
                 doc_type: "SMGS".to_string(),
                 artifacts: None,
-            })).build().unwrap()
-        
+            }))
+            .build()
+            .unwrap()
     }
 }
 
