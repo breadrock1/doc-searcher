@@ -18,7 +18,7 @@ use wrappers::search_params::SearchParams;
     tag = "Search",
     request_body(
         content = SearchParams,
-        example = json!(SearchParams::test_example())
+        example = json!(SearchParams::test_example("Ocean Carrier"))
     ),
     responses(
         (
@@ -83,7 +83,7 @@ async fn search_all(
     tag = "Search",
     request_body(
         content = SearchParams,
-        example = json!(SearchParams::test_example())
+        example = json!(SearchParams::test_example("Ocean Carrier"))
     ),
     responses(
         (

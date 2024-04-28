@@ -39,27 +39,9 @@ impl SearchParams {
         self.scroll_timelife.as_str()
     }
     
-    pub fn test_example() -> Self {
+    pub fn test_example(query: &str) -> Self {
         SearchParamsBuilder::default()
-            .query("Ocean Carrier".to_string())
-            .buckets(Some("test_bucket".to_string()))
-            .document_type("document".to_string())
-            .document_extension("txt".to_string())
-            .created_date_to("2024-04-26T11:14:55Z".to_string())
-            .created_date_from("2024-04-02T13:51:32Z".to_string())
-            .document_size_to(37000)
-            .document_size_from(32000)
-            .result_size(25)
-            .result_offset(0)
-            .scroll_timelife("1m".to_string())
-            .build()
-            .unwrap()
-    }
-     
-
-    pub fn test_similar_example() -> Self {
-        SearchParamsBuilder::default()
-            .query("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y".to_string())
+            .query(query.to_string())
             .buckets(Some("test_bucket".to_string()))
             .document_type("document".to_string())
             .document_extension("txt".to_string())
