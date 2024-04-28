@@ -13,21 +13,21 @@ pub struct PaginatedResult<D> {
 impl<D> PaginatedResult<D> {
     pub fn new(founded: D) -> Self {
         PaginatedResult {
-            founded: founded,
+            founded,
             scroll_id: None,
         }
     }
 
     pub fn new_with_id(founded: D, id: String) -> Self {
         PaginatedResult {
-            founded: founded,
+            founded,
             scroll_id: Some(id),
         }
     }
 
     pub fn new_with_opt_id(founded: D, opt_id: Option<String>) -> Self {
         PaginatedResult {
-            founded: founded,
+            founded,
             scroll_id: opt_id,
         }
     }

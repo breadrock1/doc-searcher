@@ -9,7 +9,7 @@ mod tests {
     fn load_directory_entity_test() {
         let file_path = "./src/crates/loader/resources";
         let path_object = Path::new(file_path);
-        let documents = loader::load_passed_file_by_path(DEFAULT_BUCKET_NAME, &path_object)
+        let documents = loader::load_passed_file_by_path(DEFAULT_BUCKET_NAME, path_object)
             .into_iter()
             .filter(|file_data| file_data.document_extension.as_str().eq("txt"))
             .map(|file_data| file_data.document_name.clone())
@@ -22,7 +22,7 @@ mod tests {
     fn test_load_txt_file_entity() {
         let file_path = "./src/crates/loader/resources/test.txt";
         let path_object = Path::new(file_path);
-        let documents = loader::load_passed_file_by_path(DEFAULT_BUCKET_NAME, &path_object)
+        let documents = loader::load_passed_file_by_path(DEFAULT_BUCKET_NAME, path_object)
             .into_iter()
             .map(|file_data| file_data.content.clone())
             .collect::<Vec<String>>();
