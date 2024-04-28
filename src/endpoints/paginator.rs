@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{JsonResponse, PaginateJsonResponse, ErrorResponse, SuccessfulResponse};
+use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse, SuccessfulResponse};
 
 use actix_web::{delete, get, post, web, HttpResponse};
 
@@ -12,7 +12,7 @@ use wrappers::scroll::{AllScrolls, NextScroll};
     tag = "Pagination",
     responses(
         (
-            status = 200, 
+            status = 200,
             description = "Successful", 
             body = [String],
             example = json!(vec![
@@ -20,7 +20,7 @@ use wrappers::scroll::{AllScrolls, NextScroll};
             ])
         ),
         (
-            status = 400, 
+            status = 400,
             description = "Failed while getting all pagination sessions", 
             body = ErrorResponse,
             example = json!(ErrorResponse {
@@ -60,7 +60,7 @@ async fn get_pagination_ids(cxt: SearcherData) -> JsonResponse<Vec<String>> {
             })
         ),
         (
-            status = 400, 
+            status = 400,
             description = "Failed while deleting pagination sessions", 
             body = ErrorResponse,
             example = json!(ErrorResponse {

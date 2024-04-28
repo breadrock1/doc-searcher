@@ -3,10 +3,10 @@ use actix_web::{web, HttpResponse, ResponseError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
-use wrappers::scroll::PagintatedResult;
+use wrappers::scroll::PaginatedResult;
 
 pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
-pub(crate) type PaginateJsonResponse<T> = JsonResponse<PagintatedResult<T>>;
+pub(crate) type PaginateJsonResponse<T> = JsonResponse<PaginatedResult<T>>;
 
 #[derive(Error, Debug)]
 pub enum WebError {

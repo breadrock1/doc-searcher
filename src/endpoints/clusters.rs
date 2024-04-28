@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{JsonResponse, SuccessfulResponse, ErrorResponse};
+use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
 
 use actix_web::{delete, get, post, web, HttpResponse};
 
@@ -11,14 +11,14 @@ use wrappers::cluster::{Cluster, ClusterForm};
     tag = "Clusters",
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = [Cluster],
             example = json!(vec![Cluster::default()])
         ),
         (
-            status = 400, 
-            description = "Failed while getting clusters", 
+            status = 400,
+            description = "Failed while getting clusters",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -46,8 +46,8 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
                 code: 200,
@@ -55,8 +55,8 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
             })
         ),
         (
-            status = 400, 
-            description = "Failed while creating cluster", 
+            status = 400,
+            description = "Failed while creating cluster",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -96,7 +96,7 @@ async fn new_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpRes
     ),
     responses(
         (
-            status = 200, 
+            status = 200,
             description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
@@ -105,8 +105,8 @@ async fn new_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpRes
             })
         ),
         (
-            status = 401, 
-            description = "Failed while deleting cluster", 
+            status = 400,
+            description = "Failed while deleting cluster",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -146,14 +146,14 @@ async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpRespo
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = Cluster,
             example = json!(Cluster::default())
         ),
         (
-            status = 400, 
-            description = "Failed while getting cluster by name", 
+            status = 400,
+            description = "Failed while getting cluster by name",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,

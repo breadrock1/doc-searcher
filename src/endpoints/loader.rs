@@ -19,7 +19,7 @@ use wrappers::file_form::LoadFileForm;
     ),
     responses(
         (
-            status = 200, 
+            status = 200,
             description = "Successful", 
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
@@ -28,7 +28,7 @@ use wrappers::file_form::LoadFileForm;
             })
         ),
         (
-            status = 400, 
+            status = 400,
             description = "Failed while loading files", 
             body = ErrorResponse,
             example = json!(ErrorResponse {
@@ -69,7 +69,7 @@ async fn load_file(cxt: SearcherData, form: web::Json<LoadFileForm>) -> HttpResp
             })
         ),
         (
-            status = 400, 
+            status = 400,
             description = "Failed while downloading files", 
             body = ErrorResponse,
             example = json!(ErrorResponse {

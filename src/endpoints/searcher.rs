@@ -1,5 +1,5 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::{PaginateJsonResponse, ErrorResponse};
+use crate::errors::{ErrorResponse, PaginateJsonResponse};
 use crate::services::cacher::values::*;
 use crate::services::CacherService;
 
@@ -9,7 +9,7 @@ use crate::services::GroupedDocs;
 use actix_web::{post, web};
 
 use wrappers::document::Document;
-use wrappers::scroll::PagintatedResult;
+use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
 
 #[utoipa::path(
@@ -22,11 +22,11 @@ use wrappers::search_params::SearchParams;
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = PagintatedResult<Vec<Document>>,
-            example = json!(PagintatedResult::<Vec<Document>>::new_with_id(
-                vec![Document::test_example()], 
+            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
+                vec![Document::test_example()],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
         ),
@@ -71,7 +71,7 @@ async fn search_all(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PagintatedResult::new(docs);
+            let scroll = PaginatedResult::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -90,7 +90,7 @@ async fn search_all(
             status = 200,
             description = "Successful",
             body = [Document],
-            example = json!(PagintatedResult::<Vec<Document>>::new_with_id(
+            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
                 vec![Document::test_example()],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
@@ -136,7 +136,7 @@ async fn search_tokens(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PagintatedResult::new(docs);
+            let scroll = PaginatedResult::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -173,7 +173,7 @@ async fn search_chunked(
 
             let docs = Vec::from(docs);
             let grouped = client.group_document_chunks(&docs);
-            let scroll = PagintatedResult::new(grouped);
+            let scroll = PaginatedResult::new(grouped);
             Ok(web::Json(scroll))
         }
     }
@@ -210,7 +210,7 @@ async fn search_chunked_tokens(
 
             let docs = Vec::from(docs);
             let grouped = client.group_document_chunks(&docs);
-            let scroll = PagintatedResult::new(grouped);
+            let scroll = PaginatedResult::new(grouped);
             Ok(web::Json(scroll))
         }
     }

@@ -38,7 +38,7 @@ impl SearchParams {
     pub fn get_scroll(&self) -> &str {
         self.scroll_timelife.as_str()
     }
-    
+
     pub fn test_example(query: &str) -> Self {
         SearchParamsBuilder::default()
             .query(query.to_string())

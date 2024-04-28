@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{JsonResponse, PaginateJsonResponse, ErrorResponse, SuccessfulResponse};
+use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse, SuccessfulResponse};
 
 use actix_web::{delete, get, post, web, HttpResponse};
 
@@ -12,14 +12,14 @@ use wrappers::document::Document;
     tag = "Buckets",
     responses(
         (
-            status = 200, 
-            description = "Successful", 
-            body = [Bucket], 
+            status = 200,
+            description = "Successful",
+            body = [Bucket],
             example = json!(vec![Bucket::default()])
         ),
         (
-            status = 400, 
-            description = "Failed while getting all buckets", 
+            status = 400,
+            description = "Failed while getting all buckets",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -40,15 +40,15 @@ async fn all_buckets(cxt: SearcherData) -> JsonResponse<Vec<Bucket>> {
     path = "/bucket/new",
     tag = "Buckets",
     request_body(
-        content = BucketForm, 
+        content = BucketForm,
         example = json!({
             "bucket_name": "test_bucket"
         })
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
                 code: 200,
@@ -56,8 +56,8 @@ async fn all_buckets(cxt: SearcherData) -> JsonResponse<Vec<Bucket>> {
             })
         ),
         (
-            status = 400, 
-            description = "Failed while creating new bucket", 
+            status = 400,
+            description = "Failed while creating new bucket",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -80,7 +80,7 @@ async fn new_bucket(cxt: SearcherData, form: web::Json<BucketForm>) -> HttpRespo
     tag = "Buckets",
     responses(
         (
-            status = 200, 
+            status = 200,
             description = "Successful", 
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
@@ -89,7 +89,7 @@ async fn new_bucket(cxt: SearcherData, form: web::Json<BucketForm>) -> HttpRespo
             })
         ),
         (
-            status = 400, 
+            status = 400,
             description = "Failed while creating default bucket", 
             body = ErrorResponse,
             example = json!(ErrorResponse {
@@ -113,15 +113,15 @@ async fn default_bucket(cxt: SearcherData) -> HttpResponse {
     tag = "Buckets",
     params(
         (
-            "bucket_name" = &str, 
+            "bucket_name" = &str,
             description = "Passed bucket name to delete",
             example = "test_bucket",
         )
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = SuccessfulResponse,
             example = json!(SuccessfulResponse {
                 code: 200,
@@ -129,8 +129,8 @@ async fn default_bucket(cxt: SearcherData) -> HttpResponse {
             })
         ),
         (
-            status = 400, 
-            description = "Failed while deleting bucket", 
+            status = 400,
+            description = "Failed while deleting bucket",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -160,14 +160,14 @@ async fn delete_bucket(cxt: SearcherData, path: web::Path<String>) -> HttpRespon
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
+            status = 200,
+            description = "Successful",
             body = Bucket,
             example = json!(Bucket::default())
         ),
         (
-            status = 400, 
-            description = "Failed while getting bucket by name", 
+            status = 400,
+            description = "Failed while getting bucket by name",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -189,21 +189,21 @@ async fn get_bucket(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
     tag = "Buckets",
     params(
         (
-            "bucket_name" = &str, 
-            description = "Passed bucket name to get documents", 
+            "bucket_name" = &str,
+            description = "Passed bucket name to get documents",
             example = "test_bucket",
         )
     ),
     responses(
         (
-            status = 200, 
-            description = "Successful", 
-            body = [Document], 
+            status = 200,
+            description = "Successful",
+            body = [Document],
             example = json!(vec![Document::test_example()])
         ),
         (
-            status = 400, 
-            description = "Failed while getting bucket documents", 
+            status = 400,
+            description = "Failed while getting bucket documents",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
@@ -214,7 +214,10 @@ async fn get_bucket(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
     )
 )]
 #[get("/{bucket_name}/documents")]
-async fn get_bucket_documents(cxt: SearcherData, path: web::Path<String>) -> PaginateJsonResponse<Vec<Document>> {
+async fn get_bucket_documents(
+    cxt: SearcherData,
+    path: web::Path<String>,
+) -> PaginateJsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     client.get_bucket_documents(path.as_str()).await
 }

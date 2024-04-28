@@ -9,7 +9,7 @@ use elquery::similar_query::SimilarQuery;
 use wrappers::bucket::{Bucket, BucketBuilder};
 use wrappers::document::{Document, HighlightEntity};
 use wrappers::schema::BucketSchema;
-use wrappers::scroll::PagintatedResult;
+use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
 
 use actix_web::web;
@@ -92,7 +92,7 @@ pub async fn search_documents(
     indexes: &[&str],
     body_value: &Value,
     es_params: &SearchParams,
-) -> JsonResponse<PagintatedResult<Vec<Document>>> {
+) -> JsonResponse<PaginatedResult<Vec<Document>>> {
     let result_size = es_params.result_size;
     let result_offset = es_params.result_offset;
     let response_result = elastic
@@ -123,7 +123,7 @@ pub async fn search_documents(
     }
 }
 
-pub async fn parse_search_result(response: Response) -> PagintatedResult<Vec<Document>> {
+pub async fn parse_search_result(response: Response) -> PaginatedResult<Vec<Document>> {
     let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"hits"][&"hits"];
     let scroll_id = common_object[&"_scroll_id"]
@@ -142,7 +142,7 @@ pub async fn parse_search_result(response: Response) -> PagintatedResult<Vec<Doc
         .flatten()
         .collect::<Vec<Document>>();
 
-    PagintatedResult::new_with_opt_id(founded_documents, scroll_id)
+    PaginatedResult::new_with_opt_id(founded_documents, scroll_id)
 }
 
 fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
@@ -220,7 +220,7 @@ pub fn build_match_all_query() -> Value {
     let exclude_fields = ExcludeFields::new(cont_vector);
     let exclude_value = serde_json::to_value(exclude_fields).unwrap();
     query_json_object[&"_source"] = exclude_value;
-    
+
     query_json_object
 }
 
