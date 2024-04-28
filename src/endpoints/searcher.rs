@@ -12,7 +12,6 @@ use wrappers::document::Document;
 use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
 
-#[rustfmt::skip]
 #[utoipa::path(
     post,
     path = "/search/",
