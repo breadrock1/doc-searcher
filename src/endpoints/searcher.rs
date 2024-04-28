@@ -22,8 +22,7 @@ use wrappers::search_params::SearchParams;
     ),
     responses(
         (
-            status = 200,
-            description = "Successful",
+            status = 200, description = "Successful",
             body = PagintatedResult<Vec<Document>>,
             example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
                 vec![Document::test_example()],
