@@ -50,6 +50,35 @@ pub async fn send_document(
     }
 }
 
+pub async fn send_document_preview(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    doc_form: &DocumentPreview,
+    bucket_id: &str,
+) -> SendDocumentStatus {
+    let document_id = doc_form.id.as_str();
+
+    let to_value_result = serde_json::to_value(doc_form);
+    let document_json = to_value_result.unwrap();
+    let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
+
+    body.push(json!({"index": { "_id": document_id }}).into());
+    body.push(document_json.into());
+
+    let response_result = elastic
+        .bulk(BulkParts::Index(bucket_id))
+        .body(body)
+        .send()
+        .await;
+
+    match response_result {
+        Ok(_) => SendDocumentStatus::new(true, doc_form.location.as_str()),
+        Err(err) => {
+            let err_msg = format!("Failed while loading file: {:?}", err);
+            SendDocumentStatus::new(false, err_msg.as_str())
+        }
+    }
+}
+
 pub async fn check_duplication(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
     bucket_id: &str,
@@ -58,11 +87,11 @@ pub async fn check_duplication(
     let response_result = elastic
         .count(CountParts::Index(&[bucket_id]))
         .body(json!({
-                "query" : {
-                    "term" : {
-                        "content_md5" : document_id
-                    }
+            "query" : {
+                "term" : {
+                    "content_md5" : document_id
                 }
+            }
         }))
         .send()
         .await;
@@ -87,12 +116,66 @@ pub async fn check_duplication(
     }
 }
 
+pub async fn search_documents_preview(
+    elastic: &Elasticsearch,
+    indexes: &[&str],
+    body_value: &Value,
+    es_params: &SearchParams,
+) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+    let result_size = es_params.result_size;
+    let result_offset = es_params.result_offset;
+    let response_result = elastic
+        .search(SearchParts::Index(indexes))
+        .from(result_offset)
+        .size(result_size)
+        .body(body_value)
+        .pretty(true)
+        .scroll(es_params.get_scroll())
+        .allow_no_indices(true)
+        .send()
+        .await;
+
+    match response_result {
+        Err(err) => Err(WebError::SearchFailed(err.to_string())),
+        Ok(response) => {
+            let common_object = response.json::<Value>().await.unwrap();
+            let document_json = &common_object[&"hits"][&"hits"];
+            // let scroll_id = common_object[&"_scroll_id"]
+            //     .as_str()
+            //     .map_or_else(|| None, |x| Some(x.to_string()));
+
+            let own_document = document_json.to_owned();
+            let default_vec: Vec<Value> = Vec::default();
+            let json_array = own_document.as_array().unwrap_or(&default_vec);
+            let founded_documents = json_array
+                .iter()
+                .map(|value| {
+                    let source_value = value[&"_source"].to_owned();
+                    let document_result = Document::deserialize(source_value);
+                    if document_result.is_err() {
+                        let err = document_result.err().unwrap();
+                        log::error!("Failed while deserialize doc: {}", err);
+                        return Err(err);
+                    }
+                    
+                    Ok(DocumentPreview::from(document_result.unwrap()))
+                })
+                .map(Result::ok)
+                .filter(Option::is_some)
+                .flatten()
+                .collect::<Vec<DocumentPreview>>();
+            
+            Ok(web::Json(PaginatedResult::new(founded_documents)))
+        }
+    }
+}
+
 pub async fn search_documents(
     elastic: &Elasticsearch,
     indexes: &[&str],
     body_value: &Value,
     es_params: &SearchParams,
-) -> JsonResponse<PaginatedResult<Vec<Document>>> {
+) -> PaginateJsonResponse<Vec<Document>> {
     let result_size = es_params.result_size;
     let result_offset = es_params.result_offset;
     let response_result = elastic
@@ -162,54 +245,8 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
     Ok(document)
 }
 
-#[cfg(feature = "enable-semantic")]
-pub async fn sort_by_cosine(query: &str, documents: &mut [Document]) {
-    use simsimd::SpatialSimilarity;
-
-    let query_tokens_result = load_query_tokens(query).await;
-    if query_tokens_result.is_err() {
-        let err = query_tokens_result.err().unwrap();
-        log::warn!("Failed while getting query tokens: {}", err);
-        return;
-    }
-
-    let query_tokens = query_tokens_result.unwrap();
-    documents.sort_by_key(
-        |doc| match f64::cosine(&query_tokens, &doc.content_vector) {
-            None => 0i32,
-            Some(dist) => dist.cos() as i32,
-        },
-    );
-
-    documents
-        .iter_mut()
-        .for_each(|doc| doc.content_vector = Vec::default());
-}
-
-#[cfg(feature = "enable-semantic")]
-async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
-    let embeddings_url = std::env::var("EMBEDDINGS_URL").unwrap_or_default();
-    let client = reqwest::Client::new();
-    let response = client
-        .post(embeddings_url)
-        .json(&json!({
-            "inputs": query,
-            "truncate": false
-        }))
-        .send()
-        .await?;
-
-    let query_tokens = response.json::<Vec<Vec<f64>>>().await?;
-    match query_tokens.first() {
-        None => {
-            let msg = "Failed while sending request";
-            Err(anyhow::Error::msg(msg.to_string()))
-        }
-        Some(vector) => Ok(vector.to_owned()),
-    }
-}
-
 pub fn build_match_all_query() -> Value {
+    // TODO: Implement filters for DocumentPreview fields
     let mut query_json_object = json!({
         "query": {
             "match_all": {}
@@ -307,7 +344,90 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
     Ok(built_bucket.unwrap())
 }
 
-pub fn create_bucket_scheme() -> String {
+pub fn create_bucket_scheme(
+    // is_preview: bool,
+) -> String {
+    // if is_preview {
+    //     // {
+    //     //   "id": "string",
+    //     //   "name": "Перевозка груза МСК",
+    //     //   "created_at": "2024-05-03",
+    //     //   "updated_at": "2024-05-03",
+    //     //   "quality_recognization": 10000,
+    //     //   "file_size": 12545,
+    //     //   "location": "string",
+    //     //   "properties": [
+    //     //     {
+    //     //      "group_name": "Приём груза",
+    //     //      "group_values": [
+    //     //         {
+    //     //          "key": "field_date_smgs",
+    //     //          "name": "Дата и время (печатные)",
+    //     //          "value": "18.03.2024, 23:59"
+    //     //        }
+    //     //      ]
+    //     //    }
+    //     //  ]
+    //     // }
+    //     let schema = json!({
+    //         "id": {"type": "string"},
+    //         "name": {"type": "string"},
+    //         "created_at": {"type": "date"},
+    //         "updated_at": {"type": "date"},
+    //         "quality_recognition": {"type": "int"},
+    //         "file_size": {"type": "int"},
+    //         "location": {"type": "string"},
+    //         "properties": {"type": "object"},
+    //     });
+    //     return serde_json::to_string_pretty(&schema).unwrap();
+    // }
     let schema = BucketSchema::default();
     serde_json::to_string_pretty(&schema).unwrap()
+}
+
+#[cfg(feature = "enable-semantic")]
+pub async fn sort_by_cosine(query: &str, documents: &mut [Document]) {
+    use simsimd::SpatialSimilarity;
+
+    let query_tokens_result = load_query_tokens(query).await;
+    if query_tokens_result.is_err() {
+        let err = query_tokens_result.err().unwrap();
+        log::warn!("Failed while getting query tokens: {}", err);
+        return;
+    }
+
+    let query_tokens = query_tokens_result.unwrap();
+    documents.sort_by_key(
+        |doc| match f64::cosine(&query_tokens, &doc.content_vector) {
+            None => 0i32,
+            Some(dist) => dist.cos() as i32,
+        },
+    );
+
+    documents
+        .iter_mut()
+        .for_each(|doc| doc.content_vector = Vec::default());
+}
+
+#[cfg(feature = "enable-semantic")]
+async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
+    let embeddings_url = std::env::var("EMBEDDINGS_URL").unwrap_or_default();
+    let client = reqwest::Client::new();
+    let response = client
+        .post(embeddings_url)
+        .json(&json!({
+            "inputs": query,
+            "truncate": false
+        }))
+        .send()
+        .await?;
+
+    let query_tokens = response.json::<Vec<Vec<f64>>>().await?;
+    match query_tokens.first() {
+        None => {
+            let msg = "Failed while sending request";
+            Err(anyhow::Error::msg(msg.to_string()))
+        }
+        Some(vector) => Ok(vector.to_owned()),
+    }
 }
