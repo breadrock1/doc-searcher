@@ -188,6 +188,44 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
     client.update_document(&doc_form).await
 }
 
+#[utoipa::path(
+    post,
+    path = "/documents/location",
+    tag = "Documents",
+    request_body(
+        content = MoveDocumentsForm,
+        example = json!(MoveDocumetsForm::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while moving documents to folder",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while moving documents to folder".to_string(),
+            })
+        ),
+    )
+)]
+#[post("/location")]
+async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
+    // TODO: Update documents stored into Elastic.
+    let client = cxt.get_ref();
+    let move_doc_form = form.0;
+    client.move_documents(move_doc_form.get_folder_id(), move_doc_form.get_document_ids()).await
+}
+
 #[cfg(test)]
 mod documents_endpoints {
     use crate::services::own_engine::context::OtherContext;
