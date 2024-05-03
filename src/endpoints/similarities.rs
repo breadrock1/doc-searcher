@@ -11,6 +11,7 @@ use actix_web::{post, web};
 use wrappers::document::Document;
 use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
+use wrappers::TestExample;
 
 #[utoipa::path(
     post,
@@ -18,7 +19,7 @@ use wrappers::search_params::SearchParams;
     tag = "Similarity",
     request_body(
         content = SearchParams,
-        example = json!(SearchParams::test_example("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y"))
+        example = json!(SearchParams::test_example(Some("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")))
     ),
     responses(
         (
@@ -26,7 +27,7 @@ use wrappers::search_params::SearchParams;
             description = "Successful",
             body = [Document],
             example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
-                vec![Document::test_example()],
+                vec![Document::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
         ),
@@ -119,8 +120,8 @@ mod similar_endpoints {
     use crate::services::own_engine::context::OtherContext;
     use crate::services::SearcherService;
 
-    use wrappers::document::{Document, DocumentBuilder};
-    use wrappers::search_params::{SearchParams, SearchParamsBuilder, SearchParamsBuilderError};
+    use wrappers::document::Document;
+    use wrappers::search_params::{SearchParams, SearchParamsBuilderError};
 
     use actix_web::test;
 
@@ -128,9 +129,9 @@ mod similar_endpoints {
         "12:JOGngjFtLax3bQrZvuwRZVZXwUSpUmHWAURnwP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y";
 
     fn build_default_search_params() -> Result<SearchParams, SearchParamsBuilderError> {
-        SearchParamsBuilder::default()
+        SearchParams::builder()
             .query("unknown".to_string())
-            .buckets(Some("test_bucket".to_string()))
+            .buckets(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -233,26 +234,27 @@ mod similar_endpoints {
         ];
 
         let mut build_documents = Vec::<Document>::new();
-        let test_bucket_name = "test_bucket";
+        let test_folder_name = "test_folder";
         for document_index in 1..17 {
             let document_size = 1024 + document_index * 10;
             let test_document_name = &format!("test_document_{}", document_index);
+            let test_document_path = &format!("{}/{}", test_folder_name, test_document_name);
             let ssdeep_hash = *vec_hashes.get(document_index as usize).unwrap();
             let entity_data = *entity_data_vec.get(document_index as usize).unwrap();
-            let document = DocumentBuilder::default()
-                .bucket_uuid(test_bucket_name.to_string())
-                .bucket_path("/".to_string())
+            let document = Document::builder()
+                .folder_id(test_folder_name.to_string())
+                .folder_path("/test_folder".to_string())
                 .document_name(test_document_name.clone())
-                .document_path("/".to_string())
+                .document_path(test_document_path.to_owned())
                 .document_size(document_size)
                 .document_type("document".to_string())
                 .document_extension(".txt".to_string())
                 .document_permissions(document_size)
                 .document_md5(test_document_name.clone())
                 .document_ssdeep(ssdeep_hash.to_string())
-                .content_md5(test_document_name.clone())
+                .content_md5(test_document_name.to_owned())
                 .content_uuid(hasher::gen_uuid())
-                .content(entity_data.to_string())
+                .content(entity_data.to_owned())
                 .content_vector(Vec::default())
                 .highlight(None)
                 .document_created(None)

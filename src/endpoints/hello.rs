@@ -5,7 +5,7 @@ use actix_web::{get, HttpResponse};
 
 #[utoipa::path(
     get,
-    path = "/hello",
+    path = "/hello/",
     tag = "Hello",
     responses(
         (

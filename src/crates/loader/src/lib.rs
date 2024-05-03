@@ -7,7 +7,6 @@ use chrono::{DateTime, Utc};
 use hasher::{gen_hash, HashType};
 use text_splitter::TextSplitter;
 use wrappers::document::Document;
-use wrappers::document::DocumentBuilder;
 
 use std::ffi::OsStr;
 use std::fs::File;
@@ -124,9 +123,9 @@ fn load_target_file(bucket_name: &str, file_path: &Path) -> Result<Vec<Document>
         let binding = md5_hash_chunk.unwrap();
         let md5_hash_chunk = binding.get_hash_data();
 
-        let built_file_data = DocumentBuilder::default()
-            .bucket_uuid(bucket_name.to_string())
-            .bucket_path("/".to_string())
+        let built_file_data = Document::builder()
+            .folder_id(bucket_name.to_string())
+            .folder_path("/".to_string())
             .content_uuid(chunk_uuid4)
             .content_md5(md5_hash_chunk.to_string())
             .content(doc_chunk.clone())

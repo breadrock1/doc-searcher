@@ -6,3 +6,7 @@ pub mod lang_chain;
 pub mod schema;
 pub mod scroll;
 pub mod search_params;
+
+pub trait TestExample<T> {
+    fn test_example(value: Option<&str>) -> T;
+}

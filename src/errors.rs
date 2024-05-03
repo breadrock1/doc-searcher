@@ -121,4 +121,8 @@ impl SuccessfulResponse {
 
         HttpResponse::build(status_code).json(response)
     }
+
+    pub fn to_response(&self) -> HttpResponse {
+        HttpResponse::build(StatusCode::OK).json(self)
+    }
 }

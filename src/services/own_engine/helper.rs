@@ -9,7 +9,7 @@ pub(crate) fn filter_founded_documents(
     s_params: &SearchParams,
 ) -> Vec<Document> {
     map.values()
-        .filter(|doc| doc.bucket_uuid.eq(bucket_id))
+        .filter(|doc| doc.folder_id.eq(bucket_id))
         .filter(|doc| doc.content.contains(&s_params.query))
         .cloned()
         .collect::<Vec<Document>>()

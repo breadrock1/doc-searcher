@@ -1,4 +1,5 @@
 use serde_derive::Serialize;
+use crate::document::PreviewProperties;
 
 #[derive(Default, Serialize)]
 pub struct BucketSchema {
