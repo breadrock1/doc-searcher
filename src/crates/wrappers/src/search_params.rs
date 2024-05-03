@@ -1,4 +1,5 @@
-use crate::bucket::DEFAULT_BUCKET_NAME;
+use crate::bucket::DEFAULT_FOLDER_NAME;
+use crate::TestExample;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -8,29 +9,43 @@ use utoipa::{IntoParams, ToSchema};
 pub struct SearchParams {
     #[schema(example = "Hello world")]
     pub query: String,
-    #[schema(example = "test_bucket")]
+
+    #[schema(example = "test_folder")]
     pub buckets: Option<String>,
+
     #[schema(example = "document")]
     pub document_type: String,
+
     #[schema(example = "txt")]
     pub document_extension: String,
+
     #[schema(example = 0)]
     pub document_size_to: i64,
+
     #[schema(example = 0)]
     pub document_size_from: i64,
+
     #[schema(example = "2024-04-26T11:14:55Z")]
     pub created_date_to: String,
+
     #[schema(example = "2024-04-02T13:51:32Z")]
     pub created_date_from: String,
+
     #[schema(example = 10)]
     pub result_size: i64,
+
     #[schema(example = 0)]
     pub result_offset: i64,
+
     #[schema(example = "1m")]
     pub scroll_timelife: String,
 }
 
 impl SearchParams {
+    pub fn builder() -> SearchParamsBuilder {
+        SearchParamsBuilder::default()
+    }
+
     pub fn get_query(&self) -> &str {
         self.query.as_str()
     }
@@ -38,11 +53,13 @@ impl SearchParams {
     pub fn get_scroll(&self) -> &str {
         self.scroll_timelife.as_str()
     }
+}
 
-    pub fn test_example(query: &str) -> Self {
-        SearchParamsBuilder::default()
-            .query(query.to_string())
-            .buckets(Some("test_bucket".to_string()))
+impl TestExample<SearchParams> for SearchParams {
+    fn test_example(query: Option<&str>) -> SearchParams {
+        SearchParams::builder()
+            .query(query.unwrap().to_string())
+            .buckets(Some("test_folder".to_string()))
             .document_type("document".to_string())
             .document_extension("txt".to_string())
             .created_date_to("2024-04-26T11:14:55Z".to_string())
@@ -59,9 +76,9 @@ impl SearchParams {
 
 impl Default for SearchParams {
     fn default() -> Self {
-        SearchParamsBuilder::default()
+        SearchParams::builder()
             .query("*".to_string())
-            .buckets(Some(DEFAULT_BUCKET_NAME.to_string()))
+            .buckets(Some(DEFAULT_FOLDER_NAME.to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())

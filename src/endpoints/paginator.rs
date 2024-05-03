@@ -4,7 +4,8 @@ use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse, Successfu
 use actix_web::{delete, get, post, web, HttpResponse};
 
 use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, NextScroll};
+use wrappers::scroll::{AllScrolls, NextScroll, PaginatedResult};
+use wrappers::TestExample;
 
 #[utoipa::path(
     get,
@@ -84,10 +85,10 @@ async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrolls>) -> H
     tag = "Pagination",
     request_body(
         content = NextScroll,
-        example = json!({
-            "scroll_id": "DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==",
-            "scroll": "1m",
-        })
+        example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
+        vec![Document::test_example(None)],
+        "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+        ))
     ),
     responses(
         (

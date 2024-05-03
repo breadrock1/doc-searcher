@@ -11,9 +11,9 @@ use actix_web::HttpResponse;
 use redis::{FromRedisValue, ToRedisArgs};
 use std::collections::HashMap;
 
-use wrappers::bucket::{Bucket, BucketForm};
+use wrappers::bucket::{Folder, FolderForm};
 use wrappers::cluster::Cluster;
-use wrappers::document::Document;
+use wrappers::document::{Document, DocumentPreview};
 use wrappers::scroll::{AllScrolls, NextScroll};
 use wrappers::search_params::SearchParams;
 
@@ -50,22 +50,29 @@ pub trait SearcherService {
     async fn create_cluster(&self, cluster_id: &str) -> HttpResponse;
     async fn delete_cluster(&self, cluster_id: &str) -> HttpResponse;
 
-    async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>>;
-    async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket>;
-    async fn get_bucket_documents(&self, bucket_id: &str) -> PaginateJsonResponse<Vec<Document>>;
-    async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse;
-    async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse;
+    async fn get_all_folders(&self) -> JsonResponse<Vec<Folder>>;
+    async fn get_folder(&self, folder_id: &str) -> JsonResponse<Folder>;
+    async fn get_folder_documents(
+        &self,
+        folder_id: &str,
+        opt_params: Option<SearchParams>,
+    ) -> PaginateJsonResponse<Vec<DocumentPreview>>;
+    async fn delete_folder(&self, folder_id: &str) -> HttpResponse;
+    async fn create_folder(&self, folder_form: &FolderForm) -> HttpResponse;
 
-    async fn get_document(&self, bucket_id: &str, doc_id: &str) -> JsonResponse<Document>;
+    async fn get_document(&self, folder_id: &str, doc_id: &str) -> JsonResponse<Document>;
     async fn create_document(&self, doc_form: &Document) -> HttpResponse;
+    async fn create_document_preview(&self, folder_id: &str, doc_form: &DocumentPreview) -> HttpResponse;
     async fn update_document(&self, doc_form: &Document) -> HttpResponse;
-    async fn delete_document(&self, bucket_id: &str, doc_id: &str) -> HttpResponse;
+    async fn delete_document(&self, folder_id: &str, document_id: &str) -> HttpResponse;
+    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse;
 
-    async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse;
-    async fn download_file(&self, bucket_id: &str, file_path: &str) -> Option<NamedFile>;
+    async fn load_file_to_bucket(&self, folder_id: &str, file_path: &str) -> HttpResponse;
+    async fn download_file(&self, folder_id: &str, file_path: &str) -> Option<NamedFile>;
+    async fn launch_watcher_analysis(&self, document_ids: &[String]) -> JsonResponse<Vec<DocumentPreview>>; 
 
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>>;
-    async fn delete_pagination_ids(&self, ids: &AllScrolls) -> HttpResponse;
+    async fn delete_pagination_ids(&self, scroll_ids: &AllScrolls) -> HttpResponse;
     async fn next_pagination_result(
         &self,
         curr_scroll: &NextScroll,

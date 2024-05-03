@@ -11,6 +11,7 @@ use actix_web::{post, web};
 use wrappers::document::Document;
 use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
+use wrappers::TestExample;
 
 #[utoipa::path(
     post,
@@ -18,7 +19,7 @@ use wrappers::search_params::SearchParams;
     tag = "Search",
     request_body(
         content = SearchParams,
-        example = json!(SearchParams::test_example("Ocean Carrier"))
+        example = json!(SearchParams::test_example(Some("Ocean Carrier")))
     ),
     responses(
         (
@@ -26,7 +27,7 @@ use wrappers::search_params::SearchParams;
             description = "Successful",
             body = PagintatedResult<Vec<Document>>,
             example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
-                vec![Document::test_example()],
+                vec![Document::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
         ),
@@ -83,7 +84,7 @@ async fn search_all(
     tag = "Search",
     request_body(
         content = SearchParams,
-        example = json!(SearchParams::test_example("Ocean Carrier"))
+        example = json!(SearchParams::test_example(Some("Ocean Carrier")))
     ),
     responses(
         (
@@ -91,7 +92,7 @@ async fn search_all(
             description = "Successful",
             body = [Document],
             example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
-                vec![Document::test_example()],
+                vec![Document::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
         ),
@@ -221,17 +222,17 @@ mod searcher_endpoints {
     use crate::services::own_engine::context::OtherContext;
     use crate::services::SearcherService;
 
-    use wrappers::document::{Document, DocumentBuilder};
-    use wrappers::search_params::SearchParamsBuilder;
+    use wrappers::document::Document;
+    use wrappers::search_params::SearchParams;
 
     use actix_web::test;
 
     #[test]
     async fn test_search_all() {
         let other_context = OtherContext::new("test".to_string());
-        let mut search_params = SearchParamsBuilder::default()
+        let mut search_params = SearchParams::builder()
             .query("text".to_string())
-            .buckets(Some("test_bucket".to_string()))
+            .buckets(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -260,9 +261,9 @@ mod searcher_endpoints {
     #[test]
     async fn test_search_bucket() {
         let other_context = OtherContext::new("test".to_string());
-        let mut search_params = SearchParamsBuilder::default()
+        let mut search_params = SearchParams::builder()
             .query("unknown-data".to_string())
-            .buckets(Some("test_bucket".to_string()))
+            .buckets(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -338,26 +339,27 @@ mod searcher_endpoints {
         ];
 
         let mut build_documents = Vec::<Document>::new();
-        let test_bucket_name = "test_bucket";
+        let test_folder_name = "test_folder";
         for document_index in 1..17 {
             let document_size = 1024 + document_index * 10;
             let test_document_name = &format!("test_document_{}", document_index);
+            let test_document_path = &format!("{}/{}", test_folder_name, test_document_name);
             let ssdeep_hash = *vec_hashes.get(document_index as usize).unwrap();
             let entity_data = *entity_data_vec.get(document_index as usize).unwrap();
-            let document = DocumentBuilder::default()
-                .bucket_uuid(test_bucket_name.to_string())
-                .bucket_path("/".to_string())
+            let document = Document::builder()
+                .folder_id(test_folder_name.to_string())
+                .folder_path("/".to_string())
                 .content_md5(test_document_name.clone())
                 .content_uuid(hasher::gen_uuid())
                 .content(entity_data.to_string())
                 .content_vector(Vec::default())
                 .document_name(test_document_name.clone())
-                .document_path("/".to_string())
+                .document_path(test_document_path.to_owned())
                 .document_size(document_size)
                 .document_type("document".to_string())
                 .document_extension(".txt".to_string())
                 .document_permissions(document_size)
-                .document_md5(test_document_name.clone())
+                .document_md5(test_document_name.to_owned())
                 .document_ssdeep(ssdeep_hash.to_string())
                 .highlight(None)
                 .document_created(None)

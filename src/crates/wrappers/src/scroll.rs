@@ -6,6 +6,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct PaginatedResult<D> {
     #[schema(value_type = PagintatedResult<Vec<Document>>)]
     founded: D,
+    #[schema(example = "1m")]
     #[serde(skip_serializing_if = "Option::is_none")]
     scroll_id: Option<String>,
 }
@@ -39,6 +40,10 @@ impl<D> PaginatedResult<D> {
     pub fn get_founded_mut(&mut self) -> &mut D {
         &mut self.founded
     }
+
+    pub fn get_scroll_id(&self) -> Option<&String> {
+        self.scroll_id.as_ref()
+    }
 }
 
 #[derive(Deserialize, IntoParams, ToSchema)]
@@ -68,6 +73,7 @@ impl NextScroll {
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct AllScrolls {
+    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmZsdnhOSWhk")]
     scroll_ids: Vec<String>,
 }
 

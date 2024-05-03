@@ -1,31 +1,11 @@
-use crate::endpoints::buckets::__path_all_buckets;
-use crate::endpoints::buckets::__path_default_bucket;
-use crate::endpoints::buckets::__path_delete_bucket;
-use crate::endpoints::buckets::__path_get_bucket;
-use crate::endpoints::buckets::__path_get_bucket_documents;
-use crate::endpoints::buckets::__path_new_bucket;
-
-use crate::endpoints::clusters::__path_all_clusters;
-use crate::endpoints::clusters::__path_delete_cluster;
-use crate::endpoints::clusters::__path_get_cluster;
-use crate::endpoints::clusters::__path_new_cluster;
-
-use crate::endpoints::documents::__path_delete_documents;
-use crate::endpoints::documents::__path_get_document;
-use crate::endpoints::documents::__path_new_document;
-use crate::endpoints::documents::__path_update_document;
+use crate::endpoints::clusters::*;
+use crate::endpoints::documents::*;
+use crate::endpoints::folders::*;
+use crate::endpoints::loader::*;
+use crate::endpoints::paginator::*;
 
 use crate::endpoints::hello::__path_hello;
-
-use crate::endpoints::loader::__path_download_file;
-use crate::endpoints::loader::__path_load_file;
-
-use crate::endpoints::paginator::__path_delete_expired_ids;
-use crate::endpoints::paginator::__path_get_pagination_ids;
-use crate::endpoints::paginator::__path_next_pagination_result;
-
 use crate::endpoints::searcher::__path_search_all;
-
 use crate::endpoints::similarities::__path_search_similar_docs;
 
 use crate::errors::*;
@@ -47,20 +27,20 @@ use utoipa_swagger_ui::SwaggerUi;
     ),
     paths(
         hello,
-        all_buckets,
-        default_bucket,
-        delete_bucket,
-        get_bucket,
-        new_bucket,
-        get_bucket_documents,
         all_clusters,
-        delete_cluster,
+        create_cluster,
         get_cluster,
-        new_cluster,
-        update_document,
-        get_document,
-        new_document,
+        delete_cluster,
+        all_folders,
+        create_folder,
+        create_global_folders,
+        get_folder,
+        delete_folder,
+        get_folder_documents,
+        create_document,
         delete_documents,
+        get_document,
+        update_document,
         load_file,
         download_file,
         get_pagination_ids,
@@ -73,8 +53,8 @@ use utoipa_swagger_ui::SwaggerUi;
         schemas(
             ErrorResponse,
             SuccessfulResponse,
-            Bucket,
-            BucketForm,
+            Folder,
+            FolderForm,
             Cluster,
             ClusterForm,
             Document,

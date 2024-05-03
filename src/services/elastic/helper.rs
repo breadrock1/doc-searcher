@@ -1,4 +1,4 @@
-use crate::errors::{JsonResponse, WebError};
+use crate::errors::{PaginateJsonResponse, WebError};
 use crate::services::elastic::send_status::SendDocumentStatus;
 
 use elquery::exclude_fields::ExcludeFields;
@@ -6,8 +6,8 @@ use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTe
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
 use elquery::similar_query::SimilarQuery;
-use wrappers::bucket::{Bucket, BucketBuilder};
-use wrappers::document::{Document, HighlightEntity};
+use wrappers::bucket::Folder;
+use wrappers::document::{Document, DocumentPreview, HighlightEntity, PreviewProperties};
 use wrappers::schema::BucketSchema;
 use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
@@ -306,7 +306,7 @@ pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
     json!({ "query": similar_query })
 }
 
-pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
+pub fn extract_bucket_stats(value: &Value) -> Result<Folder, WebError> {
     let indices = &value[&"indices"];
     let bucket_id = indices.as_object();
     if bucket_id.is_none() {
@@ -328,7 +328,7 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Bucket, WebError> {
         .as_i64()
         .unwrap();
 
-    let built_bucket = BucketBuilder::default()
+    let built_bucket = Folder::builder()
         .health(health.to_string())
         .status(status.to_string())
         .index(bucket_id.to_string())
