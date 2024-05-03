@@ -10,8 +10,8 @@ use hasher::{gen_hash, HashType};
 use wrappers::bucket::DEFAULT_BUCKET_NAME;
 use wrappers::bucket::{Bucket, BucketForm};
 use wrappers::cluster::Cluster;
-use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, NextScroll};
+use wrappers::document::{Document, DocumentPreview};
+use wrappers::scroll::{AllScrolls, NextScroll, PaginatedResult};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -211,15 +211,30 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn get_bucket_documents(&self, bucket_id: &str) -> PaginateJsonResponse<Vec<Document>> {
+    async fn get_folder_documents(
+        &self,
+        bucket_id: &str,
+        opt_params: Option<SearchParams>,
+    ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
         let elastic = self.get_cxt().read().await;
         let body_value = helper::build_match_all_query();
 
-        let s_params = SearchParams {
+        let s_params = opt_params.unwrap_or_else(|| SearchParams {
             result_size: 1000,
             ..Default::default()
-        };
-        match helper::search_documents(&elastic, &[bucket_id], &body_value, &s_params).await {
+        });
+        
+        if bucket_id.eq("unrecognized") {
+            let cxt_opts = self.get_options().as_ref();
+            return match watcher::get_unrecognized_documents(cxt_opts, &s_params).await {
+                Err(err) => Err(err),
+                Ok(documents) => {
+                    Ok(web::Json(PaginatedResult::new(documents.0)))
+                }
+            };
+        }
+
+        match helper::search_documents_preview(&elastic, &[bucket_id], &body_value, &s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -341,6 +356,28 @@ impl SearcherService for context::ElasticContext {
             }
         }
     }
+    
+    async fn create_document_preview(&self, folder_id: &str, doc_form: &DocumentPreview) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let doc_id = &doc_form.id;
+        let to_value_result = serde_json::to_value(doc_form);
+        if to_value_result.is_err() {
+            let err = to_value_result.err().unwrap();
+            log::error!("Failed while creating document: {}", err);
+            let web_err = WebError::DocumentSerializing(err.to_string());
+            return web_err.error_response();
+        }
+
+        let status = helper::send_document_preview(&elastic, doc_form, folder_id).await;
+        match status.is_success() {
+            true => HttpResponse::new(StatusCode::OK),
+            false => {
+                let msg = format!("Failed while parsing elastic response: {}", doc_id);
+                log::error!("Failed while sending doc to elastic: {}", msg);
+                WebError::CreateDocument(msg).error_response()
+            }
+        }
+    }
 
     async fn update_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
@@ -401,6 +438,15 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
+    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse {
+        let opts = self.get_options();
+        watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await
+        // TODO: Update documents after moving
+        // if result.status().is_success() {
+        //     
+        // }
+    }
+
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let file_path_ = std::path::Path::new(file_path);
@@ -456,6 +502,22 @@ impl SearcherService for context::ElasticContext {
                 None
             }
         }
+    }
+
+    async fn launch_watcher_analysis(&self, document_ids: &[String]) -> JsonResponse<Vec<DocumentPreview>> {
+        let cxt_opts = self.get_options().as_ref();
+        let docs = watcher::launch_docs_analysis(cxt_opts, document_ids).await;
+        if docs.is_err() {
+            let err = docs.err().unwrap();
+            return Err(err);
+        }
+        
+        let analysed_docs = docs.unwrap();
+        for dp in analysed_docs.iter() {
+            let _ = self.create_document_preview("history", dp).await;
+        }
+        
+        Ok(web::Json(analysed_docs))
     }
 
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
