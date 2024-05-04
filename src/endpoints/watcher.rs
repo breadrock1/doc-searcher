@@ -38,11 +38,11 @@ use actix_web::{web, post};
 #[post("/analyse")]
 async fn analyse_documents(
     cxt: SearcherData, 
-    form: web::Json<Vec<String>>
+    form: web::Json<AnalyseDocumentsForm>
 ) -> JsonResponse<Vec<DocumentPreview>> {
-    // TODO: Store DocumentPreview to history
     let client = cxt.get_ref();
-    client.launch_watcher_analysis(form.as_slice()).await
+    let document_ids = form.0.document_ids;
+    client.launch_watcher_analysis(document_ids.as_slice()).await
 }
 
 #[utoipa::path(
