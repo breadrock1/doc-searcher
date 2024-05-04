@@ -102,6 +102,33 @@ async fn download_file(
         .into_response(&req)
 }
 
+#[utoipa::path(
+    post,
+    path = "/watcher/upload",
+    tag = "Watcher",
+    request_body(
+        content_type = "multipart/formdata",
+        content = Multipart,
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Vec<DocumentPreview>,
+            example = json!(vec![DocumentPreview::test_example(None)]),
+        ),
+        (
+            status = 400,
+            description = "Failed while downloading files",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while uploading files to watcher".to_string(),
+            })
+        ),
+    )
+)]
 #[post("/upload")]
 async fn upload_files(
     cxt: SearcherData,
