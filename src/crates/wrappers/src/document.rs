@@ -207,7 +207,7 @@ pub struct DocumentPreview {
     #[schema(example = "2024-04-03T13:51:32Z")]
     pub created_at: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub quality_recognization: Option<i32>,
+    pub quality_recognition: Option<i32>,
     #[schema(example = 35345)]
     pub file_size: i32,
     #[schema(example = "test_folder")]
@@ -239,7 +239,7 @@ impl TestExample<DocumentPreview> for DocumentPreview {
             .id("98ac9896be35f47fb8442580cd9839b4".to_string())
             .name("test_document.txt".to_string())
             .created_at(Some(created))
-            .quality_recognization(Some(10000))
+            .quality_recognition(Some(10000))
             .file_size(35345)
             .location("test_folder".to_string())
             .preview_properties(vec![PreviewPropertiesBuilder::default()
@@ -260,7 +260,7 @@ impl From<Document> for DocumentPreview {
             .id(value.document_md5)
             .name(value.document_name)
             .created_at(value.document_created)
-            .quality_recognization(Some(10000))
+            .quality_recognition(Some(10000))
             .file_size(value.document_size)
             .location(value.folder_id)
             .preview_properties(Some(Vec::default()))
@@ -309,5 +309,18 @@ impl TestExample<MoveDocumetsForm> for MoveDocumetsForm {
             .document_ids(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()])
             .build()
             .unwrap()
+    }
+}
+
+#[derive(Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
+pub struct AnalyseDocumentsForm {
+    pub document_ids: Vec<String>,
+}
+
+impl TestExample<AnalyseDocumentsForm> for AnalyseDocumentsForm {
+    fn test_example(_value: Option<&str>) -> AnalyseDocumentsForm {
+        AnalyseDocumentsForm {
+            document_ids: vec!["98ac9896be35f47fb8442580cd9839b4".to_string()]
+        }
     }
 }
