@@ -260,6 +260,7 @@ mod similar_endpoints {
                 .document_created(None)
                 .document_modified(None)
                 .ocr_metadata(None)
+                .quality_recognition(None)
                 .build()
                 .unwrap();
 

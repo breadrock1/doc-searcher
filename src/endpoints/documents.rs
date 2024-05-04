@@ -254,6 +254,7 @@ mod documents_endpoints {
             .document_modified(None)
             .highlight(None)
             .ocr_metadata(None)
+            .quality_recognition(None)
             .build()
     }
 
