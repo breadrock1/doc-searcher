@@ -158,6 +158,15 @@ pub struct CreatedAtDateQuery {
     lte: Option<String>,
 }
 
+impl FilterDateQuery for CreatedAtDateQuery {
+    fn new(gte: &str, _lte: &str) -> Self {
+        CreatedAtDateQuery {
+            gte: gte.to_string(),
+            lte: None,
+        }
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename = "document_created")]
 pub struct CreateDateQuery {

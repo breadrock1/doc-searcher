@@ -19,7 +19,7 @@ use wrappers::TestExample;
         (
             status = 200,
             description = "Successful",
-            body = [Bucket],
+            body = [Folder],
             example = json!(vec![Folder::default()]),
         ),
         (
@@ -55,7 +55,7 @@ async fn all_folders(cxt: SearcherData) -> JsonResponse<Vec<Folder>> {
         (
             status = 200,
             description = "Successful",
-            body = Bucket,
+            body = Folder,
             example = json!(Folder::default())
         ),
         (
@@ -81,7 +81,7 @@ async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
     path = "/folders/create",
     tag = "Folders",
     request_body(
-        content = BucketForm,
+        content = FolderForm,
         example = json!({
             "folder_name": "test_folder"
         })
@@ -221,7 +221,7 @@ async fn create_global_folders(cxt: SearcherData) -> HttpResponse {
         (
             status = 200,
             description = "Successful",
-            body = PagintatedResult<Vec<Document>>,
+            body = PaginatedResult<Vec<Document>>,
             example = json!(PaginatedResult::<Vec<DocumentPreview>>::new_with_id(
                 vec![DocumentPreview::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9lafytZndUQlNsdDcwakFMNjU1QQ==".to_string(),

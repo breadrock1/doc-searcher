@@ -266,6 +266,7 @@ impl SearcherService for context::ElasticContext {
 
     async fn create_folder(&self, bucket_form: &FolderForm) -> HttpResponse {
         // TODO: Implement creating another Schemas for history using enum
+        // TODO: Create folder into doc-notifier (optionally)
         let elastic = self.get_cxt().read().await;
         let bucket_name = bucket_form.get_name();
         let hasher_res = gen_hash(HashType::MD5, bucket_name.as_bytes());

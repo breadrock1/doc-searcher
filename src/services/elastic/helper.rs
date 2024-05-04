@@ -2,7 +2,7 @@ use crate::errors::{PaginateJsonResponse, WebError};
 use crate::services::elastic::send_status::SendDocumentStatus;
 
 use elquery::exclude_fields::ExcludeFields;
-use elquery::filter_query::{CommonFilter, CreatedAtDateQuery, CreateDateQuery, FilterRange, FilterTerm};
+use elquery::filter_query::{CommonFilter, CreatedAtDateQuery, CreateDateQuery, FilterItem, FilterMatch, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::{MultiMatchQuery, QueryString};
 use elquery::similar_query::SimilarQuery;
@@ -140,6 +140,11 @@ pub async fn search_documents_preview(
         Ok(response) => {
             let common_object = response.json::<Value>().await.unwrap();
             let document_json = &common_object[&"hits"][&"hits"];
+
+            let scroll_id = common_object[&"_scroll_id"]
+                .as_str()
+                .map_or_else(|| None, |x| Some(x.to_string()));
+
             let own_document = document_json.to_owned();
             let default_vec: Vec<Value> = Vec::default();
             let json_array = own_document.as_array().unwrap_or(&default_vec);
@@ -159,7 +164,7 @@ pub async fn search_documents_preview(
                 .map(Result::unwrap)
                 .collect::<Vec<DocumentPreview>>();
             
-            Ok(web::Json(PaginatedResult::new(founded_documents)))
+            Ok(web::Json(PaginatedResult::new_with_opt_id(founded_documents, scroll_id)))
         }
     }
 }
@@ -240,23 +245,24 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
 }
 
 pub fn build_match_all_query(parameters: &SearchParams) -> Value {
-    let _doc_cr_from = parameters.created_date_from.as_str();
-    let _query = parameters.created_date_from.as_str();
+    let doc_cr_from = parameters.created_date_from.as_str();
+    let query = parameters.query.as_str();
 
-    // let common_filter = CommonFilter::new()
-    //     .with_date::<FilterRange, CreatedAtDateQuery>("created_at", )
+    let common_filter = CommonFilter::new()
+        .with_date::<FilterRange, CreatedAtDateQuery>("created_at", doc_cr_from, "")
+        .witch_match::<FilterMatch>("name", query)
+        .build();
 
-    // TODO: Implement filters for DocumentPreview fields
     let mut query_json_object = json!({
         "query": {
-            "match_all": {}
+            "bool": {
+                "filter": common_filter,
+                "must": {
+                    "match_all": {}
+                }
+            }
         }
     });
-
-    let cont_vector = Some(vec!["content_vector".to_string()]);
-    let exclude_fields = ExcludeFields::new(cont_vector);
-    let exclude_value = serde_json::to_value(exclude_fields).unwrap();
-    query_json_object[&"_source"] = exclude_value;
 
     query_json_object
 }

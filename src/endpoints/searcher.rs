@@ -25,7 +25,7 @@ use wrappers::TestExample;
         (
             status = 200,
             description = "Successful",
-            body = PagintatedResult<Vec<Document>>,
+            body = PaginatedResult<Vec<Document>>,
             example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
                 vec![Document::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),

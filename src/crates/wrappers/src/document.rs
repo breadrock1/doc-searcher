@@ -50,6 +50,8 @@ pub struct Document {
     )]
     #[schema(example = "2024-04-25T11:14:55Z")]
     pub document_modified: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quality_recognition: Option<i32>,
     pub highlight: Option<HighlightEntity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ocr_metadata: Option<OcrMetadata>,
@@ -118,6 +120,7 @@ impl TestExample<Document> for Document {
             .content_vector(Vec::default())
             .document_created(Some(created))
             .document_modified(Some(modified))
+            .quality_recognition(None)
             .highlight(Some(HighlightEntity {
                 content: vec!["Ocean Carrier".to_string()],
             }))

@@ -106,7 +106,7 @@ async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) 
 
 #[utoipa::path(
     get,
-    path = "/document/{folder_id}/{document_id}",
+    path = "/documents/{folder_id}/{document_id}",
     tag = "Documents",
     params(
         (

@@ -4,7 +4,7 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, Builder, ToSchema)]
 pub struct PaginatedResult<D> {
-    #[schema(value_type = PagintatedResult<Vec<Document>>)]
+    #[schema(value_type = PaginatedResult<Vec<Document>>)]
     founded: D,
     #[schema(example = "1m")]
     #[serde(skip_serializing_if = "Option::is_none")]
