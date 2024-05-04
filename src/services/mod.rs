@@ -62,14 +62,21 @@ pub trait SearcherService {
 
     async fn get_document(&self, folder_id: &str, doc_id: &str) -> JsonResponse<Document>;
     async fn create_document(&self, doc_form: &Document) -> HttpResponse;
-    async fn create_document_preview(&self, folder_id: &str, doc_form: &DocumentPreview) -> HttpResponse;
+    async fn create_document_preview(
+        &self,
+        folder_id: &str,
+        doc_form: &DocumentPreview,
+    ) -> HttpResponse;
     async fn update_document(&self, doc_form: &Document) -> HttpResponse;
     async fn delete_document(&self, folder_id: &str, document_id: &str) -> HttpResponse;
     async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse;
 
     async fn load_file_to_bucket(&self, folder_id: &str, file_path: &str) -> HttpResponse;
     async fn download_file(&self, folder_id: &str, file_path: &str) -> Option<NamedFile>;
-    async fn launch_watcher_analysis(&self, document_ids: &[String]) -> JsonResponse<Vec<DocumentPreview>>; 
+    async fn launch_watcher_analysis(
+        &self,
+        document_ids: &[String],
+    ) -> JsonResponse<Vec<DocumentPreview>>;
 
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>>;
     async fn delete_pagination_ids(&self, scroll_ids: &AllScrolls) -> HttpResponse;

@@ -1,4 +1,3 @@
-use chrono::Local;
 use serde_derive::Serialize;
 use serde_json::{json, Value};
 
@@ -91,7 +90,6 @@ struct FilterMust {
     must: Vec<Value>,
 }
 
-
 pub trait FilterItem {
     fn create(value: Value) -> Self;
 }
@@ -144,7 +142,6 @@ impl FilterItem for FilterMatch {
         }
     }
 }
-
 
 pub trait FilterDateQuery {
     fn new(gte: &str, lte: &str) -> Self;

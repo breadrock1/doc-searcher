@@ -222,7 +222,12 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
 async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let move_doc_form = form.0;
-    client.move_documents(move_doc_form.get_folder_id(), move_doc_form.get_document_ids()).await
+    client
+        .move_documents(
+            move_doc_form.get_folder_id(),
+            move_doc_form.get_document_ids(),
+        )
+        .await
 }
 
 #[cfg(test)]

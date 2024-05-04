@@ -18,30 +18,26 @@ pub async fn launch_docs_analysis(
     let target_url = format!("{}{}", cxt_opts.watcher_service_host(), ANALYSE_FILES_URL);
     match send_watcher_request(target_url.as_str(), body).await {
         Err(err) => Err(WebError::ResponseError(err.to_string())),
-        Ok(response) => {
-            response
-                .json::<Vec<DocumentPreview>>()
-                .await
-                .map_err(|err| WebError::ResponseError(err.to_string()))
-        },
+        Ok(response) => response
+            .json::<Vec<DocumentPreview>>()
+            .await
+            .map_err(|err| WebError::ResponseError(err.to_string())),
     }
 }
 
 pub(crate) async fn move_docs_to_folder(
     cxt_opts: &ContextOptions,
-    folder_id: &str, 
-    document_ids: &[String]
+    folder_id: &str,
+    document_ids: &[String],
 ) -> Result<SuccessfulResponse, WebError> {
     let body = &json!({"folder_id": folder_id, "document_ids": document_ids});
     let target_url = format!("{}{}", cxt_opts.watcher_service_host(), MOVE_FILES_URL);
     match send_watcher_request(target_url.as_str(), body).await {
         Err(err) => Err(WebError::ResponseError(err.to_string())),
-        Ok(response) => {
-            response
-                .json::<SuccessfulResponse>()
-                .await
-                .map_err(|err| WebError::ResponseError(err.to_string()))
-        },
+        Ok(response) => response
+            .json::<SuccessfulResponse>()
+            .await
+            .map_err(|err| WebError::ResponseError(err.to_string())),
     }
 }
 
@@ -50,7 +46,11 @@ pub async fn get_unrecognized_documents(
     _s_params: &SearchParams,
 ) -> Result<Vec<DocumentPreview>, WebError> {
     // TODO: Implement response result filtering by fields.
-    let target_url = format!("{}{}", cxt_opts.watcher_service_host(), UNRECOGNIZED_FILES_URL);
+    let target_url = format!(
+        "{}{}",
+        cxt_opts.watcher_service_host(),
+        UNRECOGNIZED_FILES_URL
+    );
     let response = reqwest::Client::new()
         .get(target_url)
         .send()
@@ -65,12 +65,8 @@ pub async fn get_unrecognized_documents(
 
 async fn send_watcher_request(
     target_url: &str,
-    json_body: &Value
+    json_body: &Value,
 ) -> Result<reqwest::Response, reqwest::Error> {
     let client = reqwest::Client::new();
-    client
-        .post(target_url)
-        .json(json_body)
-        .send()
-        .await
+    client.post(target_url).json(json_body).send().await
 }

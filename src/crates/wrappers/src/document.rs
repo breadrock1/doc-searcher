@@ -245,12 +245,15 @@ impl TestExample<DocumentPreview> for DocumentPreview {
             .quality_recognition(Some(10000))
             .file_size(35345)
             .location("test_folder".to_string())
-            .preview_properties(vec![PreviewPropertiesBuilder::default()
-                .name("transfer_company".to_string())
-                .key("Перевозчик".to_string())
-                .value("ООО Мостранс".to_string())
-                .build()
-                .unwrap()].into())
+            .preview_properties(
+                vec![PreviewPropertiesBuilder::default()
+                    .name("transfer_company".to_string())
+                    .key("Перевозчик".to_string())
+                    .value("ООО Мостранс".to_string())
+                    .build()
+                    .unwrap()]
+                .into(),
+            )
             .properties(None)
             .build()
             .unwrap()
@@ -299,7 +302,7 @@ impl MoveDocumetsForm {
     pub fn get_folder_id(&self) -> &str {
         self.folder_id.as_str()
     }
-    
+
     pub fn get_document_ids(&self) -> &[String] {
         self.document_ids.as_slice()
     }
@@ -323,7 +326,7 @@ pub struct AnalyseDocumentsForm {
 impl TestExample<AnalyseDocumentsForm> for AnalyseDocumentsForm {
     fn test_example(_value: Option<&str>) -> AnalyseDocumentsForm {
         AnalyseDocumentsForm {
-            document_ids: vec!["98ac9896be35f47fb8442580cd9839b4".to_string()]
+            document_ids: vec!["98ac9896be35f47fb8442580cd9839b4".to_string()],
         }
     }
 }

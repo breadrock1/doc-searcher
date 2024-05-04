@@ -5,8 +5,8 @@ use crate::endpoints::hello::hello;
 use crate::endpoints::loader;
 use crate::endpoints::paginator;
 use crate::endpoints::searcher;
-use crate::endpoints::watcher;
 use crate::endpoints::similarities::search_similar_docs;
+use crate::endpoints::watcher;
 
 use actix_cors::Cors;
 use actix_web::http::header;

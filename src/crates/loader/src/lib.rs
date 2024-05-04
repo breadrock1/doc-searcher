@@ -142,6 +142,7 @@ fn load_target_file(bucket_name: &str, file_path: &Path) -> Result<Vec<Document>
             .document_modified(Some(dt_md_utc))
             .highlight(None)
             .ocr_metadata(None)
+            .quality_recognition(None)
             .build()
             .unwrap();
 

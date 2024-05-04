@@ -5,7 +5,7 @@ use doc_search::services::cacher::build_redis_service;
 use doc_search::services::elastic::build_elastic_service;
 use doc_search::services::init::*;
 use doc_search::services::SearcherService;
-use doc_search::swagger::{ApiDoc, OpenApi, create_service};
+use doc_search::swagger::{create_service, ApiDoc, OpenApi};
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -16,7 +16,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let search_context = build_elastic_service(&sv_params)?;
     let redis_context = build_redis_service(&sv_params)?;
-    
+
     let service_port = sv_params.service_port();
     let service_addr = sv_params.service_address().as_str();
     let logger_host = sv_params.logger_service_host().to_owned();

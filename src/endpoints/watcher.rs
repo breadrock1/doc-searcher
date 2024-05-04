@@ -1,12 +1,12 @@
 use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse};
 
-use wrappers::TestExample;
 use wrappers::document::{AnalyseDocumentsForm, DocumentPreview};
-use wrappers::search_params::SearchParams;
 use wrappers::scroll::PaginatedResult;
+use wrappers::search_params::SearchParams;
+use wrappers::TestExample;
 
-use actix_web::{web, post};
+use actix_web::{post, web};
 
 #[utoipa::path(
     post,
@@ -37,12 +37,14 @@ use actix_web::{web, post};
 )]
 #[post("/analyse")]
 async fn analyse_documents(
-    cxt: SearcherData, 
-    form: web::Json<AnalyseDocumentsForm>
+    cxt: SearcherData,
+    form: web::Json<AnalyseDocumentsForm>,
 ) -> JsonResponse<Vec<DocumentPreview>> {
     let client = cxt.get_ref();
     let document_ids = form.0.document_ids;
-    client.launch_watcher_analysis(document_ids.as_slice()).await
+    client
+        .launch_watcher_analysis(document_ids.as_slice())
+        .await
 }
 
 #[utoipa::path(

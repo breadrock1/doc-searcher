@@ -1,12 +1,12 @@
 use crate::endpoints::clusters::*;
 use crate::endpoints::documents::*;
 use crate::endpoints::folders::*;
+use crate::endpoints::hello::*;
 use crate::endpoints::loader::*;
 use crate::endpoints::paginator::*;
-use crate::endpoints::watcher::*;
-use crate::endpoints::hello::*;
 use crate::endpoints::searcher::*;
 use crate::endpoints::similarities::*;
+use crate::endpoints::watcher::*;
 
 use crate::errors::*;
 

@@ -1,6 +1,6 @@
 use crate::errors::{SuccessfulResponse, WebError};
-use crate::services::elastic::{context, watcher};
 use crate::services::elastic::helper;
+use crate::services::elastic::{context, watcher};
 use crate::services::{JsonResponse, PaginateJsonResponse, SearcherService};
 
 #[cfg(feature = "enable-chunked")]
@@ -226,14 +226,13 @@ impl SearcherService for context::ElasticContext {
             let cxt_opts = self.get_options().as_ref();
             return match watcher::get_unrecognized_documents(cxt_opts, &s_params).await {
                 Err(err) => Err(err),
-                Ok(documents) => {
-                    Ok(web::Json(PaginatedResult::new(documents)))
-                }
+                Ok(documents) => Ok(web::Json(PaginatedResult::new(documents))),
             };
         }
 
         let body_value = helper::build_match_all_query(&s_params);
-        match helper::search_documents_preview(&elastic, &[bucket_id], &body_value, &s_params).await {
+        match helper::search_documents_preview(&elastic, &[bucket_id], &body_value, &s_params).await
+        {
             Ok(documents) => Ok(documents),
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -360,8 +359,12 @@ impl SearcherService for context::ElasticContext {
             }
         }
     }
-    
-    async fn create_document_preview(&self, folder_id: &str, doc_form: &DocumentPreview) -> HttpResponse {
+
+    async fn create_document_preview(
+        &self,
+        folder_id: &str,
+        doc_form: &DocumentPreview,
+    ) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let doc_id = &doc_form.id;
         let to_value_result = serde_json::to_value(doc_form);
@@ -447,7 +450,6 @@ impl SearcherService for context::ElasticContext {
         match watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await {
             Err(err) => err.error_response(),
             Ok(response) => {
-
                 // TODO: Update documents after moving
                 // self.get_document()
 
@@ -513,19 +515,22 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn launch_watcher_analysis(&self, document_ids: &[String]) -> JsonResponse<Vec<DocumentPreview>> {
+    async fn launch_watcher_analysis(
+        &self,
+        document_ids: &[String],
+    ) -> JsonResponse<Vec<DocumentPreview>> {
         let cxt_opts = self.get_options().as_ref();
         let docs = watcher::launch_docs_analysis(cxt_opts, document_ids).await;
         if docs.is_err() {
             let err = docs.err().unwrap();
             return Err(err);
         }
-        
+
         let analysed_docs = docs.unwrap();
         for dp in analysed_docs.iter() {
             let _ = self.create_document_preview("history", dp).await;
         }
-        
+
         Ok(web::Json(analysed_docs))
     }
 

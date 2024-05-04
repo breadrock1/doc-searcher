@@ -2,9 +2,10 @@ use crate::errors::{PaginateJsonResponse, WebError};
 use crate::services::elastic::send_status::SendDocumentStatus;
 
 use elquery::exclude_fields::ExcludeFields;
-use elquery::filter_query::{CommonFilter, CreatedAtDateQuery, CreateDateQuery, FilterItem, FilterMatch, FilterRange, FilterTerm};
+use elquery::filter_query::{CommonFilter, CreateDateQuery, CreatedAtDateQuery};
+use elquery::filter_query::{FilterMatch, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
-use elquery::search_query::{MultiMatchQuery, QueryString};
+use elquery::search_query::MultiMatchQuery;
 use elquery::similar_query::SimilarQuery;
 use wrappers::bucket::Folder;
 use wrappers::document::{Document, DocumentPreview, HighlightEntity};
@@ -163,8 +164,11 @@ pub async fn search_documents_preview(
                 .filter(Result::is_ok)
                 .map(Result::unwrap)
                 .collect::<Vec<DocumentPreview>>();
-            
-            Ok(web::Json(PaginatedResult::new_with_opt_id(founded_documents, scroll_id)))
+
+            Ok(web::Json(PaginatedResult::new_with_opt_id(
+                founded_documents,
+                scroll_id,
+            )))
         }
     }
 }
@@ -253,7 +257,7 @@ pub fn build_match_all_query(parameters: &SearchParams) -> Value {
         .witch_match::<FilterMatch>("name", query)
         .build();
 
-    let mut query_json_object = json!({
+    json!({
         "query": {
             "bool": {
                 "filter": common_filter,
@@ -262,9 +266,7 @@ pub fn build_match_all_query(parameters: &SearchParams) -> Value {
                 }
             }
         }
-    });
-
-    query_json_object
+    })
 }
 
 pub fn build_search_query(parameters: &SearchParams) -> Value {
@@ -350,8 +352,7 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Folder, WebError> {
     Ok(built_bucket.unwrap())
 }
 
-pub fn create_bucket_scheme(
-    // is_preview: bool,
+pub fn create_bucket_scheme(// is_preview: bool,
 ) -> String {
     // if is_preview {
     //     // {

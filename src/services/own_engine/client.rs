@@ -177,7 +177,11 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn create_document_preview(&self, _folder_id: &str, _doc_form: &DocumentPreview) -> HttpResponse {
+    async fn create_document_preview(
+        &self,
+        _folder_id: &str,
+        _doc_form: &DocumentPreview,
+    ) -> HttpResponse {
         SuccessfulResponse::ok_response("Done")
     }
 
@@ -224,7 +228,10 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn launch_watcher_analysis(&self, _document_ids: &[String]) -> JsonResponse<Vec<DocumentPreview>> {
+    async fn launch_watcher_analysis(
+        &self,
+        _document_ids: &[String],
+    ) -> JsonResponse<Vec<DocumentPreview>> {
         Ok(web::Json(Vec::default()))
     }
 

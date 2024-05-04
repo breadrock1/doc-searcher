@@ -1,9 +1,9 @@
 use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
 
-use wrappers::TestExample;
 use wrappers::document::DocumentPreview;
 use wrappers::file_form::LoadFileForm;
+use wrappers::TestExample;
 
 use actix_multipart::Multipart;
 use actix_web::{post, web};
@@ -130,10 +130,7 @@ async fn download_file(
     )
 )]
 #[post("/upload")]
-async fn upload_files(
-    cxt: SearcherData,
-    payload: Multipart,
-) -> JsonResponse<Vec<DocumentPreview>> {
+async fn upload_files(cxt: SearcherData, payload: Multipart) -> JsonResponse<Vec<DocumentPreview>> {
     let _client = cxt.get_ref();
     match extract_multipart(payload).await {
         Err(err) => Err(WebError::ResponseError(err.to_string())),
@@ -182,14 +179,12 @@ async fn extract_multipart(mut payload: Multipart) -> Result<Vec<DocumentPreview
             .multipart(form)
             .send()
             .await;
-        
+
         match response_result {
             Err(err) => log::error!("{}", err.to_string()),
             Ok(response) => {
-                let previews_result= response
-                    .json::<Vec<DocumentPreview>>()
-                    .await;
-                
+                let previews_result = response.json::<Vec<DocumentPreview>>().await;
+
                 if previews_result.is_err() {
                     let err = previews_result.err().unwrap();
                     log::error!("Failed while deserialize response: {}", err);
@@ -198,11 +193,11 @@ async fn extract_multipart(mut payload: Multipart) -> Result<Vec<DocumentPreview
                 collected_docs.extend_from_slice(previews_result.unwrap().as_slice());
             }
         }
-        
+
         let filepath_cln_2 = filepath.clone();
         let _ = web::block(|| std::fs::remove_file(filepath_cln_2)).await?;
     }
-    
+
     Ok(collected_docs)
 }
 
