@@ -217,23 +217,22 @@ impl SearcherService for context::ElasticContext {
         opt_params: Option<SearchParams>,
     ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
         let elastic = self.get_cxt().read().await;
-        let body_value = helper::build_match_all_query();
-
         let s_params = opt_params.unwrap_or_else(|| SearchParams {
             result_size: 1000,
             ..Default::default()
         });
-        
+
         if bucket_id.eq("unrecognized") {
             let cxt_opts = self.get_options().as_ref();
             return match watcher::get_unrecognized_documents(cxt_opts, &s_params).await {
                 Err(err) => Err(err),
                 Ok(documents) => {
-                    Ok(web::Json(PaginatedResult::new(documents.0)))
+                    Ok(web::Json(PaginatedResult::new(documents)))
                 }
             };
         }
 
+        let body_value = helper::build_match_all_query(&s_params);
         match helper::search_documents_preview(&elastic, &[bucket_id], &body_value, &s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
@@ -444,11 +443,16 @@ impl SearcherService for context::ElasticContext {
 
     async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse {
         let opts = self.get_options();
-        watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await
-        // TODO: Update documents after moving
-        // if result.status().is_success() {
-        //     
-        // }
+        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await {
+            Err(err) => err.error_response(),
+            Ok(response) => {
+
+                // TODO: Update documents after moving
+                // self.get_document()
+
+                response.to_response()
+            }
+        }
     }
 
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
