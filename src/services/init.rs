@@ -155,7 +155,6 @@ pub fn build_file_scope() -> Scope {
     web::scope("/file")
         .service(loader::load_file)
         .service(loader::download_file)
-        .service(loader::upload_files)
 }
 
 pub fn build_pagination_scope() -> Scope {
@@ -177,4 +176,6 @@ pub fn build_pagination_scope() -> Scope {
 pub fn build_watcher_scope() -> Scope {
     web::scope("/watcher")
         .service(watcher::analyse_documents)
+        .service(watcher::get_folder_documents2)
+        .service(loader::upload_files)
 }

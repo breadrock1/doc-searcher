@@ -3,10 +3,10 @@ use crate::endpoints::documents::*;
 use crate::endpoints::folders::*;
 use crate::endpoints::loader::*;
 use crate::endpoints::paginator::*;
-
-use crate::endpoints::hello::__path_hello;
-use crate::endpoints::searcher::__path_search_all;
-use crate::endpoints::similarities::__path_search_similar_docs;
+use crate::endpoints::watcher::*;
+use crate::endpoints::hello::*;
+use crate::endpoints::searcher::*;
+use crate::endpoints::similarities::*;
 
 use crate::errors::*;
 
@@ -43,11 +43,14 @@ use utoipa_swagger_ui::SwaggerUi;
         update_document,
         load_file,
         download_file,
+        upload_files,
         get_pagination_ids,
         delete_expired_ids,
         next_pagination_result,
         search_all,
         search_similar_docs,
+        analyse_documents,
+        get_folder_documents2,
     ),
     components(
         schemas(

@@ -2,12 +2,12 @@ use crate::errors::{PaginateJsonResponse, WebError};
 use crate::services::elastic::send_status::SendDocumentStatus;
 
 use elquery::exclude_fields::ExcludeFields;
-use elquery::filter_query::{CommonFilter, CreateDateQuery, FilterRange, FilterTerm};
+use elquery::filter_query::{CommonFilter, CreatedAtDateQuery, CreateDateQuery, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
-use elquery::search_query::MultiMatchQuery;
+use elquery::search_query::{MultiMatchQuery, QueryString};
 use elquery::similar_query::SimilarQuery;
 use wrappers::bucket::Folder;
-use wrappers::document::{Document, DocumentPreview, HighlightEntity, PreviewProperties};
+use wrappers::document::{Document, DocumentPreview, HighlightEntity};
 use wrappers::schema::BucketSchema;
 use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
@@ -140,29 +140,23 @@ pub async fn search_documents_preview(
         Ok(response) => {
             let common_object = response.json::<Value>().await.unwrap();
             let document_json = &common_object[&"hits"][&"hits"];
-            // let scroll_id = common_object[&"_scroll_id"]
-            //     .as_str()
-            //     .map_or_else(|| None, |x| Some(x.to_string()));
-
             let own_document = document_json.to_owned();
             let default_vec: Vec<Value> = Vec::default();
             let json_array = own_document.as_array().unwrap_or(&default_vec);
             let founded_documents = json_array
                 .iter()
                 .map(|value| {
-                    let source_value = value[&"_source"].to_owned();
-                    let document_result = Document::deserialize(source_value);
-                    if document_result.is_err() {
-                        let err = document_result.err().unwrap();
-                        log::error!("Failed while deserialize doc: {}", err);
-                        return Err(err);
+                    let source_value = &value[&"_source"];
+                    match DocumentPreview::deserialize(source_value) {
+                        Ok(docs) => Ok(DocumentPreview::from(docs)),
+                        Err(err) => {
+                            log::error!("Failed while deserialize doc: {}", err);
+                            Err(err)
+                        }
                     }
-                    
-                    Ok(DocumentPreview::from(document_result.unwrap()))
                 })
-                .map(Result::ok)
-                .filter(Option::is_some)
-                .flatten()
+                .filter(Result::is_ok)
+                .map(Result::unwrap)
                 .collect::<Vec<DocumentPreview>>();
             
             Ok(web::Json(PaginatedResult::new(founded_documents)))
@@ -245,7 +239,13 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
     Ok(document)
 }
 
-pub fn build_match_all_query() -> Value {
+pub fn build_match_all_query(parameters: &SearchParams) -> Value {
+    let _doc_cr_from = parameters.created_date_from.as_str();
+    let _query = parameters.created_date_from.as_str();
+
+    // let common_filter = CommonFilter::new()
+    //     .with_date::<FilterRange, CreatedAtDateQuery>("created_at", )
+
     // TODO: Implement filters for DocumentPreview fields
     let mut query_json_object = json!({
         "query": {

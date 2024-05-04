@@ -3,11 +3,6 @@ use serde_derive::Serialize;
 use serde_json::{json, Value};
 
 #[derive(Clone, Default, Serialize)]
-struct FilterMust {
-    must: Vec<Value>,
-}
-
-#[derive(Clone, Default, Serialize)]
 pub struct CommonFilter {
     bool: FilterMust,
 }
@@ -25,6 +20,23 @@ impl CommonFilter {
             let value = json!({ key: param });
             let filter_term = T::create(value);
             let serde_result = serde_json::to_value(filter_term);
+            if serde_result.is_ok() {
+                let filter_value = serde_result.unwrap();
+                self.bool.must.push(filter_value);
+            }
+        }
+
+        self
+    }
+
+    pub fn witch_match<T>(mut self, key: &str, param: &str) -> Self
+    where
+        T: FilterItem + serde::Serialize,
+    {
+        if !param.is_empty() {
+            let value = json!({ key: param });
+            let filter_match = T::create(value);
+            let serde_result = serde_json::to_value(filter_match);
             if serde_result.is_ok() {
                 let filter_value = serde_result.unwrap();
                 self.bool.must.push(filter_value);
@@ -74,6 +86,12 @@ impl CommonFilter {
     }
 }
 
+#[derive(Clone, Default, Serialize)]
+struct FilterMust {
+    must: Vec<Value>,
+}
+
+
 pub trait FilterItem {
     fn create(value: Value) -> Self;
 }
@@ -113,8 +131,31 @@ impl FilterItem for FilterPrefix {
     }
 }
 
+#[derive(Clone, Default, Serialize)]
+pub struct FilterMatch {
+    #[serde(rename = "match")]
+    match_value: Option<Value>,
+}
+
+impl FilterItem for FilterMatch {
+    fn create(value: Value) -> Self {
+        FilterMatch {
+            match_value: Some(value),
+        }
+    }
+}
+
+
 pub trait FilterDateQuery {
     fn new(gte: &str, lte: &str) -> Self;
+}
+
+#[derive(Serialize)]
+#[serde(rename = "created_at")]
+pub struct CreatedAtDateQuery {
+    gte: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    lte: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -129,7 +170,7 @@ impl FilterDateQuery for CreateDateQuery {
     fn new(gte: &str, lte: &str) -> Self {
         let lte_value = match lte.is_empty() {
             false => Some(lte.to_string()),
-            true => Some(Local::now().format("%Y-%m-%d").to_string()),
+            true => Some("now/d".to_string()),
         };
 
         CreateDateQuery {

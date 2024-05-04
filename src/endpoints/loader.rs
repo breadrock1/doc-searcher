@@ -1,6 +1,7 @@
 use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
 
+use wrappers::TestExample;
 use wrappers::document::DocumentPreview;
 use wrappers::file_form::LoadFileForm;
 
