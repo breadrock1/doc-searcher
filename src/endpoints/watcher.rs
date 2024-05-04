@@ -1,20 +1,20 @@
 use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse};
 
-use wrappers::document::DocumentPreview;
 use wrappers::TestExample;
+use wrappers::document::{AnalyseDocumentsForm, DocumentPreview};
+use wrappers::search_params::SearchParams;
+use wrappers::scroll::PaginatedResult;
 
 use actix_web::{web, post};
-use wrappers::scroll::PaginatedResult;
-use wrappers::search_params::SearchParams;
 
 #[utoipa::path(
     post,
     path = "/watcher/analyse",
     tag = "Watcher",
     request_body(
-        content = Vec<String>,
-        example = json!(vec!["<document-id>"]),
+        content = AnalyseDocumentsForm,
+        example = json!(AnalyseDocumentsForm::test_example(None)),
     ),
     responses(
         (
@@ -45,8 +45,35 @@ async fn analyse_documents(
     client.launch_watcher_analysis(form.as_slice()).await
 }
 
+#[utoipa::path(
+    post,
+    path = "/watcher/unrecognized",
+    tag = "Watcher",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_example(Some("Transport"))),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(vec![DocumentPreview::test_example(None)])
+        ),
+        (
+            status = 400,
+            description = "Failed while analysing documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while analysing documents".to_string(),
+            })
+        ),
+    )
+)]
 #[post("/unrecognized")]
-async fn get_folder_documents(
+async fn get_folder_documents2(
     cxt: SearcherData,
     form: web::Json<SearchParams>,
 ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
