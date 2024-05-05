@@ -175,7 +175,7 @@ async fn extract_multipart(mut payload: Multipart) -> Result<Vec<DocumentPreview
 
         let client = reqwest::Client::new();
         let response_result = client
-            .post("http://localhost:2893/files/upload")
+            .post("http://localhost:2893/watcher/files/upload")
             .multipart(form)
             .send()
             .await;
