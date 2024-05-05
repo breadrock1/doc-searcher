@@ -251,10 +251,17 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
 pub fn build_match_all_query(parameters: &SearchParams) -> Value {
     let doc_cr_from = parameters.created_date_from.as_str();
     let query = parameters.query.as_str();
+    let default_location = &String::default();
+    let location = parameters
+        .buckets
+        .as_ref()
+        .unwrap_or(default_location)
+        .as_str();
 
     let common_filter = CommonFilter::new()
         .with_date::<FilterRange, CreatedAtDateQuery>("created_at", doc_cr_from, "")
-        .witch_match::<FilterMatch>("name", query)
+        .with_match::<FilterMatch>("location", location)
+        .with_match::<FilterMatch>("name", query)
         .build();
 
     json!({

@@ -6,9 +6,9 @@ use wrappers::search_params::SearchParams;
 
 use serde_json::{json, Value};
 
-const MOVE_FILES_URL: &str = "/files/move";
-const ANALYSE_FILES_URL: &str = "/files/analyse";
-const UNRECOGNIZED_FILES_URL: &str = "/files/unrecognized";
+const MOVE_FILES_URL: &str = "/watcher/files/move";
+const ANALYSE_FILES_URL: &str = "/watcher/files/analyse";
+const UNRECOGNIZED_FILES_URL: &str = "/watcher/files/unrecognized";
 
 pub async fn launch_docs_analysis(
     cxt_opts: &ContextOptions,
