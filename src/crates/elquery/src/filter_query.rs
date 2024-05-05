@@ -28,7 +28,7 @@ impl CommonFilter {
         self
     }
 
-    pub fn witch_match<T>(mut self, key: &str, param: &str) -> Self
+    pub fn with_match<T>(mut self, key: &str, param: &str) -> Self
     where
         T: FilterItem + serde::Serialize,
     {
