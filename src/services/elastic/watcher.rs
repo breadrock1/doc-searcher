@@ -18,10 +18,12 @@ pub async fn launch_docs_analysis(
     let target_url = format!("{}{}", cxt_opts.watcher_service_host(), ANALYSE_FILES_URL);
     match send_watcher_request(target_url.as_str(), body).await {
         Err(err) => Err(WebError::ResponseError(err.to_string())),
-        Ok(response) => response
-            .json::<Vec<DocumentPreview>>()
-            .await
-            .map_err(|err| WebError::ResponseError(err.to_string())),
+        Ok(response) => {
+            response
+                .json::<Vec<DocumentPreview>>()
+                .await
+                .map_err(|err| WebError::ResponseError(err.to_string()))
+        }
     }
 }
 

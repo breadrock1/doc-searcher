@@ -146,49 +146,30 @@ pub struct OcrMetadata {
     #[schema(example = "Коносамент")]
     pub doc_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub artifacts: Option<Artifacts>,
+    pub artifacts: Option<Vec<Artifacts>>,
 }
 
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
 pub struct Artifacts {
+    #[schema(example = "Information of TN")]
+    pub group_name: String,
+    #[schema(example = "tn_info")]
+    pub group_json_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transport_invoice_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub transport_invoice_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub order_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub carrier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vehicle_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cargo_date_arrival: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cargo_aate_departure: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub address_redirection: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub date_redirection: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cargo_issue_address: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cargo_issue_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cargo_weight: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cargo_places_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub container_receipt_act_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub container_receipt_act_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub container_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub terminal_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ktk_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub driver_full_name: Option<String>,
+    pub group_values: Option<Vec<GroupValue>>
+}
+
+#[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
+pub struct GroupValue {
+    #[schema(example = "Date of TN")]
+    pub name: String,
+    #[schema(example = "date_of_tn")]
+    pub json_name: String,
+    #[schema(example = "string")]
+    #[serde(rename = "type")]
+    pub group_type: String,
+    #[schema(example = "2023-10-29")]
+    pub value: Option<String>,
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
@@ -216,9 +197,7 @@ pub struct DocumentPreview {
     #[schema(example = "test_folder")]
     pub location: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preview_properties: Option<Vec<PreviewProperties>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub properties: Option<Vec<Properties>>,
+    pub preview_properties: Option<Vec<Artifacts>>,
 }
 
 impl TestExample<DocumentPreview> for DocumentPreview {
@@ -246,15 +225,22 @@ impl TestExample<DocumentPreview> for DocumentPreview {
             .file_size(35345)
             .location("test_folder".to_string())
             .preview_properties(
-                vec![PreviewPropertiesBuilder::default()
-                    .name("transfer_company".to_string())
-                    .key("Перевозчик".to_string())
-                    .value("ООО Мостранс".to_string())
+                vec![ArtifactsBuilder::default()
+                    .group_name("Information of TN".to_string())
+                    .group_json_name("tn_info".to_string())
+                    .group_values(vec![
+                        GroupValueBuilder::default()
+                            .name("Date of TN".to_string())
+                            .json_name("date_of_tn".to_string())
+                            .group_type("string".to_string())
+                            .value(Some("2023-10-29".to_string()))
+                            .build()
+                            .unwrap()
+                    ].into())
                     .build()
                     .unwrap()]
                 .into(),
             )
-            .properties(None)
             .build()
             .unwrap()
     }
@@ -273,23 +259,6 @@ impl From<Document> for DocumentPreview {
             .build()
             .unwrap()
     }
-}
-
-#[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
-pub struct PreviewProperties {
-    #[schema(example = "transfer_company")]
-    pub key: String,
-    #[schema(example = "Перевозчик")]
-    pub name: String,
-    #[schema(example = "ООО Мостранс")]
-    pub value: String,
-}
-
-#[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
-pub struct Properties {
-    #[schema(example = "Приём груза")]
-    pub group_name: String,
-    pub group_values: Vec<PreviewProperties>,
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]

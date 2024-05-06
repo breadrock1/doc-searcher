@@ -82,7 +82,7 @@ async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
     request_body(
         content = FolderForm,
         example = json!({
-            "folder_name": "test_folder"
+            "folder_id": "test_folder"
         })
     ),
     responses(
