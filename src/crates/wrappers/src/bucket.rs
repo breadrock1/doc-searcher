@@ -51,10 +51,12 @@ impl Folder {
     }
 }
 
-#[derive(Deserialize, IntoParams, ToSchema)]
+#[derive(Deserialize, IntoParams, Serialize, ToSchema)]
 pub struct FolderForm {
     #[schema(example = "test_folder")]
     folder_id: String,
+    #[schema(example = "true")]
+    is_preview_schema: bool,
 }
 
 impl Display for FolderForm {
@@ -66,14 +68,15 @@ impl Display for FolderForm {
 
 impl Default for FolderForm {
     fn default() -> Self {
-        FolderForm::new(DEFAULT_FOLDER_NAME)
+        FolderForm::new(DEFAULT_FOLDER_NAME, true)
     }
 }
 
 impl FolderForm {
-    pub fn new(bucket_name: &str) -> Self {
+    pub fn new(folder_id: &str, is_preview: bool) -> Self {
         FolderForm {
-            folder_id: bucket_name.to_string(),
+            folder_id: folder_id.to_string(),
+            is_preview_schema: is_preview,
         }
     }
 
@@ -81,7 +84,11 @@ impl FolderForm {
         FolderBuilder::default()
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn get_id(&self) -> &str {
         self.folder_id.as_str()
+    }
+
+    pub fn is_preview(&self) -> bool {
+        self.is_preview_schema
     }
 }
