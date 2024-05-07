@@ -81,9 +81,7 @@ async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
     tag = "Folders",
     request_body(
         content = FolderForm,
-        example = json!({
-            "folder_id": "test_folder"
-        })
+        example = json!(FolderForm::default())
     ),
     responses(
         (
@@ -185,7 +183,7 @@ async fn create_global_folders(cxt: SearcherData) -> HttpResponse {
     let client = cxt.get_ref();
     let mut collected_errs = Vec::default();
     for global_folders_id in ["history", "unrecognized"] {
-        let folder_form = FolderForm::new(global_folders_id);
+        let folder_form = FolderForm::new(global_folders_id, true);
         let response = client.create_folder(&folder_form).await;
         if response.status() != 200 {
             collected_errs.push(global_folders_id);
@@ -278,7 +276,7 @@ mod buckets_endpoints {
 
     #[test]
     async fn test_create_folder() {
-        let bucket_form = FolderForm::new("test_folder");
+        let bucket_form = FolderForm::new("test_folder", false);
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
@@ -291,7 +289,7 @@ mod buckets_endpoints {
         let response = other_context.delete_folder("test_folder").await;
         assert_eq!(response.status().as_u16(), 400_u16);
 
-        let bucket_form = FolderForm::new("test_folder");
+        let bucket_form = FolderForm::new("test_folder", false);
 
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
@@ -303,7 +301,7 @@ mod buckets_endpoints {
     #[test]
     async fn test_get_folders() {
         let other_context = OtherContext::new("test".to_string());
-        let bucket_form = FolderForm::new("test_folder");
+        let bucket_form = FolderForm::new("test_folder", false);
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
 
@@ -314,7 +312,7 @@ mod buckets_endpoints {
 
     #[test]
     async fn test_get_folder_by_id() {
-        let bucket_form = FolderForm::new("test_folder");
+        let bucket_form = FolderForm::new("test_folder", false);
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.status().as_u16(), 200_u16);
