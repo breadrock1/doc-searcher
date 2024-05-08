@@ -9,7 +9,7 @@ use elquery::search_query::MultiMatchQuery;
 use elquery::similar_query::SimilarQuery;
 use wrappers::bucket::Folder;
 use wrappers::document::{Document, DocumentPreview, HighlightEntity};
-use wrappers::schema::BucketSchema;
+use wrappers::schema::{DocumentSchema, PreviewDocumentSchema};
 use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
 
@@ -43,7 +43,11 @@ pub async fn send_document(
         .await;
 
     match response_result {
-        Ok(_) => SendDocumentStatus::new(true, doc_form.document_path.as_str()),
+        Ok(response) => {
+            let text = response.text().await.unwrap();
+            println!("{}", text.as_str());
+            SendDocumentStatus::new(true, text.as_str())
+        },
         Err(err) => {
             let err_msg = format!("Failed while loading file: {:?}", err);
             SendDocumentStatus::new(false, err_msg.as_str())
@@ -72,7 +76,11 @@ pub async fn send_document_preview(
         .await;
 
     match response_result {
-        Ok(_) => SendDocumentStatus::new(true, doc_form.location.as_str()),
+        Ok(resp) => {
+            let text = resp.text().await.unwrap();
+            println!("{}", text.as_str());
+            SendDocumentStatus::new(true, text.as_str())
+        },
         Err(err) => {
             let err_msg = format!("Failed while loading file: {:?}", err);
             SendDocumentStatus::new(false, err_msg.as_str())
@@ -249,6 +257,8 @@ fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error
 }
 
 pub fn build_match_all_query(parameters: &SearchParams) -> Value {
+    let doc_size_to = parameters.document_size_to;
+    let doc_size_from = parameters.document_size_from;
     let doc_cr_from = parameters.created_date_from.as_str();
     let query = parameters.query.as_str();
     let default_location = &String::default();
@@ -260,6 +270,7 @@ pub fn build_match_all_query(parameters: &SearchParams) -> Value {
 
     let common_filter = CommonFilter::new()
         .with_date::<FilterRange, CreatedAtDateQuery>("created_at", doc_cr_from, "")
+        // .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
         .with_match::<FilterMatch>("location", location)
         .with_match::<FilterMatch>("name", query)
         .build();
