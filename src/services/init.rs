@@ -28,6 +28,7 @@ pub struct ServiceParameters {
     logger_service_host: String,
     ocr_service_host: String,
     cors_origin: String,
+    global_folders: String,
 }
 
 pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
@@ -52,6 +53,7 @@ pub fn init_service_parameters() -> Result<ServiceParameters, anyhow::Error> {
         .logger_service_host(extract_env_value("LOGGER_SERVICE_HOST"))
         .ocr_service_host(extract_env_value("OCR_SERVICE_HOST"))
         .cors_origin(extract_env_value("CORS_ORIGIN"))
+        .global_folders(extract_env_value("GLOBAL_FOLDERS"))
         .build();
 
     Ok(service.unwrap())

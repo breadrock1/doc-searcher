@@ -37,6 +37,7 @@ pub struct ContextOptions {
     ocr_service_host: String,
     watcher_service_host: String,
     llm_service_host: String,
+    global_folders: String,
 }
 
 impl Default for ContextOptions {
@@ -48,6 +49,7 @@ impl Default for ContextOptions {
             ocr_service_host: "http://localhost:8083".into(),
             watcher_service_host: "http://localhost:2893".into(),
             llm_service_host: "http://localhost:8085".into(),
+            global_folders: "common_folder".into(),
         }
     }
 }
@@ -61,6 +63,7 @@ impl From<&ServiceParameters> for ContextOptions {
             ocr_service_host: value.ocr_service_host().into(),
             watcher_service_host: value.watcher_service_host().into(),
             llm_service_host: value.llm_service_host().into(),
+            global_folders: value.global_folders().into(),
         }
     }
 }
