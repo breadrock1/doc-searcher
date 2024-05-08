@@ -225,6 +225,7 @@ async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) ->
     client
         .move_documents(
             move_doc_form.get_folder_id(),
+            move_doc_form.get_src_folder_id(),
             move_doc_form.get_document_ids(),
         )
         .await

@@ -445,9 +445,9 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse {
+    async fn move_documents(&self, folder_id: &str, src_folder_id: &str, document_ids: &[String]) -> HttpResponse {
         let opts = self.get_options();
-        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await {
+        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, src_folder_id, document_ids).await {
             Err(err) => err.error_response(),
             Ok(response) => {
                 // TODO: Update documents after moving
