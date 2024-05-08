@@ -9,7 +9,8 @@ services:
     environment:
       - discovery.type=single-node
       - cluster.name=master
-      - ELASTIC_PASSWORD=elasticsearch
+      - ELASTIC_PASSWORD=elastic
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
     ulimits:
       memlock:
         soft: -1
@@ -21,20 +22,26 @@ services:
     volumes:
       - esdata1:/usr/share/elasticsearch/data
 
-  docsearcher:
+  doc-searcher:
     depends_on:
       - elasticsearch
     image: doc-searcher:latest
     container_name: doc-searcher
     environment:
-      - ELASTIC_HOST=http://elasticsearch:9200
-      - ELASTIC_PASSWORD=elasticsearch
-      - ELASTIC_USER=elasticsearch
-      - SEARCHER_ADDRESS=0.0.0.0
+      - SEARCHER_HOST=0.0.0.0
       - SEARCHER_PORT=2892
-      - CACHER_HOST=redis://cacher:6379
+      - ELASTIC_SERVICE_HOST=http://elasticsearch:9200
+      - ELASTIC_SERVICE_PASSWORD=elastic
+      - ELASTIC_SERVICE_USERNAME=elastic
+      - CACHER_SERVICE_HOST=redis://cacher:6379
+      - CACHER_PASSWORD=redis
       - CACHER_EXPIRE=3600
+      - LLM_SERVICE_HOST=http://localhost:8085
+      - WATCHER_SERVICE_HOST=http://localhost:2893
+      - LOGGER_SERVICE_HOST=http://localhost:4444
+      - OCR_SERVICE_HOST=http://localhost:8083
       - CORS_ORIGIN=http://localhost:3000
+      - GLOBAL_FOLDERS=history,unrecognized
     ports:
       - "2892:2892"
     networks:
@@ -42,19 +49,26 @@ services:
     volumes:
       - dsdata1:/archiver
 
-  docnotifier:
+  doc-notifier:
     depends_on:
-      - docsearcher
+      - doc-searcher
     image: doc-notifier:latest
     container_name: doc-notifier
     restart: on-failure
     environment:
-      - IS_LOAD_CHUNKS=true
-      - READ_RAW_FILE=false
-      - LLM_ADDRESS=http://localhost:8000
-      - OCR_ADDRESS=http://localhost:9091
-      - DOC_ADDRESS=http://docsearcher:2892
-      - WATCHER_DIR_PATHS=/indexer
+      - DOC_NOTIFIER_SERVICE_ADDRESS=0.0.0.0:2893
+      - DOC_NOTIFIER_WATCHED_DIRS=./indexer/watcher
+      - DOC_NOTIFIER_ENABLE_FILE_LOG=false
+      - OCR_SERVICE_ADDRESS=http://localhost:1231
+      - OCR_SERVICE_MODE=read-raw-file
+      - DOC_SEARCHER_SERVICE_ADDRESS=http://doc-searcher:2892
+      - TOKENIZER_MODE=none
+      - TOKENIZER_CHUNK_SIZE=800
+      - TOKENIZER_CHUNK_OVERLAP=100
+      - TOKENIZER_RETURN_CHUNKS=false
+      - TOKENIZER_CHUNK_BY_SELF=false
+      - TOKENIZER_TIMEOUT_SECONDS=300
+      - TOKENIZER_SERVICE_ADDRESS=http://localhost:8001
     ports:
       - "9800:9800"
     networks:
@@ -64,7 +78,7 @@ services:
 
   cacher:
     depends_on:
-      - docsearcher
+      - doc-searcher
     image: redis:latest
     restart: on-failure
     ports:

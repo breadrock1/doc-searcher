@@ -3,7 +3,7 @@ use chrono::{DateTime, Datelike, NaiveDateTime, Timelike, Utc};
 
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
@@ -12,6 +12,14 @@ pub struct Document {
     pub folder_id: String,
     #[schema(example = "/test_folder")]
     pub folder_path: String,
+    #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
+    pub content_md5: String,
+    #[schema(example = "a9850114-5903-465a-bfc5-8d9e28110be8")]
+    pub content_uuid: String,
+    #[schema(example = "The Ocean Carrier has been signed.")]
+    pub content: String,
+    #[serde(default)]
+    pub content_vector: Vec<f64>,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     pub document_md5: String,
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
@@ -28,14 +36,6 @@ pub struct Document {
     pub document_extension: String,
     #[schema(example = 777)]
     pub document_permissions: i32,
-    #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    pub content_md5: String,
-    #[schema(example = "a9850114-5903-465a-bfc5-8d9e28110be8")]
-    pub content_uuid: String,
-    #[schema(example = "The Ocean Carrier has been signed.")]
-    pub content: String,
-    #[serde(default)]
-    pub content_vector: Vec<f64>,
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -156,7 +156,7 @@ pub struct Artifacts {
     #[schema(example = "tn_info")]
     pub group_json_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub group_values: Option<Vec<GroupValue>>
+    pub group_values: Option<Vec<GroupValue>>,
 }
 
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
@@ -169,7 +169,15 @@ pub struct GroupValue {
     #[serde(rename = "type")]
     pub group_type: String,
     #[schema(example = "2023-10-29")]
+    #[serde(deserialize_with = "deser_group_value")]
     pub value: Option<String>,
+}
+
+fn deser_group_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    String::deserialize(deserializer).and_then(|value| Ok(Some(value.replace("-", "   "))))
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
@@ -228,15 +236,16 @@ impl TestExample<DocumentPreview> for DocumentPreview {
                 vec![ArtifactsBuilder::default()
                     .group_name("Information of TN".to_string())
                     .group_json_name("tn_info".to_string())
-                    .group_values(vec![
-                        GroupValueBuilder::default()
+                    .group_values(
+                        vec![GroupValueBuilder::default()
                             .name("Date of TN".to_string())
                             .json_name("date_of_tn".to_string())
                             .group_type("string".to_string())
                             .value(Some("2023-10-29".to_string()))
                             .build()
-                            .unwrap()
-                    ].into())
+                            .unwrap()]
+                        .into(),
+                    )
                     .build()
                     .unwrap()]
                 .into(),
@@ -265,11 +274,16 @@ impl From<Document> for DocumentPreview {
 pub struct MoveDocumetsForm {
     document_ids: Vec<String>,
     folder_id: String,
+    src_folder_id: String,
 }
 
 impl MoveDocumetsForm {
     pub fn get_folder_id(&self) -> &str {
         self.folder_id.as_str()
+    }
+
+    pub fn get_src_folder_id(&self) -> &str {
+        self.src_folder_id.as_str()
     }
 
     pub fn get_document_ids(&self) -> &[String] {
@@ -281,6 +295,7 @@ impl TestExample<MoveDocumetsForm> for MoveDocumetsForm {
     fn test_example(_value: Option<&str>) -> MoveDocumetsForm {
         MoveDocumetsFormBuilder::default()
             .folder_id("test_folder".to_string())
+            .src_folder_id("unrecognized".to_string())
             .document_ids(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()])
             .build()
             .unwrap()

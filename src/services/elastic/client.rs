@@ -174,13 +174,13 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn get_folder(&self, bucket_id: &str) -> JsonResponse<Folder> {
+    async fn get_folder(&self, folder_id: &str) -> JsonResponse<Folder> {
         let elastic = self.get_cxt().read().await;
-        let bucket_name = format!("/{}/_stats", bucket_id);
+        let target_url = format!("/{}/_stats", folder_id);
         let response_result = elastic
             .send(
                 Method::Get,
-                bucket_name.as_str(),
+                target_url.as_str(),
                 HeaderMap::new(),
                 Option::<&Value>::None,
                 Some(b"".as_ref()),
@@ -198,14 +198,15 @@ impl SearcherService for context::ElasticContext {
         let json_value = response.json::<Value>().await;
         if json_value.is_err() {
             let err = json_value.err().unwrap();
-            log::error!("Failed while parsing bucket {}: {}", bucket_id, err);
+            log::error!("Failed while parsing folder {}: {}", folder_id, err);
             return Err(WebError::from(err));
         }
 
-        match helper::extract_bucket_stats(&json_value.unwrap()) {
+        let json_value = json_value.unwrap();
+        match helper::extract_bucket_stats(&json_value) {
             Ok(bucket) => Ok(web::Json(bucket)),
             Err(err) => {
-                log::error!("Failed while extracting buckets stats: {}", err);
+                log::error!("Failed while extracting folders stats: {}", err);
                 Err(err)
             }
         }
@@ -263,27 +264,38 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn create_folder(&self, bucket_form: &FolderForm) -> HttpResponse {
-        // TODO: Implement creating another Schemas for history using enum
-        // TODO: Create folder into doc-notifier (optionally)
-        let elastic = self.get_cxt().read().await;
-        let bucket_name = bucket_form.get_name();
-        let hasher_res = gen_hash(HashType::MD5, bucket_name.as_bytes());
-        let binding = hasher_res.unwrap();
-        let id_str = binding.get_hash_data();
-        let bucket_schema: Value = serde_json::from_str(helper::create_bucket_scheme().as_str())
-            .expect("Failed while creating bucket scheme.");
+    async fn create_folder(&self, folder_form: &FolderForm) -> HttpResponse {
+        let cxt_opts = self.get_options().as_ref();
+        let _result = watcher::create_watcher_folder(cxt_opts, folder_form.get_id()).await;
 
+        let elastic = self.get_cxt().read().await;
+        let folder_name = folder_form.get_id().to_lowercase();
+        let folder_name_str = folder_name.as_str();
+
+        let hasher_res = gen_hash(HashType::MD5, folder_name_str.as_bytes());
+        let binding = hasher_res.unwrap();
+        let folder_uuid = binding.get_hash_data();
+
+        // let schema = helper::create_bucket_scheme(folder_form.is_preview());
+        // let bucket_schema: Value = serde_json::from_str(schema.as_str())
+        //     .expect("Failed while creating folder scheme.");
+
+        let bucket_schema = helper::create_bucket_scheme(folder_form.is_preview());
+        let test = json!({folder_name_str: bucket_schema});
         let response_result = elastic
-            .index(IndexParts::IndexId(bucket_name, id_str))
-            .body(json!({
-                bucket_name: bucket_schema,
-            }))
+            .index(IndexParts::Index(folder_name_str))
+            .body(&test)
             .send()
             .await;
 
         match response_result {
-            Ok(_) => SuccessfulResponse::ok_response("Ok"),
+            Ok(response) => {
+                if !response.status_code().is_success() {
+                    let msg = response.text().await.unwrap_or_default();
+                    return WebError::CreateBucket(msg).error_response();
+                }
+                SuccessfulResponse::ok_response("Ok")
+            }
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
                 WebError::CreateBucket(err.to_string()).error_response()
@@ -319,7 +331,9 @@ impl SearcherService for context::ElasticContext {
             return Err(WebError::from(err));
         }
 
-        let document_json = &common_object?[&"_source"];
+        let test = common_object?;
+        println!("{}", serde_json::to_string_pretty(&test).unwrap());
+        let document_json = &test[&"_source"];
         match Document::deserialize(document_json) {
             Ok(mut document) => {
                 document.exclude_tokens();
@@ -334,8 +348,7 @@ impl SearcherService for context::ElasticContext {
 
     async fn create_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
-        let bucket_id = &doc_form.folder_id;
-        let doc_id = &doc_form.content_md5;
+
         let to_value_result = serde_json::to_value(doc_form);
         if to_value_result.is_err() {
             let err = to_value_result.err().unwrap();
@@ -344,6 +357,8 @@ impl SearcherService for context::ElasticContext {
             return web_err.error_response();
         }
 
+        let bucket_id = &doc_form.folder_id;
+        let doc_id = &doc_form.content_md5;
         if helper::check_duplication(&elastic, bucket_id.as_str(), doc_id.as_str()).await {
             let msg = format!("Passed document: {} already exists", doc_id);
             return WebError::CreateDocument(msg).error_response();
@@ -366,7 +381,7 @@ impl SearcherService for context::ElasticContext {
         doc_form: &DocumentPreview,
     ) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
-        let doc_id = &doc_form.id;
+
         let to_value_result = serde_json::to_value(doc_form);
         if to_value_result.is_err() {
             let err = to_value_result.err().unwrap();
@@ -375,6 +390,7 @@ impl SearcherService for context::ElasticContext {
             return web_err.error_response();
         }
 
+        let doc_id = &doc_form.id;
         let status = helper::send_document_preview(&elastic, doc_form, folder_id).await;
         match status.is_success() {
             true => HttpResponse::new(StatusCode::OK),
@@ -445,9 +461,16 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse {
+    async fn move_documents(
+        &self,
+        folder_id: &str,
+        src_folder_id: &str,
+        document_ids: &[String],
+    ) -> HttpResponse {
         let opts = self.get_options();
-        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await {
+        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, src_folder_id, document_ids)
+            .await
+        {
             Err(err) => err.error_response(),
             Ok(response) => {
                 // TODO: Update documents after moving
@@ -528,7 +551,9 @@ impl SearcherService for context::ElasticContext {
 
         let analysed_docs = docs.unwrap();
         for dp in analysed_docs.iter() {
-            let _ = self.create_document_preview("history", dp).await;
+            let folder_id = dp.location.as_str().to_lowercase();
+            let _ = self.create_document_preview("история", dp).await;
+            let _ = self.create_document_preview(folder_id.as_str(), dp).await;
         }
 
         Ok(web::Json(analysed_docs))

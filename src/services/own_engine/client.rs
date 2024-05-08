@@ -126,7 +126,7 @@ impl SearcherService for OtherContext {
 
     async fn create_folder(&self, bucket_form: &FolderForm) -> HttpResponse {
         let cxt = self.get_cxt().write().await;
-        let uuid = bucket_form.get_name().to_string();
+        let uuid = bucket_form.get_id().to_string();
         let built_bucket = Folder::builder()
             .health("health".to_string())
             .status("status".to_string())
@@ -144,7 +144,7 @@ impl SearcherService for OtherContext {
         match map.insert(uuid, built_bucket.unwrap()) {
             Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
             None => {
-                let msg = format!("Created {}", bucket_form.get_name());
+                let msg = format!("Created {}", bucket_form.get_id());
                 log::warn!("New bucket has been created: {}", msg.as_str());
                 SuccessfulResponse::ok_response(msg.as_str())
             }
@@ -202,7 +202,12 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn move_documents(&self, _folder_id: &str, _document_ids: &[String]) -> HttpResponse {
+    async fn move_documents(
+        &self,
+        _folder_id: &str,
+        _src_folder_id: &str,
+        _document_ids: &[String],
+    ) -> HttpResponse {
         SuccessfulResponse::ok_response("Ok")
     }
 
