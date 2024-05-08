@@ -359,44 +359,161 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Folder, WebError> {
     Ok(built_bucket.unwrap())
 }
 
-pub fn create_bucket_scheme(// is_preview: bool,
-) -> String {
-    // if is_preview {
-    //     // {
-    //     //   "id": "string",
-    //     //   "name": "Перевозка груза МСК",
-    //     //   "created_at": "2024-05-03",
-    //     //   "updated_at": "2024-05-03",
-    //     //   "quality_recognization": 10000,
-    //     //   "file_size": 12545,
-    //     //   "location": "string",
-    //     //   "properties": [
-    //     //     {
-    //     //      "group_name": "Приём груза",
-    //     //      "group_values": [
-    //     //         {
-    //     //          "key": "field_date_smgs",
-    //     //          "name": "Дата и время (печатные)",
-    //     //          "value": "18.03.2024, 23:59"
-    //     //        }
-    //     //      ]
-    //     //    }
-    //     //  ]
-    //     // }
-    //     let schema = json!({
-    //         "id": {"type": "string"},
-    //         "name": {"type": "string"},
-    //         "created_at": {"type": "date"},
-    //         "updated_at": {"type": "date"},
-    //         "quality_recognition": {"type": "int"},
-    //         "file_size": {"type": "int"},
-    //         "location": {"type": "string"},
-    //         "properties": {"type": "object"},
-    //     });
-    //     return serde_json::to_string_pretty(&schema).unwrap();
-    // }
-    let schema = BucketSchema::default();
-    serde_json::to_string_pretty(&schema).unwrap()
+pub fn create_bucket_scheme(is_preview: bool) -> Value {
+    let group_values = json!({
+        "type": "nested",
+        "properties": {
+            "name": {
+                "type": "string"
+            },
+            "json_name": {
+                "type": "string"
+            },
+            "type": {
+                "type": "keyword"
+            },
+            "value": {
+                "type": "text",
+                "fields": {
+                    "as_date": {
+                        "type": "date",
+                        "ignore_malformed": true
+                    }
+                }
+            }
+        }
+    });
+
+    let artifacts = json!({
+        "type": "nested",
+        "properties": {
+            "group_name": {
+                "type": "string"
+            },
+            "group_json_name": {
+                "type": "string"
+            },
+            "group_values": group_values
+        }
+    });
+
+    if is_preview {
+        // let schema = PreviewDocumentSchema::default();
+        // return serde_json::to_string_pretty(&schema).unwrap();
+
+        let bucket_schema = json!({
+            "_source": {
+                "enabled": true
+            },
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "date",
+                    "ignore_malformed": true
+                },
+                "quality_recognition": {
+                    "type": "integer"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "artifacts": artifacts
+            }
+        });
+        return bucket_schema
+    }
+
+    // let schema = DocumentSchema::default();
+    // serde_json::to_string_pretty(&schema).unwrap()
+    let ocr_metadata = json!({
+        "type": "object",
+        "properties":{
+            "job_id": {
+                "type": "string"
+            },
+            "text": {
+                "type": "string"
+            },
+            "doc_type": {
+                "type": "string"
+            },
+            "pages_count": {
+                "type": "integer"
+            },
+            "artifacts": artifacts
+        }
+    });
+
+    let bucket_schema = json!({
+        "_source": {
+            "enabled": true
+        },
+        "properties": {
+            "folder_id": {
+                "type": "string"
+            },
+            "folder_path": {
+                "type": "string"
+            },
+            "content": {
+                "type": "string"
+            },
+            "content_md5": {
+                "type": "string"
+            },
+            "content_uuid": {
+                "type": "string"
+            },
+            "content_vector": {
+                  "dims": 1024,
+                  "type": "dense_vector"
+            },
+            "document_md5": {
+                "type": "string"
+            },
+            "document_ssdeep": {
+                "type": "string"
+            },
+            "document_name": {
+                "type": "string"
+            },
+            "document_path": {
+                  "index": "not_analyzed",
+                  "type": "string"
+            },
+            "document_size": {
+                "type": "integer"
+            },
+            "document_type": {
+                "type": "string"
+            },
+            "document_permissions": {
+                "type": "integer"
+            },
+            "document_extension": {
+                "type": "string"
+            },
+            "document_created": {
+                "type": "date"
+            },
+            "document_modified": {
+                "type": "date"
+            },
+            "quality_recognition": {
+                "type": "integer"
+            },
+            "ocr_metadata": ocr_metadata
+        }
+    });
+    bucket_schema
 }
 
 #[cfg(feature = "enable-semantic")]
