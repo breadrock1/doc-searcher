@@ -9,6 +9,24 @@ use serde_json::{json, Value};
 const MOVE_FILES_URL: &str = "/watcher/files/move";
 const ANALYSE_FILES_URL: &str = "/watcher/files/analyse";
 const UNRECOGNIZED_FILES_URL: &str = "/watcher/files/unrecognized";
+const CREATE_FOLDER_URL: &str = "/watcher/folders/create";
+
+pub(crate) async fn create_watcher_folder(
+    cxt_opts: &ContextOptions,
+    folder_id: &str,
+) -> Result<SuccessfulResponse, WebError> {
+    let body = &json!({"folder_name": folder_id});
+    let target_url = format!("{}{}", cxt_opts.watcher_service_host(), CREATE_FOLDER_URL);
+    match send_watcher_request(target_url.as_str(), body).await {
+        Err(err) => Err(WebError::ResponseError(err.to_string())),
+        Ok(response) => {
+            response
+                .json::<SuccessfulResponse>()
+                .await
+                .map_err(|err| WebError::ResponseError(err.to_string()))
+        },
+    }
+}
 
 pub async fn launch_docs_analysis(
     cxt_opts: &ContextOptions,
