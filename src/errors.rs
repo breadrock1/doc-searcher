@@ -38,6 +38,8 @@ pub enum WebError {
     LoadFileFailed(String),
     #[error("Response error: {0}")]
     ResponseError(String),
+    #[error("Continues executing: {0}")]
+    ResponseContinues(String),
 }
 
 impl WebError {
@@ -52,6 +54,7 @@ impl WebError {
             WebError::UpdateDocument(_) => "UpdateDocumentError",
             WebError::DeleteDocument(_) => "DeleteDocumentError",
             WebError::DocumentSerializing(_) => "DocumentSerializingError",
+            WebError::ResponseContinues(_) => "ContinueExecutingResponse",
             _ => "RuntimeError",
         }
         .to_string()
@@ -89,6 +92,7 @@ impl ResponseError for WebError {
             WebError::UpdateDocument(_) => StatusCode::BAD_REQUEST,
             WebError::DeleteDocument(_) => StatusCode::BAD_REQUEST,
             WebError::DocumentSerializing(_) => StatusCode::BAD_REQUEST,
+            WebError::ResponseContinues(_) => StatusCode::PROCESSING,
             _ => StatusCode::BAD_REQUEST,
         }
     }

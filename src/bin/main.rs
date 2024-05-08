@@ -50,7 +50,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(build_watcher_scope())
     })
     .bind((service_addr, *service_port))?
-    .workers(8)
+    .workers(6)
     .run()
     .await?;
 

@@ -156,7 +156,7 @@ pub struct Artifacts {
     #[schema(example = "tn_info")]
     pub group_json_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub group_values: Option<Vec<GroupValue>>
+    pub group_values: Option<Vec<GroupValue>>,
 }
 
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
@@ -174,11 +174,10 @@ pub struct GroupValue {
 }
 
 fn deser_group_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
-    String::deserialize(deserializer)
-        .and_then(|value| Ok(Some(value.replace("-", "   "))))
+    String::deserialize(deserializer).and_then(|value| Ok(Some(value.replace("-", "   "))))
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
@@ -237,15 +236,16 @@ impl TestExample<DocumentPreview> for DocumentPreview {
                 vec![ArtifactsBuilder::default()
                     .group_name("Information of TN".to_string())
                     .group_json_name("tn_info".to_string())
-                    .group_values(vec![
-                        GroupValueBuilder::default()
+                    .group_values(
+                        vec![GroupValueBuilder::default()
                             .name("Date of TN".to_string())
                             .json_name("date_of_tn".to_string())
                             .group_type("string".to_string())
                             .value(Some("2023-10-29".to_string()))
                             .build()
-                            .unwrap()
-                    ].into())
+                            .unwrap()]
+                        .into(),
+                    )
                     .build()
                     .unwrap()]
                 .into(),
@@ -274,11 +274,16 @@ impl From<Document> for DocumentPreview {
 pub struct MoveDocumetsForm {
     document_ids: Vec<String>,
     folder_id: String,
+    src_folder_id: String,
 }
 
 impl MoveDocumetsForm {
     pub fn get_folder_id(&self) -> &str {
         self.folder_id.as_str()
+    }
+
+    pub fn get_src_folder_id(&self) -> &str {
+        self.src_folder_id.as_str()
     }
 
     pub fn get_document_ids(&self) -> &[String] {
@@ -290,6 +295,7 @@ impl TestExample<MoveDocumetsForm> for MoveDocumetsForm {
     fn test_example(_value: Option<&str>) -> MoveDocumetsForm {
         MoveDocumetsFormBuilder::default()
             .folder_id("test_folder".to_string())
+            .src_folder_id("unrecognized".to_string())
             .document_ids(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()])
             .build()
             .unwrap()

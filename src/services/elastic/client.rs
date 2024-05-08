@@ -295,7 +295,7 @@ impl SearcherService for context::ElasticContext {
                     return WebError::CreateBucket(msg).error_response();
                 }
                 SuccessfulResponse::ok_response("Ok")
-            },
+            }
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
                 WebError::CreateBucket(err.to_string()).error_response()
@@ -402,7 +402,7 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn update_document(&self, doc_form: &Document) -> HttpResponse  {
+    async fn update_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let bucket_name = &doc_form.folder_id;
         let document_id = &doc_form.document_md5;
@@ -461,9 +461,16 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse {
+    async fn move_documents(
+        &self,
+        folder_id: &str,
+        src_folder_id: &str,
+        document_ids: &[String],
+    ) -> HttpResponse {
         let opts = self.get_options();
-        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await {
+        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, src_folder_id, document_ids)
+            .await
+        {
             Err(err) => err.error_response(),
             Ok(response) => {
                 // TODO: Update documents after moving
@@ -549,7 +556,7 @@ impl SearcherService for context::ElasticContext {
             let _ = self.create_document_preview(folder_id.as_str(), dp).await;
         }
 
-       Ok(web::Json(analysed_docs))
+        Ok(web::Json(analysed_docs))
     }
 
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
