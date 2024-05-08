@@ -39,7 +39,7 @@ pub enum WebError {
     #[error("Response error: {0}")]
     ResponseError(String),
     #[error("Continues executing: {0}")]
-    ResponseContinues(String)
+    ResponseContinues(String),
 }
 
 impl WebError {
