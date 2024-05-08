@@ -202,7 +202,12 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn move_documents(&self, _folder_id: &str, _src_folder_id: &str, _document_ids: &[String]) -> HttpResponse {
+    async fn move_documents(
+        &self,
+        _folder_id: &str,
+        _src_folder_id: &str,
+        _document_ids: &[String],
+    ) -> HttpResponse {
         SuccessfulResponse::ok_response("Ok")
     }
 

@@ -47,7 +47,7 @@ pub async fn send_document(
             let text = response.text().await.unwrap();
             println!("{}", text.as_str());
             SendDocumentStatus::new(true, text.as_str())
-        },
+        }
         Err(err) => {
             let err_msg = format!("Failed while loading file: {:?}", err);
             SendDocumentStatus::new(false, err_msg.as_str())
@@ -80,7 +80,7 @@ pub async fn send_document_preview(
             let text = resp.text().await.unwrap();
             println!("{}", text.as_str());
             SendDocumentStatus::new(true, text.as_str())
-        },
+        }
         Err(err) => {
             let err_msg = format!("Failed while loading file: {:?}", err);
             SendDocumentStatus::new(false, err_msg.as_str())
@@ -439,7 +439,7 @@ pub fn create_bucket_scheme(is_preview: bool) -> Value {
                 "artifacts": artifacts
             }
         });
-        return bucket_schema
+        return bucket_schema;
     }
 
     // let schema = DocumentSchema::default();

@@ -11,7 +11,7 @@ enum FieldType {
 #[derive(Serialize)]
 pub struct PreviewDocumentSchema {
     _source: EnabledFlag,
-    properties: PropertiesSchema
+    properties: PropertiesSchema,
 }
 
 impl Default for PreviewDocumentSchema {
@@ -47,8 +47,6 @@ impl Default for PreviewPropertiesSchema {
         }
     }
 }
-
-
 
 #[derive(Serialize)]
 pub struct DocumentSchema {
