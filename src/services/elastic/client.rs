@@ -1,17 +1,17 @@
 use crate::errors::{SuccessfulResponse, WebError};
-use crate::services::elastic::context;
 use crate::services::elastic::helper;
+use crate::services::elastic::{context, watcher};
 use crate::services::{JsonResponse, PaginateJsonResponse, SearcherService};
 
 #[cfg(feature = "enable-chunked")]
 use crate::services::GroupedDocs;
 
 use hasher::{gen_hash, HashType};
-use wrappers::bucket::DEFAULT_BUCKET_NAME;
-use wrappers::bucket::{Bucket, BucketForm};
+use wrappers::bucket::DEFAULT_FOLDER_NAME;
+use wrappers::bucket::{Folder, FolderForm};
 use wrappers::cluster::Cluster;
-use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, NextScroll};
+use wrappers::document::{Document, DocumentPreview};
+use wrappers::scroll::{AllScrolls, NextScroll, PaginatedResult};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -59,11 +59,10 @@ impl SearcherService for context::ElasticContext {
 
     async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
-        let cluster_name = format!("/_nodes/{}", cluster_id);
         let response_result = elastic
             .send(
                 Method::Get,
-                cluster_name.as_str(),
+                "/_cat/nodes",
                 HeaderMap::new(),
                 Option::<&Value>::None,
                 Some(b"".as_ref()),
@@ -79,8 +78,23 @@ impl SearcherService for context::ElasticContext {
 
         let response = response_result.unwrap();
         let resp_json = response.json::<Value>().await?;
-        match serde_json::from_value::<Cluster>(resp_json) {
-            Ok(cluster) => Ok(web::Json(cluster)),
+        match serde_json::from_value::<Vec<Cluster>>(resp_json) {
+            Ok(clusters) => {
+                let founded_cluster = clusters
+                    .iter()
+                    .filter(|cluster| cluster.name.eq(cluster_id))
+                    .map(|cluster| cluster.to_owned())
+                    .collect::<Vec<Cluster>>();
+
+                match founded_cluster.first() {
+                    Some(value) => Ok(web::Json(value.to_owned())),
+                    None => {
+                        let msg = format!("There is no cluster with passed name: {}", cluster_id);
+                        log::error!("{}", msg.as_str());
+                        Err(WebError::GetCluster(msg))
+                    }
+                }
+            }
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
                 Err(WebError::from(err))
@@ -105,7 +119,7 @@ impl SearcherService for context::ElasticContext {
         let body = json_data.as_str();
         if body.is_none() {
             let msg = "Json body is None".to_string();
-            log::error!("Failed while building jsob body: {}", msg);
+            log::error!("Failed while building json body: {}", msg);
             return WebError::DeletingCluster(msg).error_response();
         }
 
@@ -130,7 +144,7 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>> {
+    async fn get_all_folders(&self) -> JsonResponse<Vec<Folder>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .send(
@@ -151,7 +165,7 @@ impl SearcherService for context::ElasticContext {
 
         let response = response_result.unwrap();
         let resp_json = response.json::<Value>().await?;
-        match serde_json::from_value::<Vec<Bucket>>(resp_json) {
+        match serde_json::from_value::<Vec<Folder>>(resp_json) {
             Ok(buckets) => Ok(web::Json(buckets)),
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
@@ -160,7 +174,7 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket> {
+    async fn get_folder(&self, bucket_id: &str) -> JsonResponse<Folder> {
         let elastic = self.get_cxt().read().await;
         let bucket_name = format!("/{}/_stats", bucket_id);
         let response_result = elastic
@@ -176,7 +190,7 @@ impl SearcherService for context::ElasticContext {
 
         if response_result.is_err() {
             let err = response_result.err().unwrap();
-            log::error!("Failed while getting bucket {}: {}", bucket_id, err);
+            log::error!("Returned failed response from elastic: {}", err);
             return Err(WebError::from(err));
         }
 
@@ -184,7 +198,7 @@ impl SearcherService for context::ElasticContext {
         let json_value = response.json::<Value>().await;
         if json_value.is_err() {
             let err = json_value.err().unwrap();
-            log::error!("Failed while getting bucket {}: {}", bucket_id, err);
+            log::error!("Failed while parsing bucket {}: {}", bucket_id, err);
             return Err(WebError::from(err));
         }
 
@@ -197,7 +211,37 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse {
+    async fn get_folder_documents(
+        &self,
+        bucket_id: &str,
+        opt_params: Option<SearchParams>,
+    ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+        let elastic = self.get_cxt().read().await;
+        let s_params = opt_params.unwrap_or_else(|| SearchParams {
+            result_size: 1000,
+            ..Default::default()
+        });
+
+        if bucket_id.eq("unrecognized") {
+            let cxt_opts = self.get_options().as_ref();
+            return match watcher::get_unrecognized_documents(cxt_opts, &s_params).await {
+                Err(err) => Err(err),
+                Ok(documents) => Ok(web::Json(PaginatedResult::new(documents))),
+            };
+        }
+
+        let body_value = helper::build_match_all_query(&s_params);
+        match helper::search_documents_preview(&elastic, &[bucket_id], &body_value, &s_params).await
+        {
+            Ok(documents) => Ok(documents),
+            Err(err) => {
+                log::error!("Failed while searching documents: {}", err);
+                Err(err)
+            }
+        }
+    }
+
+    async fn delete_folder(&self, bucket_id: &str) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .send(
@@ -219,7 +263,9 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
-    async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse {
+    async fn create_folder(&self, bucket_form: &FolderForm) -> HttpResponse {
+        // TODO: Implement creating another Schemas for history using enum
+        // TODO: Create folder into doc-notifier (optionally)
         let elastic = self.get_cxt().read().await;
         let bucket_name = bucket_form.get_name();
         let hasher_res = gen_hash(HashType::MD5, bucket_name.as_bytes());
@@ -275,7 +321,10 @@ impl SearcherService for context::ElasticContext {
 
         let document_json = &common_object?[&"_source"];
         match Document::deserialize(document_json) {
-            Ok(document) => Ok(web::Json(document)),
+            Ok(mut document) => {
+                document.exclude_tokens();
+                Ok(web::Json(document))
+            }
             Err(err) => {
                 log::error!("Failed while parsing document from response: {}", err);
                 Err(WebError::GetDocument(err.to_string()))
@@ -285,7 +334,7 @@ impl SearcherService for context::ElasticContext {
 
     async fn create_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
-        let bucket_id = &doc_form.bucket_uuid;
+        let bucket_id = &doc_form.folder_id;
         let doc_id = &doc_form.content_md5;
         let to_value_result = serde_json::to_value(doc_form);
         if to_value_result.is_err() {
@@ -311,9 +360,35 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
+    async fn create_document_preview(
+        &self,
+        folder_id: &str,
+        doc_form: &DocumentPreview,
+    ) -> HttpResponse {
+        let elastic = self.get_cxt().read().await;
+        let doc_id = &doc_form.id;
+        let to_value_result = serde_json::to_value(doc_form);
+        if to_value_result.is_err() {
+            let err = to_value_result.err().unwrap();
+            log::error!("Failed while creating document: {}", err);
+            let web_err = WebError::DocumentSerializing(err.to_string());
+            return web_err.error_response();
+        }
+
+        let status = helper::send_document_preview(&elastic, doc_form, folder_id).await;
+        match status.is_success() {
+            true => HttpResponse::new(StatusCode::OK),
+            false => {
+                let msg = format!("Failed while parsing elastic response: {}", doc_id);
+                log::error!("Failed while sending doc to elastic: {}", msg);
+                WebError::CreateDocument(msg).error_response()
+            }
+        }
+    }
+
     async fn update_document(&self, doc_form: &Document) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
-        let bucket_name = &doc_form.bucket_uuid;
+        let bucket_name = &doc_form.folder_id;
         let document_id = &doc_form.document_md5;
 
         let ser_doc_result = serde_json::to_value(doc_form);
@@ -370,6 +445,19 @@ impl SearcherService for context::ElasticContext {
         }
     }
 
+    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse {
+        let opts = self.get_options();
+        match watcher::move_docs_to_folder(opts.as_ref(), folder_id, document_ids).await {
+            Err(err) => err.error_response(),
+            Ok(response) => {
+                // TODO: Update documents after moving
+                // self.get_document()
+
+                response.to_response()
+            }
+        }
+    }
+
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
         let elastic = self.get_cxt().read().await;
         let file_path_ = std::path::Path::new(file_path);
@@ -386,7 +474,7 @@ impl SearcherService for context::ElasticContext {
 
         let mut docs_to_remove: Vec<usize> = Vec::default();
         for (doc_index, doc_item) in documents.iter().enumerate() {
-            let bucket_id = doc_item.bucket_uuid.as_str();
+            let bucket_id = doc_item.folder_id.as_str();
             let content_id = doc_item.content_md5.as_str();
             if helper::check_duplication(&elastic, bucket_id, content_id).await {
                 docs_to_remove.push(doc_index);
@@ -425,6 +513,25 @@ impl SearcherService for context::ElasticContext {
                 None
             }
         }
+    }
+
+    async fn launch_watcher_analysis(
+        &self,
+        document_ids: &[String],
+    ) -> JsonResponse<Vec<DocumentPreview>> {
+        let cxt_opts = self.get_options().as_ref();
+        let docs = watcher::launch_docs_analysis(cxt_opts, document_ids).await;
+        if docs.is_err() {
+            let err = docs.err().unwrap();
+            return Err(err);
+        }
+
+        let analysed_docs = docs.unwrap();
+        for dp in analysed_docs.iter() {
+            let _ = self.create_document_preview("history", dp).await;
+        }
+
+        Ok(web::Json(analysed_docs))
     }
 
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
@@ -496,10 +603,9 @@ impl SearcherService for context::ElasticContext {
         let buckets = s_params
             .buckets
             .to_owned()
-            .unwrap_or(DEFAULT_BUCKET_NAME.to_string());
+            .unwrap_or(DEFAULT_FOLDER_NAME.to_string());
 
         let indexes = buckets.split(',').collect::<Vec<&str>>();
-
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
@@ -515,11 +621,10 @@ impl SearcherService for context::ElasticContext {
 
         let buckets = s_params.buckets.to_owned().unwrap_or("*".to_string());
         let indexes = buckets.split(',').collect::<Vec<&str>>();
-
         match helper::search_documents(&elastic, indexes.as_slice(), &body_value, s_params).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
-                log::error!("Failed while searching documents: {}", err);
+                log::error!("Failed while searching documents tokens: {}", err);
                 Err(err)
             }
         }
@@ -547,7 +652,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -565,7 +670,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents tokens: {}", err);
@@ -583,7 +688,7 @@ impl SearcherService for context::ElasticContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(wrappers::scroll::PagintatedResult::new(grouped)))
+                Ok(web::Json(wrappers::scroll::PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching similar documents: {}", err);

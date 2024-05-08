@@ -1,5 +1,5 @@
 use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::PaginateJsonResponse;
+use crate::errors::{ErrorResponse, PaginateJsonResponse};
 use crate::services::cacher::values::*;
 use crate::services::CacherService;
 
@@ -9,17 +9,38 @@ use crate::services::GroupedDocs;
 use actix_web::{post, web};
 
 use wrappers::document::Document;
-use wrappers::scroll::PagintatedResult;
+use wrappers::scroll::PaginatedResult;
 use wrappers::search_params::SearchParams;
+use wrappers::TestExample;
 
 #[utoipa::path(
     post,
     path = "/search/",
-    tag = "Search stored documents by passed query and filters",
-    request_body = SearchParams,
+    tag = "Search",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_example(Some("Ocean Carrier")))
+    ),
     responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = PaginatedResult<Vec<Document>>,
+            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
+                vec![Document::test_example(None)],
+                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            ))
+        ),
+        (
+            status = 400,
+            description = "Failed while searching documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while searching documents".to_string(),
+            })
+        ),
     )
 )]
 #[post("/")]
@@ -51,7 +72,7 @@ async fn search_all(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PagintatedResult::new(docs);
+            let scroll = PaginatedResult::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -60,11 +81,31 @@ async fn search_all(
 #[utoipa::path(
     post,
     path = "/search/tokens",
-    tag = "Search stored documents tokens by passed query and filters",
-    request_body = SearchParams,
+    tag = "Search",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_example(Some("Ocean Carrier")))
+    ),
     responses(
-        (status = 200, description = "Successful", body = [Document]),
-        (status = 401, description = "Failed while searching documents", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = [Document],
+            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
+                vec![Document::test_example(None)],
+                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            ))
+        ),
+        (
+            status = 400,
+            description = "Failed while searching tokens",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while searching tokens".to_string(),
+            })
+        ),
     )
 )]
 #[post("/tokens")]
@@ -96,7 +137,7 @@ async fn search_tokens(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PagintatedResult::new(docs);
+            let scroll = PaginatedResult::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -133,7 +174,7 @@ async fn search_chunked(
 
             let docs = Vec::from(docs);
             let grouped = client.group_document_chunks(&docs);
-            let scroll = PagintatedResult::new(grouped);
+            let scroll = PaginatedResult::new(grouped);
             Ok(web::Json(scroll))
         }
     }
@@ -170,7 +211,7 @@ async fn search_chunked_tokens(
 
             let docs = Vec::from(docs);
             let grouped = client.group_document_chunks(&docs);
-            let scroll = PagintatedResult::new(grouped);
+            let scroll = PaginatedResult::new(grouped);
             Ok(web::Json(scroll))
         }
     }
@@ -181,17 +222,17 @@ mod searcher_endpoints {
     use crate::services::own_engine::context::OtherContext;
     use crate::services::SearcherService;
 
-    use wrappers::document::{Document, DocumentBuilder};
-    use wrappers::search_params::SearchParamsBuilder;
+    use wrappers::document::Document;
+    use wrappers::search_params::SearchParams;
 
     use actix_web::test;
 
     #[test]
     async fn test_search_all() {
         let other_context = OtherContext::new("test".to_string());
-        let mut search_params = SearchParamsBuilder::default()
+        let mut search_params = SearchParams::builder()
             .query("text".to_string())
-            .buckets(Some("test_bucket".to_string()))
+            .buckets(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -220,9 +261,9 @@ mod searcher_endpoints {
     #[test]
     async fn test_search_bucket() {
         let other_context = OtherContext::new("test".to_string());
-        let mut search_params = SearchParamsBuilder::default()
+        let mut search_params = SearchParams::builder()
             .query("unknown-data".to_string())
-            .buckets(Some("test_bucket".to_string()))
+            .buckets(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -298,30 +339,33 @@ mod searcher_endpoints {
         ];
 
         let mut build_documents = Vec::<Document>::new();
-        let test_bucket_name = "test_bucket";
+        let test_folder_name = "test_folder";
         for document_index in 1..17 {
             let document_size = 1024 + document_index * 10;
             let test_document_name = &format!("test_document_{}", document_index);
+            let test_document_path = &format!("{}/{}", test_folder_name, test_document_name);
             let ssdeep_hash = *vec_hashes.get(document_index as usize).unwrap();
             let entity_data = *entity_data_vec.get(document_index as usize).unwrap();
-            let document = DocumentBuilder::default()
-                .bucket_uuid(test_bucket_name.to_string())
-                .bucket_path("/".to_string())
+            let document = Document::builder()
+                .folder_id(test_folder_name.to_string())
+                .folder_path("/".to_string())
                 .content_md5(test_document_name.clone())
                 .content_uuid(hasher::gen_uuid())
                 .content(entity_data.to_string())
                 .content_vector(Vec::default())
                 .document_name(test_document_name.clone())
-                .document_path("/".to_string())
+                .document_path(test_document_path.to_owned())
                 .document_size(document_size)
                 .document_type("document".to_string())
                 .document_extension(".txt".to_string())
                 .document_permissions(document_size)
-                .document_md5(test_document_name.clone())
+                .document_md5(test_document_name.to_owned())
                 .document_ssdeep(ssdeep_hash.to_string())
                 .highlight(None)
                 .document_created(None)
                 .document_modified(None)
+                .ocr_metadata(None)
+                .quality_recognition(None)
                 .build()
                 .unwrap();
 

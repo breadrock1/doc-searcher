@@ -2,6 +2,7 @@ pub mod client;
 pub mod context;
 pub mod helper;
 mod send_status;
+pub mod watcher;
 
 use crate::services::elastic::context::ElasticContext;
 use crate::services::init::ServiceParameters;
@@ -27,5 +28,8 @@ pub fn build_elastic_service(
         .cert_validation(validation)
         .build()?;
 
-    Ok(ElasticContext::new(Elasticsearch::new(transport)))
+    Ok(ElasticContext::new(
+        Elasticsearch::new(transport),
+        sv_params,
+    ))
 }

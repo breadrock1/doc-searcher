@@ -1,13 +1,15 @@
-use crate::bucket::DEFAULT_BUCKET_NAME;
+use crate::bucket::DEFAULT_FOLDER_NAME;
 
 use serde_derive::Deserialize;
-use utoipa::IntoParams;
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize, IntoParams)]
+#[derive(Deserialize, IntoParams, ToSchema)]
 pub struct LoadFileForm {
+    #[schema(example = "/tmp/test_document.txt")]
     file_path: String,
+    #[schema(example = "test_folder")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    bucket_name: Option<String>,
+    folder_id: Option<String>,
 }
 
 impl LoadFileForm {
@@ -16,8 +18,8 @@ impl LoadFileForm {
     }
 
     pub fn get_bucket(&self) -> &str {
-        match self.bucket_name.as_ref() {
-            None => DEFAULT_BUCKET_NAME,
+        match self.folder_id.as_ref() {
+            None => DEFAULT_FOLDER_NAME,
             Some(name) => name.as_str(),
         }
     }

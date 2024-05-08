@@ -1,20 +1,34 @@
 use crate::endpoints::SearcherData;
-use crate::errors::JsonResponse;
-
-use wrappers::cluster::{Cluster, ClusterForm};
+use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
 
 use actix_web::{delete, get, post, web, HttpResponse};
 
+use wrappers::cluster::{Cluster, ClusterForm};
+
 #[utoipa::path(
     get,
-    path = "/cluster/all",
-    tag = "Get all available clusters",
+    path = "/clusters/",
+    tag = "Clusters",
     responses(
-        (status = 200, description = "Successful", body = [Cluster]),
-        (status = 401, description = "Failed while getting clusters", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = [Cluster],
+            example = json!(vec![Cluster::default()])
+        ),
+        (
+            status = 400,
+            description = "Failed while getting clusters",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while getting clusters".to_string(),
+            })
+        ),
     )
 )]
-#[get("/all")]
+#[get("/")]
 async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
     let client = cxt.get_ref();
     client.get_all_clusters().await
@@ -22,53 +36,133 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
 
 #[utoipa::path(
     post,
-    path = "/cluster/new",
-    tag = "Create new Cluster by ClusterForm",
-    request_body = ClusterForm,
+    path = "/clusters/create",
+    tag = "Clusters",
+    request_body(
+        content = ClusterForm,
+        example = json!({
+            "cluster_id": "test_slave"
+        })
+    ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while creating cluster", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while creating cluster",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while creating cluster".to_string(),
+            })
+        ),
+        (
+            status = 501,
+            description = "Failed while creating cluster",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 501,
+                error: "Not Implemented".to_string(),
+                message: "Not implemented functionality yet".to_string(),
+            })
+        ),
     )
 )]
-#[post("/new")]
-async fn new_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpResponse {
-    let cluster_name = form.0.to_string();
+#[post("/create")]
+async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpResponse {
+    let cluster_id = form.0.to_string();
     let client = cxt.get_ref();
-    client.create_cluster(cluster_name.as_str()).await
+    client.create_cluster(cluster_id.as_str()).await
 }
 
 #[utoipa::path(
     delete,
-    path = "/cluster/{cluster_name}",
-    tag = "Delete cluster by name",
+    path = "/clusters/{cluster_id}",
+    tag = "Clusters",
     params(
-        ("cluster_name" = &str, description = "Cluster name to delete")
+        (
+            "cluster_id" = &str, 
+            description = "Cluster id to delete",
+            example = "d93df49fa6ft",
+        )
     ),
     responses(
-        (status = 200, description = "Successful", body = SuccessfulResponse),
-        (status = 401, description = "Failed while deleting cluster", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = SuccessfulResponse,
+            example = json!(SuccessfulResponse {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while deleting cluster",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while deleting cluster".to_string(),
+            })
+        ),
+        (
+            status = 501,
+            description = "Failed while deleting cluster",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 501,
+                error: "Not Implemented".to_string(),
+                message: "Not implemented functionality yet".to_string(),
+            })
+        ),
     )
 )]
-#[delete("/{cluster_name}")]
+#[delete("/{cluster_id}")]
 async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
-    let cluster_name = path.to_string();
-    client.delete_cluster(cluster_name.as_str()).await
+    client.delete_cluster(path.as_str()).await
 }
 
 #[utoipa::path(
     get,
-    path = "/cluster/{cluster_name}",
-    tag = "Getting cluster by name",
+    path = "/clusters/{cluster_id}",
+    tag = "Clusters",
     params(
-        ("cluster_name" = &str, description = "Cluster name to get")
+        (
+            "cluster_id" = &str, 
+            description = "Cluster id to get",
+            example = "d93df49fa6ff",
+        )
     ),
     responses(
-        (status = 200, description = "Successful", body = Cluster),
-        (status = 401, description = "Failed while getting cluster", body = ErrorResponse),
+        (
+            status = 200,
+            description = "Successful",
+            body = Cluster,
+            example = json!(Cluster::default())
+        ),
+        (
+            status = 400,
+            description = "Failed while getting cluster by id",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while getting cluster by id".to_string(),
+            })
+        ),
     )
 )]
-#[get("/{cluster_name}")]
+#[get("/{cluster_id}")]
 async fn get_cluster(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
     client.get_cluster(path.as_str()).await

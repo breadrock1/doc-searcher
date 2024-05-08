@@ -1,36 +1,19 @@
-use crate::endpoints::buckets::__path_all_buckets;
-use crate::endpoints::buckets::__path_default_bucket;
-use crate::endpoints::buckets::__path_delete_bucket;
-use crate::endpoints::buckets::__path_get_bucket;
-use crate::endpoints::buckets::__path_new_bucket;
-
-use crate::endpoints::clusters::__path_all_clusters;
-use crate::endpoints::clusters::__path_delete_cluster;
-use crate::endpoints::clusters::__path_get_cluster;
-use crate::endpoints::clusters::__path_new_cluster;
-
-use crate::endpoints::documents::__path_delete_document;
-use crate::endpoints::documents::__path_get_document;
-use crate::endpoints::documents::__path_new_document;
-use crate::endpoints::documents::__path_update_document;
-
-use crate::endpoints::hello::__path_hello;
-
-use crate::endpoints::loader::__path_download_file;
-use crate::endpoints::loader::__path_load_file;
-
-use crate::endpoints::paginator::__path_delete_expired_ids;
-use crate::endpoints::paginator::__path_get_pagination_ids;
-use crate::endpoints::paginator::__path_next_pagination_result;
-
-use crate::endpoints::searcher::__path_search_all;
-
-use crate::endpoints::similarities::__path_search_similar_docs;
+use crate::endpoints::clusters::*;
+use crate::endpoints::documents::*;
+use crate::endpoints::folders::*;
+use crate::endpoints::hello::*;
+use crate::endpoints::loader::*;
+use crate::endpoints::paginator::*;
+use crate::endpoints::searcher::*;
+use crate::endpoints::similarities::*;
+use crate::endpoints::watcher::*;
 
 use crate::errors::*;
+
 use wrappers::bucket::*;
 use wrappers::cluster::*;
 use wrappers::document::*;
+use wrappers::file_form::*;
 use wrappers::scroll::*;
 use wrappers::search_params::*;
 
@@ -44,47 +27,60 @@ use utoipa_swagger_ui::SwaggerUi;
     ),
     paths(
         hello,
-        all_buckets,
-        default_bucket,
-        delete_bucket,
-        get_bucket,
-        new_bucket,
         all_clusters,
-        delete_cluster,
+        create_cluster,
         get_cluster,
-        new_cluster,
-        update_document,
+        delete_cluster,
+        all_folders,
+        create_folder,
+        create_global_folders,
+        get_folder,
+        delete_folder,
+        get_folder_documents,
+        create_document,
+        delete_documents,
         get_document,
-        new_document,
-        delete_document,
+        update_document,
         load_file,
         download_file,
+        upload_files,
         get_pagination_ids,
         delete_expired_ids,
         next_pagination_result,
         search_all,
         search_similar_docs,
+        analyse_documents,
+        get_folder_documents2,
     ),
     components(
         schemas(
             ErrorResponse,
             SuccessfulResponse,
-            Bucket,
+            Folder,
+            FolderForm,
             Cluster,
+            ClusterForm,
             Document,
+            HighlightEntity,
+            OcrMetadata,
+            Artifacts,
+            LoadFileForm,
             SearchParams,
+            PaginatedResult<Vec<Document>>,
             NextScroll,
             AllScrolls,
             HighlightEntity,
         )
     ),
-    tags ((
-        name = "DocSearcher REST API",
-        description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
-    ))
+    tags (
+        (
+            name = "DocSearcher REST API",
+            description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
+        )
+    )
 )]
 pub struct ApiDoc;
 
-pub fn create_service(openapi: &utoipa::openapi::OpenApi) -> SwaggerUi {
-    SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
+pub fn create_service(openapi: &openapi::OpenApi) -> SwaggerUi {
+    SwaggerUi::new("/docs/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
 }

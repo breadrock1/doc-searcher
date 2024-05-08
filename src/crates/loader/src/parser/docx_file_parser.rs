@@ -20,7 +20,7 @@ pub(crate) mod docx_parser {
             .body
             .content
             .iter()
-            .map(|bocy_content| match bocy_content {
+            .map(|body_content| match body_content {
                 BodyContent::Paragraph(par) => extract_paragraph_text(par),
                 BodyContent::Table(tab) => extract_table_text(tab),
             })

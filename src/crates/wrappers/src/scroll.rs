@@ -2,31 +2,33 @@ use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, Builder)]
-pub struct PagintatedResult<D> {
+#[derive(Serialize, Builder, ToSchema)]
+pub struct PaginatedResult<D> {
+    #[schema(value_type = PaginatedResult<Vec<Document>>)]
     founded: D,
+    #[schema(example = "1m")]
     #[serde(skip_serializing_if = "Option::is_none")]
     scroll_id: Option<String>,
 }
 
-impl<D> PagintatedResult<D> {
+impl<D> PaginatedResult<D> {
     pub fn new(founded: D) -> Self {
-        PagintatedResult {
-            founded: founded,
+        PaginatedResult {
+            founded,
             scroll_id: None,
         }
     }
 
     pub fn new_with_id(founded: D, id: String) -> Self {
-        PagintatedResult {
-            founded: founded,
+        PaginatedResult {
+            founded,
             scroll_id: Some(id),
         }
     }
 
     pub fn new_with_opt_id(founded: D, opt_id: Option<String>) -> Self {
-        PagintatedResult {
-            founded: founded,
+        PaginatedResult {
+            founded,
             scroll_id: opt_id,
         }
     }
@@ -38,11 +40,17 @@ impl<D> PagintatedResult<D> {
     pub fn get_founded_mut(&mut self) -> &mut D {
         &mut self.founded
     }
+
+    pub fn get_scroll_id(&self) -> Option<&String> {
+        self.scroll_id.as_ref()
+    }
 }
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct NextScroll {
+    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmZsdnhOSWhk")]
     scroll_id: String,
+    #[schema(example = "1m")]
     scroll: String,
 }
 
@@ -65,6 +73,7 @@ impl NextScroll {
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct AllScrolls {
+    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmZsdnhOSWhk")]
     scroll_ids: Vec<String>,
 }
 

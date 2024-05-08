@@ -1,4 +1,4 @@
-use wrappers::bucket::Bucket;
+use wrappers::bucket::Folder;
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
 
@@ -25,7 +25,7 @@ impl OtherContext {
 }
 
 pub struct SearchEngine {
-    pub buckets: Arc<RwLock<HashMap<String, Bucket>>>,
+    pub buckets: Arc<RwLock<HashMap<String, Folder>>>,
     pub clusters: Arc<RwLock<HashMap<String, Cluster>>>,
     pub documents: Arc<RwLock<HashMap<String, Document>>>,
 }

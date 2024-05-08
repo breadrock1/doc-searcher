@@ -1,7 +1,8 @@
+use derive_builder::Builder;
 use serde_derive::Serialize;
 
-#[derive(Serialize)]
-struct QueryString {
+#[derive(Builder, Serialize)]
+pub struct QueryString {
     query: String,
     operator: String,
     fields: Vec<String>,
@@ -14,6 +15,10 @@ impl QueryString {
             operator: "or".to_string(),
             fields: vec!["content".to_string(), "document_path".to_string()],
         }
+    }
+
+    pub fn builder() -> QueryStringBuilder {
+        QueryStringBuilder::default()
     }
 }
 

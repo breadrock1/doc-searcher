@@ -3,10 +3,10 @@ use actix_web::{web, HttpResponse, ResponseError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
-use wrappers::scroll::PagintatedResult;
+use wrappers::scroll::PaginatedResult;
 
 pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
-pub(crate) type PaginateJsonResponse<T> = JsonResponse<PagintatedResult<T>>;
+pub(crate) type PaginateJsonResponse<T> = JsonResponse<PaginatedResult<T>>;
 
 #[derive(Error, Debug)]
 pub enum WebError {
@@ -70,7 +70,7 @@ impl From<serde_json::Error> for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct ErrorResponse {
     pub code: u16,
     pub error: String,
@@ -105,7 +105,7 @@ impl ResponseError for WebError {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct SuccessfulResponse {
     pub code: u16,
     pub message: String,
@@ -120,5 +120,9 @@ impl SuccessfulResponse {
         };
 
         HttpResponse::build(status_code).json(response)
+    }
+
+    pub fn to_response(&self) -> HttpResponse {
+        HttpResponse::build(StatusCode::OK).json(self)
     }
 }

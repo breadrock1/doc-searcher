@@ -1,14 +1,15 @@
 use crate::errors::{JsonResponse, PaginateJsonResponse, SuccessfulResponse, WebError};
 use crate::services::own_engine::context::OtherContext;
+use crate::services::own_engine::helper;
 use crate::services::SearcherService;
 
 #[cfg(feature = "enable-chunked")]
 use crate::services::GroupedDocs;
 
-use wrappers::bucket::{Bucket, BucketBuilder, BucketForm};
-use wrappers::cluster::{Cluster, ClusterBuilder};
-use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, NextScroll, PagintatedResult};
+use wrappers::bucket::{Folder, FolderForm};
+use wrappers::cluster::Cluster;
+use wrappers::document::{Document, DocumentPreview};
+use wrappers::scroll::{AllScrolls, NextScroll, PaginatedResult};
 use wrappers::search_params::SearchParams;
 
 use actix_files::NamedFile;
@@ -40,7 +41,7 @@ impl SearcherService for OtherContext {
     }
 
     async fn create_cluster(&self, cluster_id: &str) -> HttpResponse {
-        let cluster = ClusterBuilder::default()
+        let cluster = Cluster::builder()
             .ip("localhost".to_string())
             .heap_percent("70%".to_string())
             .ram_percent("70%".to_string())
@@ -79,15 +80,15 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn get_all_buckets(&self) -> JsonResponse<Vec<Bucket>> {
+    async fn get_all_folders(&self) -> JsonResponse<Vec<Folder>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
-        let buckets_vec = map.values().cloned().collect::<Vec<Bucket>>();
+        let buckets_vec = map.values().cloned().collect::<Vec<Folder>>();
 
         Ok(web::Json(buckets_vec))
     }
 
-    async fn get_bucket(&self, bucket_id: &str) -> JsonResponse<Bucket> {
+    async fn get_folder(&self, bucket_id: &str) -> JsonResponse<Folder> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
         match map.get(bucket_id) {
@@ -100,7 +101,16 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn delete_bucket(&self, bucket_id: &str) -> HttpResponse {
+    async fn get_folder_documents(
+        &self,
+        _bucket_id: &str,
+        _opt_params: Option<SearchParams>,
+    ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+        let documents_vec = Vec::default();
+        Ok(web::Json(PaginatedResult::new(documents_vec)))
+    }
+
+    async fn delete_folder(&self, bucket_id: &str) -> HttpResponse {
         let cxt = self.get_cxt().write().await;
         let uuid = bucket_id.to_string();
         let mut map = cxt.buckets.write().await;
@@ -114,10 +124,10 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn create_bucket(&self, bucket_form: &BucketForm) -> HttpResponse {
+    async fn create_folder(&self, bucket_form: &FolderForm) -> HttpResponse {
         let cxt = self.get_cxt().write().await;
         let uuid = bucket_form.get_name().to_string();
-        let built_bucket = BucketBuilder::default()
+        let built_bucket = Folder::builder()
             .health("health".to_string())
             .status("status".to_string())
             .index(uuid.clone())
@@ -134,7 +144,7 @@ impl SearcherService for OtherContext {
         match map.insert(uuid, built_bucket.unwrap()) {
             Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
             None => {
-                let msg = format!("Created {}", bucket_form.bucket_name.as_str());
+                let msg = format!("Created {}", bucket_form.get_name());
                 log::warn!("New bucket has been created: {}", msg.as_str());
                 SuccessfulResponse::ok_response(msg.as_str())
             }
@@ -167,6 +177,14 @@ impl SearcherService for OtherContext {
         }
     }
 
+    async fn create_document_preview(
+        &self,
+        _folder_id: &str,
+        _doc_form: &DocumentPreview,
+    ) -> HttpResponse {
+        SuccessfulResponse::ok_response("Done")
+    }
+
     async fn update_document(&self, doc_form: &Document) -> HttpResponse {
         self.create_document(doc_form).await
     }
@@ -182,6 +200,10 @@ impl SearcherService for OtherContext {
                 WebError::DeleteDocument(msg).error_response()
             }
         }
+    }
+
+    async fn move_documents(&self, _folder_id: &str, _document_ids: &[String]) -> HttpResponse {
+        SuccessfulResponse::ok_response("Ok")
     }
 
     async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
@@ -206,6 +228,13 @@ impl SearcherService for OtherContext {
         }
     }
 
+    async fn launch_watcher_analysis(
+        &self,
+        _document_ids: &[String],
+    ) -> JsonResponse<Vec<DocumentPreview>> {
+        Ok(web::Json(Vec::default()))
+    }
+
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
         let def_vals: Vec<String> = Vec::default();
         Ok(web::Json(def_vals))
@@ -218,7 +247,7 @@ impl SearcherService for OtherContext {
         &self,
         _curr_scroll: &NextScroll,
     ) -> PaginateJsonResponse<Vec<Document>> {
-        Ok(web::Json(PagintatedResult::new_with_id(
+        Ok(web::Json(PaginatedResult::new_with_id(
             Vec::default(),
             "id".to_string(),
         )))
@@ -228,28 +257,18 @@ impl SearcherService for OtherContext {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
-        let documents_vec = map
-            .values()
-            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
-            .filter(|document| document.content.contains(&s_params.query))
-            .cloned()
-            .collect::<Vec<Document>>();
+        let documents_vec = helper::filter_founded_documents(map, bucket_id.as_str(), s_params);
 
-        Ok(web::Json(PagintatedResult::new(documents_vec)))
+        Ok(web::Json(PaginatedResult::new(documents_vec)))
     }
 
     async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
-        let documents_vec = map
-            .values()
-            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
-            .filter(|doc| doc.content.contains(&s_params.query))
-            .cloned()
-            .collect::<Vec<Document>>();
+        let documents_vec = helper::filter_founded_documents(map, bucket_id.as_str(), s_params);
 
-        Ok(web::Json(PagintatedResult::new(documents_vec)))
+        Ok(web::Json(PaginatedResult::new(documents_vec)))
     }
 
     async fn similarity(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
@@ -258,7 +277,7 @@ impl SearcherService for OtherContext {
         let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
         let documents_vec = map
             .values()
-            .filter(|doc| doc.bucket_uuid.eq(bucket_id.as_str()))
+            .filter(|doc| doc.folder_id.eq(bucket_id.as_str()))
             .filter(|document| {
                 hasher::compare_ssdeep_hashes(
                     s_params.query.as_str(),
@@ -268,7 +287,7 @@ impl SearcherService for OtherContext {
             .cloned()
             .collect::<Vec<Document>>();
 
-        Ok(web::Json(PagintatedResult::new(documents_vec)))
+        Ok(web::Json(PaginatedResult::new(documents_vec)))
     }
 
     #[cfg(feature = "enable-chunked")]
@@ -277,7 +296,7 @@ impl SearcherService for OtherContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PagintatedResult::new(grouped)))
+                Ok(web::Json(PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -295,7 +314,7 @@ impl SearcherService for OtherContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PagintatedResult::new(grouped)))
+                Ok(web::Json(PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching documents tokens: {}", err);
@@ -313,7 +332,7 @@ impl SearcherService for OtherContext {
             Ok(docs) => {
                 let documents = docs.0.get_founded();
                 let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PagintatedResult::new(grouped)))
+                Ok(web::Json(PaginatedResult::new(grouped)))
             }
             Err(err) => {
                 log::error!("Failed while searching similar documents: {}", err);

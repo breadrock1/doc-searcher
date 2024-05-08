@@ -1,11 +1,12 @@
-pub mod buckets;
 pub mod clusters;
 pub mod documents;
+pub mod folders;
 pub mod hello;
 pub mod loader;
 pub mod paginator;
 pub mod searcher;
 pub mod similarities;
+pub mod watcher;
 
 use crate::services::cacher::client::RedisService;
 use crate::services::{CacherClient, SearcherService};
