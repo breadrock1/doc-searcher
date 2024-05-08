@@ -69,7 +69,7 @@ pub trait SearcherService {
     ) -> HttpResponse;
     async fn update_document(&self, doc_form: &Document) -> HttpResponse;
     async fn delete_document(&self, folder_id: &str, document_id: &str) -> HttpResponse;
-    async fn move_documents(&self, folder_id: &str, document_ids: &[String]) -> HttpResponse;
+    async fn move_documents(&self, folder_id: &str, src_folder_id: &str, document_ids: &[String]) -> HttpResponse;
 
     async fn load_file_to_bucket(&self, folder_id: &str, file_path: &str) -> HttpResponse;
     async fn download_file(&self, folder_id: &str, file_path: &str) -> Option<NamedFile>;
