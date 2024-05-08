@@ -37,6 +37,12 @@ pub async fn launch_docs_analysis(
     match send_watcher_request(target_url.as_str(), body).await {
         Err(err) => Err(WebError::ResponseError(err.to_string())),
         Ok(response) => {
+            let status = &response.status();
+            println!("{}", status.as_str());
+            if status.as_u16() == 102 {
+                return Err(WebError::ResponseContinues("Processing".to_string()))
+            }
+
             response
                 .json::<Vec<DocumentPreview>>()
                 .await
