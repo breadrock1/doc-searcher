@@ -14,3 +14,7 @@ utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 
 datetime = { path = "../datetime" }
 hasher = { path = "../hasher" }
+
+[[test]]
+name = "schema_tests"
+path = "test/test.rs"

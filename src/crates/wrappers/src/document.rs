@@ -9,57 +9,133 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
 pub struct Document {
     #[schema(example = "test_folder")]
-    pub folder_id: String,
+    folder_id: String,
     #[schema(example = "/test_folder")]
-    pub folder_path: String,
+    folder_path: String,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    pub content_md5: String,
+    content_md5: String,
     #[schema(example = "a9850114-5903-465a-bfc5-8d9e28110be8")]
-    pub content_uuid: String,
+    content_uuid: String,
     #[schema(example = "The Ocean Carrier has been signed.")]
-    pub content: String,
+    content: String,
     #[serde(default)]
-    pub content_vector: Vec<f64>,
+    content_vector: Vec<f64>,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    pub document_md5: String,
+    document_md5: String,
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
-    pub document_ssdeep: String,
+    document_ssdeep: String,
     #[schema(example = "test_document.txt")]
-    pub document_name: String,
+    document_name: String,
     #[schema(example = "/test_folder/test_document.txt")]
-    pub document_path: String,
+    document_path: String,
     #[schema(example = 35345)]
-    pub document_size: i32,
+    document_size: i32,
     #[schema(example = "document")]
-    pub document_type: String,
+    document_type: String,
     #[schema(example = ".txt")]
-    pub document_extension: String,
+    document_extension: String,
     #[schema(example = 777)]
-    pub document_permissions: i32,
+    document_permissions: i32,
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
         skip_serializing_if = "Option::is_none"
     )]
     #[schema(example = "2024-04-03T13:51:32Z")]
-    pub document_created: Option<DateTime<Utc>>,
+    document_created: Option<DateTime<Utc>>,
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
         skip_serializing_if = "Option::is_none"
     )]
     #[schema(example = "2024-04-25T11:14:55Z")]
-    pub document_modified: Option<DateTime<Utc>>,
+    document_modified: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub quality_recognition: Option<i32>,
-    pub highlight: Option<HighlightEntity>,
+    quality_recognition: Option<i32>,
+    highlight: Option<HighlightEntity>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ocr_metadata: Option<OcrMetadata>,
+    ocr_metadata: Option<OcrMetadata>,
 }
 
 impl Document {
     pub fn builder() -> DocumentBuilder {
         DocumentBuilder::default()
+    }
+
+    pub fn get_folder_id(&self) -> &str {
+        self.folder_id.as_str()
+    }
+
+    pub fn get_folder_path(&self) -> &str {
+        self.folder_path.as_str()
+    }
+
+    pub fn get_doc_id(&self) -> &str {
+        self.content_md5.as_str()
+    }
+
+    pub fn get_content_uuid(&self) -> &str {
+        self.content_uuid.as_str()
+    }
+
+    pub fn get_content(&self) -> &str {
+        self.content.as_str()
+    }
+
+    pub fn get_convent_vector(&self) -> &Vec<f64> {
+        self.content_vector.as_ref()
+    }
+
+    pub fn get_doc_md5(&self) -> &str {
+        self.document_md5.as_str()
+    }
+
+    pub fn get_doc_ssdeep(&self) -> &str {
+        self.document_ssdeep.as_str()
+    }
+
+    pub fn get_doc_name(&self) -> &str {
+        self.document_name.as_str()
+    }
+
+    pub fn get_doc_path(&self) -> &str {
+        self.document_path.as_str()
+    }
+
+    pub fn get_doc_size(&self) -> i32 {
+        self.document_size
+    }
+
+    pub fn get_doc_type(&self) -> &str {
+        self.document_type.as_str()
+    }
+
+    pub fn get_doc_ext(&self) -> &str {
+        self.document_extension.as_str()
+    }
+
+    pub fn get_doc_perm(&self) -> i32 {
+        self.document_permissions
+    }
+
+    pub fn get_doc_created(&self) -> Option<&DateTime<Utc>> {
+        self.document_created.as_ref()
+    }
+
+    pub fn get_doc_modified(&self) -> Option<&DateTime<Utc>> {
+        self.document_modified.as_ref()
+    }
+
+    pub fn get_ocr_quality(&self) -> Option<i32> {
+        self.quality_recognition
+    }
+
+    pub fn get_ocr_metadata(&self) -> Option<&OcrMetadata> {
+        self.ocr_metadata.as_ref()
+    }
+
+    pub fn set_doc_path(&mut self, path: &str) {
+        self.document_path = path.to_owned();
     }
 
     pub fn append_highlight(&mut self, highlight: Option<HighlightEntity>) {
