@@ -1,6 +1,6 @@
-use crate::services::cacher::client::RedisService;
+use crate::services::cacher::CacherClient;
 use crate::services::init::ServiceParameters;
-use crate::services::CacherClient;
+use crate::services::redis_cache::client::RedisService;
 
 pub mod client;
 pub mod values;
