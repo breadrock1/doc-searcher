@@ -7,12 +7,6 @@ edition = "2021"
 maintenance = { status = "actively-developed" }
 
 [features]
-enable-parse-pdf        = ["loader/enable-pdf"]
-enable-parse-audio      = ["loader/enable-audio"]
-enable-parse-video      = ["loader/enable-video"]
-enable-parse-image      = ["loader/enable-image"]
-enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
-
 enable-dotenv    = ["dep:dotenv"]
 enable-chunked   = []
 enable-semantic  = ["dep:simsimd"]
