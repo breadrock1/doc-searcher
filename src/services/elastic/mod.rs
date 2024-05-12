@@ -1,7 +1,6 @@
 pub mod client;
 pub mod context;
 pub mod helper;
-mod send_status;
 pub mod watcher;
 
 use crate::services::elastic::context::ElasticContext;

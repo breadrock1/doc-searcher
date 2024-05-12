@@ -2,7 +2,6 @@ use crate::endpoints::clusters;
 use crate::endpoints::documents;
 use crate::endpoints::folders;
 use crate::endpoints::hello::hello;
-use crate::endpoints::loader;
 use crate::endpoints::paginator;
 use crate::endpoints::searcher;
 use crate::endpoints::similarities::search_similar_docs;
@@ -153,12 +152,6 @@ pub fn build_similar_scope() -> Scope {
     web::scope("/similar").service(search_similar_docs)
 }
 
-pub fn build_file_scope() -> Scope {
-    web::scope("/file")
-        .service(loader::load_file)
-        .service(loader::download_file)
-}
-
 pub fn build_pagination_scope() -> Scope {
     #[cfg(feature = "enable-chunked")]
     if cfg!(feature = "enable-chunked") {
@@ -179,5 +172,5 @@ pub fn build_watcher_scope() -> Scope {
     web::scope("/watcher")
         .service(watcher::analyse_documents)
         .service(watcher::get_folder_documents2)
-        .service(loader::upload_files)
+        .service(watcher::upload_files)
 }
