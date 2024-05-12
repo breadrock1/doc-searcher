@@ -4,10 +4,10 @@ use crate::errors::{JsonResponse, PaginateJsonResponse};
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 
-use wrappers::bucket::{Folder, FolderForm};
 use wrappers::document::DocumentPreview;
+use wrappers::folder::{Folder, FolderForm};
+use wrappers::s_params::SearchParams;
 use wrappers::scroll::PaginatedResult;
-use wrappers::search_params::SearchParams;
 use wrappers::TestExample;
 
 #[utoipa::path(
@@ -19,7 +19,7 @@ use wrappers::TestExample;
             status = 200,
             description = "Successful",
             body = [Folder],
-            example = json!(vec![Folder::default()]),
+            example = json!(vec![Folder::test_example(None)]),
         ),
         (
             status = 400,
@@ -55,7 +55,7 @@ async fn all_folders(cxt: SearcherData) -> JsonResponse<Vec<Folder>> {
             status = 200,
             description = "Successful",
             body = Folder,
-            example = json!(Folder::default())
+            example = json!(Folder::test_example(None))
         ),
         (
             status = 400,
@@ -109,7 +109,10 @@ async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
 async fn create_folder(cxt: SearcherData, form: web::Json<FolderForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let folder_form = form.0;
-    client.create_folder(&folder_form).await
+    match client.create_folder(&folder_form).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -148,8 +151,10 @@ async fn create_folder(cxt: SearcherData, form: web::Json<FolderForm>) -> HttpRe
 #[delete("/{folder_id}")]
 async fn delete_folder(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
-    let folder_id = path.to_string();
-    client.delete_folder(folder_id.as_str()).await
+    match client.delete_folder(path.as_str()).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -185,7 +190,9 @@ async fn create_global_folders(cxt: SearcherData) -> HttpResponse {
     for global_folders_id in ["history", "unrecognized"] {
         let folder_form = FolderForm::new(global_folders_id, true);
         let response = client.create_folder(&folder_form).await;
-        if response.status() != 200 {
+        if response.is_err() {
+            let err = response.err().unwrap();
+            log::error!("{:?}", err);
             collected_errs.push(global_folders_id);
         }
     }
@@ -193,7 +200,8 @@ async fn create_global_folders(cxt: SearcherData) -> HttpResponse {
     if !collected_errs.is_empty() {
         let folders_str = collected_errs.join(", ");
         let msg = format!("Failed while creating global buckets: {}", folders_str);
-        return WebError::CreateBucket(msg).error_response();
+        log::error!("{}", msg);
+        return WebError::CreateFolder(msg).error_response();
     }
 
     SuccessfulResponse::ok_response("Done")
@@ -268,9 +276,9 @@ async fn get_folder_documents(
 #[cfg(test)]
 mod buckets_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::SearcherService;
+    use crate::services::searcher::SearcherService;
 
-    use wrappers::bucket::FolderForm;
+    use wrappers::folder::FolderForm;
 
     use actix_web::test;
 
@@ -279,7 +287,7 @@ mod buckets_endpoints {
         let bucket_form = FolderForm::new("test_folder", false);
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -287,15 +295,15 @@ mod buckets_endpoints {
         let other_context = OtherContext::new("test".to_string());
 
         let response = other_context.delete_folder("test_folder").await;
-        assert_eq!(response.status().as_u16(), 400_u16);
+        assert_eq!(response.unwrap().code, 400_u16);
 
         let bucket_form = FolderForm::new("test_folder", false);
 
         let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
 
         let response = other_context.delete_folder("test_folder").await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -303,7 +311,7 @@ mod buckets_endpoints {
         let other_context = OtherContext::new("test".to_string());
         let bucket_form = FolderForm::new("test_folder", false);
         let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
 
         let response = other_context.get_all_folders().await;
         let buckets_size = response.unwrap().0.len();
@@ -315,10 +323,10 @@ mod buckets_endpoints {
         let bucket_form = FolderForm::new("test_folder", false);
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
 
         let get_bucket_result = other_context.get_folder("test_folder").await;
-        let bucket_uuid = &get_bucket_result.unwrap().uuid;
-        assert_eq!(bucket_uuid.as_str(), "test_folder");
+        let bucket_uuid = get_bucket_result.unwrap().0;
+        assert_eq!(bucket_uuid.get_uuid(), "test_folder");
     }
 }

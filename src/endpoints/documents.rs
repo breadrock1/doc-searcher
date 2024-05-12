@@ -41,7 +41,10 @@ use actix_web::{HttpResponse, ResponseError};
 async fn create_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
-    client.create_document(&doc_form).await
+    match client.create_document(&doc_form).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -91,14 +94,14 @@ async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) 
     let mut failed_tasks: Vec<&str> = Vec::with_capacity(documents_id.len());
     for id in documents_id.into_iter() {
         let result = client.delete_document(folder_id.as_str(), id).await;
-        if !result.status().is_success() {
+        if result.is_err() {
             failed_tasks.push(id);
         }
     }
 
     if !failed_tasks.is_empty() {
         let msg = failed_tasks.join(",");
-        return WebError::DeletingCluster(msg).error_response();
+        return WebError::DeleteCluster(msg).error_response();
     }
 
     SuccessfulResponse::ok_response("Done")
@@ -181,11 +184,14 @@ async fn get_document(
         ),
     )
 )]
-#[put("/update")]
+#[put("/{folder_id}/{document_id}")]
 async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
-    client.update_document(&doc_form).await
+    match client.update_document(&doc_form).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -222,19 +228,16 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
 async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let move_doc_form = form.0;
-    client
-        .move_documents(
-            move_doc_form.get_folder_id(),
-            move_doc_form.get_src_folder_id(),
-            move_doc_form.get_document_ids(),
-        )
-        .await
+    match client.move_documents(&move_doc_form).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[cfg(test)]
 mod documents_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::SearcherService;
+    use crate::services::searcher::SearcherService;
 
     use wrappers::document::{Document, DocumentBuilderError};
 
@@ -270,7 +273,7 @@ mod documents_endpoints {
         let res_document = create_default_document("test_doc");
         let document = res_document.unwrap();
         let response = other_context.create_document(&document).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -283,7 +286,7 @@ mod documents_endpoints {
         let response = other_context
             .delete_document("test_folder", document_name)
             .await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -293,9 +296,9 @@ mod documents_endpoints {
         let mut document = create_default_document(document_name).unwrap();
         let _ = other_context.create_document(&document).await;
 
-        document.document_path = "/new-path".to_string();
+        document.set_doc_path("/new-path");
         let response = other_context.update_document(&document).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -308,6 +311,6 @@ mod documents_endpoints {
         let response = other_context
             .get_document("test_folder", document_name)
             .await;
-        assert_eq!(response.unwrap().document_name.as_str(), document_name);
+        assert_eq!(response.unwrap().get_doc_name(), document_name);
     }
 }
