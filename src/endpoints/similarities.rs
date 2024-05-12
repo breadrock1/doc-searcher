@@ -1,16 +1,16 @@
 use crate::endpoints::{CacherData, SearcherData};
 use crate::errors::{ErrorResponse, PaginateJsonResponse};
-use crate::services::cacher::values::{CacherDocuments, CacherSearchParams};
-use crate::services::CacherService;
+use crate::services::cacher::CacherService;
+use crate::services::redis_cache::values::{CacherDocuments, CacherSearchParams};
 
 #[cfg(feature = "enable-chunked")]
-use crate::services::GroupedDocs;
+use crate::services::searcher::GroupedDocs;
 
 use actix_web::{post, web};
 
 use wrappers::document::Document;
+use wrappers::s_params::SearchParams;
 use wrappers::scroll::PaginatedResult;
-use wrappers::search_params::SearchParams;
 use wrappers::TestExample;
 
 #[utoipa::path(
@@ -118,10 +118,10 @@ async fn search_similar_chunked_docs(
 #[cfg(test)]
 mod similar_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::SearcherService;
+    use crate::services::searcher::SearcherService;
 
     use wrappers::document::Document;
-    use wrappers::search_params::{SearchParams, SearchParamsBuilderError};
+    use wrappers::s_params::{SearchParams, SearchParamsBuilderError};
 
     use actix_web::test;
 
@@ -131,7 +131,7 @@ mod similar_endpoints {
     fn build_default_search_params() -> Result<SearchParams, SearchParamsBuilderError> {
         SearchParams::builder()
             .query("unknown".to_string())
-            .buckets(Some("test_folder".to_string()))
+            .folders(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -157,11 +157,11 @@ mod similar_endpoints {
             let _ = other_context.create_document(doc).await;
         }
 
-        search_params.query = "unknown".to_string();
+        search_params.set_query("unknown");
         let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
-        search_params.query = SSDEEP_HASH_CMP.to_string();
+        search_params.set_query(SSDEEP_HASH_CMP);
         let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 2);
     }
@@ -179,11 +179,11 @@ mod similar_endpoints {
             let _ = other_context.create_document(doc).await;
         }
 
-        search_params.query = "unknown".to_string();
+        search_params.set_query("unknown");
         let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
-        search_params.query = SSDEEP_HASH_CMP.to_string();
+        search_params.set_query(SSDEEP_HASH_CMP);
         let founded = other_context.similarity(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 2);
     }

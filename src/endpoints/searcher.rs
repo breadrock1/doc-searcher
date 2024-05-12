@@ -1,16 +1,16 @@
 use crate::endpoints::{CacherData, SearcherData};
 use crate::errors::{ErrorResponse, PaginateJsonResponse};
-use crate::services::cacher::values::*;
-use crate::services::CacherService;
+use crate::services::cacher::CacherService;
+use crate::services::redis_cache::values::*;
 
 #[cfg(feature = "enable-chunked")]
-use crate::services::GroupedDocs;
+use crate::services::searcher::GroupedDocs;
 
 use actix_web::{post, web};
 
 use wrappers::document::Document;
+use wrappers::s_params::SearchParams;
 use wrappers::scroll::PaginatedResult;
-use wrappers::search_params::SearchParams;
 use wrappers::TestExample;
 
 #[utoipa::path(
@@ -220,10 +220,10 @@ async fn search_chunked_tokens(
 #[cfg(test)]
 mod searcher_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::SearcherService;
+    use crate::services::searcher::SearcherService;
 
     use wrappers::document::Document;
-    use wrappers::search_params::SearchParams;
+    use wrappers::s_params::SearchParams;
 
     use actix_web::test;
 
@@ -232,7 +232,7 @@ mod searcher_endpoints {
         let other_context = OtherContext::new("test".to_string());
         let mut search_params = SearchParams::builder()
             .query("text".to_string())
-            .buckets(Some("test_folder".to_string()))
+            .folders(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -253,7 +253,7 @@ mod searcher_endpoints {
             let _ = other_context.create_document(doc).await;
         }
 
-        search_params.query = "proposals".to_string();
+        search_params.set_query("proposals");
         let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 1);
     }
@@ -263,7 +263,7 @@ mod searcher_endpoints {
         let other_context = OtherContext::new("test".to_string());
         let mut search_params = SearchParams::builder()
             .query("unknown-data".to_string())
-            .buckets(Some("test_folder".to_string()))
+            .folders(Some("test_folder".to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -284,11 +284,11 @@ mod searcher_endpoints {
             let _ = other_context.create_document(doc).await;
         }
 
-        search_params.query = "unknown".to_string();
+        search_params.set_query("unknown");
         let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 0);
 
-        search_params.query = "proposals".to_string();
+        search_params.set_query("proposals");
         let founded = other_context.search(&search_params).await;
         assert_eq!(founded.unwrap().0.get_founded().len(), 1);
     }

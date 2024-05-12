@@ -1,11 +1,13 @@
 use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse, SuccessfulResponse};
 
-use actix_web::{delete, get, post, web, HttpResponse};
+#[cfg(feature = "enable-chunked")]
+use crate::services::searcher::GroupedDocs;
 
 use wrappers::document::Document;
-use wrappers::scroll::{AllScrolls, NextScroll, PaginatedResult};
-use wrappers::TestExample;
+use wrappers::scroll::{AllScrollsForm, NextScrollForm};
+
+use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 
 #[utoipa::path(
     get,
@@ -73,10 +75,13 @@ async fn get_pagination_ids(cxt: SearcherData) -> JsonResponse<Vec<String>> {
     )
 )]
 #[delete("/")]
-async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrolls>) -> HttpResponse {
+async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrollsForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let pagination_form = form.0;
-    client.delete_pagination_ids(&pagination_form).await
+    match client.delete_pagination(&pagination_form).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -85,9 +90,9 @@ async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrolls>) -> H
     tag = "Pagination",
     request_body(
         content = NextScroll,
-        example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
-        vec![Document::test_example(None)],
-        "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+        example = json!(NextScrollForm::new(
+            "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            "15m".to_string(),
         ))
     ),
     responses(
@@ -115,22 +120,22 @@ async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrolls>) -> H
 #[post("/next")]
 async fn next_pagination_result(
     cxt: SearcherData,
-    form: web::Json<NextScroll>,
+    form: web::Json<NextScrollForm>,
 ) -> PaginateJsonResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
-    client.next_pagination_result(&pagination_form).await
+    client.paginate(&pagination_form).await
 }
 
 #[cfg(feature = "enable-chunked")]
 #[post("/next")]
 async fn next_pagination_chunked_result(
     cxt: SearcherData,
-    form: web::Json<NextScroll>,
-) -> PaginateJsonResponse<crate::services::GroupedDocs> {
+    form: web::Json<NextScrollForm>,
+) -> PaginateJsonResponse<GroupedDocs> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
-    match client.next_pagination_result(&pagination_form).await {
+    match client.paginate(&pagination_form).await {
         Ok(documents) => {
             let grouped = client.group_document_chunks(documents.get_founded());
             let scroll = wrappers::scroll::PaginatedResult::new(grouped);

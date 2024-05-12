@@ -1,9 +1,10 @@
 use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
 
-use actix_web::{delete, get, post, web, HttpResponse};
-
 use wrappers::cluster::{Cluster, ClusterForm};
+use wrappers::TestExample;
+
+use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 
 #[utoipa::path(
     get,
@@ -14,7 +15,7 @@ use wrappers::cluster::{Cluster, ClusterForm};
             status = 200,
             description = "Successful",
             body = [Cluster],
-            example = json!(vec![Cluster::default()])
+            example = json!(vec![Cluster::test_example(None)])
         ),
         (
             status = 400,
@@ -80,7 +81,10 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
 async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpResponse {
     let cluster_id = form.0.to_string();
     let client = cxt.get_ref();
-    client.create_cluster(cluster_id.as_str()).await
+    match client.create_cluster(cluster_id.as_str()).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -129,7 +133,10 @@ async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> Http
 #[delete("/{cluster_id}")]
 async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
-    client.delete_cluster(path.as_str()).await
+    match client.delete_cluster(path.as_str()).await {
+        Ok(response) => response.to_response(),
+        Err(err) => err.error_response(),
+    }
 }
 
 #[utoipa::path(
@@ -148,7 +155,7 @@ async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpRespo
             status = 200,
             description = "Successful",
             body = Cluster,
-            example = json!(Cluster::default())
+            example = json!(Cluster::test_example(None))
         ),
         (
             status = 400,
@@ -171,7 +178,7 @@ async fn get_cluster(cxt: SearcherData, path: web::Path<String>) -> JsonResponse
 #[cfg(test)]
 mod cluster_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::SearcherService;
+    use crate::services::searcher::SearcherService;
 
     use actix_web::test;
 
@@ -179,7 +186,7 @@ mod cluster_endpoints {
     async fn create_cluster() {
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_cluster("test_cluster").await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -187,7 +194,7 @@ mod cluster_endpoints {
         let other_context = OtherContext::new("test".to_string());
         let _ = other_context.create_cluster("test_cluster").await;
         let response = other_context.delete_cluster("test_cluster").await;
-        assert_eq!(response.status().as_u16(), 200_u16);
+        assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
@@ -203,6 +210,6 @@ mod cluster_endpoints {
         let other_context = OtherContext::new("test".to_string());
         let _ = other_context.create_cluster("test_cluster").await;
         let response = other_context.get_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().ip, "localhost");
+        assert_eq!(response.unwrap().get_ip(), "localhost");
     }
 }
