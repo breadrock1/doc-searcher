@@ -7,15 +7,8 @@ edition = "2021"
 maintenance = { status = "actively-developed" }
 
 [features]
-enable-parse-pdf        = ["loader/enable-pdf"]
-enable-parse-audio      = ["loader/enable-audio"]
-enable-parse-video      = ["loader/enable-video"]
-enable-parse-image      = ["loader/enable-image"]
-enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
-
 enable-dotenv    = ["dep:dotenv"]
 enable-chunked   = []
-enable-semantic  = ["dep:simsimd"]
 disable-caching  = []
 
 default = ["disable-caching"]
@@ -44,7 +37,6 @@ walkdir = "^2.4"
 datetime = { path = "src/crates/datetime" }
 elquery = { path = "src/crates/elquery" }
 hasher = { path = "src/crates/hasher" }
-loader = { path = "src/crates/loader" }
 wrappers = { path = "src/crates/wrappers" }
 
 [dependencies.reqwest]
@@ -62,10 +54,6 @@ optional = true
 [dependencies.redis]
 version = "^0.25"
 features = ["aio", "tokio-comp", "connection-manager"]
-
-[dependencies.simsimd]
-version = "^4.2"
-optional = true
 
 [dependencies.tokio]
 version = "^1.36"
@@ -96,5 +84,5 @@ name = "hasher_tests"
 path = "src/crates/hasher/test/test.rs"
 
 [[test]]
-name = "loader_tests"
-path = "src/crates/loader/test/test.rs"
+name = "schema_tests"
+path = "src/crates/wrappers/test/test.rs"

@@ -1,4 +1,4 @@
-use crate::services::CacherService;
+use crate::services::cacher::CacherService;
 
 use redis::RedisResult;
 use redis::{AsyncCommands, FromRedisValue, ToRedisArgs};
@@ -32,7 +32,7 @@ impl RedisService {
 
 impl Default for RedisService {
     fn default() -> Self {
-        let address = "redis://127.0.0.1:6379/";
+        let address = "redis_cache://127.0.0.1:6379/";
         let redis_client = redis::Client::open(address);
         let client_arc = Arc::new(RwLock::new(redis_client.unwrap()));
         RedisService {
@@ -53,7 +53,7 @@ impl CacherService for RedisService {
         let connection_res = cxt.get_multiplexed_tokio_connection().await;
         if connection_res.is_err() {
             let err = connection_res.err().unwrap();
-            log::warn!("Failed to get redis service connection {}", err);
+            log::warn!("Failed to get redis_cache service connection {}", err);
             return value;
         }
 
@@ -71,7 +71,7 @@ impl CacherService for RedisService {
         let connection_res = cxt.get_multiplexed_tokio_connection().await;
         if connection_res.is_err() {
             let err = connection_res.err().unwrap();
-            log::warn!("Failed to get redis service connection {}", err);
+            log::warn!("Failed to get redis_cache service connection {}", err);
             return None;
         }
 

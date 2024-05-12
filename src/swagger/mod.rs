@@ -2,7 +2,6 @@ use crate::endpoints::clusters::*;
 use crate::endpoints::documents::*;
 use crate::endpoints::folders::*;
 use crate::endpoints::hello::*;
-use crate::endpoints::loader::*;
 use crate::endpoints::paginator::*;
 use crate::endpoints::searcher::*;
 use crate::endpoints::similarities::*;
@@ -10,12 +9,11 @@ use crate::endpoints::watcher::*;
 
 use crate::errors::*;
 
-use wrappers::bucket::*;
 use wrappers::cluster::*;
 use wrappers::document::*;
-use wrappers::file_form::*;
+use wrappers::folder::*;
+use wrappers::s_params::*;
 use wrappers::scroll::*;
-use wrappers::search_params::*;
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -41,8 +39,6 @@ use utoipa_swagger_ui::SwaggerUi;
         delete_documents,
         get_document,
         update_document,
-        load_file,
-        download_file,
         upload_files,
         get_pagination_ids,
         delete_expired_ids,
@@ -64,11 +60,10 @@ use utoipa_swagger_ui::SwaggerUi;
             HighlightEntity,
             OcrMetadata,
             Artifacts,
-            LoadFileForm,
             SearchParams,
             PaginatedResult<Vec<Document>>,
-            NextScroll,
-            AllScrolls,
+            NextScrollForm,
+            AllScrollsForm,
             HighlightEntity,
         )
     ),
@@ -82,5 +77,5 @@ use utoipa_swagger_ui::SwaggerUi;
 pub struct ApiDoc;
 
 pub fn create_service(openapi: &openapi::OpenApi) -> SwaggerUi {
-    SwaggerUi::new("/docs/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
+    SwaggerUi::new("/swagger/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
 }

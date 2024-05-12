@@ -1,5 +1,4 @@
-use crate::errors::{PaginateJsonResponse, WebError};
-use crate::services::elastic::send_status::SendDocumentStatus;
+use crate::errors::{PaginateJsonResponse, SuccessfulResponse, WebError};
 
 use elquery::exclude_fields::ExcludeFields;
 use elquery::filter_query::{CommonFilter, CreateDateQuery, CreatedAtDateQuery};
@@ -7,27 +6,43 @@ use elquery::filter_query::{FilterMatch, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
 use elquery::similar_query::SimilarQuery;
-use wrappers::bucket::Folder;
 use wrappers::document::{Document, DocumentPreview, HighlightEntity};
-use wrappers::schema::{DocumentSchema, PreviewDocumentSchema};
+use wrappers::folder::Folder;
+use wrappers::s_params::SearchParams;
 use wrappers::scroll::PaginatedResult;
-use wrappers::search_params::SearchParams;
+use wrappers::schema::{DocumentPreviewSchema, DocumentSchema};
 
 use actix_web::web;
+use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::response::Response;
+use elasticsearch::http::Method;
 use elasticsearch::{BulkParts, CountParts, Elasticsearch, SearchParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::string::ToString;
 use tokio::sync::RwLockReadGuard;
 
-pub async fn send_document(
+pub(crate) async fn get_all_clusters(elastic: &Elasticsearch) -> Result<Response, WebError> {
+    elastic
+        .send(
+            Method::Get,
+            "/_cat/nodes",
+            HeaderMap::new(),
+            Option::<&Value>::None,
+            Some(b"".as_ref()),
+            None,
+        )
+        .await
+        .map_err(WebError::from)
+}
+
+pub(crate) async fn store_document(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
     doc_form: &Document,
-    bucket_id: &str,
-) -> SendDocumentStatus {
-    let document_id = doc_form.content_md5.as_str();
+    folder_id: &str,
+) -> Result<SuccessfulResponse, WebError> {
+    let document_id = doc_form.get_doc_id();
 
     let to_value_result = serde_json::to_value(doc_form);
     let document_json = to_value_result.unwrap();
@@ -36,30 +51,21 @@ pub async fn send_document(
     body.push(json!({"index": { "_id": document_id }}).into());
     body.push(document_json.into());
 
-    let response_result = elastic
-        .bulk(BulkParts::Index(bucket_id))
+    let response = elastic
+        .bulk(BulkParts::Index(folder_id))
         .body(body)
         .send()
-        .await;
+        .await
+        .map_err(WebError::from)?;
 
-    match response_result {
-        Ok(response) => {
-            let text = response.text().await.unwrap();
-            println!("{}", text.as_str());
-            SendDocumentStatus::new(true, text.as_str())
-        }
-        Err(err) => {
-            let err_msg = format!("Failed while loading file: {:?}", err);
-            SendDocumentStatus::new(false, err_msg.as_str())
-        }
-    }
+    parse_elastic_response(response).await
 }
 
-pub async fn send_document_preview(
+pub(crate) async fn store_doc_preview(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
     doc_form: &DocumentPreview,
-    bucket_id: &str,
-) -> SendDocumentStatus {
+    folder_id: &str,
+) -> Result<SuccessfulResponse, WebError> {
     let document_id = doc_form.id.as_str();
 
     let to_value_result = serde_json::to_value(doc_form);
@@ -69,32 +75,39 @@ pub async fn send_document_preview(
     body.push(json!({"index": { "_id": document_id }}).into());
     body.push(document_json.into());
 
-    let response_result = elastic
-        .bulk(BulkParts::Index(bucket_id))
+    let response = elastic
+        .bulk(BulkParts::Index(folder_id))
         .body(body)
         .send()
-        .await;
+        .await
+        .map_err(WebError::from)?;
 
-    match response_result {
-        Ok(resp) => {
-            let text = resp.text().await.unwrap();
-            println!("{}", text.as_str());
-            SendDocumentStatus::new(true, text.as_str())
-        }
-        Err(err) => {
-            let err_msg = format!("Failed while loading file: {:?}", err);
-            SendDocumentStatus::new(false, err_msg.as_str())
-        }
-    }
+    parse_elastic_response(response).await
 }
 
-pub async fn check_duplication(
+pub(crate) async fn parse_elastic_response(response: Response) -> Result<SuccessfulResponse, WebError> {
+    if !response.status_code().is_success() {
+        return Err(extract_exception(response).await);
+    }
+
+    Ok(SuccessfulResponse::success("Ok"))
+}
+
+pub(crate) async fn extract_exception(response: Response) -> WebError {
+    let exception_opt = response.exception().await.map_err(WebError::from).unwrap();
+    return match exception_opt {
+        None => WebError::UnknownError("Unknown error".to_string()),
+        Some(exception) => WebError::from(exception),
+    };
+}
+
+pub(crate) async fn check_duplication(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
-    bucket_id: &str,
+    folder_id: &str,
     document_id: &str,
-) -> bool {
-    let response_result = elastic
-        .count(CountParts::Index(&[bucket_id]))
+) -> Result<bool, WebError> {
+    let response = elastic
+        .count(CountParts::Index(&[folder_id]))
         .body(json!({
             "query" : {
                 "term" : {
@@ -103,93 +116,52 @@ pub async fn check_duplication(
             }
         }))
         .send()
-        .await;
+        .await
+        .map_err(WebError::from)?;
 
-    if response_result.is_err() {
-        let err = response_result.err().unwrap();
-        log::error!("Failed while checking duplicate: {}", err);
-        return false;
-    }
-
-    let response = response_result.unwrap();
-    let serialize_result = response.json::<Value>().await;
-    match serialize_result {
-        Ok(value) => {
+    let result = response
+        .json::<Value>()
+        .await
+        .map_or(false, |value| {
             let count = value["count"].as_i64().unwrap_or(0);
             count > 0
-        }
-        Err(err) => {
-            log::error!("Failed to check duplicate for {}: {}", document_id, err);
-            false
-        }
-    }
+        });
+
+    Ok(result)
 }
 
-pub async fn search_documents_preview(
+pub(crate) async fn search_documents_preview(
     elastic: &Elasticsearch,
-    indexes: &[&str],
-    body_value: &Value,
     es_params: &SearchParams,
+    body_value: &Value,
+    indexes: &[&str],
 ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
-    let result_size = es_params.result_size;
-    let result_offset = es_params.result_offset;
-    let response_result = elastic
-        .search(SearchParts::Index(indexes))
-        .from(result_offset)
-        .size(result_size)
-        .body(body_value)
-        .pretty(true)
-        .scroll(es_params.get_scroll())
-        .allow_no_indices(true)
-        .send()
-        .await;
-
-    match response_result {
-        Err(err) => Err(WebError::SearchFailed(err.to_string())),
-        Ok(response) => {
-            let common_object = response.json::<Value>().await.unwrap();
-            let document_json = &common_object[&"hits"][&"hits"];
-
-            let scroll_id = common_object[&"_scroll_id"]
-                .as_str()
-                .map_or_else(|| None, |x| Some(x.to_string()));
-
-            let own_document = document_json.to_owned();
-            let default_vec: Vec<Value> = Vec::default();
-            let json_array = own_document.as_array().unwrap_or(&default_vec);
-            let founded_documents = json_array
-                .iter()
-                .map(|value| {
-                    let source_value = &value[&"_source"];
-                    match DocumentPreview::deserialize(source_value) {
-                        Ok(docs) => Ok(DocumentPreview::from(docs)),
-                        Err(err) => {
-                            log::error!("Failed while deserialize doc: {}", err);
-                            Err(err)
-                        }
-                    }
-                })
-                .filter(Result::is_ok)
-                .map(Result::unwrap)
-                .collect::<Vec<DocumentPreview>>();
-
-            Ok(web::Json(PaginatedResult::new_with_opt_id(
-                founded_documents,
-                scroll_id,
-            )))
-        }
+    match send_search_request(elastic, es_params, body_value, indexes).await {
+        Ok(response) => Ok(web::Json(extract_document_preview(response).await)),
+        Err(err) => Err(WebError::from(err)),
     }
 }
 
-pub async fn search_documents(
+pub(crate) async fn search_documents(
     elastic: &Elasticsearch,
-    indexes: &[&str],
-    body_value: &Value,
     es_params: &SearchParams,
+    body_value: &Value,
+    indexes: &[&str],
 ) -> PaginateJsonResponse<Vec<Document>> {
-    let result_size = es_params.result_size;
-    let result_offset = es_params.result_offset;
-    let response_result = elastic
+    match send_search_request(elastic, es_params, body_value, indexes).await {
+        Ok(response) => Ok(web::Json(parse_search_result(response).await)),
+        Err(err) => Err(WebError::SearchError(err.to_string())),
+    }
+}
+
+async fn send_search_request(
+    elastic: &Elasticsearch,
+    es_params: &SearchParams,
+    body_value: &Value,
+    indexes: &[&str],
+) -> Result<Response, elasticsearch::Error> {
+    let (result_size, result_offset) = es_params.get_results_params();
+    elastic
         .search(SearchParts::Index(indexes))
         .from(result_offset)
         .size(result_size)
@@ -198,26 +170,10 @@ pub async fn search_documents(
         .scroll(es_params.get_scroll())
         .allow_no_indices(true)
         .send()
-        .await;
-
-    match response_result {
-        Err(err) => Err(WebError::SearchFailed(err.to_string())),
-        Ok(response) => {
-            let documents = parse_search_result(response).await;
-
-            #[cfg(feature = "enable-semantic")]
-            if cfg!(feature = "enable-semantic") {
-                let mut documents = documents;
-                sort_by_cosine(es_params.get_query(), documents.get_founded_mut()).await;
-                return Ok(web::Json(documents));
-            }
-
-            Ok(web::Json(documents))
-        }
-    }
+        .await
 }
 
-pub async fn parse_search_result(response: Response) -> PaginatedResult<Vec<Document>> {
+async fn extract_document_preview(response: Response) -> PaginatedResult<Vec<DocumentPreview>> {
     let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"hits"][&"hits"];
     let scroll_id = common_object[&"_scroll_id"]
@@ -230,7 +186,39 @@ pub async fn parse_search_result(response: Response) -> PaginatedResult<Vec<Docu
 
     let founded_documents = json_array
         .iter()
-        .map(parse_document_highlight)
+        .map(extract_preview)
+        .filter(Result::is_ok)
+        .map(Result::unwrap)
+        .collect::<Vec<DocumentPreview>>();
+
+    PaginatedResult::new_with_opt_id(founded_documents, scroll_id)
+}
+
+fn extract_preview(value: &Value) -> Result<DocumentPreview, serde_json::Error> {
+    let source_value = &value[&"_source"];
+    match DocumentPreview::deserialize(source_value) {
+        Ok(docs) => Ok(DocumentPreview::from(docs)),
+        Err(err) => {
+            log::error!("Failed while deserialize doc: {}", err);
+            Err(err)
+        }
+    }
+}
+
+pub(crate) async fn parse_search_result(response: Response) -> PaginatedResult<Vec<Document>> {
+    let common_object = response.json::<Value>().await.unwrap();
+    let document_json = &common_object[&"hits"][&"hits"];
+    let scroll_id = common_object[&"_scroll_id"]
+        .as_str()
+        .map_or_else(|| None, |x| Some(x.to_string()));
+
+    let own_document = document_json.to_owned();
+    let default_vec: Vec<Value> = Vec::default();
+    let json_array = own_document.as_array().unwrap_or(&default_vec);
+
+    let founded_documents = json_array
+        .iter()
+        .map(extract_highlight)
         .map(Result::ok)
         .filter(Option::is_some)
         .flatten()
@@ -239,39 +227,37 @@ pub async fn parse_search_result(response: Response) -> PaginatedResult<Vec<Docu
     PaginatedResult::new_with_opt_id(founded_documents, scroll_id)
 }
 
-fn parse_document_highlight(value: &Value) -> Result<Document, serde_json::Error> {
+fn extract_highlight(value: &Value) -> Result<Document, serde_json::Error> {
     let source_value = value[&"_source"].to_owned();
-    let document_result = Document::deserialize(source_value);
-    if document_result.is_err() {
-        let err = document_result.err().unwrap();
-        log::error!("Failed while deserialize doc: {}", err);
-        return Err(err);
-    }
-
-    let mut document = document_result?;
+    let mut document = Document::deserialize(source_value)?;
     let highlight_value = value[&"highlight"].to_owned();
     let highlight_entity = HighlightEntity::deserialize(highlight_value).ok();
-
     document.append_highlight(highlight_entity);
     Ok(document)
 }
 
-pub fn build_match_all_query(parameters: &SearchParams) -> Value {
-    let doc_size_to = parameters.document_size_to;
-    let doc_size_from = parameters.document_size_from;
-    let doc_cr_from = parameters.created_date_from.as_str();
-    let query = parameters.query.as_str();
-    let default_location = &String::default();
-    let location = parameters
-        .buckets
-        .as_ref()
-        .unwrap_or(default_location)
-        .as_str();
+pub(crate) async fn extract_document(response: Response) -> Result<Document, WebError> {
+    let common_object = response.json::<Value>().await?;
+    let document_json = &common_object[&"_source"];
+    match Document::deserialize(document_json) {
+        Err(err) => Err(WebError::from(err)),
+        Ok(mut document) => {
+            document.exclude_tokens();
+            Ok(document)
+        }
+    }
+}
+
+pub(crate) fn build_match_all_query(s_params: &SearchParams) -> Value {
+    let (doc_size_from, doc_size_to) = s_params.get_doc_size();
+    let (doc_cr_from, _) = s_params.get_doc_dates();
+    let location = s_params.get_folders(false);
+    let query = s_params.get_query();
 
     let common_filter = CommonFilter::new()
         .with_date::<FilterRange, CreatedAtDateQuery>("created_at", doc_cr_from, "")
-        // .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
-        .with_match::<FilterMatch>("location", location)
+        .with_range::<FilterRange>("file_size", doc_size_from, doc_size_to)
+        .with_match::<FilterMatch>("location", location.as_str())
         .with_match::<FilterMatch>("name", query)
         .build();
 
@@ -287,13 +273,12 @@ pub fn build_match_all_query(parameters: &SearchParams) -> Value {
     })
 }
 
-pub fn build_search_query(parameters: &SearchParams) -> Value {
-    let doc_size_to = parameters.document_size_to;
-    let doc_size_from = parameters.document_size_from;
-    let doc_cr_to = parameters.created_date_to.as_str();
-    let doc_cr_from = parameters.created_date_from.as_str();
-    let doc_ext = parameters.document_extension.as_str();
-    let doc_type = parameters.document_type.as_str();
+pub(crate) fn build_search_query(s_params: &SearchParams) -> Value {
+    let (doc_size_from, doc_size_to) = s_params.get_doc_size();
+    let (doc_cr_from, doc_cr_to) = s_params.get_doc_dates();
+    let doc_ext = s_params.get_extension();
+    let doc_type = s_params.get_type();
+    let query = s_params.get_query();
 
     let common_filter = CommonFilter::new()
         .with_date::<FilterRange, CreateDateQuery>("document_created", doc_cr_from, doc_cr_to)
@@ -302,7 +287,7 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         .with_term::<FilterTerm>("document_type", doc_type)
         .build();
 
-    let match_query = MultiMatchQuery::new(parameters.query.as_str());
+    let match_query = MultiMatchQuery::new(query);
     let highlight_order = HighlightOrder::default();
 
     let mut query_json_object = json!({
@@ -315,36 +300,32 @@ pub fn build_search_query(parameters: &SearchParams) -> Value {
         "highlight": highlight_order
     });
 
-    if !cfg!(feature = "enable-semantic") {
-        let cont_vector = Some(vec!["content_vector".to_string()]);
-        let exclude_fields = ExcludeFields::new(cont_vector);
-        let exclude_value = serde_json::to_value(exclude_fields).unwrap();
-        query_json_object[&"_source"] = exclude_value;
-    }
-
+    exclude_content_vector(&mut query_json_object);
     query_json_object
 }
 
-pub fn build_search_similar_query(parameters: &SearchParams) -> Value {
+pub(crate) fn build_search_similar_query(s_params: &SearchParams) -> Value {
     let fields = vec!["content".to_string(), "document_ssdeep".to_string()];
-    let ssdeep_hash = &parameters.query;
-    let similar_query = SimilarQuery::new(ssdeep_hash.clone(), fields);
+    let ssdeep_hash = s_params.get_query();
+    let similar_query = SimilarQuery::new(ssdeep_hash.into(), fields);
     json!({ "query": similar_query })
 }
 
-pub fn extract_bucket_stats(value: &Value) -> Result<Folder, WebError> {
-    let indices = &value[&"indices"];
-    let bucket_id = indices.as_object();
-    if bucket_id.is_none() {
-        let msg = "There is no passed bucket name in json.";
-        return Err(WebError::GetBucket(msg.to_string()));
-    }
+fn exclude_content_vector(es_query: &mut Value) {
+    let cont_vector = Some(vec!["content_vector".to_string()]);
+    let exclude_fields = ExcludeFields::new(cont_vector);
+    let exclude_value = serde_json::to_value(exclude_fields).unwrap();
+    es_query[&"_source"] = exclude_value;
+}
 
-    let bucket_id = bucket_id.unwrap().keys().next().unwrap();
-    let bucket = &indices[bucket_id.as_str()];
-    let health = &bucket[&"health"].as_str().unwrap();
-    let status = &bucket[&"status"].as_str().unwrap();
-    let uuid = &bucket[&"uuid"].as_str().unwrap();
+pub(crate) fn extract_folder_stats(value: &Value) -> Result<Folder, WebError> {
+    let indices = &value[&"indices"];
+    let folder_id = indices.as_object().unwrap().keys().next().unwrap();
+
+    let index_value = &indices[folder_id.as_str()];
+    let health = &index_value[&"health"].as_str().unwrap();
+    let status = &index_value[&"status"].as_str().unwrap();
+    let uuid = &index_value[&"uuid"].as_str().unwrap();
 
     let primaries = &value[&"_all"][&"primaries"];
     let docs_count = &primaries[&"docs"][&"count"].as_i64().unwrap();
@@ -354,10 +335,10 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Folder, WebError> {
         .as_i64()
         .unwrap();
 
-    let built_bucket = Folder::builder()
+    let folder = Folder::builder()
         .health(health.to_string())
         .status(status.to_string())
-        .index(bucket_id.to_string())
+        .index(folder_id.to_owned())
         .uuid(uuid.to_string())
         .docs_count(Some(docs_count.to_string()))
         .docs_deleted(Some(docs_deleted.to_string()))
@@ -365,211 +346,17 @@ pub fn extract_bucket_stats(value: &Value) -> Result<Folder, WebError> {
         .pri_store_size(Some(pri_store_size.to_string()))
         .pri(None)
         .rep(None)
-        .build();
+        .build()
+        .map_err(|err| WebError::GetFolder(err.to_string()))?;
 
-    Ok(built_bucket.unwrap())
+    Ok(folder)
 }
 
-pub fn create_bucket_scheme(is_preview: bool) -> Value {
-    let group_values = json!({
-        "type": "nested",
-        "properties": {
-            "name": {
-                "type": "string"
-            },
-            "json_name": {
-                "type": "string"
-            },
-            "type": {
-                "type": "keyword"
-            },
-            "value": {
-                "type": "text",
-                "fields": {
-                    "as_date": {
-                        "type": "date",
-                        "ignore_malformed": true
-                    }
-                }
-            }
-        }
-    });
-
-    let artifacts = json!({
-        "type": "nested",
-        "properties": {
-            "group_name": {
-                "type": "string"
-            },
-            "group_json_name": {
-                "type": "string"
-            },
-            "group_values": group_values
-        }
-    });
-
+pub(crate) fn create_folder_schema(is_preview: bool) -> Value {
     if is_preview {
-        // let schema = PreviewDocumentSchema::default();
-        // return serde_json::to_string_pretty(&schema).unwrap();
-
-        let bucket_schema = json!({
-            "_source": {
-                "enabled": true
-            },
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "date",
-                    "ignore_malformed": true
-                },
-                "quality_recognition": {
-                    "type": "integer"
-                },
-                "file_size": {
-                    "type": "integer"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "artifacts": artifacts
-            }
-        });
-        return bucket_schema;
+        let schema = DocumentPreviewSchema::default();
+        return serde_json::to_value(schema).unwrap();
     }
-
-    // let schema = DocumentSchema::default();
-    // serde_json::to_string_pretty(&schema).unwrap()
-    let ocr_metadata = json!({
-        "type": "object",
-        "properties":{
-            "job_id": {
-                "type": "string"
-            },
-            "text": {
-                "type": "string"
-            },
-            "doc_type": {
-                "type": "string"
-            },
-            "pages_count": {
-                "type": "integer"
-            },
-            "artifacts": artifacts
-        }
-    });
-
-    let bucket_schema = json!({
-        "_source": {
-            "enabled": true
-        },
-        "properties": {
-            "folder_id": {
-                "type": "string"
-            },
-            "folder_path": {
-                "type": "string"
-            },
-            "content": {
-                "type": "string"
-            },
-            "content_md5": {
-                "type": "string"
-            },
-            "content_uuid": {
-                "type": "string"
-            },
-            "content_vector": {
-                  "dims": 1024,
-                  "type": "dense_vector"
-            },
-            "document_md5": {
-                "type": "string"
-            },
-            "document_ssdeep": {
-                "type": "string"
-            },
-            "document_name": {
-                "type": "string"
-            },
-            "document_path": {
-                  "index": "not_analyzed",
-                  "type": "string"
-            },
-            "document_size": {
-                "type": "integer"
-            },
-            "document_type": {
-                "type": "string"
-            },
-            "document_permissions": {
-                "type": "integer"
-            },
-            "document_extension": {
-                "type": "string"
-            },
-            "document_created": {
-                "type": "date"
-            },
-            "document_modified": {
-                "type": "date"
-            },
-            "quality_recognition": {
-                "type": "integer"
-            },
-            "ocr_metadata": ocr_metadata
-        }
-    });
-    bucket_schema
-}
-
-#[cfg(feature = "enable-semantic")]
-pub async fn sort_by_cosine(query: &str, documents: &mut [Document]) {
-    use simsimd::SpatialSimilarity;
-
-    let query_tokens_result = load_query_tokens(query).await;
-    if query_tokens_result.is_err() {
-        let err = query_tokens_result.err().unwrap();
-        log::warn!("Failed while getting query tokens: {}", err);
-        return;
-    }
-
-    let query_tokens = query_tokens_result.unwrap();
-    documents.sort_by_key(
-        |doc| match f64::cosine(&query_tokens, &doc.content_vector) {
-            None => 0i32,
-            Some(dist) => dist.cos() as i32,
-        },
-    );
-
-    documents
-        .iter_mut()
-        .for_each(|doc| doc.content_vector = Vec::default());
-}
-
-#[cfg(feature = "enable-semantic")]
-async fn load_query_tokens(query: &str) -> Result<Vec<f64>, anyhow::Error> {
-    let embeddings_url = std::env::var("EMBEDDINGS_URL").unwrap_or_default();
-    let client = reqwest::Client::new();
-    let response = client
-        .post(embeddings_url)
-        .json(&json!({
-            "inputs": query,
-            "truncate": false
-        }))
-        .send()
-        .await?;
-
-    let query_tokens = response.json::<Vec<Vec<f64>>>().await?;
-    match query_tokens.first() {
-        None => {
-            let msg = "Failed while sending request";
-            Err(anyhow::Error::msg(msg.to_string()))
-        }
-        Some(vector) => Ok(vector.to_owned()),
-    }
+    let schema = DocumentSchema::default();
+    serde_json::to_value(schema).unwrap()
 }

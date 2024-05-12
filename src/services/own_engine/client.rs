@@ -1,21 +1,18 @@
 use crate::errors::{JsonResponse, PaginateJsonResponse, SuccessfulResponse, WebError};
 use crate::services::own_engine::context::OtherContext;
 use crate::services::own_engine::helper;
-use crate::services::SearcherService;
+use crate::services::searcher::SearcherService;
 
 #[cfg(feature = "enable-chunked")]
-use crate::services::GroupedDocs;
+use crate::services::searcher::GroupedDocs;
 
-use wrappers::bucket::{Folder, FolderForm};
 use wrappers::cluster::Cluster;
-use wrappers::document::{Document, DocumentPreview};
-use wrappers::scroll::{AllScrolls, NextScroll, PaginatedResult};
-use wrappers::search_params::SearchParams;
+use wrappers::document::{Document, DocumentPreview, MoveDocumetsForm};
+use wrappers::folder::{Folder, FolderForm};
+use wrappers::s_params::SearchParams;
+use wrappers::scroll::{AllScrollsForm, NextScrollForm, PaginatedResult};
 
-use actix_files::NamedFile;
-use actix_web::{web, HttpResponse, ResponseError};
-
-use std::path::Path;
+use actix_web::web;
 
 #[async_trait::async_trait]
 impl SearcherService for OtherContext {
@@ -23,7 +20,6 @@ impl SearcherService for OtherContext {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
         let clusters_vec = map.values().cloned().collect::<Vec<Cluster>>();
-
         Ok(web::Json(clusters_vec))
     }
 
@@ -40,7 +36,7 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn create_cluster(&self, cluster_id: &str) -> HttpResponse {
+    async fn create_cluster(&self, cluster_id: &str) -> Result<SuccessfulResponse, WebError> {
         let cluster = Cluster::builder()
             .ip("localhost".to_string())
             .heap_percent("70%".to_string())
@@ -58,24 +54,24 @@ impl SearcherService for OtherContext {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.clusters.write().await;
         match map.insert(cluster_id.to_string(), cluster) {
-            Some(_) => SuccessfulResponse::ok_response("Updated"),
+            Some(_) => Ok(SuccessfulResponse::success("Updated")),
             None => {
                 let msg = format!("Created {}", cluster_id);
                 log::info!("New cluster has been created: {}", msg);
-                SuccessfulResponse::ok_response(msg.as_str())
+                Ok(SuccessfulResponse::success(msg.as_str()))
             }
         }
     }
 
-    async fn delete_cluster(&self, cluster_id: &str) -> HttpResponse {
+    async fn delete_cluster(&self, cluster_id: &str) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.clusters.write().await;
         match map.remove(cluster_id) {
-            Some(_) => SuccessfulResponse::ok_response("Ok"),
+            Some(_) => Ok(SuccessfulResponse::success("Ok")),
             None => {
                 let msg = "Not exist cluster".to_string();
                 log::warn!("Failed while deleting cluster: {}", msg.as_str());
-                WebError::DeletingCluster(msg).error_response()
+                Err(WebError::DeleteCluster(msg))
             }
         }
     }
@@ -96,7 +92,7 @@ impl SearcherService for OtherContext {
             None => {
                 let msg = "Not exists".to_string();
                 log::warn!("Failed while getting bucket {}", bucket_id);
-                Err(WebError::GetBucket(msg))
+                Err(WebError::GetFolder(msg))
             }
         }
     }
@@ -110,21 +106,24 @@ impl SearcherService for OtherContext {
         Ok(web::Json(PaginatedResult::new(documents_vec)))
     }
 
-    async fn delete_folder(&self, bucket_id: &str) -> HttpResponse {
+    async fn delete_folder(&self, bucket_id: &str) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let uuid = bucket_id.to_string();
         let mut map = cxt.buckets.write().await;
         match map.remove(&uuid) {
-            Some(_) => SuccessfulResponse::ok_response("Ok"),
+            Some(_) => Ok(SuccessfulResponse::success("Ok")),
             None => {
                 let msg = "Does not exist".to_string();
                 log::warn!("Failed while deleting bucket: {}", msg.as_str());
-                WebError::DeleteBucket(msg).error_response()
+                Err(WebError::DeleteFolder(msg))
             }
         }
     }
 
-    async fn create_folder(&self, bucket_form: &FolderForm) -> HttpResponse {
+    async fn create_folder(
+        &self,
+        bucket_form: &FolderForm,
+    ) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let uuid = bucket_form.get_id().to_string();
         let built_bucket = Folder::builder()
@@ -142,11 +141,11 @@ impl SearcherService for OtherContext {
 
         let mut map = cxt.buckets.write().await;
         match map.insert(uuid, built_bucket.unwrap()) {
-            Some(bucket) => SuccessfulResponse::ok_response(bucket.uuid.as_str()),
+            Some(bucket) => Ok(SuccessfulResponse::success(bucket.get_uuid())),
             None => {
                 let msg = format!("Created {}", bucket_form.get_id());
                 log::warn!("New bucket has been created: {}", msg.as_str());
-                SuccessfulResponse::ok_response(msg.as_str())
+                Ok(SuccessfulResponse::success(msg.as_str()))
             }
         }
     }
@@ -164,15 +163,16 @@ impl SearcherService for OtherContext {
         }
     }
 
-    async fn create_document(&self, doc_form: &Document) -> HttpResponse {
+    async fn create_document(&self, doc_form: &Document) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.documents.write().await;
-        match map.insert(doc_form.document_name.clone(), doc_form.clone()) {
-            Some(_document) => SuccessfulResponse::ok_response("Ok"),
+        let doc_name = doc_form.get_doc_name();
+        match map.insert(doc_name.to_string(), doc_form.clone()) {
+            Some(_document) => Ok(SuccessfulResponse::success("Ok")),
             None => {
-                let msg = format!("Created {}", doc_form.document_name.as_str());
+                let msg = format!("Created {}", doc_name);
                 log::warn!("Failed while creating document: {}", msg.as_str());
-                SuccessfulResponse::ok_response(msg.as_str())
+                Ok(SuccessfulResponse::success(msg.as_str()))
             }
         }
     }
@@ -181,56 +181,36 @@ impl SearcherService for OtherContext {
         &self,
         _folder_id: &str,
         _doc_form: &DocumentPreview,
-    ) -> HttpResponse {
-        SuccessfulResponse::ok_response("Done")
+    ) -> Result<SuccessfulResponse, WebError> {
+        Ok(SuccessfulResponse::success("Ok"))
     }
 
-    async fn update_document(&self, doc_form: &Document) -> HttpResponse {
+    async fn update_document(&self, doc_form: &Document) -> Result<SuccessfulResponse, WebError> {
         self.create_document(doc_form).await
     }
 
-    async fn delete_document(&self, _bucket_id: &str, doc_id: &str) -> HttpResponse {
+    async fn delete_document(
+        &self,
+        _bucket_id: &str,
+        doc_id: &str,
+    ) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.documents.write().await;
         match map.remove(doc_id) {
-            Some(_) => SuccessfulResponse::ok_response("Ok"),
+            Some(_) => Ok(SuccessfulResponse::success("Ok")),
             None => {
                 let msg = "Does not exist".to_string();
                 log::warn!("Failed while deleting document: {}", msg.as_str());
-                WebError::DeleteDocument(msg).error_response()
+                Err(WebError::DeleteDocument(msg))
             }
         }
     }
 
     async fn move_documents(
         &self,
-        _folder_id: &str,
-        _src_folder_id: &str,
-        _document_ids: &[String],
-    ) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
-    }
-
-    async fn load_file_to_bucket(&self, bucket_id: &str, file_path: &str) -> HttpResponse {
-        let path = Path::new(file_path);
-        let file_data_vec = loader::load_passed_file_by_path(bucket_id, path);
-        if file_data_vec.is_empty() {
-            let msg = "Failed to load file".to_string();
-            log::warn!("Failed load file to bucket `{}`: {}", bucket_id, msg);
-            return WebError::LoadFileFailed(msg).error_response();
-        }
-
-        SuccessfulResponse::ok_response("Ok")
-    }
-
-    async fn download_file(&self, _bucket_id: &str, file_path: &str) -> Option<NamedFile> {
-        match NamedFile::open_async(file_path).await {
-            Ok(named_file) => Some(named_file),
-            Err(err) => {
-                log::error!("Failed while opening async streaming: {}", err);
-                None
-            }
-        }
+        _move_form: &MoveDocumetsForm,
+    ) -> Result<SuccessfulResponse, WebError> {
+        Ok(SuccessfulResponse::success("Ok"))
     }
 
     async fn launch_watcher_analysis(
@@ -244,14 +224,14 @@ impl SearcherService for OtherContext {
         let def_vals: Vec<String> = Vec::default();
         Ok(web::Json(def_vals))
     }
-    async fn delete_pagination_ids(&self, _ids: &AllScrolls) -> HttpResponse {
-        SuccessfulResponse::ok_response("Ok")
+    async fn delete_pagination(
+        &self,
+        _ids: &AllScrollsForm,
+    ) -> Result<SuccessfulResponse, WebError> {
+        Ok(SuccessfulResponse::success("Ok"))
     }
 
-    async fn next_pagination_result(
-        &self,
-        _curr_scroll: &NextScroll,
-    ) -> PaginateJsonResponse<Vec<Document>> {
+    async fn paginate(&self, _curr_scroll: &NextScrollForm) -> PaginateJsonResponse<Vec<Document>> {
         Ok(web::Json(PaginatedResult::new_with_id(
             Vec::default(),
             "id".to_string(),
@@ -261,8 +241,8 @@ impl SearcherService for OtherContext {
     async fn search(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
-        let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
-        let documents_vec = helper::filter_founded_documents(map, bucket_id.as_str(), s_params);
+        let folder_id = s_params.get_folders(true);
+        let documents_vec = helper::filter_founded_documents(map, folder_id.as_str(), s_params);
 
         Ok(web::Json(PaginatedResult::new(documents_vec)))
     }
@@ -270,8 +250,8 @@ impl SearcherService for OtherContext {
     async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
-        let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
-        let documents_vec = helper::filter_founded_documents(map, bucket_id.as_str(), s_params);
+        let folder_id = s_params.get_folders(true);
+        let documents_vec = helper::filter_founded_documents(map, folder_id.as_str(), s_params);
 
         Ok(web::Json(PaginatedResult::new(documents_vec)))
     }
@@ -279,20 +259,25 @@ impl SearcherService for OtherContext {
     async fn similarity(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
-        let bucket_id = s_params.buckets.clone().unwrap_or("*".to_string());
+        let folder_id = s_params.get_folders(true);
         let documents_vec = map
             .values()
-            .filter(|doc| doc.folder_id.eq(bucket_id.as_str()))
+            .filter(|doc| doc.get_folder_id().eq(folder_id.as_str()))
             .filter(|document| {
-                hasher::compare_ssdeep_hashes(
-                    s_params.query.as_str(),
-                    document.document_ssdeep.as_str(),
-                )
+                hasher::compare_ssdeep_hashes(s_params.get_query(), document.get_doc_ssdeep())
             })
             .cloned()
             .collect::<Vec<Document>>();
 
         Ok(web::Json(PaginatedResult::new(documents_vec)))
+    }
+
+    async fn upload_documents(
+        &self,
+        _name: &str,
+        _path: &str,
+    ) -> Result<Vec<DocumentPreview>, WebError> {
+        Ok(Vec::default())
     }
 
     #[cfg(feature = "enable-chunked")]

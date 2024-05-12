@@ -1,6 +1,6 @@
-use wrappers::bucket::Folder;
 use wrappers::cluster::Cluster;
 use wrappers::document::Document;
+use wrappers::folder::Folder;
 
 use std::collections::HashMap;
 use std::sync::Arc;
