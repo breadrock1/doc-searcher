@@ -38,7 +38,6 @@ walkdir = "^2.4"
 datetime = { path = "src/crates/datetime" }
 elquery = { path = "src/crates/elquery" }
 hasher = { path = "src/crates/hasher" }
-loader = { path = "src/crates/loader" }
 wrappers = { path = "src/crates/wrappers" }
 
 [dependencies.reqwest]
