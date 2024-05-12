@@ -9,7 +9,6 @@ maintenance = { status = "actively-developed" }
 [features]
 enable-dotenv    = ["dep:dotenv"]
 enable-chunked   = []
-enable-semantic  = ["dep:simsimd"]
 disable-caching  = []
 
 default = ["disable-caching"]
@@ -56,10 +55,6 @@ optional = true
 version = "^0.25"
 features = ["aio", "tokio-comp", "connection-manager"]
 
-[dependencies.simsimd]
-version = "^4.2"
-optional = true
-
 [dependencies.tokio]
 version = "^1.36"
 features = ["full"]
@@ -89,5 +84,5 @@ name = "hasher_tests"
 path = "src/crates/hasher/test/test.rs"
 
 [[test]]
-name = "loader_tests"
-path = "src/crates/loader/test/test.rs"
+name = "schema_tests"
+path = "src/crates/wrappers/test/test.rs"
