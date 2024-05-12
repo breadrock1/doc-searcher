@@ -1,10 +1,10 @@
 extern crate doc_search;
 
 use doc_search::middlewares::logger::LoggerMiddlewareFactory;
-use doc_search::services::cacher::build_redis_service;
 use doc_search::services::elastic::build_elastic_service;
 use doc_search::services::init::*;
-use doc_search::services::SearcherService;
+use doc_search::services::redis_cache::build_redis_service;
+use doc_search::services::searcher::SearcherService;
 use doc_search::swagger::{create_service, ApiDoc, OpenApi};
 
 use actix_web::middleware::Logger;
@@ -46,7 +46,6 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(build_search_scope())
             .service(build_similar_scope())
             .service(build_pagination_scope())
-            .service(build_file_scope())
             .service(build_watcher_scope())
     })
     .bind((service_addr, *service_port))?
