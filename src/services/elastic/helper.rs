@@ -1,4 +1,9 @@
-use crate::errors::{PaginateJsonResponse, SuccessfulResponse, WebError};
+use crate::errors::{PaginateResponse, SuccessfulResponse, WebError};
+use crate::forms::document::{Document, DocumentPreview, HighlightEntity};
+use crate::forms::folder::{Folder, FolderType};
+use crate::forms::s_params::SearchParams;
+use crate::forms::schema::{DocumentPreviewSchema, DocumentSchema, DocumentVectorSchema};
+use crate::forms::scroll::Paginated;
 
 use elquery::exclude_fields::ExcludeFields;
 use elquery::filter_query::{CommonFilter, CreateDateQuery, CreatedAtDateQuery};
@@ -6,11 +11,6 @@ use elquery::filter_query::{FilterMatch, FilterRange, FilterTerm};
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
 use elquery::similar_query::SimilarQuery;
-use wrappers::document::{Document, DocumentPreview, HighlightEntity};
-use wrappers::folder::Folder;
-use wrappers::s_params::SearchParams;
-use wrappers::schema::{DocumentPreviewSchema, DocumentSchema};
-use wrappers::scroll::PaginatedResult;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
@@ -97,10 +97,10 @@ pub(crate) async fn parse_elastic_response(
 
 pub(crate) async fn extract_exception(response: Response) -> WebError {
     let exception_opt = response.exception().await.map_err(WebError::from).unwrap();
-    return match exception_opt {
+    match exception_opt {
         None => WebError::UnknownError("Unknown error".to_string()),
         Some(exception) => WebError::from(exception),
-    };
+    }
 }
 
 pub(crate) async fn check_duplication(
@@ -134,7 +134,7 @@ pub(crate) async fn search_documents_preview(
     es_params: &SearchParams,
     body_value: &Value,
     indexes: &[&str],
-) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+) -> PaginateResponse<Vec<DocumentPreview>> {
     match send_search_request(elastic, es_params, body_value, indexes).await {
         Ok(response) => Ok(web::Json(extract_document_preview(response).await)),
         Err(err) => Err(WebError::from(err)),
@@ -146,7 +146,7 @@ pub(crate) async fn search_documents(
     es_params: &SearchParams,
     body_value: &Value,
     indexes: &[&str],
-) -> PaginateJsonResponse<Vec<Document>> {
+) -> PaginateResponse<Vec<Document>> {
     match send_search_request(elastic, es_params, body_value, indexes).await {
         Ok(response) => Ok(web::Json(parse_search_result(response).await)),
         Err(err) => Err(WebError::SearchError(err.to_string())),
@@ -172,7 +172,7 @@ async fn send_search_request(
         .await
 }
 
-async fn extract_document_preview(response: Response) -> PaginatedResult<Vec<DocumentPreview>> {
+async fn extract_document_preview(response: Response) -> Paginated<Vec<DocumentPreview>> {
     let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"hits"][&"hits"];
     let scroll_id = common_object[&"_scroll_id"]
@@ -190,13 +190,13 @@ async fn extract_document_preview(response: Response) -> PaginatedResult<Vec<Doc
         .map(Result::unwrap)
         .collect::<Vec<DocumentPreview>>();
 
-    PaginatedResult::new_with_opt_id(founded_documents, scroll_id)
+    Paginated::new_with_opt_id(founded_documents, scroll_id)
 }
 
 fn extract_preview(value: &Value) -> Result<DocumentPreview, serde_json::Error> {
     let source_value = &value[&"_source"];
     match DocumentPreview::deserialize(source_value) {
-        Ok(docs) => Ok(DocumentPreview::from(docs)),
+        Ok(docs) => Ok(docs),
         Err(err) => {
             log::error!("Failed while deserialize doc: {}", err);
             Err(err)
@@ -204,7 +204,7 @@ fn extract_preview(value: &Value) -> Result<DocumentPreview, serde_json::Error> 
     }
 }
 
-pub(crate) async fn parse_search_result(response: Response) -> PaginatedResult<Vec<Document>> {
+pub(crate) async fn parse_search_result(response: Response) -> Paginated<Vec<Document>> {
     let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"hits"][&"hits"];
     let scroll_id = common_object[&"_scroll_id"]
@@ -223,7 +223,7 @@ pub(crate) async fn parse_search_result(response: Response) -> PaginatedResult<V
         .flatten()
         .collect::<Vec<Document>>();
 
-    PaginatedResult::new_with_opt_id(founded_documents, scroll_id)
+    Paginated::new_with_opt_id(founded_documents, scroll_id)
 }
 
 fn extract_highlight(value: &Value) -> Result<Document, serde_json::Error> {
@@ -351,11 +351,11 @@ pub(crate) fn extract_folder_stats(value: &Value) -> Result<Folder, WebError> {
     Ok(folder)
 }
 
-pub(crate) fn create_folder_schema(is_preview: bool) -> Value {
-    if is_preview {
-        let schema = DocumentPreviewSchema::default();
-        return serde_json::to_value(schema).unwrap();
+pub(crate) fn create_folder_schema(schema_type: &FolderType) -> Value {
+    match schema_type {
+        FolderType::Document => serde_json::to_value(DocumentSchema::default()),
+        FolderType::DocumentVector => serde_json::to_value(DocumentVectorSchema::default()),
+        FolderType::DocumentPreview => serde_json::to_value(DocumentPreviewSchema::default()),
     }
-    let schema = DocumentSchema::default();
-    serde_json::to_value(schema).unwrap()
+    .unwrap()
 }

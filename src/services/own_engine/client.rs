@@ -1,28 +1,24 @@
-use crate::errors::{JsonResponse, PaginateJsonResponse, SuccessfulResponse, WebError};
+use crate::errors::{JsonResponse, PaginateResponse, SuccessfulResponse, WebError};
 use crate::services::own_engine::context::OtherContext;
 use crate::services::own_engine::helper;
-use crate::services::searcher::SearcherService;
+use crate::services::searcher;
 
-#[cfg(feature = "enable-chunked")]
-use crate::services::searcher::GroupedDocs;
-
-use wrappers::cluster::Cluster;
-use wrappers::document::{Document, DocumentPreview, MoveDocumetsForm};
-use wrappers::folder::{Folder, FolderForm};
-use wrappers::s_params::SearchParams;
-use wrappers::scroll::{AllScrollsForm, NextScrollForm, PaginatedResult};
+use crate::forms::cluster::Cluster;
+use crate::forms::document::{Document, DocumentPreview, MoveDocumetsForm};
+use crate::forms::folder::{Folder, FolderForm};
+use crate::forms::s_params::SearchParams;
+use crate::forms::scroll::{AllScrollsForm, NextScrollForm, Paginated};
 
 use actix_web::web;
 
 #[async_trait::async_trait]
-impl SearcherService for OtherContext {
+impl searcher::ClustersService for OtherContext {
     async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
         let clusters_vec = map.values().cloned().collect::<Vec<Cluster>>();
         Ok(web::Json(clusters_vec))
     }
-
     async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
@@ -35,7 +31,6 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn create_cluster(&self, cluster_id: &str) -> Result<SuccessfulResponse, WebError> {
         let cluster = Cluster::builder()
             .ip("localhost".to_string())
@@ -62,7 +57,6 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn delete_cluster(&self, cluster_id: &str) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.clusters.write().await;
@@ -75,7 +69,10 @@ impl SearcherService for OtherContext {
             }
         }
     }
+}
 
+#[async_trait::async_trait]
+impl searcher::FoldersService for OtherContext {
     async fn get_all_folders(&self) -> JsonResponse<Vec<Folder>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
@@ -83,7 +80,6 @@ impl SearcherService for OtherContext {
 
         Ok(web::Json(buckets_vec))
     }
-
     async fn get_folder(&self, bucket_id: &str) -> JsonResponse<Folder> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.buckets.read().await;
@@ -96,16 +92,14 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn get_folder_documents(
         &self,
         _bucket_id: &str,
         _opt_params: Option<SearchParams>,
-    ) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+    ) -> PaginateResponse<Vec<DocumentPreview>> {
         let documents_vec = Vec::default();
-        Ok(web::Json(PaginatedResult::new(documents_vec)))
+        Ok(web::Json(Paginated::new(documents_vec)))
     }
-
     async fn delete_folder(&self, bucket_id: &str) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let uuid = bucket_id.to_string();
@@ -119,7 +113,6 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn create_folder(
         &self,
         bucket_form: &FolderForm,
@@ -149,7 +142,10 @@ impl SearcherService for OtherContext {
             }
         }
     }
+}
 
+#[async_trait::async_trait]
+impl searcher::DocumentsService for OtherContext {
     async fn get_document(&self, _bucket_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
@@ -162,7 +158,6 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn create_document(&self, doc_form: &Document) -> Result<SuccessfulResponse, WebError> {
         let cxt = self.get_cxt().write().await;
         let mut map = cxt.documents.write().await;
@@ -176,7 +171,6 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn create_document_preview(
         &self,
         _folder_id: &str,
@@ -184,11 +178,9 @@ impl SearcherService for OtherContext {
     ) -> Result<SuccessfulResponse, WebError> {
         Ok(SuccessfulResponse::success("Ok"))
     }
-
     async fn update_document(&self, doc_form: &Document) -> Result<SuccessfulResponse, WebError> {
         self.create_document(doc_form).await
     }
-
     async fn delete_document(
         &self,
         _bucket_id: &str,
@@ -205,21 +197,33 @@ impl SearcherService for OtherContext {
             }
         }
     }
-
     async fn move_documents(
         &self,
         _move_form: &MoveDocumetsForm,
     ) -> Result<SuccessfulResponse, WebError> {
         Ok(SuccessfulResponse::success("Ok"))
     }
+}
 
-    async fn launch_watcher_analysis(
+#[async_trait::async_trait]
+impl searcher::WatcherService for OtherContext {
+    async fn launch_analysis(
         &self,
         _document_ids: &[String],
     ) -> JsonResponse<Vec<DocumentPreview>> {
         Ok(web::Json(Vec::default()))
     }
+    async fn upload_files(
+        &self,
+        _name: &str,
+        _path: &str,
+    ) -> Result<Vec<DocumentPreview>, WebError> {
+        Ok(Vec::default())
+    }
+}
 
+#[async_trait::async_trait]
+impl searcher::PaginatorService for OtherContext {
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
         let def_vals: Vec<String> = Vec::default();
         Ok(web::Json(def_vals))
@@ -230,33 +234,33 @@ impl SearcherService for OtherContext {
     ) -> Result<SuccessfulResponse, WebError> {
         Ok(SuccessfulResponse::success("Ok"))
     }
-
-    async fn paginate(&self, _curr_scroll: &NextScrollForm) -> PaginateJsonResponse<Vec<Document>> {
-        Ok(web::Json(PaginatedResult::new_with_id(
+    async fn paginate(&self, _curr_scroll: &NextScrollForm) -> PaginateResponse<Vec<Document>> {
+        Ok(web::Json(Paginated::new_with_id(
             Vec::default(),
             "id".to_string(),
         )))
     }
+}
 
-    async fn search(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
+#[async_trait::async_trait]
+impl searcher::SearcherService for OtherContext {
+    async fn search(&self, s_params: &SearchParams) -> PaginateResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let folder_id = s_params.get_folders(true);
         let documents_vec = helper::filter_founded_documents(map, folder_id.as_str(), s_params);
 
-        Ok(web::Json(PaginatedResult::new(documents_vec)))
+        Ok(web::Json(Paginated::new(documents_vec)))
     }
-
-    async fn search_tokens(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
+    async fn search_tokens(&self, s_params: &SearchParams) -> PaginateResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let folder_id = s_params.get_folders(true);
         let documents_vec = helper::filter_founded_documents(map, folder_id.as_str(), s_params);
 
-        Ok(web::Json(PaginatedResult::new(documents_vec)))
+        Ok(web::Json(Paginated::new(documents_vec)))
     }
-
-    async fn similarity(&self, s_params: &SearchParams) -> PaginateJsonResponse<Vec<Document>> {
+    async fn similarity(&self, s_params: &SearchParams) -> PaginateResponse<Vec<Document>> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.documents.read().await;
         let folder_id = s_params.get_folders(true);
@@ -269,65 +273,6 @@ impl SearcherService for OtherContext {
             .cloned()
             .collect::<Vec<Document>>();
 
-        Ok(web::Json(PaginatedResult::new(documents_vec)))
-    }
-
-    async fn upload_documents(
-        &self,
-        _name: &str,
-        _path: &str,
-    ) -> Result<Vec<DocumentPreview>, WebError> {
-        Ok(Vec::default())
-    }
-
-    #[cfg(feature = "enable-chunked")]
-    async fn search_chunked(&self, s_params: &SearchParams) -> PaginateJsonResponse<GroupedDocs> {
-        match self.search(s_params).await {
-            Ok(docs) => {
-                let documents = docs.0.get_founded();
-                let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PaginatedResult::new(grouped)))
-            }
-            Err(err) => {
-                log::error!("Failed while searching documents: {}", err);
-                Err(err)
-            }
-        }
-    }
-
-    #[cfg(feature = "enable-chunked")]
-    async fn search_chunked_tokens(
-        &self,
-        s_params: &SearchParams,
-    ) -> PaginateJsonResponse<GroupedDocs> {
-        match self.search_tokens(s_params).await {
-            Ok(docs) => {
-                let documents = docs.0.get_founded();
-                let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PaginatedResult::new(grouped)))
-            }
-            Err(err) => {
-                log::error!("Failed while searching documents tokens: {}", err);
-                Err(err)
-            }
-        }
-    }
-
-    #[cfg(feature = "enable-chunked")]
-    async fn similarity_chunked(
-        &self,
-        s_params: &SearchParams,
-    ) -> PaginateJsonResponse<GroupedDocs> {
-        match self.similarity(s_params).await {
-            Ok(docs) => {
-                let documents = docs.0.get_founded();
-                let grouped = self.group_document_chunks(documents);
-                Ok(web::Json(PaginatedResult::new(grouped)))
-            }
-            Err(err) => {
-                log::error!("Failed while searching similar documents: {}", err);
-                Err(err)
-            }
-        }
+        Ok(web::Json(Paginated::new(documents_vec)))
     }
 }

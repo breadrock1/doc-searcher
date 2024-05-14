@@ -1,11 +1,13 @@
-use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
+use crate::services::searcher::DocumentsService;
 
-use wrappers::document::{Document, MoveDocumetsForm};
-use wrappers::TestExample;
+use crate::forms::document::{Document, MoveDocumetsForm};
+use crate::forms::TestExample;
 
 use actix_web::{delete, get, post, put, web};
 use actix_web::{HttpResponse, ResponseError};
+
+type Context = web::Data<Box<dyn DocumentsService>>;
 
 #[utoipa::path(
     post,
@@ -38,7 +40,7 @@ use actix_web::{HttpResponse, ResponseError};
     )
 )]
 #[post("/create")]
-async fn create_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
+async fn create_document(cxt: Context, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
     match client.create_document(&doc_form).await {
@@ -86,7 +88,7 @@ async fn create_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
     )
 )]
 #[delete("/{folder_id}/{document_ids}")]
-async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
+async fn delete_documents(cxt: Context, path: web::Path<(String, String)>) -> HttpResponse {
     let client = cxt.get_ref();
     let (folder_id, doc_ids) = path.as_ref();
 
@@ -143,10 +145,7 @@ async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) 
     )
 )]
 #[get("/{folder_id}/{document_id}")]
-async fn get_document(
-    cxt: SearcherData,
-    path: web::Path<(String, String)>,
-) -> JsonResponse<Document> {
+async fn get_document(cxt: Context, path: web::Path<(String, String)>) -> JsonResponse<Document> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
     client
@@ -185,7 +184,7 @@ async fn get_document(
     )
 )]
 #[put("/{folder_id}/{document_id}")]
-async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
+async fn update_document(cxt: Context, form: web::Json<Document>) -> HttpResponse {
     let client = cxt.get_ref();
     let doc_form = form.0;
     match client.update_document(&doc_form).await {
@@ -225,7 +224,7 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
     )
 )]
 #[post("/location")]
-async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
+async fn move_documents(cxt: Context, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let move_doc_form = form.0;
     match client.move_documents(&move_doc_form).await {
@@ -237,9 +236,9 @@ async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) ->
 #[cfg(test)]
 mod documents_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::SearcherService;
+    use crate::services::searcher::DocumentsService;
 
-    use wrappers::document::{Document, DocumentBuilderError};
+    use crate::forms::document::{Document, DocumentBuilderError};
 
     use actix_web::test;
 

@@ -1,13 +1,11 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse, SuccessfulResponse};
-
-#[cfg(feature = "enable-chunked")]
-use crate::services::searcher::GroupedDocs;
-
-use wrappers::document::Document;
-use wrappers::scroll::{AllScrollsForm, NextScrollForm};
+use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, SuccessfulResponse};
+use crate::forms::document::Document;
+use crate::forms::scroll::{AllScrollsForm, NextScrollForm};
+use crate::services::searcher::PaginatorService;
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+
+type Context = web::Data<Box<dyn PaginatorService>>;
 
 #[utoipa::path(
     get,
@@ -35,7 +33,7 @@ use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
     )
 )]
 #[get("/all")]
-async fn get_pagination_ids(cxt: SearcherData) -> JsonResponse<Vec<String>> {
+async fn get_pagination_ids(cxt: Context) -> JsonResponse<Vec<String>> {
     let client = cxt.get_ref();
     client.get_pagination_ids().await
 }
@@ -75,7 +73,7 @@ async fn get_pagination_ids(cxt: SearcherData) -> JsonResponse<Vec<String>> {
     )
 )]
 #[delete("/")]
-async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrollsForm>) -> HttpResponse {
+async fn delete_expired_ids(cxt: Context, form: web::Json<AllScrollsForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let pagination_form = form.0;
     match client.delete_pagination(&pagination_form).await {
@@ -119,28 +117,10 @@ async fn delete_expired_ids(cxt: SearcherData, form: web::Json<AllScrollsForm>) 
 )]
 #[post("/next")]
 async fn next_pagination_result(
-    cxt: SearcherData,
+    cxt: Context,
     form: web::Json<NextScrollForm>,
-) -> PaginateJsonResponse<Vec<Document>> {
+) -> PaginateResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
     client.paginate(&pagination_form).await
-}
-
-#[cfg(feature = "enable-chunked")]
-#[post("/next")]
-async fn next_pagination_chunked_result(
-    cxt: SearcherData,
-    form: web::Json<NextScrollForm>,
-) -> PaginateJsonResponse<GroupedDocs> {
-    let client = cxt.get_ref();
-    let pagination_form = form.0;
-    match client.paginate(&pagination_form).await {
-        Ok(documents) => {
-            let grouped = client.group_document_chunks(documents.get_founded());
-            let scroll = wrappers::scroll::PaginatedResult::new(grouped);
-            Ok(web::Json(scroll))
-        }
-        Err(err) => Err(err),
-    }
 }

@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, Builder, ToSchema)]
-pub struct PaginatedResult<D> {
+pub struct Paginated<D> {
     #[schema(value_type = PaginatedResult<Vec<Document>>)]
     founded: D,
     #[schema(example = "10m")]
@@ -11,23 +11,23 @@ pub struct PaginatedResult<D> {
     scroll_id: Option<String>,
 }
 
-impl<D> PaginatedResult<D> {
+impl<D> Paginated<D> {
     pub fn new(founded: D) -> Self {
-        PaginatedResult {
+        Paginated {
             founded,
             scroll_id: None,
         }
     }
 
     pub fn new_with_id(founded: D, id: String) -> Self {
-        PaginatedResult {
+        Paginated {
             founded,
             scroll_id: Some(id),
         }
     }
 
     pub fn new_with_opt_id(founded: D, scroll_id: Option<String>) -> Self {
-        PaginatedResult { founded, scroll_id }
+        Paginated { founded, scroll_id }
     }
 
     pub fn get_founded(&self) -> &D {

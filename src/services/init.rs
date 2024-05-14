@@ -1,11 +1,4 @@
-use crate::endpoints::clusters;
-use crate::endpoints::documents;
-use crate::endpoints::folders;
-use crate::endpoints::hello::hello;
-use crate::endpoints::paginator;
-use crate::endpoints::searcher;
-use crate::endpoints::similarities::search_similar_docs;
-use crate::endpoints::watcher;
+use crate::endpoints::*;
 
 use actix_cors::Cors;
 use actix_web::http::header;
@@ -99,7 +92,7 @@ pub fn build_env_logger() {
 }
 
 pub fn build_hello_scope() -> Scope {
-    web::scope("/hello").service(hello)
+    web::scope("/hello").service(hello::hello)
 }
 
 pub fn build_cluster_scope() -> Scope {
@@ -128,39 +121,13 @@ pub fn build_document_scope() -> Scope {
 }
 
 pub fn build_search_scope() -> Scope {
-    #[cfg(feature = "enable-chunked")]
-    if cfg!(feature = "enable-chunked") {
-        use crate::endpoints::searcher::{search_chunked, search_chunked_tokens};
-        return web::scope("/search")
-            .service(search_chunked)
-            .service(search_chunked_tokens);
-    }
-
     web::scope("/search")
         .service(searcher::search_all)
         .service(searcher::search_tokens)
-}
-
-pub fn build_similar_scope() -> Scope {
-    #[cfg(feature = "enable-chunked")]
-    if cfg!(feature = "enable-chunked") {
-        use crate::endpoints::similarities::search_similar_chunked_docs;
-        return web::scope("/similar").service(search_similar_chunked_docs);
-    }
-
-    web::scope("/similar").service(search_similar_docs)
+        .service(searcher::search_similar_docs)
 }
 
 pub fn build_pagination_scope() -> Scope {
-    #[cfg(feature = "enable-chunked")]
-    if cfg!(feature = "enable-chunked") {
-        use crate::endpoints::paginator::next_pagination_chunked_result;
-        return web::scope("/pagination")
-            .service(paginator::get_pagination_ids)
-            .service(paginator::delete_expired_ids)
-            .service(next_pagination_chunked_result);
-    }
-
     web::scope("/pagination")
         .service(paginator::get_pagination_ids)
         .service(paginator::delete_expired_ids)
@@ -170,6 +137,5 @@ pub fn build_pagination_scope() -> Scope {
 pub fn build_watcher_scope() -> Scope {
     web::scope("/watcher")
         .service(watcher::analyse_documents)
-        .service(watcher::get_folder_documents2)
         .service(watcher::upload_files)
 }

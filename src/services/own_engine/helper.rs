@@ -1,7 +1,8 @@
+use crate::forms::document::Document;
+use crate::forms::s_params::SearchParams;
+
 use std::collections::HashMap;
 use tokio::sync::RwLockReadGuard;
-use wrappers::document::Document;
-use wrappers::s_params::SearchParams;
 
 pub(crate) fn filter_founded_documents(
     map: RwLockReadGuard<HashMap<String, Document>>,

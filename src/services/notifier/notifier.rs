@@ -1,9 +1,9 @@
-use crate::errors::{SuccessfulResponse, WebError};
+use crate::errors::{SuccessfulResponse, WebError, WebResult};
 use crate::services::elastic::context::ContextOptions;
 
-use wrappers::document::{DocumentPreview, MoveDocumetsForm};
-use wrappers::folder::FolderForm;
-use wrappers::s_params::SearchParams;
+use crate::forms::document::{DocumentPreview, MoveDocumetsForm};
+use crate::forms::folder::FolderForm;
+use crate::forms::s_params::SearchParams;
 
 use reqwest::multipart::Part;
 use reqwest::Response;
@@ -19,6 +19,7 @@ const UPLOAD_FILES_URL: &str = "/watcher/files/upload";
 
 #[derive(Deserialize)]
 struct ResponseError {
+    #[allow(dead_code)]
     status: u16,
     message: String,
 }
@@ -26,7 +27,7 @@ struct ResponseError {
 pub(crate) async fn create_folder(
     cxt_opts: &ContextOptions,
     folder_form: &FolderForm,
-) -> Result<SuccessfulResponse, WebError> {
+) -> WebResult {
     let body = &json!({
         "folder_id": folder_form.get_id(),
         "folder_name": folder_form.get_name()
@@ -40,10 +41,7 @@ pub(crate) async fn create_folder(
     parse_watcher_response(response).await
 }
 
-pub(crate) async fn remove_folder(
-    cxt_opts: &ContextOptions,
-    folder_id: &str,
-) -> Result<SuccessfulResponse, WebError> {
+pub(crate) async fn remove_folder(cxt_opts: &ContextOptions, folder_id: &str) -> WebResult {
     let body = &json!({"folder_id": folder_id});
     let host = cxt_opts.watcher_service_host();
     let target_url = format!("{}{}", host, REMOVE_FOLDER_URL);
@@ -74,7 +72,7 @@ pub(crate) async fn launch_analysis(
 pub(crate) async fn move_docs_to_folder(
     cxt_opts: &ContextOptions,
     move_form: &MoveDocumetsForm,
-) -> Result<SuccessfulResponse, WebError> {
+) -> WebResult {
     let dst_folder_id = move_form.get_folder_id();
     let src_folder_id = move_form.get_src_folder_id();
     let document_ids = move_form.get_document_ids();
@@ -115,7 +113,7 @@ pub(crate) async fn get_unrecognized_docs(
         .map_err(WebError::from)
 }
 
-pub async fn parse_watcher_response(response: Response) -> Result<SuccessfulResponse, WebError> {
+pub async fn parse_watcher_response(response: Response) -> WebResult {
     if !response.status().is_success() {
         return Err(extract_exception(response).await);
     }

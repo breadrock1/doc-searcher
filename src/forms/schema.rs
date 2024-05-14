@@ -29,22 +29,17 @@ impl EnabledFlag {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 enum FieldType {
     Date,
     DenseVector,
     Integer,
+    #[default]
     String,
     Object,
     Nested,
     Keyword,
     Text,
-}
-
-impl Default for FieldType {
-    fn default() -> Self {
-        FieldType::String
-    }
 }
 
 impl serde::Serialize for FieldType {
@@ -315,6 +310,57 @@ impl Default for AsDateField {
     }
 }
 
+#[derive(Serialize)]
+pub struct DocumentVectorSchema {
+    mappings: DocumentVectorMappings,
+}
+
+#[derive(Serialize)]
+struct DocumentVectorMappings {
+    properties: DocumentVectorProperties,
+}
+
+#[derive(Serialize)]
+struct DocumentVectorProperties {
+    text_chunk: SchemaFieldType,
+    text_vector: TextVectorSchema,
+}
+
+#[derive(Serialize)]
+struct TextVectorSchema {
+    #[serde(rename(serialize = "type"))]
+    field_type: FieldType,
+    properties: TextVectorProperties,
+}
+
+#[derive(Serialize)]
+struct TextVectorProperties {
+    vector: SchemaFieldType,
+}
+
+impl Default for DocumentVectorSchema {
+    fn default() -> Self {
+        let text_vec_properties = TextVectorProperties {
+            vector: SchemaFieldType::new(FieldType::DenseVector),
+        };
+
+        let doc_vec_properties = DocumentVectorProperties {
+            text_chunk: SchemaFieldType::new(FieldType::Text),
+            text_vector: TextVectorSchema {
+                field_type: FieldType::Nested,
+                properties: text_vec_properties,
+            },
+        };
+
+        DocumentVectorSchema {
+            mappings: DocumentVectorMappings {
+                properties: doc_vec_properties,
+            },
+        }
+    }
+}
+
 pub trait ElasticSchema {}
 impl ElasticSchema for DocumentSchema {}
+impl ElasticSchema for DocumentVectorSchema {}
 impl ElasticSchema for DocumentPreviewSchema {}

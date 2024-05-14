@@ -1,5 +1,5 @@
-use wrappers::document::Document;
-use wrappers::s_params::SearchParams;
+use crate::forms::document::Document;
+use crate::forms::s_params::SearchParams;
 
 use redis::{ErrorKind, RedisError, RedisResult, Value};
 use redis::{FromRedisValue, RedisWrite, ToRedisArgs};

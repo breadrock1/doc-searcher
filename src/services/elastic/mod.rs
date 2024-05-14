@@ -1,7 +1,11 @@
-pub mod client;
+mod clusters;
 pub mod context;
-pub mod helper;
-pub mod watcher;
+mod documents;
+mod folders;
+mod helper;
+mod paginator;
+mod searcher;
+mod watcher;
 
 use crate::services::elastic::context::ElasticContext;
 use crate::services::init::ServiceParameters;
@@ -13,11 +17,9 @@ use elasticsearch::http::transport::{BuildError, TransportBuilder};
 use elasticsearch::http::Url;
 use elasticsearch::Elasticsearch;
 
-pub type ElasticBuildResult = Result<Elasticsearch, BuildError>;
+pub type InitElasticResult = Result<ElasticContext, BuildError>;
 
-pub fn build_elastic_service(
-    sv_params: &ServiceParameters,
-) -> Result<ElasticContext, anyhow::Error> {
+pub fn build_elastic_service(sv_params: &ServiceParameters) -> InitElasticResult {
     let es_url = Url::parse(sv_params.es_host()).unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
     let creds = Credentials::Basic(sv_params.es_user().into(), sv_params.es_passwd().into());
@@ -27,8 +29,6 @@ pub fn build_elastic_service(
         .cert_validation(validation)
         .build()?;
 
-    Ok(ElasticContext::new(
-        Elasticsearch::new(transport),
-        sv_params,
-    ))
+    let elastic_client = Elasticsearch::new(transport);
+    Ok(ElasticContext::new(elastic_client, sv_params))
 }

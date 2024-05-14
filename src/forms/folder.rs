@@ -2,7 +2,7 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::TestExample;
+use crate::forms::TestExample;
 use std::fmt::Display;
 
 pub const DEFAULT_FOLDER_ID: &str = "common_folder";
@@ -102,14 +102,24 @@ impl TestExample<Folder> for Folder {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+pub enum FolderType {
+    #[serde(rename(deserialize = "document", serialize = "document",))]
+    Document,
+    #[serde(rename(deserialize = "vector", serialize = "vector",))]
+    DocumentVector,
+    #[serde(rename(deserialize = "preview", serialize = "preview",))]
+    DocumentPreview,
+}
+
 #[derive(Deserialize, IntoParams, Serialize, ToSchema)]
 pub struct FolderForm {
     #[schema(example = "test_folder")]
     folder_id: String,
-    #[schema(example = "Text Folder")]
+    #[schema(example = "Test Folder")]
     folder_name: String,
-    #[schema(example = "false")]
-    is_preview_schema: bool,
+    #[schema(example = "preview")]
+    schema_type: FolderType,
 }
 
 impl Display for FolderForm {
@@ -121,16 +131,16 @@ impl Display for FolderForm {
 
 impl Default for FolderForm {
     fn default() -> Self {
-        FolderForm::new(DEFAULT_FOLDER_ID, "Common Folder", false)
+        FolderForm::new(DEFAULT_FOLDER_ID, "Common Folder", FolderType::Document)
     }
 }
 
 impl FolderForm {
-    pub fn new(folder_id: &str, folder_name: &str, is_preview: bool) -> Self {
+    pub fn new(folder_id: &str, folder_name: &str, schema_type: FolderType) -> Self {
         FolderForm {
             folder_id: folder_id.to_string(),
             folder_name: folder_name.to_string(),
-            is_preview_schema: is_preview,
+            schema_type,
         }
     }
 
@@ -146,7 +156,7 @@ impl FolderForm {
         self.folder_name.as_str()
     }
 
-    pub fn is_preview(&self) -> bool {
-        self.is_preview_schema
+    pub fn get_schema(&self) -> &FolderType {
+        &self.schema_type
     }
 }
