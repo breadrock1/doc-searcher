@@ -1,11 +1,12 @@
 use crate::errors::{SuccessfulResponse, WebError};
 use crate::services::elastic::context::ContextOptions;
 
-use wrappers::document::DocumentPreview;
+use wrappers::document::{DocumentPreview, MoveDocumetsForm};
+use wrappers::folder::FolderForm;
 use wrappers::s_params::SearchParams;
 
-use reqwest::Response;
 use reqwest::multipart::Part;
+use reqwest::Response;
 use serde_derive::Deserialize;
 use serde_json::{json, Value};
 
@@ -24,9 +25,12 @@ struct ResponseError {
 
 pub(crate) async fn create_folder(
     cxt_opts: &ContextOptions,
-    folder_id: &str,
+    folder_form: &FolderForm,
 ) -> Result<SuccessfulResponse, WebError> {
-    let body = &json!({"folder_id": folder_id});
+    let body = &json!({
+        "folder_id": folder_form.get_id(),
+        "folder_name": folder_form.get_name()
+    });
     let host = cxt_opts.watcher_service_host();
     let target_url = format!("{}{}", host, CREATE_FOLDER_URL);
     let response = send_watcher_request(target_url.as_str(), body)
@@ -69,10 +73,12 @@ pub(crate) async fn launch_analysis(
 
 pub(crate) async fn move_docs_to_folder(
     cxt_opts: &ContextOptions,
-    dst_folder_id: &str,
-    src_folder_id: &str,
-    document_ids: &[String],
+    move_form: &MoveDocumetsForm,
 ) -> Result<SuccessfulResponse, WebError> {
+    let dst_folder_id = move_form.get_folder_id();
+    let src_folder_id = move_form.get_src_folder_id();
+    let document_ids = move_form.get_document_ids();
+
     let body = &json!({
         "document_ids": document_ids,
         "location": dst_folder_id,
@@ -125,9 +131,7 @@ async fn extract_exception(response: Response) -> WebError {
 
     match parse_result {
         Err(err) => err,
-        Ok(err_resp) => {
-            WebError::UnknownError(err_resp.message)
-        }
+        Ok(err_resp) => WebError::UnknownError(err_resp.message),
     }
 }
 
@@ -157,7 +161,8 @@ pub(crate) async fn translate_multipart_form(
         .await
         .map_err(WebError::from)?;
 
-    response.json::<Vec<DocumentPreview>>()
+    response
+        .json::<Vec<DocumentPreview>>()
         .await
         .map_err(WebError::from)
 }

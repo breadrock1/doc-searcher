@@ -196,7 +196,7 @@ impl SearcherService for context::ElasticContext {
         folder_form: &FolderForm,
     ) -> Result<SuccessfulResponse, WebError> {
         let cxt_opts = self.get_options().as_ref();
-        let result = watcher::create_folder(cxt_opts, folder_form.get_id()).await?;
+        let result = watcher::create_folder(cxt_opts, folder_form).await?;
         if !result.is_success() {
             let msg = format!("Failed to create folder: {}", folder_form.get_id());
             log::error!("{}", msg.as_str());
@@ -204,15 +204,11 @@ impl SearcherService for context::ElasticContext {
         }
 
         let elastic = self.get_cxt().read().await;
-        let folder_name = folder_form.get_id().to_lowercase();
-        let folder_name_str = folder_name.as_str();
-
+        let folder_id = folder_form.get_id();
         let folder_schema = helper::create_folder_schema(folder_form.is_preview());
         let response = elastic
-            .index(IndexParts::Index(folder_name_str))
-            .body(&json!({
-                folder_name_str: folder_schema
-            }))
+            .index(IndexParts::Index(folder_id))
+            .body(&json!({folder_id: folder_schema}))
             .send()
             .await
             .map_err(WebError::from)?;
@@ -255,13 +251,14 @@ impl SearcherService for context::ElasticContext {
         folder_id: &str,
         doc_form: &DocumentPreview,
     ) -> Result<SuccessfulResponse, WebError> {
+        // TODO: Impled for Document and DocumentPreview into create_document()
         let elastic = self.get_cxt().read().await;
         helper::store_doc_preview(&elastic, doc_form, folder_id).await
     }
     async fn update_document(&self, doc_form: &Document) -> Result<SuccessfulResponse, WebError> {
+        // TODO: Impled for Document and DocumentPreview
         let elastic = self.get_cxt().read().await;
-        let document_json =
-            serde_json::to_value(doc_form).map_err(|err| WebError::SerdeError(err.to_string()))?;
+        let document_json = serde_json::to_value(doc_form).map_err(WebError::from)?;
 
         let doc_id = doc_form.get_doc_id();
         let folder_id = doc_form.get_folder_id();
@@ -306,18 +303,11 @@ impl SearcherService for context::ElasticContext {
         move_form: &MoveDocumetsForm,
     ) -> Result<SuccessfulResponse, WebError> {
         let opts = self.get_options();
-        let dst_folder_id = move_form.get_folder_id();
-        let src_folder_id = move_form.get_src_folder_id();
-        let document_ids = move_form.get_document_ids();
-        let move_result = watcher::move_docs_to_folder(
-            opts.as_ref(),
-            dst_folder_id,
-            src_folder_id,
-            document_ids,
-        )
-        .await
-        .map_err(WebError::from)?;
+        let move_result = watcher::move_docs_to_folder(opts.as_ref(), move_form)
+            .await
+            .map_err(WebError::from)?;
 
+        let src_folder_id = move_form.get_src_folder_id();
         if !move_result.is_success() {
             let msg = format!("Failed while moving documents from: {}", src_folder_id);
             log::error!("{}", msg.as_str());
@@ -325,7 +315,7 @@ impl SearcherService for context::ElasticContext {
         }
 
         let mut collected_errors = Vec::default();
-        for document_id in document_ids {
+        for document_id in move_form.get_document_ids() {
             let result = self.get_document(src_folder_id, document_id).await;
             if result.is_err() {
                 let err = result.err().unwrap();
