@@ -1,9 +1,6 @@
 name: Rust
 
 on:
-  push:
-    branches:
-     - "master/**"
   pull_request_target:
     types: [ assigned, opened, synchronize ]
 
@@ -15,10 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Download dependencies
-      run: |
-        sudo apt-get install pkg-config liblept5 libleptonica-dev tesseract-ocr libtesseract-dev
-    - name: Build
+    - name: Build project
       run: cargo build --verbose
   
   fmt:
