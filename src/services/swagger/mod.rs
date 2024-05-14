@@ -4,16 +4,15 @@ use crate::endpoints::folders::*;
 use crate::endpoints::hello::*;
 use crate::endpoints::paginator::*;
 use crate::endpoints::searcher::*;
-use crate::endpoints::similarities::*;
 use crate::endpoints::watcher::*;
 
 use crate::errors::*;
 
-use wrappers::cluster::*;
-use wrappers::document::*;
-use wrappers::folder::*;
-use wrappers::s_params::*;
-use wrappers::scroll::*;
+use crate::forms::cluster::*;
+use crate::forms::document::*;
+use crate::forms::folder::*;
+use crate::forms::s_params::*;
+use crate::forms::scroll::*;
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -45,7 +44,6 @@ use utoipa_swagger_ui::SwaggerUi;
         search_all,
         search_similar_docs,
         analyse_documents,
-        get_folder_documents2,
     ),
     components(
         schemas(
@@ -60,7 +58,7 @@ use utoipa_swagger_ui::SwaggerUi;
             OcrMetadata,
             Artifacts,
             SearchParams,
-            PaginatedResult<Vec<Document>>,
+            Paginated<Vec<Document>>,
             NextScrollForm,
             AllScrollsForm,
             HighlightEntity,

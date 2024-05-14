@@ -1,10 +1,12 @@
-use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
+use crate::services::searcher::ClustersService;
 
-use wrappers::cluster::{Cluster, ClusterForm};
-use wrappers::TestExample;
+use crate::forms::cluster::{Cluster, ClusterForm};
+use crate::forms::TestExample;
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+
+type Context = web::Data<Box<dyn ClustersService>>;
 
 #[utoipa::path(
     get,
@@ -30,7 +32,7 @@ use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
     )
 )]
 #[get("/")]
-async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
+async fn all_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
     let client = cxt.get_ref();
     client.get_all_clusters().await
 }
@@ -78,7 +80,7 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
     )
 )]
 #[post("/create")]
-async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpResponse {
+async fn create_cluster(cxt: Context, form: web::Json<ClusterForm>) -> HttpResponse {
     let cluster_id = form.0.to_string();
     let client = cxt.get_ref();
     match client.create_cluster(cluster_id.as_str()).await {
@@ -93,7 +95,7 @@ async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> Http
     tag = "Clusters",
     params(
         (
-            "cluster_id" = &str, 
+            "cluster_id" = &str,
             description = "Cluster id to delete",
             example = "d93df49fa6ft",
         )
@@ -131,7 +133,7 @@ async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> Http
     )
 )]
 #[delete("/{cluster_id}")]
-async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
+async fn delete_cluster(cxt: Context, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
     match client.delete_cluster(path.as_str()).await {
         Ok(response) => response.to_response(),
@@ -145,7 +147,7 @@ async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpRespo
     tag = "Clusters",
     params(
         (
-            "cluster_id" = &str, 
+            "cluster_id" = &str,
             description = "Cluster id to get",
             example = "d93df49fa6ff",
         )
@@ -170,7 +172,7 @@ async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpRespo
     )
 )]
 #[get("/{cluster_id}")]
-async fn get_cluster(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Cluster> {
+async fn get_cluster(cxt: Context, path: web::Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
     client.get_cluster(path.as_str()).await
 }
@@ -178,7 +180,7 @@ async fn get_cluster(cxt: SearcherData, path: web::Path<String>) -> JsonResponse
 #[cfg(test)]
 mod cluster_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::SearcherService;
+    use crate::services::searcher::ClustersService;
 
     use actix_web::test;
 

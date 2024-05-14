@@ -1,5 +1,5 @@
-use crate::folder::DEFAULT_FOLDER_ID;
-use crate::TestExample;
+use crate::forms::folder::DEFAULT_FOLDER_ID;
+use crate::forms::TestExample;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};

@@ -1,14 +1,16 @@
-use crate::endpoints::SearcherData;
 use crate::errors::{ErrorResponse, SuccessfulResponse};
-use crate::errors::{JsonResponse, PaginateJsonResponse};
+use crate::errors::{JsonResponse, PaginateResponse};
+use crate::services::searcher::FoldersService;
+
+use crate::forms::document::DocumentPreview;
+use crate::forms::folder::{Folder, FolderForm};
+use crate::forms::s_params::SearchParams;
+use crate::forms::scroll::Paginated;
+use crate::forms::TestExample;
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 
-use wrappers::document::DocumentPreview;
-use wrappers::folder::{Folder, FolderForm};
-use wrappers::s_params::SearchParams;
-use wrappers::scroll::PaginatedResult;
-use wrappers::TestExample;
+type Context = web::Data<Box<dyn FoldersService>>;
 
 #[utoipa::path(
     get,
@@ -34,7 +36,7 @@ use wrappers::TestExample;
     )
 )]
 #[get("/")]
-async fn all_folders(cxt: SearcherData) -> JsonResponse<Vec<Folder>> {
+async fn all_folders(cxt: Context) -> JsonResponse<Vec<Folder>> {
     let client = cxt.get_ref();
     client.get_all_folders().await
 }
@@ -70,7 +72,7 @@ async fn all_folders(cxt: SearcherData) -> JsonResponse<Vec<Folder>> {
     )
 )]
 #[get("/{folder_id}")]
-async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Folder> {
+async fn get_folder(cxt: Context, path: web::Path<String>) -> JsonResponse<Folder> {
     let client = cxt.get_ref();
     client.get_folder(path.as_str()).await
 }
@@ -106,7 +108,7 @@ async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
     )
 )]
 #[post("/create")]
-async fn create_folder(cxt: SearcherData, form: web::Json<FolderForm>) -> HttpResponse {
+async fn create_folder(cxt: Context, form: web::Json<FolderForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let folder_form = form.0;
     match client.create_folder(&folder_form).await {
@@ -149,7 +151,7 @@ async fn create_folder(cxt: SearcherData, form: web::Json<FolderForm>) -> HttpRe
     )
 )]
 #[delete("/{folder_id}")]
-async fn delete_folder(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
+async fn delete_folder(cxt: Context, path: web::Path<String>) -> HttpResponse {
     let client = cxt.get_ref();
     match client.delete_folder(path.as_str()).await {
         Ok(response) => response.to_response(),
@@ -177,7 +179,7 @@ async fn delete_folder(cxt: SearcherData, path: web::Path<String>) -> HttpRespon
             status = 200,
             description = "Successful",
             body = PaginatedResult<Vec<Document>>,
-            example = json!(PaginatedResult::<Vec<DocumentPreview>>::new_with_id(
+            example = json!(Paginated::<Vec<DocumentPreview>>::new_with_id(
                 vec![DocumentPreview::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9lafytZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             )),
@@ -196,10 +198,10 @@ async fn delete_folder(cxt: SearcherData, path: web::Path<String>) -> HttpRespon
 )]
 #[post("/{folder_id}/documents")]
 async fn get_folder_documents(
-    cxt: SearcherData,
+    cxt: Context,
     path: web::Path<String>,
     form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+) -> PaginateResponse<Vec<DocumentPreview>> {
     let client = cxt.get_ref();
     let search_form = form.0;
     match client
@@ -216,9 +218,7 @@ async fn get_folder_documents(
                 .map(DocumentPreview::from)
                 .collect();
 
-            Ok(web::Json(PaginatedResult::new_with_opt_id(
-                preview, scroll_id,
-            )))
+            Ok(web::Json(Paginated::new_with_opt_id(preview, scroll_id)))
         }
     }
 }
@@ -226,9 +226,9 @@ async fn get_folder_documents(
 #[cfg(test)]
 mod buckets_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::SearcherService;
+    use crate::services::searcher::FoldersService;
 
-    use wrappers::folder::FolderForm;
+    use crate::forms::folder::FolderForm;
 
     use actix_web::test;
 

@@ -1,15 +1,14 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse, WebError};
-
-use wrappers::document::{AnalyseDocumentsForm, DocumentPreview};
-use wrappers::s_params::SearchParams;
-use wrappers::scroll::PaginatedResult;
-use wrappers::TestExample;
+use crate::errors::{ErrorResponse, JsonResponse, WebError};
+use crate::forms::document::{AnalyseDocumentsForm, DocumentPreview};
+use crate::forms::TestExample;
+use crate::services::searcher::{UploadedResult, WatcherService};
 
 use actix_multipart::Multipart;
 use actix_web::{post, web};
 use futures::{StreamExt, TryStreamExt};
 use std::io::Write;
+
+type Context = web::Data<Box<dyn WatcherService>>;
 
 #[utoipa::path(
     post,
@@ -40,69 +39,12 @@ use std::io::Write;
 )]
 #[post("/analyse")]
 async fn analyse_documents(
-    cxt: SearcherData,
+    cxt: Context,
     form: web::Json<AnalyseDocumentsForm>,
 ) -> JsonResponse<Vec<DocumentPreview>> {
     let client = cxt.get_ref();
     let document_ids = form.0.document_ids;
-    client
-        .launch_watcher_analysis(document_ids.as_slice())
-        .await
-}
-
-#[utoipa::path(
-    post,
-    path = "/watcher/unrecognized",
-    tag = "Watcher",
-    request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("Transport"))),
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(vec![DocumentPreview::test_example(None)])
-        ),
-        (
-            status = 400,
-            description = "Failed while analysing documents",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while analysing documents".to_string(),
-            })
-        ),
-    )
-)]
-#[post("/unrecognized")]
-async fn get_folder_documents2(
-    cxt: SearcherData,
-    form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<Vec<DocumentPreview>> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-    match client
-        .get_folder_documents("unrecognized", Some(search_form))
-        .await
-    {
-        Err(err) => Err(err),
-        Ok(value) => {
-            let scroll_id = value.get_scroll_id().cloned();
-            let preview = value
-                .get_founded()
-                .to_owned()
-                .into_iter()
-                .map(DocumentPreview::from)
-                .collect();
-
-            Ok(web::Json(PaginatedResult::new_with_opt_id(
-                preview, scroll_id,
-            )))
-        }
-    }
+    client.launch_analysis(document_ids.as_slice()).await
 }
 
 #[utoipa::path(
@@ -133,17 +75,14 @@ async fn get_folder_documents2(
     )
 )]
 #[post("/upload")]
-async fn upload_files(cxt: SearcherData, payload: Multipart) -> JsonResponse<Vec<DocumentPreview>> {
+async fn upload_files(cxt: Context, payload: Multipart) -> JsonResponse<Vec<DocumentPreview>> {
     match upload_documents(cxt, payload).await {
         Err(err) => Err(WebError::UnknownError(err.to_string())),
         Ok(result) => Ok(web::Json(result)),
     }
 }
 
-async fn upload_documents(
-    cxt: SearcherData,
-    mut payload: Multipart,
-) -> Result<Vec<DocumentPreview>, WebError> {
+async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResult {
     let client = cxt.get_ref();
     let mut collected_docs: Vec<DocumentPreview> = Vec::default();
     while let Some(mut field) = payload
@@ -176,7 +115,7 @@ async fn upload_documents(
         }
 
         let upload_result = client
-            .upload_documents(filename.as_str(), filepath.as_str())
+            .upload_files(filename.as_str(), filepath.as_str())
             .await;
 
         if upload_result.is_err() {

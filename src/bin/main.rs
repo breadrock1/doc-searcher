@@ -5,7 +5,7 @@ use doc_search::services::elastic::build_elastic_service;
 use doc_search::services::init::*;
 use doc_search::services::redis_cache::build_redis_service;
 use doc_search::services::searcher::SearcherService;
-use doc_search::swagger::{create_service, ApiDoc, OpenApi};
+use doc_search::services::swagger::{create_service, ApiDoc, OpenApi};
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
@@ -44,7 +44,6 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(build_folder_scope())
             .service(build_document_scope())
             .service(build_search_scope())
-            .service(build_similar_scope())
             .service(build_pagination_scope())
             .service(build_watcher_scope())
     })

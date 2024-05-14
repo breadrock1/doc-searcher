@@ -1,4 +1,4 @@
-use wrappers::scroll::PaginatedResult;
+use crate::forms::scroll::Paginated;
 
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
@@ -8,8 +8,9 @@ use std::io::Error;
 use thiserror::Error;
 use utoipa::ToSchema;
 
+pub(crate) type WebResult = Result<SuccessfulResponse, WebError>;
 pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
-pub(crate) type PaginateJsonResponse<T> = JsonResponse<PaginatedResult<T>>;
+pub(crate) type PaginateResponse<T> = JsonResponse<Paginated<T>>;
 
 #[derive(Error, Debug)]
 pub enum WebError {

@@ -1,6 +1,6 @@
-use wrappers::cluster::Cluster;
-use wrappers::document::Document;
-use wrappers::folder::Folder;
+use crate::forms::cluster::Cluster;
+use crate::forms::document::Document;
+use crate::forms::folder::Folder;
 
 use std::collections::HashMap;
 use std::sync::Arc;

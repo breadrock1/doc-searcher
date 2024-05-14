@@ -1,17 +1,16 @@
-use crate::endpoints::{CacherData, SearcherData};
-use crate::errors::{ErrorResponse, PaginateJsonResponse};
+use crate::endpoints::CacherData;
+use crate::errors::{ErrorResponse, PaginateResponse};
+use crate::forms::document::Document;
+use crate::forms::s_params::SearchParams;
+use crate::forms::scroll::Paginated;
+use crate::forms::TestExample;
 use crate::services::cacher::CacherService;
 use crate::services::redis_cache::values::*;
-
-#[cfg(feature = "enable-chunked")]
-use crate::services::searcher::GroupedDocs;
+use crate::services::searcher::SearcherService;
 
 use actix_web::{post, web};
 
-use wrappers::document::Document;
-use wrappers::s_params::SearchParams;
-use wrappers::scroll::PaginatedResult;
-use wrappers::TestExample;
+type Context = web::Data<Box<dyn SearcherService>>;
 
 #[utoipa::path(
     post,
@@ -25,8 +24,8 @@ use wrappers::TestExample;
         (
             status = 200,
             description = "Successful",
-            body = PaginatedResult<Vec<Document>>,
-            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
+            body = Paginated<Vec<Document>>,
+            example = json!(Paginated::<Vec<Document>>::new_with_id(
                 vec![Document::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
@@ -45,10 +44,10 @@ use wrappers::TestExample;
 )]
 #[post("/")]
 async fn search_all(
-    cxt: SearcherData,
+    cxt: Context,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<Vec<Document>> {
+) -> PaginateResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -72,7 +71,7 @@ async fn search_all(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PaginatedResult::new(docs);
+            let scroll = Paginated::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -91,7 +90,7 @@ async fn search_all(
             status = 200,
             description = "Successful",
             body = [Document],
-            example = json!(PaginatedResult::<Vec<Document>>::new_with_id(
+            example = json!(Paginated::<Vec<Document>>::new_with_id(
                 vec![Document::test_example(None)],
                 "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
             ))
@@ -110,10 +109,10 @@ async fn search_all(
 )]
 #[post("/tokens")]
 async fn search_tokens(
-    cxt: SearcherData,
+    cxt: Context,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<Vec<Document>> {
+) -> PaginateResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
@@ -137,25 +136,54 @@ async fn search_tokens(
                 .await;
 
             let docs = Vec::from(docs);
-            let scroll = PaginatedResult::new(docs);
+            let scroll = Paginated::new(docs);
             Ok(web::Json(scroll))
         }
     }
 }
 
-#[cfg(feature = "enable-chunked")]
-#[post("/")]
-async fn search_chunked(
-    cxt: SearcherData,
+#[utoipa::path(
+    post,
+    path = "/search/similar",
+    tag = "Search",
+    request_body(
+        content = SearchParams,
+        example = json!(SearchParams::test_example(Some("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")))
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = [Document],
+            example = json!(Paginated::<Vec<Document>>::new_with_id(
+                vec![Document::test_example(None)],
+                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
+            ))
+        ),
+        (
+            status = 400,
+            description = "Failed while searching similar documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while searching similar documents".to_string(),
+            })
+        ),
+    )
+)]
+#[post("/similar")]
+async fn search_similar_docs(
+    cxt: Context,
     cacher: CacherData,
     form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<GroupedDocs> {
+) -> PaginateResponse<Vec<Document>> {
     let client = cxt.get_ref();
     let search_form = form.0;
 
     #[cfg(feature = "disable-caching")]
     if cfg!(feature = "disable-caching") {
-        return client.search_chunked(&search_form).await;
+        return client.similarity(&search_form).await;
     }
 
     let cacher_params = CacherSearchParams::from(&search_form);
@@ -164,7 +192,7 @@ async fn search_chunked(
         .load::<CacherSearchParams, CacherDocuments>(cacher_params)
         .await
     {
-        None => client.search_chunked(&search_form).await,
+        None => client.similarity(&search_form).await,
         Some(documents) => {
             let cacher_params = CacherSearchParams::from(&search_form);
             let docs = cacher
@@ -173,45 +201,7 @@ async fn search_chunked(
                 .await;
 
             let docs = Vec::from(docs);
-            let grouped = client.group_document_chunks(&docs);
-            let scroll = PaginatedResult::new(grouped);
-            Ok(web::Json(scroll))
-        }
-    }
-}
-
-#[cfg(feature = "enable-chunked")]
-#[post("/tokens")]
-async fn search_chunked_tokens(
-    cxt: SearcherData,
-    cacher: CacherData,
-    form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<GroupedDocs> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-
-    #[cfg(feature = "disable-caching")]
-    if cfg!(feature = "disable-caching") {
-        return client.search_chunked_tokens(&search_form).await;
-    }
-
-    let cacher_params = CacherSearchParams::from(&search_form);
-    match cacher
-        .service
-        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
-        .await
-    {
-        None => client.search_chunked_tokens(&search_form).await,
-        Some(documents) => {
-            let cacher_params = CacherSearchParams::from(&search_form);
-            let docs = cacher
-                .service
-                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, documents)
-                .await;
-
-            let docs = Vec::from(docs);
-            let grouped = client.group_document_chunks(&docs);
-            let scroll = PaginatedResult::new(grouped);
+            let scroll = Paginated::new(docs);
             Ok(web::Json(scroll))
         }
     }
@@ -220,10 +210,10 @@ async fn search_chunked_tokens(
 #[cfg(test)]
 mod searcher_endpoints {
     use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::SearcherService;
+    use crate::services::searcher::{DocumentsService, SearcherService};
 
-    use wrappers::document::Document;
-    use wrappers::s_params::SearchParams;
+    use crate::forms::document::Document;
+    use crate::forms::s_params::SearchParams;
 
     use actix_web::test;
 
