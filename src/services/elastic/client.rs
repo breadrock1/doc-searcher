@@ -8,7 +8,7 @@ use crate::services::searcher::GroupedDocs;
 
 use wrappers::cluster::Cluster;
 use wrappers::document::{Document, DocumentPreview, MoveDocumetsForm};
-use wrappers::folder::{Folder, FolderForm};
+use wrappers::folder::{Folder, FolderForm, HISTORY_FOLDER_ID};
 use wrappers::s_params::SearchParams;
 use wrappers::scroll::{AllScrollsForm, NextScrollForm, PaginatedResult};
 
@@ -367,9 +367,11 @@ impl SearcherService for context::ElasticContext {
         let cxt_opts = self.get_options().as_ref();
         let analysed_docs = watcher::launch_analysis(cxt_opts, document_ids).await?;
         for doc_preview in analysed_docs.iter() {
-            let folder_id = doc_preview.location.as_str().to_lowercase();
-            let _ = self.create_document_preview("история", doc_preview).await;
-            let _ = self.create_document_preview(folder_id.as_str(), doc_preview).await;
+            let folder_id = doc_preview.get_folder_id();
+            let _ = self
+                .create_document_preview(HISTORY_FOLDER_ID, doc_preview)
+                .await;
+            let _ = self.create_document_preview(folder_id, doc_preview).await;
         }
 
         Ok(web::Json(analysed_docs))
