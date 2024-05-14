@@ -13,6 +13,9 @@ mod schema_tests {
     #[test]
     fn test_document_preview_schema() {
         let doc_preview_schema = DocumentPreviewSchema::default();
-        println!("{}", serde_json::to_string_pretty(&doc_preview_schema).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&doc_preview_schema).unwrap()
+        );
     }
 }
