@@ -114,7 +114,6 @@ pub fn build_folder_scope() -> Scope {
     web::scope("/folders")
         .service(folders::all_folders)
         .service(folders::create_folder)
-        .service(folders::create_global_folders)
         .service(folders::delete_folder)
         .service(folders::get_folder)
         .service(folders::get_folder_documents)
