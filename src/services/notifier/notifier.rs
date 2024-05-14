@@ -1,9 +1,9 @@
 use crate::errors::{SuccessfulResponse, WebError, WebResult};
-use crate::services::elastic::context::ContextOptions;
-
-use crate::forms::document::{DocumentPreview, MoveDocumetsForm};
+use crate::forms::documents::forms::MoveDocumentsForm;
 use crate::forms::folder::FolderForm;
+use crate::forms::preview::DocumentPreview;
 use crate::forms::s_params::SearchParams;
+use crate::services::elastic::context::ContextOptions;
 
 use reqwest::multipart::Part;
 use reqwest::Response;
@@ -71,7 +71,7 @@ pub(crate) async fn launch_analysis(
 
 pub(crate) async fn move_docs_to_folder(
     cxt_opts: &ContextOptions,
-    move_form: &MoveDocumetsForm,
+    move_form: &MoveDocumentsForm,
 ) -> WebResult {
     let dst_folder_id = move_form.get_folder_id();
     let src_folder_id = move_form.get_src_folder_id();

@@ -1,7 +1,9 @@
 use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
 use crate::forms::cluster::Cluster;
-use crate::services::elastic::{context, helper};
-use crate::services::searcher;
+use crate::services::elastic::clusters::helper::get_all_clusters;
+use crate::services::elastic::context::ElasticContext;
+use crate::services::elastic::helper::parse_elastic_response;
+use crate::services::service::ClustersService;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
@@ -9,10 +11,10 @@ use elasticsearch::http::Method;
 use serde_json::{json, Value};
 
 #[async_trait::async_trait]
-impl searcher::ClustersService for context::ElasticContext {
+impl ClustersService for ElasticContext {
     async fn get_all_clusters(&self) -> JsonResponse<Vec<Cluster>> {
         let elastic = self.get_cxt().read().await;
-        let response = helper::get_all_clusters(&elastic).await?;
+        let response = get_all_clusters(&elastic).await?;
         match response.json::<Vec<Cluster>>().await {
             Ok(clusters) => Ok(web::Json(clusters)),
             Err(err) => {
@@ -23,7 +25,7 @@ impl searcher::ClustersService for context::ElasticContext {
     }
     async fn get_cluster(&self, cluster_id: &str) -> JsonResponse<Cluster> {
         let elastic = self.get_cxt().read().await;
-        let response = helper::get_all_clusters(&elastic).await?;
+        let response = get_all_clusters(&elastic).await?;
         match response.json::<Vec<Cluster>>().await {
             Err(err) => {
                 log::error!("Failed while parsing elastic response: {}", err);
@@ -74,6 +76,6 @@ impl searcher::ClustersService for context::ElasticContext {
             .await
             .map_err(WebError::from)?;
 
-        helper::parse_elastic_response(response).await
+        parse_elastic_response(response).await
     }
 }

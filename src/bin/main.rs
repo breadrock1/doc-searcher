@@ -4,7 +4,7 @@ use doc_search::middlewares::logger::LoggerMiddlewareFactory;
 use doc_search::services::elastic::build_elastic_service;
 use doc_search::services::init::*;
 use doc_search::services::redis_cache::build_redis_service;
-use doc_search::services::searcher::SearcherService;
+use doc_search::services::service::SearcherService;
 use doc_search::services::swagger::{create_service, ApiDoc, OpenApi};
 
 use actix_web::middleware::Logger;

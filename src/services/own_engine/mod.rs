@@ -1,6 +1,10 @@
-pub mod client;
-pub mod context;
-mod helper;
+mod clusters;
+pub(crate) mod context;
+mod documents;
+mod folders;
+mod paginator;
+mod searcher;
+mod watcher;
 
 use crate::services::init::ServiceParameters;
 use crate::services::own_engine::context::OtherContext;

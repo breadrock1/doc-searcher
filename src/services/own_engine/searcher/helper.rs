@@ -1,11 +1,10 @@
-use crate::forms::document::Document;
+use crate::forms::documents::document::Document;
 use crate::forms::s_params::SearchParams;
-
 use std::collections::HashMap;
 use tokio::sync::RwLockReadGuard;
 
 pub(crate) fn filter_founded_documents(
-    map: RwLockReadGuard<HashMap<String, Document>>,
+    map: &RwLockReadGuard<HashMap<String, Document>>,
     bucket_id: &str,
     s_params: &SearchParams,
 ) -> Vec<Document> {

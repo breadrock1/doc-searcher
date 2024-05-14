@@ -1,8 +1,7 @@
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
-use crate::services::searcher::ClustersService;
-
 use crate::forms::cluster::{Cluster, ClusterForm};
 use crate::forms::TestExample;
+use crate::services::service::ClustersService;
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 
@@ -175,43 +174,4 @@ async fn delete_cluster(cxt: Context, path: web::Path<String>) -> HttpResponse {
 async fn get_cluster(cxt: Context, path: web::Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
     client.get_cluster(path.as_str()).await
-}
-
-#[cfg(test)]
-mod cluster_endpoints {
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::ClustersService;
-
-    use actix_web::test;
-
-    #[test]
-    async fn create_cluster() {
-        let other_context = OtherContext::new("test".to_string());
-        let response = other_context.create_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn delete_cluster() {
-        let other_context = OtherContext::new("test".to_string());
-        let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.delete_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn get_clusters() {
-        let other_context = OtherContext::new("test".to_string());
-        let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.get_all_clusters().await;
-        assert_eq!(response.unwrap().len(), 1);
-    }
-
-    #[test]
-    async fn get_cluster_by_id() {
-        let other_context = OtherContext::new("test".to_string());
-        let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.get_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().get_ip(), "localhost");
-    }
 }

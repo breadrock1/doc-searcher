@@ -1,8 +1,10 @@
 use crate::errors::{JsonResponse, PaginateResponse, SuccessfulResponse, WebError};
-use crate::forms::document::Document;
-use crate::forms::scroll::{AllScrollsForm, NextScrollForm};
-use crate::services::elastic::{context, helper};
-use crate::services::searcher::PaginatorService;
+use crate::forms::documents::document::Document;
+use crate::forms::pagination::{AllScrollsForm, NextScrollForm};
+use crate::services::elastic::context::ElasticContext;
+use crate::services::elastic::helper;
+use crate::services::elastic::searcher::helper as s_helper;
+use crate::services::service::PaginatorService;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
@@ -11,7 +13,7 @@ use elasticsearch::{ClearScrollParts, ScrollParts};
 use serde_json::Value;
 
 #[async_trait::async_trait]
-impl PaginatorService for context::ElasticContext {
+impl PaginatorService for ElasticContext {
     async fn get_pagination_ids(&self) -> JsonResponse<Vec<String>> {
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
@@ -65,6 +67,6 @@ impl PaginatorService for context::ElasticContext {
         }
 
         let response = response_result.unwrap();
-        Ok(web::Json(helper::parse_search_result(response).await))
+        Ok(web::Json(s_helper::parse_search_result(response).await))
     }
 }

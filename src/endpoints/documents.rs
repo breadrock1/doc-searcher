@@ -1,8 +1,8 @@
 use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
-use crate::services::searcher::DocumentsService;
-
-use crate::forms::document::{Document, MoveDocumetsForm};
+use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::MoveDocumentsForm;
 use crate::forms::TestExample;
+use crate::services::service::DocumentsService;
 
 use actix_web::{delete, get, post, put, web};
 use actix_web::{HttpResponse, ResponseError};
@@ -199,7 +199,7 @@ async fn update_document(cxt: Context, form: web::Json<Document>) -> HttpRespons
     tag = "Documents",
     request_body(
         content = MoveDocumentsForm,
-        example = json!(MoveDocumetsForm::test_example(None)),
+        example = json!(MoveDocumentsForm::test_example(None)),
     ),
     responses(
         (
@@ -224,92 +224,11 @@ async fn update_document(cxt: Context, form: web::Json<Document>) -> HttpRespons
     )
 )]
 #[post("/location")]
-async fn move_documents(cxt: Context, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
+async fn move_documents(cxt: Context, form: web::Json<MoveDocumentsForm>) -> HttpResponse {
     let client = cxt.get_ref();
     let move_doc_form = form.0;
     match client.move_documents(&move_doc_form).await {
         Ok(response) => response.to_response(),
         Err(err) => err.error_response(),
-    }
-}
-
-#[cfg(test)]
-mod documents_endpoints {
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::DocumentsService;
-
-    use crate::forms::document::{Document, DocumentBuilderError};
-
-    use actix_web::test;
-
-    fn create_default_document(document_name: &str) -> Result<Document, DocumentBuilderError> {
-        Document::builder()
-            .folder_id("test_folder".to_string())
-            .folder_path("/test_folder".to_string())
-            .content_uuid("content_uuid".to_string())
-            .content_md5("md5 hash".to_string())
-            .content("Any document text".to_string())
-            .content_vector(Vec::default())
-            .document_name(document_name.to_string())
-            .document_path(format!("/test_folder/{}", document_name))
-            .document_size(1024)
-            .document_type("document".to_string())
-            .document_extension(".txt".to_string())
-            .document_permissions(777)
-            .document_md5("md5 hash".to_string())
-            .document_ssdeep("ssdeep hash".to_string())
-            .document_created(None)
-            .document_modified(None)
-            .highlight(None)
-            .ocr_metadata(None)
-            .quality_recognition(None)
-            .build()
-    }
-
-    #[test]
-    async fn test_create_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let res_document = create_default_document("test_doc");
-        let document = res_document.unwrap();
-        let response = other_context.create_document(&document).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_delete_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let document_name = "test_document";
-        let document = create_default_document(document_name).unwrap();
-        let _ = other_context.create_document(&document).await;
-
-        let response = other_context
-            .delete_document("test_folder", document_name)
-            .await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_update_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let document_name = "test_document";
-        let mut document = create_default_document(document_name).unwrap();
-        let _ = other_context.create_document(&document).await;
-
-        document.set_doc_path("/new-path");
-        let response = other_context.update_document(&document).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_get_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let document_name = "test_document";
-        let document = create_default_document(document_name).unwrap();
-        let _ = other_context.create_document(&document).await;
-
-        let response = other_context
-            .get_document("test_folder", document_name)
-            .await;
-        assert_eq!(response.unwrap().get_doc_name(), document_name);
     }
 }

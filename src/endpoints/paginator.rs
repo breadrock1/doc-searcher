@@ -1,7 +1,7 @@
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, SuccessfulResponse};
-use crate::forms::document::Document;
-use crate::forms::scroll::{AllScrollsForm, NextScrollForm};
-use crate::services::searcher::PaginatorService;
+use crate::forms::documents::document::Document;
+use crate::forms::pagination::{AllScrollsForm, NextScrollForm};
+use crate::services::service::PaginatorService;
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 

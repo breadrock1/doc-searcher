@@ -1,4 +1,4 @@
-use crate::forms::document::Document;
+use crate::forms::documents::document::Document;
 use crate::forms::s_params::SearchParams;
 
 use redis::{ErrorKind, RedisError, RedisResult, Value};

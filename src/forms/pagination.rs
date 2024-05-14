@@ -45,17 +45,17 @@ impl<D> Paginated<D> {
 
 #[derive(Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct NextScrollForm {
-    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmZsdnhOSWhk")]
+    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     scroll_id: String,
     #[schema(example = "1m")]
     lifetime: String,
 }
 
 impl NextScrollForm {
-    pub fn new(id: String, timelife: String) -> Self {
+    pub fn new(id: String, lifetime: String) -> Self {
         NextScrollForm {
             scroll_id: id,
-            lifetime: timelife,
+            lifetime,
         }
     }
 
@@ -63,14 +63,14 @@ impl NextScrollForm {
         self.scroll_id.as_str()
     }
 
-    pub fn get_timelife(&self) -> &str {
+    pub fn get_lifetime(&self) -> &str {
         self.lifetime.as_str()
     }
 }
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct AllScrollsForm {
-    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmZsdnhOSWhk")]
+    #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     scroll_ids: Vec<String>,
 }
 

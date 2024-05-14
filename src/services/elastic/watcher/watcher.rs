@@ -1,9 +1,9 @@
 use crate::errors::JsonResponse;
-use crate::forms::document::DocumentPreview;
 use crate::forms::folder::HISTORY_FOLDER_ID;
+use crate::forms::preview::DocumentPreview;
 use crate::services::elastic::context;
 use crate::services::notifier::notifier;
-use crate::services::searcher::{DocumentsService, UploadedResult, WatcherService};
+use crate::services::service::{DocumentsService, UploadedResult, WatcherService};
 
 use actix_web::web;
 

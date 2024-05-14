@@ -1,4 +1,4 @@
-use crate::forms::scroll::Paginated;
+use crate::forms::pagination::Paginated;
 
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};

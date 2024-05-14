@@ -1,91 +1,10 @@
-use derive_builder::Builder;
-use serde::Serializer;
+use crate::forms::schemas::AsDateField;
+use crate::forms::schemas::EnabledFlag;
+use crate::forms::schemas::FieldIndex;
+use crate::forms::schemas::FieldType;
+use crate::forms::schemas::SchemaFieldType;
+
 use serde_derive::Serialize;
-
-#[derive(Clone, Serialize)]
-enum FieldIndex {
-    #[serde(rename(serialize = "analyzed"))]
-    Analyzed,
-    #[serde(rename(serialize = "not_analyzed"))]
-    NotAnalyzed,
-}
-
-impl Default for FieldIndex {
-    fn default() -> Self {
-        FieldIndex::Analyzed
-    }
-}
-
-#[derive(Serialize)]
-struct EnabledFlag {
-    enabled: bool,
-}
-
-impl EnabledFlag {
-    pub fn new(is_enabled: bool) -> Self {
-        EnabledFlag {
-            enabled: is_enabled,
-        }
-    }
-}
-
-#[derive(Clone, Default)]
-enum FieldType {
-    Date,
-    DenseVector,
-    Integer,
-    #[default]
-    String,
-    Object,
-    Nested,
-    Keyword,
-    Text,
-}
-
-impl serde::Serialize for FieldType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let field_type_str = match self {
-            FieldType::Date => "date",
-            FieldType::Text => "text",
-            FieldType::String => "string",
-            FieldType::Object => "object",
-            FieldType::Nested => "nested",
-            FieldType::Integer => "integer",
-            FieldType::Keyword => "keyword",
-            FieldType::DenseVector => "dense_vector",
-        };
-
-        serializer.collect_str(field_type_str)
-    }
-}
-
-#[derive(Builder, Default, Serialize)]
-struct SchemaFieldType {
-    #[serde(rename(serialize = "type"))]
-    field_type: FieldType,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    index: Option<FieldIndex>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    dims: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    dynamic: Option<bool>,
-}
-
-impl SchemaFieldType {
-    pub fn builder() -> SchemaFieldTypeBuilder {
-        SchemaFieldTypeBuilder::default()
-    }
-
-    pub fn new(field_type: FieldType) -> Self {
-        SchemaFieldType {
-            field_type: field_type,
-            ..Default::default()
-        }
-    }
-}
 
 #[derive(Serialize)]
 pub struct DocumentSchema {
@@ -192,41 +111,7 @@ impl Default for OcrMetadataSchema {
 }
 
 #[derive(Serialize)]
-pub struct DocumentPreviewSchema {
-    _source: EnabledFlag,
-    properties: DocumentPreviewProperties,
-}
-
-#[derive(Serialize)]
-struct DocumentPreviewProperties {
-    id: SchemaFieldType,
-    name: SchemaFieldType,
-    quality_recognition: SchemaFieldType,
-    file_size: SchemaFieldType,
-    location: SchemaFieldType,
-    created_at: AsDateField,
-    artifacts: ArtifactsSchema,
-}
-
-impl Default for DocumentPreviewSchema {
-    fn default() -> Self {
-        DocumentPreviewSchema {
-            _source: EnabledFlag::new(true),
-            properties: DocumentPreviewProperties {
-                id: SchemaFieldType::new(FieldType::String),
-                name: SchemaFieldType::new(FieldType::String),
-                location: SchemaFieldType::new(FieldType::String),
-                file_size: SchemaFieldType::new(FieldType::Integer),
-                quality_recognition: SchemaFieldType::new(FieldType::Integer),
-                created_at: AsDateField::default(),
-                artifacts: ArtifactsSchema::default(),
-            },
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct ArtifactsSchema {
+pub(crate) struct ArtifactsSchema {
     #[serde(rename(serialize = "type"))]
     field_type: FieldType,
     properties: ArtifactsProperties,
@@ -256,11 +141,11 @@ impl Default for ArtifactsSchema {
 struct GroupValues {
     #[serde(rename(serialize = "type"))]
     field_type: FieldType,
-    properties: GroupValuesPeroperties,
+    properties: GroupValuesProperties,
 }
 
 #[derive(Serialize)]
-struct GroupValuesPeroperties {
+struct GroupValuesProperties {
     name: SchemaFieldType,
     json_name: SchemaFieldType,
     #[serde(rename(serialize = "type"))]
@@ -284,7 +169,7 @@ impl Default for GroupValues {
 
         GroupValues {
             field_type: FieldType::Nested,
-            properties: GroupValuesPeroperties {
+            properties: GroupValuesProperties {
                 name: SchemaFieldType::new(FieldType::String),
                 json_name: SchemaFieldType::new(FieldType::String),
                 group_type: SchemaFieldType::new(FieldType::Keyword),
@@ -293,74 +178,3 @@ impl Default for GroupValues {
         }
     }
 }
-
-#[derive(Serialize)]
-struct AsDateField {
-    #[serde(rename(serialize = "type"))]
-    field_type: FieldType,
-    ignore_malformed: bool,
-}
-
-impl Default for AsDateField {
-    fn default() -> Self {
-        AsDateField {
-            field_type: FieldType::Date,
-            ignore_malformed: true,
-        }
-    }
-}
-
-#[derive(Serialize)]
-pub struct DocumentVectorSchema {
-    mappings: DocumentVectorMappings,
-}
-
-#[derive(Serialize)]
-struct DocumentVectorMappings {
-    properties: DocumentVectorProperties,
-}
-
-#[derive(Serialize)]
-struct DocumentVectorProperties {
-    text_chunk: SchemaFieldType,
-    text_vector: TextVectorSchema,
-}
-
-#[derive(Serialize)]
-struct TextVectorSchema {
-    #[serde(rename(serialize = "type"))]
-    field_type: FieldType,
-    properties: TextVectorProperties,
-}
-
-#[derive(Serialize)]
-struct TextVectorProperties {
-    vector: SchemaFieldType,
-}
-
-impl Default for DocumentVectorSchema {
-    fn default() -> Self {
-        let text_vec_properties = TextVectorProperties {
-            vector: SchemaFieldType::new(FieldType::DenseVector),
-        };
-
-        let doc_vec_properties = DocumentVectorProperties {
-            text_chunk: SchemaFieldType::new(FieldType::Text),
-            text_vector: TextVectorSchema {
-                field_type: FieldType::Nested,
-                properties: text_vec_properties,
-            },
-        };
-
-        DocumentVectorSchema {
-            mappings: DocumentVectorMappings {
-                properties: doc_vec_properties,
-            },
-        }
-    }
-}
-
-pub trait ElasticSchema {}
-impl ElasticSchema for DocumentSchema {}
-impl ElasticSchema for DocumentVectorSchema {}
-impl ElasticSchema for DocumentPreviewSchema {}

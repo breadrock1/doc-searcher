@@ -1,12 +1,11 @@
 use crate::errors::{ErrorResponse, SuccessfulResponse};
 use crate::errors::{JsonResponse, PaginateResponse};
-use crate::services::searcher::FoldersService;
-
-use crate::forms::document::DocumentPreview;
 use crate::forms::folder::{Folder, FolderForm};
+use crate::forms::pagination::Paginated;
+use crate::forms::preview::DocumentPreview;
 use crate::forms::s_params::SearchParams;
-use crate::forms::scroll::Paginated;
 use crate::forms::TestExample;
+use crate::services::service::FoldersService;
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
 
@@ -220,65 +219,5 @@ async fn get_folder_documents(
 
             Ok(web::Json(Paginated::new_with_opt_id(preview, scroll_id)))
         }
-    }
-}
-
-#[cfg(test)]
-mod buckets_endpoints {
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::FoldersService;
-
-    use crate::forms::folder::FolderForm;
-
-    use actix_web::test;
-
-    const DEFAULT_FOLDER_ID: &str = "test_folder";
-
-    #[test]
-    async fn test_create_folder() {
-        let bucket_form = FolderForm::default();
-        let other_context = OtherContext::new("test".to_string());
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_delete_folder() {
-        let other_context = OtherContext::new("test".to_string());
-
-        let response = other_context.delete_folder(DEFAULT_FOLDER_ID).await;
-        assert_eq!(response.unwrap().code, 400_u16);
-
-        let bucket_form = FolderForm::default();
-
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-
-        let response = other_context.delete_folder(DEFAULT_FOLDER_ID).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_get_folders() {
-        let other_context = OtherContext::new("test".to_string());
-        let bucket_form = FolderForm::default();
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-
-        let response = other_context.get_all_folders().await;
-        let buckets_size = response.unwrap().0.len();
-        assert_eq!(buckets_size, 1);
-    }
-
-    #[test]
-    async fn test_get_folder_by_id() {
-        let bucket_form = FolderForm::default();
-        let other_context = OtherContext::new("test".to_string());
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-
-        let get_folder_result = other_context.get_folder(DEFAULT_FOLDER_ID).await;
-        let bucket_uuid = get_folder_result.unwrap().0;
-        assert_eq!(bucket_uuid.get_uuid(), DEFAULT_FOLDER_ID);
     }
 }

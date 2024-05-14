@@ -1,7 +1,8 @@
 use crate::errors::{ErrorResponse, JsonResponse, WebError};
-use crate::forms::document::{AnalyseDocumentsForm, DocumentPreview};
+use crate::forms::documents::forms::AnalyseDocumentsForm;
+use crate::forms::preview::DocumentPreview;
 use crate::forms::TestExample;
-use crate::services::searcher::{UploadedResult, WatcherService};
+use crate::services::service::{UploadedResult, WatcherService};
 
 use actix_multipart::Multipart;
 use actix_web::{post, web};

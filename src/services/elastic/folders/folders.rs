@@ -1,11 +1,14 @@
 use crate::errors::{JsonResponse, PaginateResponse, SuccessfulResponse, WebError};
-use crate::forms::document::DocumentPreview;
 use crate::forms::folder::{Folder, FolderForm};
+use crate::forms::pagination::Paginated;
+use crate::forms::preview::DocumentPreview;
 use crate::forms::s_params::SearchParams;
-use crate::forms::scroll::Paginated;
-use crate::services::elastic::{context, helper};
+use crate::services::elastic::context;
+use crate::services::elastic::folders::helper as f_helper;
+use crate::services::elastic::helper::*;
+use crate::services::elastic::searcher::helper as s_helper;
 use crate::services::notifier::notifier;
-use crate::services::searcher::FoldersService;
+use crate::services::service::FoldersService;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
@@ -30,7 +33,7 @@ impl FoldersService for context::ElasticContext {
             .map_err(WebError::from)?;
 
         if !response.status_code().is_success() {
-            return Err(helper::extract_exception(response).await);
+            return Err(extract_exception(response).await);
         }
 
         match response.json::<Vec<Folder>>().await {
@@ -57,11 +60,11 @@ impl FoldersService for context::ElasticContext {
             .map_err(WebError::from)?;
 
         if !response.status_code().is_success() {
-            return Err(helper::extract_exception(response).await);
+            return Err(extract_exception(response).await);
         }
 
         let json_value = response.json::<Value>().await?;
-        match helper::extract_folder_stats(&json_value) {
+        match f_helper::extract_folder_stats(&json_value) {
             Ok(folders) => Ok(web::Json(folders)),
             Err(err) => {
                 log::error!("Failed while extracting folders stats: {}", err);
@@ -86,8 +89,8 @@ impl FoldersService for context::ElasticContext {
             };
         }
 
-        let body = helper::build_match_all_query(&s_params);
-        match helper::search_documents_preview(&elastic, &s_params, &body, &[folder_id]).await {
+        let body = s_helper::build_match_all_query(&s_params);
+        match s_helper::search_documents_preview(&elastic, &s_params, &body, &[folder_id]).await {
             Ok(documents) => Ok(documents),
             Err(err) => {
                 log::error!("Failed while searching documents: {}", err);
@@ -117,7 +120,7 @@ impl FoldersService for context::ElasticContext {
             .await
             .map_err(WebError::from)?;
 
-        helper::parse_elastic_response(response).await
+        parse_elastic_response(response).await
     }
     async fn create_folder(
         &self,
@@ -133,7 +136,7 @@ impl FoldersService for context::ElasticContext {
 
         let elastic = self.get_cxt().read().await;
         let folder_id = folder_form.get_id();
-        let folder_schema = helper::create_folder_schema(folder_form.get_schema());
+        let folder_schema = f_helper::create_folder_schema(folder_form.get_schema());
         let response = elastic
             .index(IndexParts::Index(folder_id))
             .body(&json!({folder_id: folder_schema}))
@@ -141,6 +144,6 @@ impl FoldersService for context::ElasticContext {
             .await
             .map_err(WebError::from)?;
 
-        helper::parse_elastic_response(response).await
+        parse_elastic_response(response).await
     }
 }
