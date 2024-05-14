@@ -104,6 +104,7 @@ pub struct ClusterForm {
 }
 
 impl ClusterForm {
+    #[allow(dead_code)]
     pub fn get_id(&self) -> &str {
         self.cluster_id.as_str()
     }

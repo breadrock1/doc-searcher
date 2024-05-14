@@ -1,8 +1,12 @@
 use crate::errors::{JsonResponse, SuccessfulResponse, WebError};
-use crate::forms::document::{Document, DocumentPreview, MoveDocumetsForm};
-use crate::services::elastic::{context, helper};
+use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::MoveDocumentsForm;
+use crate::forms::preview::DocumentPreview;
+use crate::services::elastic::context::ElasticContext;
+use crate::services::elastic::documents::helper;
+use crate::services::elastic::helper::parse_elastic_response;
 use crate::services::notifier::notifier;
-use crate::services::searcher::DocumentsService;
+use crate::services::service::DocumentsService;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
@@ -10,7 +14,7 @@ use elasticsearch::http::Method;
 use serde_json::Value;
 
 #[async_trait::async_trait]
-impl DocumentsService for context::ElasticContext {
+impl DocumentsService for ElasticContext {
     async fn get_document(&self, folder_id: &str, doc_id: &str) -> JsonResponse<Document> {
         let elastic = self.get_cxt().read().await;
         let s_doc_path = format!("/{}/_doc/{}", folder_id, doc_id);
@@ -48,7 +52,7 @@ impl DocumentsService for context::ElasticContext {
     ) -> Result<SuccessfulResponse, WebError> {
         // TODO: Impled for Document and DocumentPreview into create_document()
         let elastic = self.get_cxt().read().await;
-        helper::store_doc_preview(&elastic, doc_form, folder_id).await
+        helper::store_preview(&elastic, doc_form, folder_id).await
     }
     async fn update_document(&self, doc_form: &Document) -> Result<SuccessfulResponse, WebError> {
         // TODO: Impled for Document and DocumentPreview
@@ -70,7 +74,7 @@ impl DocumentsService for context::ElasticContext {
             .await
             .map_err(WebError::from)?;
 
-        helper::parse_elastic_response(response).await
+        parse_elastic_response(response).await
     }
     async fn delete_document(
         &self,
@@ -91,11 +95,11 @@ impl DocumentsService for context::ElasticContext {
             .await
             .map_err(WebError::from)?;
 
-        helper::parse_elastic_response(response).await
+        parse_elastic_response(response).await
     }
     async fn move_documents(
         &self,
-        move_form: &MoveDocumetsForm,
+        move_form: &MoveDocumentsForm,
     ) -> Result<SuccessfulResponse, WebError> {
         let opts = self.get_options();
         let move_result = notifier::move_docs_to_folder(opts.as_ref(), move_form)

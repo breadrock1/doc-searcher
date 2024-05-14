@@ -1,9 +1,9 @@
+use crate::forms::TestExample;
+
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToSchema};
-
-use crate::forms::TestExample;
 use std::fmt::Display;
+use utoipa::{IntoParams, ToSchema};
 
 pub const DEFAULT_FOLDER_ID: &str = "common_folder";
 pub const HISTORY_FOLDER_ID: &str = "history";

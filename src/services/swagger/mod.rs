@@ -9,10 +9,10 @@ use crate::endpoints::watcher::*;
 use crate::errors::*;
 
 use crate::forms::cluster::*;
-use crate::forms::document::*;
+use crate::forms::documents::document::*;
 use crate::forms::folder::*;
+use crate::forms::pagination::*;
 use crate::forms::s_params::*;
-use crate::forms::scroll::*;
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;

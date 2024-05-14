@@ -1,10 +1,12 @@
 use crate::errors::{JsonResponse, PaginateResponse, WebError, WebResult};
 
 use crate::forms::cluster::Cluster;
-use crate::forms::document::{Document, DocumentPreview, MoveDocumetsForm};
+use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::MoveDocumentsForm;
 use crate::forms::folder::{Folder, FolderForm};
+use crate::forms::pagination::{AllScrollsForm, NextScrollForm};
+use crate::forms::preview::DocumentPreview;
 use crate::forms::s_params::SearchParams;
-use crate::forms::scroll::{AllScrollsForm, NextScrollForm};
 
 pub(crate) type UploadedResult = Result<Vec<DocumentPreview>, WebError>;
 
@@ -40,7 +42,7 @@ pub trait DocumentsService {
     ) -> WebResult;
     async fn update_document(&self, doc_form: &Document) -> WebResult;
     async fn delete_document(&self, folder_id: &str, document_id: &str) -> WebResult;
-    async fn move_documents(&self, move_form: &MoveDocumetsForm) -> WebResult;
+    async fn move_documents(&self, move_form: &MoveDocumentsForm) -> WebResult;
 }
 
 #[async_trait::async_trait]

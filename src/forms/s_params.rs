@@ -28,7 +28,7 @@ pub struct SearchParams {
     #[schema(example = 0)]
     result_offset: i64,
     #[schema(example = "1m")]
-    scroll_timelife: String,
+    scroll_lifetime: String,
 }
 
 impl SearchParams {
@@ -68,7 +68,7 @@ impl SearchParams {
     }
 
     pub fn get_scroll(&self) -> &str {
-        self.scroll_timelife.as_str()
+        self.scroll_lifetime.as_str()
     }
 
     pub fn get_folders(&self, all_buckets: bool) -> String {
@@ -93,7 +93,7 @@ impl Default for SearchParams {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
-            .scroll_timelife("10m".to_string())
+            .scroll_lifetime("10m".to_string())
             .build()
             .unwrap()
     }
@@ -112,7 +112,7 @@ impl TestExample<SearchParams> for SearchParams {
             .document_size_from(0)
             .result_size(25)
             .result_offset(0)
-            .scroll_timelife("1m".to_string())
+            .scroll_lifetime("1m".to_string())
             .build()
             .unwrap()
     }

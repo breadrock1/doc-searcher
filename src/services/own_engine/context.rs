@@ -1,5 +1,5 @@
 use crate::forms::cluster::Cluster;
-use crate::forms::document::Document;
+use crate::forms::documents::document::Document;
 use crate::forms::folder::Folder;
 
 use std::collections::HashMap;
