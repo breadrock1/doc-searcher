@@ -5,7 +5,8 @@ use utoipa::{IntoParams, ToSchema};
 use crate::TestExample;
 use std::fmt::Display;
 
-pub const DEFAULT_FOLDER_NAME: &str = "common_folder";
+pub const DEFAULT_FOLDER_ID: &str = "common_folder";
+pub const HISTORY_FOLDER_ID: &str = "history";
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
 pub struct Folder {
@@ -105,6 +106,8 @@ impl TestExample<Folder> for Folder {
 pub struct FolderForm {
     #[schema(example = "test_folder")]
     folder_id: String,
+    #[schema(example = "Text Folder")]
+    folder_name: String,
     #[schema(example = "false")]
     is_preview_schema: bool,
 }
@@ -118,14 +121,15 @@ impl Display for FolderForm {
 
 impl Default for FolderForm {
     fn default() -> Self {
-        FolderForm::new(DEFAULT_FOLDER_NAME, true)
+        FolderForm::new(DEFAULT_FOLDER_ID, "Common Folder", false)
     }
 }
 
 impl FolderForm {
-    pub fn new(folder_id: &str, is_preview: bool) -> Self {
+    pub fn new(folder_id: &str, folder_name: &str, is_preview: bool) -> Self {
         FolderForm {
             folder_id: folder_id.to_string(),
+            folder_name: folder_name.to_string(),
             is_preview_schema: is_preview,
         }
     }
@@ -136,6 +140,10 @@ impl FolderForm {
 
     pub fn get_id(&self) -> &str {
         self.folder_id.as_str()
+    }
+
+    pub fn get_name(&self) -> &str {
+        self.folder_name.as_str()
     }
 
     pub fn is_preview(&self) -> bool {

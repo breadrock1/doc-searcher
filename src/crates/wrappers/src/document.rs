@@ -264,24 +264,44 @@ pub struct HighlightEntity {
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
 pub struct DocumentPreview {
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    pub id: String,
+    id: String,
     #[schema(example = "test_document.txt")]
-    pub name: String,
+    name: String,
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
         skip_serializing_if = "Option::is_none"
     )]
     #[schema(example = "2024-04-03T13:51:32Z")]
-    pub created_at: Option<DateTime<Utc>>,
+    created_at: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub quality_recognition: Option<i32>,
+    quality_recognition: Option<i32>,
     #[schema(example = 35345)]
-    pub file_size: i32,
+    file_size: i32,
+    #[schema(example = "Test Folder")]
+    location: String,
     #[schema(example = "test_folder")]
-    pub location: String,
+    folder_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preview_properties: Option<Vec<Artifacts>>,
+    preview_properties: Option<Vec<Artifacts>>,
+}
+
+impl DocumentPreview {
+    pub fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    pub fn get_name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    pub fn get_folder_id(&self) -> &str {
+        self.folder_id.as_str()
+    }
+
+    pub fn get_location(&self) -> &str {
+        self.location.as_str()
+    }
 }
 
 impl TestExample<DocumentPreview> for DocumentPreview {
@@ -349,13 +369,13 @@ impl From<Document> for DocumentPreview {
 #[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct MoveDocumetsForm {
     document_ids: Vec<String>,
-    folder_id: String,
+    location: String,
     src_folder_id: String,
 }
 
 impl MoveDocumetsForm {
     pub fn get_folder_id(&self) -> &str {
-        self.folder_id.as_str()
+        self.location.as_str()
     }
 
     pub fn get_src_folder_id(&self) -> &str {
@@ -370,7 +390,7 @@ impl MoveDocumetsForm {
 impl TestExample<MoveDocumetsForm> for MoveDocumetsForm {
     fn test_example(_value: Option<&str>) -> MoveDocumetsForm {
         MoveDocumetsFormBuilder::default()
-            .folder_id("test_folder".to_string())
+            .location("Test Folder".to_string())
             .src_folder_id("unrecognized".to_string())
             .document_ids(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()])
             .build()

@@ -9,8 +9,8 @@ use elquery::similar_query::SimilarQuery;
 use wrappers::document::{Document, DocumentPreview, HighlightEntity};
 use wrappers::folder::Folder;
 use wrappers::s_params::SearchParams;
-use wrappers::scroll::PaginatedResult;
 use wrappers::schema::{DocumentPreviewSchema, DocumentSchema};
+use wrappers::scroll::PaginatedResult;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
@@ -66,7 +66,7 @@ pub(crate) async fn store_doc_preview(
     doc_form: &DocumentPreview,
     folder_id: &str,
 ) -> Result<SuccessfulResponse, WebError> {
-    let document_id = doc_form.id.as_str();
+    let document_id = doc_form.get_id();
 
     let to_value_result = serde_json::to_value(doc_form);
     let document_json = to_value_result.unwrap();
@@ -85,7 +85,9 @@ pub(crate) async fn store_doc_preview(
     parse_elastic_response(response).await
 }
 
-pub(crate) async fn parse_elastic_response(response: Response) -> Result<SuccessfulResponse, WebError> {
+pub(crate) async fn parse_elastic_response(
+    response: Response,
+) -> Result<SuccessfulResponse, WebError> {
     if !response.status_code().is_success() {
         return Err(extract_exception(response).await);
     }
@@ -119,13 +121,10 @@ pub(crate) async fn check_duplication(
         .await
         .map_err(WebError::from)?;
 
-    let result = response
-        .json::<Value>()
-        .await
-        .map_or(false, |value| {
-            let count = value["count"].as_i64().unwrap_or(0);
-            count > 0
-        });
+    let result = response.json::<Value>().await.map_or(false, |value| {
+        let count = value["count"].as_i64().unwrap_or(0);
+        count > 0
+    });
 
     Ok(result)
 }
