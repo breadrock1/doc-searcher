@@ -282,9 +282,11 @@ mod buckets_endpoints {
 
     use actix_web::test;
 
+    const DEFAULT_FOLDER_ID: &str = "test_folder";
+
     #[test]
     async fn test_create_folder() {
-        let bucket_form = FolderForm::new("test_folder", false);
+        let bucket_form = FolderForm::default();
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.unwrap().code, 200_u16);
@@ -294,22 +296,22 @@ mod buckets_endpoints {
     async fn test_delete_folder() {
         let other_context = OtherContext::new("test".to_string());
 
-        let response = other_context.delete_folder("test_folder").await;
+        let response = other_context.delete_folder(DEFAULT_FOLDER_ID).await;
         assert_eq!(response.unwrap().code, 400_u16);
 
-        let bucket_form = FolderForm::new("test_folder", false);
+        let bucket_form = FolderForm::default();
 
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.unwrap().code, 200_u16);
 
-        let response = other_context.delete_folder("test_folder").await;
+        let response = other_context.delete_folder(DEFAULT_FOLDER_ID).await;
         assert_eq!(response.unwrap().code, 200_u16);
     }
 
     #[test]
     async fn test_get_folders() {
         let other_context = OtherContext::new("test".to_string());
-        let bucket_form = FolderForm::new("test_folder", false);
+        let bucket_form = FolderForm::default();
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.unwrap().code, 200_u16);
 
@@ -320,13 +322,13 @@ mod buckets_endpoints {
 
     #[test]
     async fn test_get_folder_by_id() {
-        let bucket_form = FolderForm::new("test_folder", false);
+        let bucket_form = FolderForm::default();
         let other_context = OtherContext::new("test".to_string());
         let response = other_context.create_folder(&bucket_form).await;
         assert_eq!(response.unwrap().code, 200_u16);
 
-        let get_bucket_result = other_context.get_folder("test_folder").await;
-        let bucket_uuid = get_bucket_result.unwrap().0;
-        assert_eq!(bucket_uuid.get_uuid(), "test_folder");
+        let get_folder_result = other_context.get_folder(DEFAULT_FOLDER_ID).await;
+        let bucket_uuid = get_folder_result.unwrap().0;
+        assert_eq!(bucket_uuid.get_uuid(), DEFAULT_FOLDER_ID);
     }
 }
