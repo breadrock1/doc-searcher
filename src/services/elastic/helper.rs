@@ -9,8 +9,8 @@ use elquery::similar_query::SimilarQuery;
 use wrappers::document::{Document, DocumentPreview, HighlightEntity};
 use wrappers::folder::Folder;
 use wrappers::s_params::SearchParams;
-use wrappers::scroll::PaginatedResult;
 use wrappers::schema::{DocumentPreviewSchema, DocumentSchema};
+use wrappers::scroll::PaginatedResult;
 
 use actix_web::web;
 use elasticsearch::http::headers::HeaderMap;
