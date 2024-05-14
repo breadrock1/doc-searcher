@@ -31,7 +31,6 @@ use utoipa_swagger_ui::SwaggerUi;
         delete_cluster,
         all_folders,
         create_folder,
-        create_global_folders,
         get_folder,
         delete_folder,
         get_folder_documents,

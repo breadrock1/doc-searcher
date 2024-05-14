@@ -159,56 +159,6 @@ async fn delete_folder(cxt: SearcherData, path: web::Path<String>) -> HttpRespon
 
 #[utoipa::path(
     post,
-    path = "/folders/global",
-    tag = "Folders",
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
-                code: 200,
-                message: "Done".to_string(),
-            }),
-        ),
-        (
-            status = 400,
-            description = "Failed while creating global folders",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while creating global folders".to_string(),
-            }),
-        ),
-    )
-)]
-#[post("/global")]
-async fn create_global_folders(cxt: SearcherData) -> HttpResponse {
-    let client = cxt.get_ref();
-    let mut collected_errs = Vec::default();
-    for global_folders_id in ["history", "unrecognized"] {
-        let folder_form = FolderForm::new(global_folders_id, true);
-        let response = client.create_folder(&folder_form).await;
-        if response.is_err() {
-            let err = response.err().unwrap();
-            log::error!("{:?}", err);
-            collected_errs.push(global_folders_id);
-        }
-    }
-
-    if !collected_errs.is_empty() {
-        let folders_str = collected_errs.join(", ");
-        let msg = format!("Failed while creating global buckets: {}", folders_str);
-        log::error!("{}", msg);
-        return WebError::CreateFolder(msg).error_response();
-    }
-
-    SuccessfulResponse::ok_response("Done")
-}
-
-#[utoipa::path(
-    post,
     path = "/folders/{folder_id}/documents",
     tag = "Folders",
     params(
