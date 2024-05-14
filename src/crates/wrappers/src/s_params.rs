@@ -1,4 +1,4 @@
-use crate::folder::DEFAULT_FOLDER_NAME;
+use crate::folder::DEFAULT_FOLDER_ID;
 use crate::TestExample;
 
 use derive_builder::Builder;
@@ -74,7 +74,7 @@ impl SearchParams {
     pub fn get_folders(&self, all_buckets: bool) -> String {
         match &self.folders {
             None if all_buckets => "*".to_string(),
-            None => DEFAULT_FOLDER_NAME.to_string(),
+            None => DEFAULT_FOLDER_ID.to_string(),
             Some(data) => data.clone(),
         }
     }
@@ -84,7 +84,7 @@ impl Default for SearchParams {
     fn default() -> Self {
         SearchParams::builder()
             .query("*".to_string())
-            .folders(Some(DEFAULT_FOLDER_NAME.to_string()))
+            .folders(Some(DEFAULT_FOLDER_ID.to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())

@@ -1,5 +1,5 @@
 use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, SuccessfulResponse, WebError};
+use crate::errors::{ErrorResponse, SuccessfulResponse};
 use crate::errors::{JsonResponse, PaginateJsonResponse};
 
 use actix_web::{delete, get, post, web, HttpResponse, ResponseError};

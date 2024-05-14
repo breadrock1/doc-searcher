@@ -50,7 +50,7 @@ impl Default for FieldType {
 impl serde::Serialize for FieldType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         let field_type_str = match self {
             FieldType::Date => "date",
@@ -161,7 +161,7 @@ impl Default for DocumentSchema {
                 document_created: AsDateField::default(),
                 document_modified: AsDateField::default(),
                 ocr_metadata: OcrMetadataSchema::default(),
-            }
+            },
         }
     }
 }
@@ -225,7 +225,7 @@ impl Default for DocumentPreviewSchema {
                 quality_recognition: SchemaFieldType::new(FieldType::Integer),
                 created_at: AsDateField::default(),
                 artifacts: ArtifactsSchema::default(),
-            }
+            },
         }
     }
 }
@@ -252,7 +252,7 @@ impl Default for ArtifactsSchema {
                 group_name: SchemaFieldType::new(FieldType::String),
                 group_json_name: SchemaFieldType::new(FieldType::String),
                 group_values: GroupValues::default(),
-            }
+            },
         }
     }
 }
@@ -284,7 +284,7 @@ impl Default for GroupValues {
     fn default() -> Self {
         let group_values_fields = GroupValueFields {
             field_type: FieldType::Text,
-            fields: AsDateField::default()
+            fields: AsDateField::default(),
         };
 
         GroupValues {
@@ -294,7 +294,7 @@ impl Default for GroupValues {
                 json_name: SchemaFieldType::new(FieldType::String),
                 group_type: SchemaFieldType::new(FieldType::Keyword),
                 value: group_values_fields,
-            }
+            },
         }
     }
 }
