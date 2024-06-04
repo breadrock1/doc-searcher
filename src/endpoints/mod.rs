@@ -6,8 +6,8 @@ pub mod paginator;
 pub mod searcher;
 pub mod watcher;
 
-use crate::services::cacher::CacherClient;
-use crate::services::redis_cache::client::RedisService;
+use crate::services::cacher::rediska::client::RedisService;
+use crate::services::cacher::service::CacherClient;
 
 use actix_web::web;
 

@@ -1,12 +1,11 @@
 pub(crate) mod document;
+pub(crate) mod embeddings;
 pub(crate) mod preview;
-pub(crate) mod vector;
 
 use crate::forms::schemas::document::DocumentSchema;
+use crate::forms::schemas::embeddings::DocumentVectorSchema;
 use crate::forms::schemas::preview::DocumentPreviewSchema;
-use crate::forms::schemas::vector::DocumentVectorSchema;
 
-use derive_builder::Builder;
 use serde::Serializer;
 use serde_derive::Serialize;
 
@@ -14,20 +13,6 @@ pub trait ElasticSchema {}
 impl ElasticSchema for DocumentSchema {}
 impl ElasticSchema for DocumentVectorSchema {}
 impl ElasticSchema for DocumentPreviewSchema {}
-
-#[derive(Clone, Serialize)]
-enum FieldIndex {
-    #[serde(rename(serialize = "analyzed"))]
-    Analyzed,
-    #[serde(rename(serialize = "not_analyzed"))]
-    NotAnalyzed,
-}
-
-impl Default for FieldIndex {
-    fn default() -> Self {
-        FieldIndex::Analyzed
-    }
-}
 
 #[derive(Serialize)]
 struct EnabledFlag {
@@ -42,15 +27,29 @@ impl EnabledFlag {
     }
 }
 
+#[derive(Serialize)]
+struct SettingsSchema {
+    number_of_shards: i32,
+    number_of_replicas: i32,
+}
+
+impl Default for SettingsSchema {
+    fn default() -> Self {
+        SettingsSchema {
+            number_of_shards: 1,
+            number_of_replicas: 1,
+        }
+    }
+}
+
 #[derive(Clone, Default)]
 enum FieldType {
     Date,
     DenseVector,
     Integer,
-    #[default]
-    String,
     Object,
     Nested,
+    #[default]
     Keyword,
     Text,
 }
@@ -63,7 +62,6 @@ impl serde::Serialize for FieldType {
         let field_type_str = match self {
             FieldType::Date => "date",
             FieldType::Text => "text",
-            FieldType::String => "string",
             FieldType::Object => "object",
             FieldType::Nested => "nested",
             FieldType::Integer => "integer",
@@ -75,28 +73,15 @@ impl serde::Serialize for FieldType {
     }
 }
 
-#[derive(Builder, Default, Serialize)]
+#[derive(Serialize)]
 struct SchemaFieldType {
     #[serde(rename(serialize = "type"))]
     field_type: FieldType,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    index: Option<FieldIndex>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    dims: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    dynamic: Option<bool>,
 }
 
 impl SchemaFieldType {
-    pub fn builder() -> SchemaFieldTypeBuilder {
-        SchemaFieldTypeBuilder::default()
-    }
-
     pub fn new(field_type: FieldType) -> Self {
-        SchemaFieldType {
-            field_type: field_type,
-            ..Default::default()
-        }
+        SchemaFieldType { field_type }
     }
 }
 

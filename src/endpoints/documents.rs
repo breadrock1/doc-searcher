@@ -1,18 +1,31 @@
-use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
-use crate::forms::documents::document::Document;
-use crate::forms::documents::forms::MoveDocumentsForm;
+use crate::errors::{ErrorResponse, JsonResponse, Successful, WebError};
 use crate::forms::TestExample;
-use crate::services::service::DocumentsService;
+use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::{DeleteDocsForm, DocumentType};
+use crate::services::searcher::service::DocumentsService;
 
-use actix_web::{delete, get, post, put, web};
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::{delete, get, post, put};
+use actix_web::web::{Data, Json, Path, Query};
+use serde_json::Value;
 
-type Context = web::Data<Box<dyn DocumentsService>>;
+type Context = Data<Box<dyn DocumentsService>>;
 
 #[utoipa::path(
-    post,
-    path = "/documents/create",
+    put,
+    path = "/storage/folders/{folder_id}/{document_id}",
     tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Passed folder id to get details",
+            example = "test-folder",
+        ),
+        (
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        )
+    ),
     request_body(
         content = Document,
         example = json!(Document::test_example(None)),
@@ -21,8 +34,8 @@ type Context = web::Data<Box<dyn DocumentsService>>;
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -37,40 +50,52 @@ type Context = web::Data<Box<dyn DocumentsService>>;
                 message: "Failed while creating document".to_string(),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
     )
 )]
-#[post("/create")]
-async fn create_document(cxt: Context, form: web::Json<Document>) -> HttpResponse {
+#[put("/folders/{folder_id}/{document_id}")]
+async fn create_document(
+    cxt: Context,
+    form: Json<Document>,
+    _path: Path<(String, String)>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let doc_form = form.0;
-    match client.create_document(&doc_form).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.create_document(&doc_form).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/documents/{folder_id}/{document_ids}",
+    path = "/storage/folders/{folder_id}/{document_id}",
     tag = "Documents",
     params(
         (
             "folder_id" = &str, 
             description = "Folder id where documents is stored",
-            example = "test_folder",
+            example = "test-folder",
         ),
         (
-            "document_ids" = &str, 
-            description = "Document identifiers to delete (separate)",
-            example = "<document-id-1>,<document-id-2>,...",
-        ),
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        )
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -82,48 +107,125 @@ async fn create_document(cxt: Context, form: web::Json<Document>) -> HttpRespons
             example = json!(ErrorResponse {
                 code: 400,
                 error: "Bad Request".to_string(),
-                message: "Failed while deleting documents".to_string(),
+                message: "Failed while deleting document".to_string(),
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
             })
         )
     )
 )]
-#[delete("/{folder_id}/{document_ids}")]
-async fn delete_documents(cxt: Context, path: web::Path<(String, String)>) -> HttpResponse {
+#[delete("/folders/{folder_id}/{document_id}")]
+async fn delete_document(
+    cxt: Context,
+    path: Path<(String, String)>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    let (folder_id, doc_ids) = path.as_ref();
+    let (folder_id, doc_id) = path.as_ref();
+    let status = client.delete_document(folder_id.as_str(), doc_id.as_str()).await?;
+    Ok(Json(status))
+}
 
-    let documents_id = doc_ids.split(',').collect::<Vec<&str>>();
-    let mut failed_tasks: Vec<&str> = Vec::with_capacity(documents_id.len());
-    for id in documents_id.into_iter() {
+#[utoipa::path(
+    delete,
+    path = "/storage/folders/{folder_id}/documents",
+    tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Folder id where documents is stored",
+            example = "test-folder",
+        )
+    ),
+    request_body(
+        content = DeleteDocsForm,
+        example = json!(DeleteDocsForm::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Successful,
+            example = json!(Successful {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while deleting documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while deleting documents: {ids}...".to_string(),
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
+    )
+)]
+#[delete("/folders/{folder_id}/documents")]
+async fn delete_documents(
+    cxt: Context,
+    path: Path<(String, String)>,
+    form: Json<DeleteDocsForm>,
+) -> JsonResponse<Successful> {
+    let client = cxt.get_ref();
+    let document_ids = form.get_doc_ids();
+    let (folder_id, _) = path.as_ref();
+
+    let mut failed_tasks = Vec::with_capacity(document_ids.len());
+    for id in document_ids.into_iter() {
         let result = client.delete_document(folder_id.as_str(), id).await;
         if result.is_err() {
-            failed_tasks.push(id);
+            failed_tasks.push(id.as_str());
         }
     }
 
     if !failed_tasks.is_empty() {
-        let msg = failed_tasks.join(",");
-        return WebError::DeleteCluster(msg).error_response();
+        let msg = failed_tasks.join(", ");
+        return Err(WebError::DeleteCluster(msg));
     }
 
-    SuccessfulResponse::ok_response("Done")
+    Ok(Json(Successful::success("Done")))
 }
 
 #[utoipa::path(
     get,
-    path = "/documents/{folder_id}/{document_id}",
+    path = "/storage/folders/{folder_id}/{document_id}",
     tag = "Documents",
     params(
         (
             "folder_id" = &str, 
             description = "Folder id where document is stored",
-            example = "test_folder",
+            example = "test-folder",
         ),
         (
-            "document_id" = &str, 
+            "document_id" = &str,
             description = "Document identifier to get",
             example = "<document-id>",
         ),
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
     ),
     responses(
         (
@@ -141,22 +243,51 @@ async fn delete_documents(cxt: Context, path: web::Path<(String, String)>) -> Ht
                 error: "Bad Request".to_string(),
                 message: "Failed while getting document".to_string(),
             })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
         )
     )
 )]
-#[get("/{folder_id}/{document_id}")]
-async fn get_document(cxt: Context, path: web::Path<(String, String)>) -> JsonResponse<Document> {
+#[get("/folders/{folder_id}/{document_id}")]
+async fn get_document(
+    cxt: Context, 
+    path: Path<(String, String)>,
+    document_type: Query<DocumentType>,
+) -> JsonResponse<Value> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
-    client
-        .get_document(folder_id.as_str(), doc_id.as_str())
-        .await
+    let document = client
+        .get_document(folder_id.as_str(), doc_id)
+        .await?;
+
+    let value = document_type.0.to_value(&document)?;
+    Ok(Json(value))
 }
 
 #[utoipa::path(
-    put,
-    path = "/documents/{folder_id}/{document_id}",
-    tag = "Documents",
+    post,
+    path = "/storage/folders/{folder_id}/{document_id}",
+    tag = "Unimplemented",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Folder id where document is stored",
+            example = "test-folder",
+        ),
+        (
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        )
+    ),
     request_body(
         content = Document,
         example = json!(Document::test_example(None)),
@@ -165,8 +296,8 @@ async fn get_document(cxt: Context, path: web::Path<(String, String)>) -> JsonRe
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -181,54 +312,29 @@ async fn get_document(cxt: Context, path: web::Path<(String, String)>) -> JsonRe
                 message: "Failed while updating document".to_string(),
             })
         ),
-    )
-)]
-#[put("/{folder_id}/{document_id}")]
-async fn update_document(cxt: Context, form: web::Json<Document>) -> HttpResponse {
-    let client = cxt.get_ref();
-    let doc_form = form.0;
-    match client.update_document(&doc_form).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
-}
-
-#[utoipa::path(
-    post,
-    path = "/documents/location",
-    tag = "Documents",
-    request_body(
-        content = MoveDocumentsForm,
-        example = json!(MoveDocumentsForm::test_example(None)),
-    ),
-    responses(
         (
-            status = 200,
-            description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
-                code: 200,
-                message: "Done".to_string(),
-            })
-        ),
-        (
-            status = 400,
-            description = "Failed while moving documents to folder",
+            status = 503,
+            description = "Server does not available",
             body = ErrorResponse,
             example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while moving documents to folder".to_string(),
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
             })
-        ),
+        )
     )
 )]
-#[post("/location")]
-async fn move_documents(cxt: Context, form: web::Json<MoveDocumentsForm>) -> HttpResponse {
-    let client = cxt.get_ref();
-    let move_doc_form = form.0;
-    match client.move_documents(&move_doc_form).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+#[post("/folders/{folder_id}/{document_id}")]
+async fn update_document(
+    cxt: Context,
+    form: Json<Document>,
+    path: Path<(String, String)>,
+) -> JsonResponse<Successful> {
+    // TODO: Update by UpdateForm to store DocType and Value
+    let _client = cxt.get_ref();
+    let _doc_form = form.0;
+    let (_folder_id, _doc_id) = path.as_ref();
+    // let status = client.update_document(folder_id.as_str(), doc_id.as_str(), &doc_form).await?;
+    // Ok(web::Json(status))
+    Ok(Json(Successful::success("dfg")))
 }

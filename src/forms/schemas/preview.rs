@@ -28,9 +28,9 @@ impl Default for DocumentPreviewSchema {
         DocumentPreviewSchema {
             _source: EnabledFlag::new(true),
             properties: DocumentPreviewProperties {
-                id: SchemaFieldType::new(FieldType::String),
-                name: SchemaFieldType::new(FieldType::String),
-                location: SchemaFieldType::new(FieldType::String),
+                id: SchemaFieldType::new(FieldType::Keyword),
+                name: SchemaFieldType::new(FieldType::Keyword),
+                location: SchemaFieldType::new(FieldType::Keyword),
                 file_size: SchemaFieldType::new(FieldType::Integer),
                 quality_recognition: SchemaFieldType::new(FieldType::Integer),
                 created_at: AsDateField::default(),
