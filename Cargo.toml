@@ -8,8 +8,9 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-enable-caching = []
-enable-dotenv  = ["dep:dotenv"]
+enable-caching  = []
+enable-semantic = []
+enable-dotenv   = ["dep:dotenv"]
 
 [dependencies]
 actix = "^0.13"

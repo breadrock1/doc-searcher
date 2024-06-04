@@ -1,9 +1,12 @@
+use crate::forms::documents::embeddings::EmbeddingsVector;
+use crate::forms::documents::metadata::{Artifacts, GroupValue, HighlightEntity, OcrMetadata};
+use crate::forms::documents::DocumentsTrait;
 use crate::forms::TestExample;
-use chrono::{DateTime, Datelike, NaiveDateTime, Timelike, Utc};
 
+use chrono::{DateTime, Datelike, NaiveDateTime, Timelike, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
@@ -12,14 +15,8 @@ pub struct Document {
     folder_id: String,
     #[schema(example = "/test_folder")]
     folder_path: String,
-    #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    content_md5: String,
-    #[schema(example = "a9850114-5903-465a-bfc5-8d9e28110be8")]
-    content_uuid: String,
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
-    #[serde(default)]
-    content_vector: Vec<f64>,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     document_md5: String,
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
@@ -52,98 +49,104 @@ pub struct Document {
     document_modified: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_recognition: Option<i32>,
-    highlight: Option<HighlightEntity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     ocr_metadata: Option<OcrMetadata>,
+    highlight: Option<HighlightEntity>,
+    #[serde(skip_deserializing)]
+    embeddings: Vec<EmbeddingsVector>,
 }
 
 impl Document {
     pub fn builder() -> DocumentBuilder {
         DocumentBuilder::default()
     }
-
-    pub fn get_folder_id(&self) -> &str {
-        self.folder_id.as_str()
-    }
-
     pub fn get_folder_path(&self) -> &str {
         self.folder_path.as_str()
     }
-
-    pub fn get_doc_id(&self) -> &str {
-        self.content_md5.as_str()
-    }
-
-    pub fn get_content_uuid(&self) -> &str {
-        self.content_uuid.as_str()
-    }
-
     pub fn get_content(&self) -> &str {
         self.content.as_str()
     }
-
-    pub fn get_convent_vector(&self) -> &Vec<f64> {
-        self.content_vector.as_ref()
-    }
-
-    pub fn get_doc_md5(&self) -> &str {
-        self.document_md5.as_str()
-    }
-
     pub fn get_doc_ssdeep(&self) -> &str {
         self.document_ssdeep.as_str()
     }
-
     pub fn get_doc_name(&self) -> &str {
         self.document_name.as_str()
     }
-
     pub fn get_doc_path(&self) -> &str {
         self.document_path.as_str()
     }
-
-    pub fn get_doc_size(&self) -> i32 {
-        self.document_size
-    }
-
-    pub fn get_doc_type(&self) -> &str {
-        self.document_type.as_str()
-    }
-
-    pub fn get_doc_ext(&self) -> &str {
-        self.document_extension.as_str()
-    }
-
-    pub fn get_doc_perm(&self) -> i32 {
-        self.document_permissions
-    }
-
-    pub fn get_doc_created(&self) -> Option<&DateTime<Utc>> {
-        self.document_created.as_ref()
-    }
-
-    pub fn get_doc_modified(&self) -> Option<&DateTime<Utc>> {
-        self.document_modified.as_ref()
-    }
-
-    pub fn get_ocr_quality(&self) -> Option<i32> {
-        self.quality_recognition
-    }
-
-    pub fn get_ocr_metadata(&self) -> Option<&OcrMetadata> {
-        self.ocr_metadata.as_ref()
-    }
-
     pub fn set_doc_path(&mut self, path: &str) {
         self.document_path = path.to_owned();
     }
-
+    pub fn get_doc_size(&self) -> i32 {
+        self.document_size
+    }
+    pub fn get_doc_type(&self) -> &str {
+        self.document_type.as_str()
+    }
+    pub fn get_doc_ext(&self) -> &str {
+        self.document_extension.as_str()
+    }
+    pub fn get_doc_perm(&self) -> i32 {
+        self.document_permissions
+    }
+    pub fn get_doc_created(&self) -> Option<&DateTime<Utc>> {
+        self.document_created.as_ref()
+    }
+    pub fn get_doc_modified(&self) -> Option<&DateTime<Utc>> {
+        self.document_modified.as_ref()
+    }
+    pub fn get_ocr_quality(&self) -> Option<i32> {
+        self.quality_recognition
+    }
+    pub fn get_ocr_metadata(&self) -> Option<&OcrMetadata> {
+        self.ocr_metadata.as_ref()
+    }
+    pub fn get_embeddings(&self) -> &Vec<EmbeddingsVector> {
+        self.embeddings.as_ref()
+    }
     pub fn append_highlight(&mut self, highlight: Option<HighlightEntity>) {
         self.highlight = highlight
     }
-
     pub fn exclude_tokens(&mut self) {
-        self.content_vector = Vec::default();
+        self.embeddings = Vec::default();
+    }
+}
+
+impl DocumentsTrait for Document {
+    fn get_folder_id(&self) -> &str {
+        self.folder_id.as_str()
+    }
+    fn get_doc_id(&self) -> &str {
+        self.document_md5.as_str()
+    }
+    fn set_folder_id(&mut self, folder_id: &str) {
+        self.folder_id = folder_id.to_string()
+    }
+}
+
+impl From<&Document> for Document {
+    fn from(value: &Document) -> Self {
+        Document::builder()
+            .folder_id(value.folder_id.to_owned())
+            .folder_path(value.folder_path.to_owned())
+            .document_md5(value.document_md5.to_owned())
+            .document_ssdeep(value.document_ssdeep.to_owned())
+            .document_name(value.document_name.to_owned())
+            .document_path(value.document_path.to_owned())
+            .document_size(value.document_size.to_owned())
+            .document_type(value.document_type.to_owned())
+            .document_extension(value.document_extension.to_owned())
+            .document_permissions(value.document_permissions.to_owned())
+            .content(value.content.to_owned())
+            .document_created(value.document_created.to_owned())
+            .document_modified(value.document_modified.to_owned())
+            .quality_recognition(value.quality_recognition.to_owned())
+            .highlight(None)
+            .ocr_metadata(value.ocr_metadata.to_owned())
+            .embeddings(Vec::default())
+            .build()
+            .unwrap()
     }
 }
 
@@ -179,6 +182,29 @@ impl TestExample<Document> for Document {
             .unwrap()
             .and_utc();
 
+        let group_values = vec![GroupValue::builder()
+            .name("Date of TN".to_string())
+            .json_name("date_of_tn".to_string())
+            .group_type("string".to_string())
+            .value(Some("2023-10-29".to_string()))
+            .build()
+            .unwrap()];
+
+        let artifacts = vec![Artifacts::builder()
+            .group_name("Information of TN".to_string())
+            .group_json_name("tn_info".to_string())
+            .group_values(Some(group_values))
+            .build()
+            .unwrap()];
+
+        let ocr_metadata = OcrMetadata::builder()
+            .job_id("c643c506-f5c3-4262-991d-bbe847035499".to_string())
+            .pages_count(1)
+            .doc_type("TN".to_string())
+            .artifacts(Some(artifacts))
+            .build()
+            .unwrap();
+
         DocumentBuilder::default()
             .folder_id("test_folder".to_string())
             .folder_path("/test_folder".to_string())
@@ -190,91 +216,14 @@ impl TestExample<Document> for Document {
             .document_type("document".to_string())
             .document_extension(".txt".to_string())
             .document_permissions(777)
-            .content_md5("98ac9896be35f47fb8442580cd9839b4".to_string())
-            .content_uuid("a9850114-5903-465a-bfc5-8d9e28110be8".to_string())
             .content("The Ocean Carrier has been signed.".to_string())
-            .content_vector(Vec::default())
             .document_created(Some(created))
             .document_modified(Some(modified))
-            .quality_recognition(None)
-            .highlight(Some(HighlightEntity {
-                content: vec!["Ocean Carrier".to_string()],
-            }))
-            .ocr_metadata(Some(OcrMetadata {
-                job_id: "c643c506-f5c3-4262-991d-bbe847035499".to_string(),
-                text: "".to_string(),
-                pages_count: 1,
-                doc_type: "SMGS".to_string(),
-                artifacts: None,
-            }))
+            .quality_recognition(Some(10000))
+            .highlight(None)
+            .ocr_metadata(Some(ocr_metadata))
+            .embeddings(Vec::default())
             .build()
             .unwrap()
     }
-}
-
-#[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
-pub struct OcrMetadata {
-    #[schema(example = "c643c506-f5c3-4262-991d-bbe847035499")]
-    job_id: String,
-    text: String,
-    #[schema(example = 1)]
-    pages_count: i32,
-    #[schema(example = "Коносамент")]
-    doc_type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    artifacts: Option<Vec<Artifacts>>,
-}
-
-impl OcrMetadata {
-    pub fn get_job_id(&self) -> &str {
-        self.job_id.as_str()
-    }
-    pub fn get_pages_count(&self) -> i32 {
-        self.pages_count
-    }
-    pub fn get_artifacts(&self) -> Option<&Vec<Artifacts>> {
-        self.artifacts.as_ref()
-    }
-}
-
-#[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
-pub struct Artifacts {
-    #[schema(example = "Information of TN")]
-    pub group_name: String,
-    #[schema(example = "tn_info")]
-    pub group_json_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub group_values: Option<Vec<GroupValue>>,
-}
-
-impl Artifacts {
-    pub fn builder() -> ArtifactsBuilder {
-        ArtifactsBuilder::default()
-    }
-}
-
-#[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
-pub struct GroupValue {
-    #[schema(example = "Date of TN")]
-    pub name: String,
-    #[schema(example = "date_of_tn")]
-    pub json_name: String,
-    #[schema(example = "string")]
-    #[serde(rename = "type")]
-    pub group_type: String,
-    #[schema(example = "2023-10-29")]
-    #[serde(deserialize_with = "deser_group_value")]
-    pub value: Option<String>,
-}
-
-fn deser_group_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    String::deserialize(deserializer).and_then(|value| Ok(Some(value.replace("-", "   "))))
-}
-
-#[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
-pub struct HighlightEntity {
-    pub content: Vec<String>,
 }

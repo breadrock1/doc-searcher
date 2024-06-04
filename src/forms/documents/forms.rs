@@ -1,53 +1,108 @@
+use crate::forms::documents::document::Document;
 use crate::forms::TestExample;
 
 use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
+use crate::errors::WebError;
+use crate::forms::documents::embeddings::DocumentVectors;
+use crate::forms::documents::preview::DocumentPreview;
+
+#[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
+pub enum DocumentType {
+    #[default]
+    #[serde(rename(deserialize = "document", serialize = "document",))]
+    Document,
+    #[serde(rename(deserialize = "preview", serialize = "preview",))]
+    Preview,
+    #[serde(rename(deserialize = "vectors", serialize = "vectors",))]
+    Vectors,
+}
+
+impl DocumentType {
+    pub fn to_value(&self, document: &Document) -> Result<Value, WebError> {
+        match self {
+            DocumentType::Preview => serde_json::to_value(DocumentPreview::from(document)),
+            DocumentType::Vectors => serde_json::to_value(DocumentVectors::from(document)),
+            _ => serde_json::to_value(document)
+        }
+        .map_err(WebError::from)
+    }
+}
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
-pub struct MoveDocumentsForm {
-    document_ids: Vec<String>,
+pub struct MoveDocsForm {
     location: String,
-    src_folder_id: String,
+    document_ids: Vec<String>,
+    is_watcher_enabled: bool,
 }
 
-impl MoveDocumentsForm {
-    pub fn builder() -> MoveDocumentsFormBuilder {
-        MoveDocumentsFormBuilder::default()
+impl MoveDocsForm {
+    pub fn builder() -> MoveDocsFormBuilder {
+        MoveDocsFormBuilder::default()
     }
-
-    pub fn get_folder_id(&self) -> &str {
+    pub fn get_location(&self) -> &str {
         self.location.as_str()
     }
-
-    pub fn get_src_folder_id(&self) -> &str {
-        self.src_folder_id.as_str()
-    }
-
-    pub fn get_document_ids(&self) -> &[String] {
+    pub fn get_doc_ids(&self) -> &[String] {
         self.document_ids.as_slice()
+    }
+    pub fn use_watcher(&self) -> bool {
+        self.is_watcher_enabled
     }
 }
 
-impl TestExample<MoveDocumentsForm> for MoveDocumentsForm {
-    fn test_example(_value: Option<&str>) -> MoveDocumentsForm {
-        MoveDocumentsForm::builder()
+impl TestExample<MoveDocsForm> for MoveDocsForm {
+    fn test_example(_value: Option<&str>) -> MoveDocsForm {
+        MoveDocsForm::builder()
             .location("Test Folder".to_string())
-            .src_folder_id("unrecognized".to_string())
             .document_ids(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()])
+            .is_watcher_enabled(false)
+            .build()
+            .unwrap()
+    }
+}
+
+#[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
+pub struct DeleteDocsForm {
+    document_ids: Vec<String>,
+}
+
+impl DeleteDocsForm {
+    pub fn builder() -> DeleteDocsFormBuilder {
+        DeleteDocsFormBuilder::default()
+    }
+    pub fn get_doc_ids(&self) -> &Vec<String> {
+        self.document_ids.as_ref()
+    }
+}
+
+impl TestExample<DeleteDocsForm> for DeleteDocsForm {
+    fn test_example(_value: Option<&str>) -> DeleteDocsForm {
+        DeleteDocsForm::builder()
+            .document_ids(vec![
+                "98ac9896be35f47fb8442580cd9839b4".to_string()
+            ])
             .build()
             .unwrap()
     }
 }
 
 #[derive(Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
-pub struct AnalyseDocumentsForm {
-    pub document_ids: Vec<String>,
+pub struct AnalyseDocsForm {
+    document_ids: Vec<String>,
 }
 
-impl TestExample<AnalyseDocumentsForm> for AnalyseDocumentsForm {
-    fn test_example(_value: Option<&str>) -> AnalyseDocumentsForm {
-        AnalyseDocumentsForm {
+impl AnalyseDocsForm {
+    pub fn get_doc_ids(&self) -> &[String] {
+        self.document_ids.as_slice()
+    }
+}
+
+impl TestExample<AnalyseDocsForm> for AnalyseDocsForm {
+    fn test_example(_value: Option<&str>) -> AnalyseDocsForm {
+        AnalyseDocsForm {
             document_ids: vec!["98ac9896be35f47fb8442580cd9839b4".to_string()],
         }
     }

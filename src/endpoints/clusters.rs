@@ -1,15 +1,17 @@
-use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
-use crate::forms::cluster::{Cluster, ClusterForm};
+use crate::errors::{ErrorResponse, JsonResponse, Successful};
 use crate::forms::TestExample;
-use crate::services::service::ClustersService;
+use crate::forms::clusters::cluster::Cluster;
+use crate::forms::clusters::forms::CreateClusterForm;
+use crate::services::searcher::service::ClustersService;
 
-use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+use actix_web::{delete, get, put};
+use actix_web::web::{Data, Json, Path};
 
-type Context = web::Data<Box<dyn ClustersService>>;
+type Context = Data<Box<dyn ClustersService>>;
 
 #[utoipa::path(
     get,
-    path = "/clusters/",
+    path = "/orchestr/clusters",
     tag = "Clusters",
     responses(
         (
@@ -28,30 +30,38 @@ type Context = web::Data<Box<dyn ClustersService>>;
                 message: "Failed while getting clusters".to_string(),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
     )
 )]
-#[get("/")]
-async fn all_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
+#[get("/clusters")]
+async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
     let client = cxt.get_ref();
-    client.get_all_clusters().await
+    Ok(Json(client.get_all_clusters().await?))
 }
 
 #[utoipa::path(
-    post,
-    path = "/clusters/create",
+    put,
+    path = "/orchestr/clusters/{cluster_id}",
     tag = "Clusters",
     request_body(
-        content = ClusterForm,
-        example = json!({
-            "cluster_id": "test_slave"
-        })
+        content = CreateClusterForm,
+        example = json!(CreateClusterForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -76,21 +86,33 @@ async fn all_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
                 message: "Not implemented functionality yet".to_string(),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
     )
 )]
-#[post("/create")]
-async fn create_cluster(cxt: Context, form: web::Json<ClusterForm>) -> HttpResponse {
+#[put("/clusters/{cluster_id}")]
+async fn create_cluster(
+    cxt: Context, 
+    _path: Path<String>,
+    form: Json<CreateClusterForm>,
+) -> JsonResponse<Successful> {
     let cluster_id = form.0.to_string();
     let client = cxt.get_ref();
-    match client.create_cluster(cluster_id.as_str()).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.create_cluster(cluster_id.as_str()).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/clusters/{cluster_id}",
+    path = "/orchestr/clusters/{cluster_id}",
     tag = "Clusters",
     params(
         (
@@ -103,8 +125,8 @@ async fn create_cluster(cxt: Context, form: web::Json<ClusterForm>) -> HttpRespo
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -120,29 +142,27 @@ async fn create_cluster(cxt: Context, form: web::Json<ClusterForm>) -> HttpRespo
             })
         ),
         (
-            status = 501,
-            description = "Failed while deleting cluster",
+            status = 503,
+            description = "Server does not available",
             body = ErrorResponse,
             example = json!(ErrorResponse {
-                code: 501,
-                error: "Not Implemented".to_string(),
-                message: "Not implemented functionality yet".to_string(),
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
             })
-        ),
+        )
     )
 )]
-#[delete("/{cluster_id}")]
-async fn delete_cluster(cxt: Context, path: web::Path<String>) -> HttpResponse {
+#[delete("/clusters/{cluster_id}")]
+async fn delete_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    match client.delete_cluster(path.as_str()).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.delete_cluster(path.as_str()).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     get,
-    path = "/clusters/{cluster_id}",
+    path = "/orchestr/clusters/{cluster_id}",
     tag = "Clusters",
     params(
         (
@@ -168,10 +188,20 @@ async fn delete_cluster(cxt: Context, path: web::Path<String>) -> HttpResponse {
                 message: "Failed while getting cluster by id".to_string(),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
     )
 )]
-#[get("/{cluster_id}")]
-async fn get_cluster(cxt: Context, path: web::Path<String>) -> JsonResponse<Cluster> {
+#[get("/clusters/{cluster_id}")]
+async fn get_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
-    client.get_cluster(path.as_str()).await
+    Ok(Json(client.get_cluster(path.as_str()).await?))
 }

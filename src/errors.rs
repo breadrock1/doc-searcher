@@ -1,4 +1,4 @@
-use crate::forms::pagination::Paginated;
+use crate::forms::pagination::pagination::Paginated;
 
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
@@ -8,7 +8,7 @@ use std::io::Error;
 use thiserror::Error;
 use utoipa::ToSchema;
 
-pub(crate) type WebResult = Result<SuccessfulResponse, WebError>;
+pub(crate) type WebResult<T> = Result<T, WebError>;
 pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
 pub(crate) type PaginateResponse<T> = JsonResponse<Paginated<T>>;
 
@@ -116,40 +116,27 @@ impl ResponseError for WebError {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct SuccessfulResponse {
+pub struct Successful {
     pub code: u16,
     pub message: String,
 }
 
-impl SuccessfulResponse {
+impl Successful {
     pub fn new(code: u16, msg: &str) -> Self {
         let message = msg.to_string();
-        SuccessfulResponse { code, message }
+        Successful { code, message }
     }
-
     pub fn success(msg: &str) -> Self {
-        SuccessfulResponse {
+        Successful {
             code: 200u16,
             message: msg.to_string(),
         }
     }
-
-    pub fn ok_response(msg: &str) -> HttpResponse {
-        let status_code = StatusCode::OK;
-        let response = SuccessfulResponse {
-            code: status_code.as_u16(),
-            message: msg.to_string(),
-        };
-
-        HttpResponse::build(status_code).json(response)
-    }
-
-    pub fn to_response(&self) -> HttpResponse {
-        HttpResponse::build(StatusCode::OK).json(self)
-    }
-
     pub fn is_success(&self) -> bool {
         self.code == 200
+    }
+    pub fn get_msg(&self) -> &str {
+        self.message.as_str()
     }
 }
 

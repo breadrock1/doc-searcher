@@ -1,61 +1,30 @@
-use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, SuccessfulResponse};
-use crate::forms::documents::document::Document;
-use crate::forms::pagination::{AllScrollsForm, NextScrollForm};
-use crate::services::service::PaginatorService;
+use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
+use crate::forms::TestExample;
+use crate::forms::documents::forms::DocumentType;
+use crate::forms::pagination::pagination::Paginated;
+use crate::forms::pagination::forms::{DeletePaginationsForm, PaginateNextForm};
+use crate::services::searcher::service::PaginatorService;
 
-use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+use actix_web::{delete, post};
+use actix_web::web::{Data, Json, Query};
+use serde_json::Value;
 
-type Context = web::Data<Box<dyn PaginatorService>>;
-
-#[utoipa::path(
-    get,
-    path = "/pagination/all",
-    tag = "Pagination",
-    responses(
-        (
-            status = 200,
-            description = "Successful", 
-            body = [String],
-            example = json!(vec![
-                "DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ=="
-            ])
-        ),
-        (
-            status = 400,
-            description = "Failed while getting all pagination sessions", 
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while getting all pagination sessions".to_string(),
-            })
-        ),
-    )
-)]
-#[get("/all")]
-async fn get_pagination_ids(cxt: Context) -> JsonResponse<Vec<String>> {
-    let client = cxt.get_ref();
-    client.get_pagination_ids().await
-}
+type Context = Data<Box<dyn PaginatorService>>;
 
 #[utoipa::path(
     delete,
-    path = "/pagination/",
-    tag = "Pagination",
+    path = "/search/paginate/sessions",
+    tag = "Search",
     request_body(
-        content = AllScrolls,
-        example = json!({
-            "scroll_ids": vec![
-                "DXF1ZXJ5QW5kRmV0Y2gBAAAAAAAAAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ=="
-            ]
-        })
+        content = DeletePaginationsForm,
+        example = json!(DeletePaginationsForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -70,35 +39,47 @@ async fn get_pagination_ids(cxt: Context) -> JsonResponse<Vec<String>> {
                 message: "Failed while deleting pagination sessions".to_string(),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
     )
 )]
-#[delete("/")]
-async fn delete_expired_ids(cxt: Context, form: web::Json<AllScrollsForm>) -> HttpResponse {
+#[delete("/paginate/sessions")]
+async fn delete_paginate_sessions(cxt: Context, form: Json<DeletePaginationsForm>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
-    match client.delete_pagination(&pagination_form).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.delete_session(&pagination_form).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     post,
-    path = "/pagination/next",
-    tag = "Pagination",
+    path = "/search/paginate/next",
+    tag = "Search",
+    params(
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
     request_body(
-        content = NextScroll,
-        example = json!(NextScrollForm::new(
-            "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==".to_string(),
-            "15m".to_string(),
-        ))
+        content = PaginateNextForm,
+        example = json!(PaginateNextForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -113,14 +94,36 @@ async fn delete_expired_ids(cxt: Context, form: web::Json<AllScrollsForm>) -> Ht
                 message: "Failed while scrolling".to_string(),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
     )
 )]
-#[post("/next")]
-async fn next_pagination_result(
+#[post("/paginate/next")]
+async fn paginate_next(
     cxt: Context,
-    form: web::Json<NextScrollForm>,
-) -> PaginateResponse<Vec<Document>> {
+    form: Json<PaginateNextForm>,
+    document_type: Query<DocumentType>,
+) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
-    client.paginate(&pagination_form).await
+    let mut founded_docs = client.paginate(&pagination_form).await?;
+    
+    let scroll_id = founded_docs.get_scroll_id().cloned();
+    let converted = founded_docs
+        .get_founded_mut()
+        .iter()
+        .map(|doc| document_type.to_value(doc))
+        .filter(Result::is_ok)
+        .map(Result::unwrap)
+        .collect::<Vec<Value>>();
+    
+    Ok(Json(Paginated::new_with_opt_id(converted, scroll_id)))
 }

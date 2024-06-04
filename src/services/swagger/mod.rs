@@ -8,11 +8,18 @@ use crate::endpoints::watcher::*;
 
 use crate::errors::*;
 
-use crate::forms::cluster::*;
+use crate::forms::clusters::cluster::*;
+use crate::forms::clusters::forms::*;
 use crate::forms::documents::document::*;
-use crate::forms::folder::*;
-use crate::forms::pagination::*;
-use crate::forms::s_params::*;
+use crate::forms::documents::forms::*;
+use crate::forms::documents::preview::*;
+use crate::forms::documents::metadata::*;
+use crate::forms::folders::folder::*;
+use crate::forms::folders::forms::*;
+use crate::forms::pagination::forms::*;
+use crate::forms::pagination::pagination::Paginated;
+use crate::forms::searcher::s_params::*;
+
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -24,44 +31,52 @@ use utoipa_swagger_ui::SwaggerUi;
     ),
     paths(
         hello,
-        all_clusters,
-        create_cluster,
         get_cluster,
+        get_clusters,    
+        create_cluster,
         delete_cluster,
-        all_folders,
-        create_folder,
         get_folder,
+        get_folders,    
+        create_folder,
         delete_folder,
-        get_folder_documents,
-        create_document,
-        delete_documents,
         get_document,
         update_document,
+        create_document,
+        delete_document,
+        delete_documents,
+        search_fulltext,
+        search_semantic,
+        search_similar,
+        get_index_records,
+        delete_paginate_sessions,
+        paginate_next,
+        fetch_analysis,
+        move_documents,
         upload_files,
-        get_pagination_ids,
-        delete_expired_ids,
-        next_pagination_result,
-        search_all,
-        search_similar_docs,
-        analyse_documents,
     ),
     components(
         schemas(
+            Successful,
             ErrorResponse,
-            SuccessfulResponse,
             Folder,
-            FolderForm,
+            CreateFolderForm,
+            DeleteFolderForm,
             Cluster,
-            ClusterForm,
+            CreateClusterForm,
             Document,
-            HighlightEntity,
+            DocumentPreview,
             OcrMetadata,
             Artifacts,
+            GroupValue,
+            HighlightEntity,
+            DocumentType,
+            MoveDocsForm,
+            DeleteDocsForm,
+            AnalyseDocsForm,
             SearchParams,
             Paginated<Vec<Document>>,
-            NextScrollForm,
-            AllScrollsForm,
-            HighlightEntity,
+            DeletePaginationsForm,
+            PaginateNextForm,
         )
     ),
     tags (
@@ -73,6 +88,7 @@ use utoipa_swagger_ui::SwaggerUi;
 )]
 pub struct ApiDoc;
 
-pub fn create_service(openapi: &openapi::OpenApi) -> SwaggerUi {
+pub fn build_swagger_service() -> SwaggerUi {
+    let openapi = ApiDoc::openapi();
     SwaggerUi::new("/swagger/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
 }

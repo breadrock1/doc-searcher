@@ -1,6 +1,7 @@
-use crate::errors::{ErrorResponse, SuccessfulResponse};
+use crate::errors::{ErrorResponse, JsonResponse, Successful};
 
-use actix_web::{get, HttpResponse};
+use actix_web::get;
+use actix_web::web::Json;
 
 #[utoipa::path(
     get,
@@ -10,8 +11,8 @@ use actix_web::{get, HttpResponse};
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Hello".to_string(),
             })
@@ -29,6 +30,6 @@ use actix_web::{get, HttpResponse};
     ),
 )]
 #[get("/")]
-async fn hello() -> HttpResponse {
-    SuccessfulResponse::ok_response("Ok")
+async fn hello() -> JsonResponse<Successful> {
+    Ok(Json(Successful::success("Ok")))
 }
