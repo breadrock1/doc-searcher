@@ -1,14 +1,15 @@
 use crate::errors::{Successful, WebError, WebResult};
 use crate::forms::clusters::cluster::Cluster;
+use crate::forms::clusters::forms::CreateClusterForm;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::helper;
-use crate::services::searcher::service::ClustersService;
+use crate::services::searcher::service::ClusterService;
 
 use elasticsearch::http::Method;
 use serde_json::{json, Value};
 
 #[async_trait::async_trait]
-impl ClustersService for ElasticContext {
+impl ClusterService for ElasticContext {
     async fn get_all_clusters(&self) -> WebResult<Vec<Cluster>> {
         let elastic = self.get_cxt().read().await;
         let response = helper::send_elrequest(&elastic, Method::Get, None, "/_cat/nodes").await?;
@@ -42,10 +43,6 @@ impl ClustersService for ElasticContext {
             }
         }
     }
-    async fn create_cluster(&self, _cluster_id: &str) -> WebResult<Successful> {
-        log::warn!("This functionality does not implemented yet!");
-        Err(WebError::CreateCluster("Not available".to_string()))
-    }
     async fn delete_cluster(&self, cluster_id: &str) -> WebResult<Successful> {
         let elastic = self.get_cxt().read().await;
         let json_data: Value = json!({
@@ -60,5 +57,9 @@ impl ClustersService for ElasticContext {
         let response =
             helper::send_elrequest(&elastic, Method::Put, Some(body), target_url).await?;
         helper::parse_elastic_response(response).await
+    }
+    async fn create_cluster(&self, _id: &str, _form: &CreateClusterForm) -> WebResult<Successful> {
+        log::warn!("This functionality does not implemented yet!");
+        Err(WebError::CreateCluster("Not available".to_string()))
     }
 }

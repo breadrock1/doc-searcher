@@ -6,6 +6,9 @@ use elasticsearch::http::response::Response;
 use elasticsearch::http::Method;
 use elasticsearch::Elasticsearch;
 use serde_json::{json, Value};
+use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::DocumentType;
+use crate::forms::pagination::pagination::Paginated;
 
 pub(crate) async fn send_llm_request(cxt_opts: &ContextOptions, query: &str) -> Vec<f64> {
     let target_url = format!("{}/embed", cxt_opts.llm_address());
@@ -70,7 +73,7 @@ pub(crate) async fn parse_elastic_response(response: Response) -> WebResult<Succ
 }
 
 pub(crate) async fn extract_exception(response: Response) -> WebError {
-    return WebError::UnknownError(response.text().await.unwrap());
+    WebError::UnknownError(response.text().await.unwrap())
     // let exception_res = response.exception().await;
     // if exception_res.is_err() {
     //     let err = exception_res.err().unwrap();
@@ -81,4 +84,26 @@ pub(crate) async fn extract_exception(response: Response) -> WebError {
     //     None => WebError::UnknownError("Unknown error".to_string()),
     //     Some(exception) => WebError::from(exception),
     // }
+}
+
+pub(crate) fn to_unified_docs(documents: Vec<Document>, doc_type: &DocumentType) -> Vec<Value> {
+    documents
+        .into_iter()
+        .map(|doc| doc_type.to_value(&doc))
+        .filter(Result::is_ok)
+        .map(Result::unwrap)
+        .collect::<Vec<Value>>()
+}
+
+pub(crate) fn to_unified_pag(mut paginated: Paginated<Vec<Document>>, doc_type: &DocumentType) -> Paginated<Vec<Value>> {
+    let scroll_id = paginated.get_scroll_id().cloned();
+    let converted = paginated
+        .get_founded_mut()
+        .iter()
+        .map(|doc| doc_type.to_value(doc))
+        .filter(Result::is_ok)
+        .map(Result::unwrap)
+        .collect::<Vec<Value>>();
+
+    Paginated::new_with_opt_id(converted, scroll_id)
 }

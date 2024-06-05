@@ -4,7 +4,6 @@ use crate::forms::TestExample;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
-use crate::forms::documents::forms::DocumentType;
 
 #[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema, Clone)]
 pub struct SearchParams {
@@ -36,7 +35,7 @@ pub struct SearchParams {
     #[schema(example = 100)]
     #[serde(skip_serializing_if = "Option::is_none")]
     knn_candidates: Option<u32>,
-    _doc_type: DocumentType,
+    return_preview: bool,
 }
 
 impl SearchParams {
@@ -122,7 +121,7 @@ impl TestExample<SearchParams> for SearchParams {
             .scroll_lifetime("1m".to_string())
             .knn_amount(Some(5))
             .knn_candidates(Some(100))
-            ._doc_type(DocumentType::Document)
+            .return_preview(false)
             .build()
             .unwrap()
     }

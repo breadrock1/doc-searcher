@@ -37,8 +37,11 @@ impl DocumentsTrait for DocumentSimilar {
     }
 }
 
-impl From<Document> for DocumentSimilar {
-    fn from(value: Document) -> Self {
-        DocumentSimilar::builder().document(value).build().unwrap()
+impl From<&Document> for DocumentSimilar {
+    fn from(value: &Document) -> Self {
+        DocumentSimilar::builder()
+            .document(value.to_owned())
+            .build()
+            .unwrap()
     }
 }

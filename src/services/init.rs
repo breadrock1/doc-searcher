@@ -28,7 +28,7 @@ pub fn build_hello_scope() -> Scope {
 }
 
 pub fn build_cluster_scope() -> Scope {
-    web::scope("/orchestr")
+    web::scope("/orchestra")
         .service(clusters::create_cluster)
         .service(clusters::delete_cluster)
         .service(clusters::get_clusters)
@@ -50,6 +50,8 @@ pub fn build_document_scope() -> Scope {
         .service(documents::delete_document)
         .service(documents::delete_documents)
         .service(documents::update_document)
+        .service(documents::move_documents)
+        .service(searcher::get_index_records)
 }
 
 pub fn build_search_scope() -> Scope {
@@ -57,7 +59,6 @@ pub fn build_search_scope() -> Scope {
         .service(searcher::search_fulltext)
         .service(searcher::search_semantic)
         .service(searcher::search_similar)
-        .service(searcher::get_index_records)
 }
 
 pub fn build_pagination_scope() -> Scope {
@@ -69,6 +70,5 @@ pub fn build_pagination_scope() -> Scope {
 pub fn build_watcher_scope() -> Scope {
     web::scope("/watcher")
         .service(watcher::fetch_analysis)
-        .service(watcher::move_documents)
         .service(watcher::upload_files)
 }

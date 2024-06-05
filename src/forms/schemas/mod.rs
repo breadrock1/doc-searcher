@@ -1,10 +1,9 @@
 pub(crate) mod document;
 pub(crate) mod embeddings;
-pub(crate) mod preview;
+pub(crate) mod folder;
 
 use crate::forms::schemas::document::DocumentSchema;
 use crate::forms::schemas::embeddings::DocumentVectorSchema;
-use crate::forms::schemas::preview::DocumentPreviewSchema;
 
 use serde::Serializer;
 use serde_derive::Serialize;
@@ -12,13 +11,13 @@ use serde_derive::Serialize;
 pub trait ElasticSchema {}
 impl ElasticSchema for DocumentSchema {}
 impl ElasticSchema for DocumentVectorSchema {}
-impl ElasticSchema for DocumentPreviewSchema {}
 
 #[derive(Serialize)]
 struct EnabledFlag {
     enabled: bool,
 }
 
+#[allow(dead_code)]
 impl EnabledFlag {
     pub fn new(is_enabled: bool) -> Self {
         EnabledFlag {
@@ -52,6 +51,7 @@ enum FieldType {
     #[default]
     Keyword,
     Text,
+    Boolean,
 }
 
 impl serde::Serialize for FieldType {
@@ -64,6 +64,7 @@ impl serde::Serialize for FieldType {
             FieldType::Text => "text",
             FieldType::Object => "object",
             FieldType::Nested => "nested",
+            FieldType::Boolean => "boolean",
             FieldType::Integer => "integer",
             FieldType::Keyword => "keyword",
             FieldType::DenseVector => "dense_vector",

@@ -39,7 +39,7 @@ impl From<CacherDocuments> for Vec<DocumentSimilar> {
     fn from(value: CacherDocuments) -> Self {
         value
             .documents
-            .into_iter()
+            .iter()
             .map(DocumentSimilar::from)
             .collect::<Vec<DocumentSimilar>>()
     }

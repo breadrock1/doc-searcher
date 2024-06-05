@@ -37,7 +37,7 @@ pub fn init_service_config() -> Result<ServiceConfig, anyhow::Error> {
         .elastic_passwd(extract_env_value("ELASTIC_SERVICE_PASSWORD"))
         .cacher_host(extract_env_value("CACHER_SERVICE_HOST"))
         .cacher_passwd(extract_env_value("CACHER_SERVICE_PASSWORD"))
-        .cacher_expire(extract_int_env_value::<u64>("CACHER_SERVICE_EXPIRE"))
+        .cacher_expire(extract_int_env_value::<u64>("CACHER_VALUES_EXPIRE"))
         .llm_host(extract_env_value("LLM_SERVICE_HOST"))
         .watcher_host(extract_env_value("WATCHER_SERVICE_HOST"))
         .logger_host(extract_env_value("LOGGER_SERVICE_HOST"))

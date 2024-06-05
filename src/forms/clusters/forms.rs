@@ -8,12 +8,17 @@ use utoipa::{IntoParams, ToSchema};
 pub struct CreateClusterForm {
     #[schema(example = "test_slave")]
     cluster_id: String,
+    #[schema(example = "slave")]
+    role: String,
 }
 
+#[allow(dead_code)]
 impl CreateClusterForm {
-    #[allow(dead_code)]
     pub fn get_id(&self) -> &str {
         self.cluster_id.as_str()
+    }
+    pub fn get_role(&self) -> &str {
+        self.role.as_str()
     }
 }
 
@@ -28,6 +33,7 @@ impl TestExample<CreateClusterForm> for CreateClusterForm {
     fn test_example(_value: Option<&str>) -> CreateClusterForm {
         CreateClusterForm {
             cluster_id: "test-slave-cluster".to_string(),
+            role: "slave".to_string(),
         }
     }
 }

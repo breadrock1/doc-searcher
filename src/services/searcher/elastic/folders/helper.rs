@@ -1,14 +1,18 @@
-use crate::errors::WebError;
-use crate::forms::documents::forms::DocumentType;
+use crate::errors::{WebError, WebResult};
 use crate::forms::folders::folder::Folder;
-use crate::forms::folders::forms::CreateFolderForm;
+use crate::forms::folders::forms::{CreateFolderForm, FolderType};
+use crate::forms::folders::info::InfoFolder;
 use crate::forms::schemas::document::DocumentSchema;
 use crate::forms::schemas::embeddings::DocumentVectorSchema;
+use crate::forms::schemas::folder::InfoFolderSchema;
+use crate::forms::searcher::s_params::SearchParams;
+use crate::services::searcher::elastic::context::ContextOptions;
+use crate::services::searcher::elastic::searcher::helper;
 
 use elasticsearch::http::response::Response;
 use elasticsearch::{Elasticsearch, IndexParts};
 use serde_json::{json, Value};
-use crate::forms::schemas::preview::DocumentPreviewSchema;
+use std::collections::HashMap;
 
 pub(super) async fn create_index(
     elastic: &Elasticsearch,
@@ -58,11 +62,52 @@ pub(super) fn extract_folder_stats(value: &Value) -> Result<Folder, WebError> {
     Ok(folder)
 }
 
-pub(super) fn create_folder_schema(schema_type: &DocumentType) -> Value {
+pub(super) fn create_folder_schema(schema_type: &FolderType) -> Value {
     match schema_type {
-        DocumentType::Document => serde_json::to_value(DocumentSchema::default()),
-        DocumentType::Vectors => serde_json::to_value(DocumentVectorSchema::default()),
-        DocumentType::Preview => serde_json::to_value(DocumentPreviewSchema::default()),
+        FolderType::InfoFolder => serde_json::to_value(InfoFolderSchema::default()),
+        FolderType::Vectors => serde_json::to_value(DocumentVectorSchema::default()),
+        _ => serde_json::to_value(DocumentSchema::default()),
     }
     .unwrap()
+}
+
+pub(crate) async fn test(elastic: &Elasticsearch, ctx_opts: &ContextOptions, folders: Vec<Folder>) -> WebResult<Vec<Folder>> {
+    let s_params = SearchParams::default();
+
+    let info_folders = helper::search::<InfoFolder>(&elastic, &s_params, ctx_opts, &[""]).await?;
+    let mut info_folders_map: HashMap<&str, InfoFolder > = HashMap::new();
+    info_folders
+        .get_founded()
+        .iter()
+        .for_each(|info| {
+            let id = info.get_id();
+            let info_cln = info.to_owned();
+            info_folders_map.insert(id, info_cln);
+        });
+
+    let mut new_vec: Vec<Folder> = Vec::new();
+    for mut test in folders {
+        let tes = &mut test;
+        if filter_system_folders(tes, &mut info_folders_map) {
+            new_vec.push(test);
+        }
+    }
+    
+    Ok(new_vec)
+}
+
+pub(crate) fn filter_system_folders(folder: &mut Folder, info_folders: &mut HashMap<&str, InfoFolder>) -> bool {
+    let fold_id = folder.get_index();
+    match info_folders.get(fold_id) {
+        None => false,
+        Some(info_folder) => {
+            if info_folder.is_system() {
+                return false;
+            }
+
+            let name = info_folder.get_name();
+            folder.set_name(Some(name.to_string()));
+            true
+        }
+    }
 }

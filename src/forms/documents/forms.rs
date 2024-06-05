@@ -1,13 +1,14 @@
-use crate::forms::documents::document::Document;
+use crate::errors::WebError;
 use crate::forms::TestExample;
+use crate::forms::documents::document::Document;
+use crate::forms::documents::embeddings::DocumentVectors;
+use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::similar::DocumentSimilar;
 
 use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
-use crate::errors::WebError;
-use crate::forms::documents::embeddings::DocumentVectors;
-use crate::forms::documents::preview::DocumentPreview;
 
 #[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
 pub enum DocumentType {
@@ -18,6 +19,8 @@ pub enum DocumentType {
     Preview,
     #[serde(rename(deserialize = "vectors", serialize = "vectors",))]
     Vectors,
+    #[serde(rename(deserialize = "similar", serialize = "similar",))]
+    Similar,
 }
 
 impl DocumentType {
@@ -25,6 +28,7 @@ impl DocumentType {
         match self {
             DocumentType::Preview => serde_json::to_value(DocumentPreview::from(document)),
             DocumentType::Vectors => serde_json::to_value(DocumentVectors::from(document)),
+            DocumentType::Similar => serde_json::to_value(DocumentSimilar::from(document)),
             _ => serde_json::to_value(document)
         }
         .map_err(WebError::from)

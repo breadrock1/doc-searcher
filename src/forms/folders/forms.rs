@@ -1,8 +1,18 @@
 use crate::forms::TestExample;
-use crate::forms::documents::forms::DocumentType;
 
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+
+#[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
+pub enum FolderType {
+    #[default]
+    #[serde(rename(deserialize = "document", serialize = "document",))]
+    Document,
+    #[serde(rename(deserialize = "vectors", serialize = "vectors",))]
+    Vectors,
+    #[serde(rename(deserialize = "info-folder", serialize = "info-folder",))]
+    InfoFolder,
+}
 
 #[derive(Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct CreateFolderForm {
@@ -11,9 +21,15 @@ pub struct CreateFolderForm {
     #[schema(example = "Test Folder")]
     folder_name: String,
     #[schema(example = "preview")]
-    folder_schema_type: DocumentType,
+    folder_type: FolderType,
     #[schema(example = false)]
     create_into_watcher: bool,
+    #[schema(example = "/tmp")]
+    location: String,
+    #[schema(example = "aTfbs823bfs8a")]
+    user_id: String,
+    #[schema(example = false)]
+    is_system: bool,
 }
 
 impl CreateFolderForm {
@@ -23,11 +39,20 @@ impl CreateFolderForm {
     pub fn get_name(&self) -> &str {
         self.folder_name.as_str()
     } 
-    pub fn get_schema(&self) -> &DocumentType {
-        &self.folder_schema_type
+    pub fn get_schema(&self) -> &FolderType {
+        &self.folder_type
     }
     pub fn create_into_watcher(&self) -> bool {
         self.create_into_watcher
+    }
+    pub fn get_location(&self) -> &str {
+        self.location.as_str()
+    }
+    pub fn get_user(&self) -> &str {
+        self.user_id.as_str()
+    }
+    pub fn is_system(&self) -> bool {
+        self.is_system
     }
 }
 
@@ -36,8 +61,11 @@ impl TestExample<CreateFolderForm> for CreateFolderForm {
         CreateFolderForm {
             folder_id: "test-folder".to_string(),
             folder_name: "Test Folder".to_string(),
-            folder_schema_type: DocumentType::Document,
+            folder_type: FolderType::Document,
             create_into_watcher: false,
+            location: "/tmp".to_string(),
+            user_id: "aTfbs823bfs8a".to_string(),
+            is_system: false,
         }
     }
 }

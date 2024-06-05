@@ -5,6 +5,7 @@ use crate::forms::documents::metadata::HighlightEntity;
 use crate::forms::documents::preview::DocumentPreview;
 use crate::forms::documents::similar::DocumentSimilar;
 use crate::forms::documents::DocumentsTrait;
+use crate::forms::folders::info::InfoFolder;
 use crate::forms::searcher::s_params::SearchParams;
 use crate::services::searcher::elastic::context::ContextOptions;
 use crate::services::searcher::elastic::helper::send_llm_request;
@@ -143,5 +144,25 @@ impl SearcherTrait<DocumentSimilar> for DocumentSimilar {
         let document = Document::deserialize(source_value)?;
         let doc_similar = DocumentSimilar::new(document);
         Ok(doc_similar)
+    }
+}
+
+#[async_trait::async_trait]
+impl SearcherTrait<InfoFolder> for InfoFolder {
+    async fn build_query(_: &SearchParams, _: &ContextOptions) -> Value {
+        json!({
+            "query": {
+                "bool": {
+                    "must": {
+                        "match_all": {}
+                    }
+                }
+            }
+        })
+    }
+
+    async fn extract_from_response(value: &Value) -> Result<InfoFolder, WebError> {
+        let source_value = &value[&"_source"];
+        InfoFolder::deserialize(source_value).map_err(WebError::from)
     }
 }

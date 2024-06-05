@@ -1,7 +1,6 @@
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
 use crate::forms::TestExample;
 use crate::forms::documents::forms::DocumentType;
-use crate::forms::pagination::pagination::Paginated;
 use crate::forms::pagination::forms::{DeletePaginationsForm, PaginateNextForm};
 use crate::services::searcher::service::PaginatorService;
 
@@ -113,17 +112,7 @@ async fn paginate_next(
     document_type: Query<DocumentType>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
-    let pagination_form = form.0;
-    let mut founded_docs = client.paginate(&pagination_form).await?;
-    
-    let scroll_id = founded_docs.get_scroll_id().cloned();
-    let converted = founded_docs
-        .get_founded_mut()
-        .iter()
-        .map(|doc| document_type.to_value(doc))
-        .filter(Result::is_ok)
-        .map(Result::unwrap)
-        .collect::<Vec<Value>>();
-    
-    Ok(Json(Paginated::new_with_opt_id(converted, scroll_id)))
+    let pag_form = form.0;
+    let founded_docs = client.paginate(&pag_form, &document_type).await?;
+    Ok(Json(founded_docs))
 }

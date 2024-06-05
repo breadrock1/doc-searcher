@@ -26,9 +26,9 @@ async fn main() -> Result<(), anyhow::Error> {
         let cacher_cxt = Box::new(cacher_service.clone());
 
         let searcher = search_service.clone();
-        let clusters_cxt: Box<dyn ClustersService> = Box::new(searcher.clone());
-        let documents_cxt: Box<dyn DocumentsService> = Box::new(searcher.clone());
-        let folders_cxt: Box<dyn FoldersService> = Box::new(searcher.clone());
+        let clusters_cxt: Box<dyn ClusterService> = Box::new(searcher.clone());
+        let documents_cxt: Box<dyn DocumentService> = Box::new(searcher.clone());
+        let folders_cxt: Box<dyn FolderService> = Box::new(searcher.clone());
         let paginator_cxt: Box<dyn PaginatorService> = Box::new(searcher.clone());
         let searcher_cxt: Box<dyn SearcherService> = Box::new(searcher.clone());
         let watcher_cxt: Box<dyn WatcherService> = Box::new(searcher);
