@@ -1,20 +1,17 @@
-use crate::endpoints::CacherData;
 use crate::errors::{ErrorResponse, PaginateResponse};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::DocumentType;
 use crate::forms::documents::embeddings::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
 use crate::forms::documents::similar::DocumentSimilar;
 use crate::forms::pagination::pagination::Paginated;
 use crate::forms::searcher::s_params::SearchParams;
-use crate::services::cacher::rediska::values::documents::CacherDocuments;
-use crate::services::cacher::rediska::values::embeddings::CacherEmbeddings;
-use crate::services::cacher::rediska::values::s_params::CacherSearchParams;
-use crate::services::cacher::service::CacherService;
 use crate::services::searcher::service::SearcherService;
 
 use actix_web::{post};
-use actix_web::web::{Data, Json};
+use actix_web::web::{Data, Json, Query};
+use serde_json::Value;
 
 type Context = Data<Box<dyn SearcherService>>;
 
@@ -58,39 +55,13 @@ type Context = Data<Box<dyn SearcherService>>;
 #[post("/fulltext")]
 async fn search_fulltext(
     cxt: Context,
-    cacher: CacherData,
     form: Json<SearchParams>,
-) -> PaginateResponse<Vec<Document>> {
+    document_type: Query<DocumentType>,
+) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-
-    if !cfg!(feature = "enable-caching") {
-        let result = client.search_fulltext(&search_form).await?;
-        return Ok(Json(result));
-    }
-
-    let cacher_params = CacherSearchParams::from(&search_form);
-    match cacher
-        .service
-        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
-        .await
-    {
-        None => {
-            let founded_docs = client.search_fulltext(&search_form).await?;
-            let cacher_docs = CacherDocuments::from(founded_docs.get_founded());
-            let cacher_params = CacherSearchParams::from(&search_form);
-            let _ = cacher
-                .service
-                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, cacher_docs)
-                .await;
-
-            Ok(Json(founded_docs))
-        }
-        Some(cacher_docs) => {
-            let documents = Vec::from(cacher_docs);
-            Ok(Json(Paginated::new(documents)))
-        }
-    }
+    let documents = client.search_fulltext(&search_form, &document_type).await?;
+    Ok(Json(documents))
 }
 
 #[utoipa::path(
@@ -133,39 +104,12 @@ async fn search_fulltext(
 #[post("/semantic")]
 async fn search_semantic(
     cxt: Context,
-    cacher: CacherData,
     form: Json<SearchParams>,
 ) -> PaginateResponse<Vec<DocumentVectors>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-
-    if !cfg!(feature = "enable-caching") {
-        let result = client.search_semantic(&search_form).await?;
-        return Ok(Json(result));
-    }
-
-    let cacher_params = CacherSearchParams::from(&search_form);
-    match cacher
-        .service
-        .load::<CacherSearchParams, CacherEmbeddings>(cacher_params)
-        .await
-    {
-        None => {
-            let founded_docs = client.search_semantic(&search_form).await?;
-            let cacher_docs = CacherEmbeddings::from(founded_docs.get_founded());
-            let cacher_params = CacherSearchParams::from(&search_form);
-            let _ = cacher
-                .service
-                .insert::<CacherSearchParams, CacherEmbeddings>(cacher_params, cacher_docs)
-                .await;
-
-            Ok(Json(founded_docs))
-        }
-        Some(cacher_embeddings) => {
-            let documents = Vec::from(cacher_embeddings);
-            Ok(Json(Paginated::new(documents)))
-        }
-    }
+    let documents = client.search_semantic(&search_form).await?;
+    Ok(Json(documents))
 }
 
 #[utoipa::path(
@@ -211,44 +155,17 @@ async fn search_semantic(
 #[post("/similar")]
 async fn search_similar(
     cxt: Context,
-    cacher: CacherData,
     form: Json<SearchParams>,
 ) -> PaginateResponse<Vec<DocumentSimilar>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-
-    if !cfg!(feature = "enable-caching") {
-        let result = client.search_similar(&search_form).await?;
-        return Ok(Json(result));
-    }
-
-    let cacher_params = CacherSearchParams::from(&search_form);
-    match cacher
-        .service
-        .load::<CacherSearchParams, CacherDocuments>(cacher_params)
-        .await
-    {
-        None => {
-            let founded_docs = client.search_similar(&search_form).await?;
-            let cacher_docs = CacherDocuments::from(founded_docs.get_founded());
-            let cacher_params = CacherSearchParams::from(&search_form);
-            let _ = cacher
-                .service
-                .insert::<CacherSearchParams, CacherDocuments>(cacher_params, cacher_docs)
-                .await;
-
-            Ok(Json(founded_docs))
-        }
-        Some(cacher_docs) => {
-            let documents = Vec::from(cacher_docs);
-            Ok(Json(Paginated::new(documents)))
-        }
-    }
+    let documents = client.search_similar(&search_form).await?;
+    Ok(Json(documents))
 }
 
 #[utoipa::path(
     post,
-    path = "/search/{folder_id}/documents",
+    path = "/folders/{folder_id}/documents",
     tag = "Search",
     params(
         (
@@ -256,6 +173,11 @@ async fn search_similar(
             description = "Passed folder id to get stored documents",
             example = "test-folder",
         ),
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
     ),
     request_body(
         content = SearchParams,
@@ -290,13 +212,14 @@ async fn search_similar(
         )
     )
 )]
-#[post("/{folder_id}/documents")]
+#[post("/folders/{folder_id}/documents")]
 async fn get_index_records(
     cxt: Data<Box<dyn SearcherService>>,
     form: Json<SearchParams>,
-) -> PaginateResponse<Vec<DocumentPreview>> {
+    document_type: Query<DocumentType>,
+) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let search_form = form.0;
-    let folder_documents = client.search_previews(&search_form).await?;
+    let folder_documents = client.search_records(&search_form, &document_type).await?;
     Ok(Json(folder_documents))
 }

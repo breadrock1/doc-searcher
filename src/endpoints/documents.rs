@@ -1,14 +1,14 @@
 use crate::errors::{ErrorResponse, JsonResponse, Successful, WebError};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::forms::{DeleteDocsForm, DocumentType};
-use crate::services::searcher::service::DocumentsService;
+use crate::forms::documents::forms::{DeleteDocsForm, DocumentType, MoveDocsForm};
+use crate::services::searcher::service::DocumentService;
 
 use actix_web::{delete, get, post, put};
 use actix_web::web::{Data, Json, Path, Query};
 use serde_json::Value;
 
-type Context = Data<Box<dyn DocumentsService>>;
+type Context = Data<Box<dyn DocumentService>>;
 
 #[utoipa::path(
     put,
@@ -63,11 +63,7 @@ type Context = Data<Box<dyn DocumentsService>>;
     )
 )]
 #[put("/folders/{folder_id}/{document_id}")]
-async fn create_document(
-    cxt: Context,
-    form: Json<Document>,
-    _path: Path<(String, String)>,
-) -> JsonResponse<Successful> {
+async fn create_document(cxt: Context, form: Json<Document>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let doc_form = form.0;
     let status = client.create_document(&doc_form).await?;
@@ -264,12 +260,69 @@ async fn get_document(
 ) -> JsonResponse<Value> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
-    let document = client
-        .get_document(folder_id.as_str(), doc_id)
-        .await?;
-
-    let value = document_type.0.to_value(&document)?;
+    let document = client.get_document(folder_id.as_str(), doc_id).await?;
+    let value = document_type.to_value(&document)?;
     Ok(Json(value))
+}
+
+#[utoipa::path(
+    post,
+    path = "/folders/{folder_id}/move",
+    tag = "Documents",
+    params(
+        (
+        "folder_id" = &str,
+        description = "Folder id where document is stored",
+        example = "test-folder",
+        )
+    ),
+    request_body(
+        content = MoveDocsForm,
+        example = json!(MoveDocsForm::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Successful,
+            example = json!(Successful {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while moving documents to folder",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while moving documents to folder".to_string(),
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+            })
+        )
+    )
+)]
+#[post("/folders/{folder_id}/move")]
+async fn move_documents(
+    cxt: Context,
+    path: Path<String>,
+    form: Json<MoveDocsForm>,
+) -> JsonResponse<Successful> {
+    let client = cxt.get_ref();
+    let folder_id = path.as_ref();
+    let move_doc_form = form.0;
+    let status = client.move_documents(folder_id, &move_doc_form).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(

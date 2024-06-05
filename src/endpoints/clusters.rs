@@ -2,16 +2,16 @@ use crate::errors::{ErrorResponse, JsonResponse, Successful};
 use crate::forms::TestExample;
 use crate::forms::clusters::cluster::Cluster;
 use crate::forms::clusters::forms::CreateClusterForm;
-use crate::services::searcher::service::ClustersService;
+use crate::services::searcher::service::ClusterService;
 
 use actix_web::{delete, get, put};
 use actix_web::web::{Data, Json, Path};
 
-type Context = Data<Box<dyn ClustersService>>;
+type Context = Data<Box<dyn ClusterService>>;
 
 #[utoipa::path(
     get,
-    path = "/orchestr/clusters",
+    path = "/orchestra/clusters",
     tag = "Clusters",
     responses(
         (
@@ -50,7 +50,7 @@ async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
 
 #[utoipa::path(
     put,
-    path = "/orchestr/clusters/{cluster_id}",
+    path = "/orchestra/clusters/{cluster_id}",
     tag = "Clusters",
     request_body(
         content = CreateClusterForm,
@@ -101,18 +101,19 @@ async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
 #[put("/clusters/{cluster_id}")]
 async fn create_cluster(
     cxt: Context, 
-    _path: Path<String>,
+    path: Path<String>,
     form: Json<CreateClusterForm>,
 ) -> JsonResponse<Successful> {
-    let cluster_id = form.0.to_string();
+    let cluster_form = form.0;
+    let cluster_id = path.as_str();
     let client = cxt.get_ref();
-    let status = client.create_cluster(cluster_id.as_str()).await?;
+    let status = client.create_cluster(cluster_id, &cluster_form).await?;
     Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/orchestr/clusters/{cluster_id}",
+    path = "/orchestra/clusters/{cluster_id}",
     tag = "Clusters",
     params(
         (
@@ -162,7 +163,7 @@ async fn delete_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Succes
 
 #[utoipa::path(
     get,
-    path = "/orchestr/clusters/{cluster_id}",
+    path = "/orchestra/clusters/{cluster_id}",
     tag = "Clusters",
     params(
         (

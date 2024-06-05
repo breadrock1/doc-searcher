@@ -5,6 +5,7 @@ use crate::forms::documents::preview::DocumentPreview;
 
 use elasticsearch::http::request::JsonBody;
 use serde_json::{json, Value};
+use crate::forms::folders::info::InfoFolder;
 
 #[async_trait::async_trait]
 pub trait StoreTrait<T: DocumentsTrait + serde::Serialize> {
@@ -57,6 +58,20 @@ impl StoreTrait<DocumentVectors> for DocumentVectors {
             body.push(doc_json.into());
         }
         
+        body
+    }
+}
+
+#[async_trait::async_trait]
+impl StoreTrait<InfoFolder> for InfoFolder {
+    async fn create_body(info_folder: &InfoFolder) -> Vec<JsonBody<Value>> {
+        let to_value_result = serde_json::to_value(info_folder);
+        let info_folder_json = to_value_result.unwrap();
+        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
+        
+        body.push(json!({"index": { "_id": info_folder.get_id() }}).into());
+        body.push(info_folder_json.into());
+
         body
     }
 }

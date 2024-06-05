@@ -35,6 +35,9 @@ pub struct Folder {
     #[schema(example = "890.3kb")]
     #[serde(alias = "pri.store.size", skip_serializing_if = "Option::is_none")]
     pri_store_size: Option<String>,
+    #[schema(example = "Test Folder Name")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
 }
 
 impl Folder {
@@ -81,6 +84,9 @@ impl Folder {
     pub fn get_pri_store_size(&self) -> Option<&String> {
         self.pri_store_size.as_ref()
     }
+    pub fn set_name(&mut self, name: Option<String>) {
+        self.name = name
+    }
 }
 
 impl TestExample<Folder> for Folder {
@@ -96,6 +102,7 @@ impl TestExample<Folder> for Folder {
             .docs_deleted(Some("2".to_string()))
             .store_size(Some("23812".to_string()))
             .pri_store_size(Some("23812".to_string()))
+            .name(Some("Test Folder Name".to_string()))
             .build()
             .unwrap()
     }

@@ -5,7 +5,7 @@ use crate::forms::documents::forms::MoveDocsForm;
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::store::StoreTrait;
-use crate::services::searcher::service::DocumentsService;
+use crate::services::searcher::service::DocumentService;
 
 use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, CountParts, Elasticsearch};
@@ -13,7 +13,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
 
-pub(crate) async fn store_document<T>(
+pub(crate) async fn store_object<T>(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
     doc_form: &T,
 ) -> WebResult<Successful>

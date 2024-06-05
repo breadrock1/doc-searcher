@@ -36,6 +36,7 @@ pub struct DocumentPreview {
     preview_properties: Option<Vec<Artifacts>>,
 }
 
+#[allow(dead_code)]
 impl DocumentPreview {
     pub fn builder() -> DocumentPreviewBuilder {
         DocumentPreviewBuilder::default()

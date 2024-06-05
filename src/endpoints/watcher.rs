@@ -1,14 +1,15 @@
-use crate::errors::{ErrorResponse, JsonResponse, Successful, WebError};
+use crate::errors::{ErrorResponse, JsonResponse, WebError};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::preview::DocumentPreview;
-use crate::forms::documents::forms::{AnalyseDocsForm, DocumentType, MoveDocsForm};
+use crate::forms::documents::forms::{AnalyseDocsForm, DocumentType};
+use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::{UploadedResult, WatcherService};
 
 use actix_multipart::Multipart;
 use actix_web::post;
 use actix_web::web::block;
-use actix_web::web::{Data, Json, Path, Query};
+use actix_web::web::{Data, Json, Query};
 use futures::{StreamExt, TryStreamExt};
 use serde_json::Value;
 use std::io::Write;
@@ -67,77 +68,8 @@ async fn fetch_analysis(
 ) -> JsonResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let document_ids = form.0.get_doc_ids();
-    let documents = client.analyse_docs(document_ids).await?;
-    
-    let document_type = document_type.0;
-    let values = documents
-        .into_iter()
-        .map(|doc| document_type.to_value(&doc))
-        .filter(Result::is_ok)
-        .map(Result::unwrap)
-        .collect::<Vec<Value>>();
-    
-    Ok(Json(values))
-}
-
-#[utoipa::path(
-    post,
-    path = "/watcher/move/{folder_id}/documents",
-    tag = "Documents",
-    params(
-        (
-            "folder_id" = &str,
-            description = "Folder id where document is stored",
-            example = "test-folder",
-        )
-    ),
-    request_body(
-        content = MoveDocsForm,
-        example = json!(MoveDocsForm::test_example(None)),
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = Successful,
-            example = json!(Successful {
-                code: 200,
-                message: "Done".to_string(),
-            })
-        ),
-        (
-            status = 400,
-            description = "Failed while moving documents to folder",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while moving documents to folder".to_string(),
-            })
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-            })
-        )
-    )
-)]
-#[post("/move/{folder_id}/documents")]
-async fn move_documents(
-    cxt: Context,
-    path: Path<String>,
-    form: Json<MoveDocsForm>,
-) -> JsonResponse<Successful> {
-    let client = cxt.get_ref();
-    let folder_id = path.as_ref();
-    let move_doc_form = form.0;
-    let status = client.move_documents(folder_id, &move_doc_form).await?;
-    Ok(Json(status))
+    let documents = client.analyse_docs(document_ids, &document_type).await?;
+    Ok(Json(documents))
 }
 
 #[utoipa::path(
@@ -192,13 +124,7 @@ async fn upload_files(
 ) -> JsonResponse<Vec<Value>> {
     let documents = upload_documents(cxt, payload).await?;
     let document_type = document_type.0;
-    let values = documents
-        .into_iter()
-        .map(|doc| document_type.to_value(&doc))
-        .filter(Result::is_ok)
-        .map(Result::unwrap)
-        .collect::<Vec<Value>>();
-    
+    let values = helper::to_unified_docs(documents, &document_type);
     Ok(Json(values))
 }
 

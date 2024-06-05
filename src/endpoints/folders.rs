@@ -3,12 +3,12 @@ use crate::errors::JsonResponse;
 use crate::forms::TestExample;
 use crate::forms::folders::folder::Folder;
 use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm};
-use crate::services::searcher::service::FoldersService;
+use crate::services::searcher::service::FolderService;
 
 use actix_web::{delete, get, put};
 use actix_web::web::{Data, Json, Path};
 
-type Context = Data<Box<dyn FoldersService>>;
+type Context = Data<Box<dyn FolderService>>;
 
 #[utoipa::path(
     get,
