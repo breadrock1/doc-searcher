@@ -2,11 +2,11 @@ use crate::errors::{ErrorResponse, Successful};
 use crate::errors::JsonResponse;
 use crate::forms::TestExample;
 use crate::forms::folders::folder::Folder;
-use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm};
+use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm, ShowAllFlag};
 use crate::services::searcher::service::FolderService;
 
 use actix_web::{delete, get, put};
-use actix_web::web::{Data, Json, Path};
+use actix_web::web::{Data, Json, Path, Query};
 
 type Context = Data<Box<dyn FolderService>>;
 
@@ -14,6 +14,13 @@ type Context = Data<Box<dyn FolderService>>;
     get,
     path = "/storage/folders",
     tag = "Folders",
+    params(
+        (
+            "show_all", Query,
+            description = "Show all folders",
+            example = "true",
+        )
+    ),
     responses(
         (
             status = 200,
@@ -29,6 +36,7 @@ type Context = Data<Box<dyn FolderService>>;
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting folders".to_string(),
+                attachments: None,
             }),
         ),
         (
@@ -39,14 +47,16 @@ type Context = Data<Box<dyn FolderService>>;
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
 )]
 #[get("/folders")]
-async fn get_folders(cxt: Context) -> JsonResponse<Vec<Folder>> {
+async fn get_folders(cxt: Context, show_all: Query<ShowAllFlag>) -> JsonResponse<Vec<Folder>> {
     let client = cxt.get_ref();
-    let folders = client.get_all_folders().await?;
+    let show_all_flag = show_all.0.flag();
+    let folders = client.get_all_folders(show_all_flag).await?;
     Ok(Json(folders))
 }
 
@@ -76,6 +86,7 @@ async fn get_folders(cxt: Context) -> JsonResponse<Vec<Folder>> {
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting folder by id".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -86,6 +97,7 @@ async fn get_folders(cxt: Context) -> JsonResponse<Vec<Folder>> {
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -130,6 +142,7 @@ async fn get_folder(cxt: Context, path: Path<String>) -> JsonResponse<Folder> {
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while creating new folder".to_string(),
+                attachments: None,
             }),
         ),
         (
@@ -140,6 +153,7 @@ async fn get_folder(cxt: Context, path: Path<String>) -> JsonResponse<Folder> {
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -185,6 +199,7 @@ async fn create_folder(cxt: Context, form: Json<CreateFolderForm>) -> JsonRespon
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while deleting folder".to_string(),
+                attachments: None,
             }),
         ),
         (
@@ -195,6 +210,7 @@ async fn create_folder(cxt: Context, form: Json<CreateFolderForm>) -> JsonRespon
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )

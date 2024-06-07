@@ -1,5 +1,6 @@
-use crate::errors::WebError;
+use crate::errors::{WebError, WebErrorEntity};
 use crate::forms::documents::DocumentsTrait;
+use crate::forms::documents::preview::DocumentPreview;
 use crate::forms::pagination::pagination::Paginated;
 use crate::forms::searcher::s_params::SearchParams;
 use crate::services::searcher::elastic::context::ContextOptions;
@@ -21,10 +22,30 @@ where
     let body_value = T::build_query(s_params, cxt_opts).await;
     let response = send_search_request(elastic, s_params, &body_value, indexes).await?;
     if !response.status_code().is_success() {
-        let msg = "Failed to get query embeddings.";
-        return Err(WebError::SearchError(msg.to_string()));
+        let msg = "Failed while parsing elastic response.";
+        let entity = WebErrorEntity::new(msg.to_string());
+        return Err(WebError::SearchError(entity));
     }
     Ok(extract_elastic_response(response).await)
+}
+
+pub(crate) async fn search_all<T>(
+    elastic: &Elasticsearch,
+    s_params: &SearchParams,
+    cxt_opts: &ContextOptions,
+    indexes: &[&str],
+) -> Result<Paginated<Vec<T>>, WebError>
+where
+    T: DocumentsTrait + SearcherTrait<T>,
+{
+    let body_value = DocumentPreview::build_query(s_params, cxt_opts).await;
+    let response = send_search_request(elastic, s_params, &body_value, indexes).await?;
+    if !response.status_code().is_success() {
+        let msg = "Failed while parsing elastic response.";
+        let entity = WebErrorEntity::new(msg.to_string());
+        return Err(WebError::SearchError(entity));
+    }
+    Ok(extract_elastic_response::<T>(response).await)
 }
 
 async fn send_search_request(
@@ -61,7 +82,7 @@ where
     let json_array = own_document.as_array().unwrap_or(&default_vec);
 
     let mut extracted_values: Vec<Result<T, WebError>> = Vec::default();
-    for doc_value in json_array.into_iter() {
+    for doc_value in json_array.iter() {
         extracted_values.push(T::extract_from_response(doc_value).await);
     }
 

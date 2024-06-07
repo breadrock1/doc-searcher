@@ -2,10 +2,10 @@ use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::embeddings::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::folders::info::InfoFolder;
 
 use elasticsearch::http::request::JsonBody;
 use serde_json::{json, Value};
-use crate::forms::folders::info::InfoFolder;
 
 #[async_trait::async_trait]
 pub trait StoreTrait<T: DocumentsTrait + serde::Serialize> {
@@ -47,7 +47,7 @@ impl StoreTrait<DocumentVectors> for DocumentVectors {
         base_doc_vecs.exclude_embeddings();
         
         let all_embeddings = doc_form.get_embeddings();
-        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(all_embeddings.len());
+        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(all_embeddings.len() * 2);
         for vector in doc_form.get_embeddings() {
             let mut doc = base_doc_vecs.clone();
             doc.append_embeddings(vector.to_owned());

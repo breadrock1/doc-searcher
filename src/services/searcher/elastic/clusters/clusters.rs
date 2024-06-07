@@ -1,4 +1,4 @@
-use crate::errors::{Successful, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::clusters::cluster::Cluster;
 use crate::forms::clusters::forms::CreateClusterForm;
 use crate::services::searcher::elastic::context::ElasticContext;
@@ -39,7 +39,8 @@ impl ClusterService for ElasticContext {
             Some(value) => Ok(value.to_owned()),
             None => {
                 log::warn!("There is no cluster with passed name: {}", cluster_id);
-                Err(WebError::GetCluster(cluster_id.to_string()))
+                let entity = WebErrorEntity::new(cluster_id.to_string());
+                Err(WebError::GetCluster(entity))
             }
         }
     }
@@ -60,6 +61,7 @@ impl ClusterService for ElasticContext {
     }
     async fn create_cluster(&self, _id: &str, _form: &CreateClusterForm) -> WebResult<Successful> {
         log::warn!("This functionality does not implemented yet!");
-        Err(WebError::CreateCluster("Not available".to_string()))
+        let entity = WebErrorEntity::new("Not available".to_string());
+        Err(WebError::CreateCluster(entity))
     }
 }

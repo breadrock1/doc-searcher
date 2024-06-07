@@ -25,6 +25,7 @@ use actix_web::web::Json;
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     ),

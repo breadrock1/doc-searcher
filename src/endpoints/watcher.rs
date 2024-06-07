@@ -1,4 +1,4 @@
-use crate::errors::{ErrorResponse, JsonResponse, WebError};
+use crate::errors::{ErrorResponse, JsonResponse, WebError, WebErrorEntity};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::preview::DocumentPreview;
@@ -46,6 +46,7 @@ type Context = Data<Box<dyn WatcherService>>;
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while analysing documents".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -56,6 +57,7 @@ type Context = Data<Box<dyn WatcherService>>;
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -102,6 +104,7 @@ async fn fetch_analysis(
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while uploading files to watcher".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -112,6 +115,7 @@ async fn fetch_analysis(
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -134,7 +138,10 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
     while let Some(mut field) = payload
         .try_next()
         .await
-        .map_err(|err| WebError::UploadFileError(err.to_string()))?
+        .map_err(|err| {
+            let entity = WebErrorEntity::new(err.to_string());
+            WebError::UploadFileError(entity)
+        })?
     {
         let content_disposition = field.content_disposition();
         let filename = content_disposition.get_filename().unwrap().to_string();
@@ -149,7 +156,8 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
         while let Some(read_chunk_result) = field.next().await {
             if read_chunk_result.is_err() {
                 let err = read_chunk_result.err().unwrap();
-                return Err(WebError::UploadFileError(err.to_string()));
+                let entity = WebErrorEntity::new(err.to_string());
+                return Err(WebError::UploadFileError(entity));
             }
 
             let data = read_chunk_result.unwrap();

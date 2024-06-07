@@ -6,6 +6,7 @@ use utoipa::ToSchema;
 
 pub const DEFAULT_FOLDER_ID: &str = "common_folder";
 pub const HISTORY_FOLDER_ID: &str = "history";
+pub const INFO_FOLDER_ID: &str = "info-folder";
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
 pub struct Folder {
@@ -14,6 +15,7 @@ pub struct Folder {
     #[schema(example = "open")]
     status: String,
     #[schema(example = "test_folder")]
+    #[serde(rename(serialize = "id"))]
     index: String,
     #[schema(example = "60qbF_yuTa2TXYd7soYb1A")]
     uuid: String,

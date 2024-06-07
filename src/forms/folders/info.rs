@@ -38,15 +38,15 @@ impl InfoFolder {
 
 impl DocumentsTrait for InfoFolder {
     fn get_folder_id(&self) -> &str {
-        self.index.as_str()
+        "info-folder"
     }
 
     fn get_doc_id(&self) -> &str {
-        ""
+        self.index.as_str()
     }
 
-    fn set_folder_id(&mut self, folder_id: &str) {
-        self.index = folder_id.to_string();
+    fn set_folder_id(&mut self, _folder_id: &str) {
+        self.index = "info-folder".to_string();
     }
 }
 

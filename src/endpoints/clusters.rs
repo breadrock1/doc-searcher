@@ -28,6 +28,7 @@ type Context = Data<Box<dyn ClusterService>>;
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting clusters".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -38,6 +39,7 @@ type Context = Data<Box<dyn ClusterService>>;
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -74,6 +76,7 @@ async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while creating cluster".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -84,6 +87,7 @@ async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
                 code: 501,
                 error: "Not Implemented".to_string(),
                 message: "Not implemented functionality yet".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -94,6 +98,7 @@ async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -140,6 +145,7 @@ async fn create_cluster(
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while deleting cluster".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -150,6 +156,7 @@ async fn create_cluster(
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -187,6 +194,7 @@ async fn delete_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Succes
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting cluster by id".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -197,6 +205,7 @@ async fn delete_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Succes
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )

@@ -89,3 +89,14 @@ impl TestExample<DeleteFolderForm> for DeleteFolderForm {
         }
     }
 }
+
+#[derive(Deserialize, Default, IntoParams, ToSchema)]
+pub struct ShowAllFlag {
+    show_all: Option<bool>,
+}
+
+impl ShowAllFlag {
+    pub fn flag(&self) -> bool {
+        self.show_all.unwrap_or_else(|| false)
+    }
+}

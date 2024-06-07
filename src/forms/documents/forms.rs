@@ -33,6 +33,9 @@ impl DocumentType {
         }
         .map_err(WebError::from)
     }
+    pub fn is_vector_type(&self) -> bool {
+        matches!(self, DocumentType::Vectors)
+    }
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
@@ -109,5 +112,16 @@ impl TestExample<AnalyseDocsForm> for AnalyseDocsForm {
         AnalyseDocsForm {
             document_ids: vec!["98ac9896be35f47fb8442580cd9839b4".to_string()],
         }
+    }
+}
+
+#[derive(Deserialize, Default, IntoParams, ToSchema)]
+pub struct DocTypeQuery {
+    document_type: Option<DocumentType>,
+}
+
+impl DocTypeQuery {
+    pub fn get_type(&self) -> DocumentType {
+        self.document_type.clone().unwrap_or(DocumentType::Document)
     }
 }

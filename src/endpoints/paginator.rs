@@ -36,6 +36,7 @@ type Context = Data<Box<dyn PaginatorService>>;
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while deleting pagination sessions".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -46,6 +47,7 @@ type Context = Data<Box<dyn PaginatorService>>;
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -91,6 +93,7 @@ async fn delete_paginate_sessions(cxt: Context, form: Json<DeletePaginationsForm
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while scrolling".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -101,6 +104,7 @@ async fn delete_paginate_sessions(cxt: Context, form: Json<DeletePaginationsForm
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )

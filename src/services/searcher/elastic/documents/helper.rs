@@ -1,7 +1,7 @@
-use crate::errors::{Successful, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::forms::MoveDocsForm;
+use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::store::StoreTrait;
@@ -74,14 +74,16 @@ pub(crate) async fn move_document(
     let status = es_cxt.delete_document(folder_id, doc_id).await?;
     if !status.is_success() {
         let msg = status.get_msg().to_string();
-        return Err(WebError::DeleteDocument(msg))
+        let entity = WebErrorEntity::new(msg);
+        return Err(WebError::DeleteDocument(entity))
     }
 
     document.set_folder_id(dst_folder);
-    let status = es_cxt.create_document(&document).await?;
+    let status = es_cxt.create_document(&document, &DocumentType::Document).await?;
     if !status.is_success() {
         let msg = status.get_msg().to_string();
-        return Err(WebError::CreateDocument(msg));
+        let entity = WebErrorEntity::new(msg);
+        return Err(WebError::CreateDocument(entity));
     }
 
     Ok(())

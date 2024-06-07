@@ -1,5 +1,6 @@
-use crate::forms::folders::folder::DEFAULT_FOLDER_ID;
 use crate::forms::TestExample;
+use crate::forms::documents::forms::DocumentType;
+use crate::forms::folders::folder::DEFAULT_FOLDER_ID;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -35,7 +36,6 @@ pub struct SearchParams {
     #[schema(example = 100)]
     #[serde(skip_serializing_if = "Option::is_none")]
     knn_candidates: Option<u32>,
-    return_preview: bool,
 }
 
 impl SearchParams {
@@ -121,8 +121,18 @@ impl TestExample<SearchParams> for SearchParams {
             .scroll_lifetime("1m".to_string())
             .knn_amount(Some(5))
             .knn_candidates(Some(100))
-            .return_preview(false)
             .build()
             .unwrap()
+    }
+}
+
+#[derive(Deserialize, Default, IntoParams, ToSchema)]
+pub struct SearchQuery {
+    document_type: Option<DocumentType>,
+}
+
+impl SearchQuery {
+    pub fn get_type(&self) -> DocumentType {
+        self.document_type.clone().unwrap_or(DocumentType::Document)
     }
 }
