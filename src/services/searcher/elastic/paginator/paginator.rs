@@ -1,4 +1,4 @@
-use crate::errors::{Successful, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::pagination::forms::{DeletePaginationsForm, PaginateNextForm};
@@ -24,6 +24,13 @@ impl PaginatorService for ElasticContext {
         helper::parse_elastic_response(response).await
     }
     async fn paginate(&self, scroll_form: &PaginateNextForm, doc_type: &DocumentType) -> PaginatedResult<Value> {
+        if doc_type.is_vector_type() {
+            let msg = "Can't paginate vectors search result";
+            log::error!("Failed while paginate: {}", msg);
+            let entity = WebErrorEntity::new(msg.to_string());
+            return Err(WebError::PaginationError(entity));
+        }
+        
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .scroll(ScrollParts::ScrollId(scroll_form.get_scroll_id()))
@@ -34,7 +41,8 @@ impl PaginatorService for ElasticContext {
         if response_result.is_err() {
             let err = response_result.err().unwrap();
             log::error!("Failed to get next pagination: {}", err.to_string());
-            return Err(WebError::PaginationError(err.to_string()));
+            let entity = WebErrorEntity::new(err.to_string());
+            return Err(WebError::PaginationError(entity));
         }
 
         let response = response_result.unwrap();

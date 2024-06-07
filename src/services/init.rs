@@ -35,16 +35,12 @@ pub fn build_cluster_scope() -> Scope {
         .service(clusters::get_cluster)
 }
 
-pub fn builde_folders_scope() -> Scope  {
+pub fn build_storage_scope() -> Scope {
     web::scope("/storage")
         .service(folders::get_folders)
         .service(folders::get_folder)
         .service(folders::create_folder)
         .service(folders::delete_folder)
-}
-
-pub fn build_document_scope() -> Scope {
-    web::scope("/storage")
         .service(documents::get_document)
         .service(documents::create_document)
         .service(documents::delete_document)

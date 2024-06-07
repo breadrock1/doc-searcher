@@ -1,12 +1,14 @@
 use crate::errors::{ErrorResponse, PaginateResponse};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::forms::DocumentType;
 use crate::forms::documents::embeddings::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
-use crate::forms::documents::similar::DocumentSimilar;
 use crate::forms::pagination::pagination::Paginated;
-use crate::forms::searcher::s_params::SearchParams;
+use crate::forms::searcher::fulltext_params::FulltextParams;
+use crate::forms::searcher::records_params::AllRecordsParams;
+use crate::forms::searcher::semantic_params::SemanticParams;
+use crate::forms::searcher::similar_params::SimilarParams;
+use crate::forms::searcher::s_params::{SearchParams, SearchQuery};
 use crate::services::searcher::service::SearcherService;
 
 use actix_web::{post};
@@ -19,9 +21,16 @@ type Context = Data<Box<dyn SearcherService>>;
     post,
     path = "/search/fulltext",
     tag = "Search",
+    params(
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
     request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("Ocean Carrier")))
+        content = FulltextParams,
+        example = json!(FulltextParams::test_example(Some("Ocean Carrier")))
     ),
     responses(
         (
@@ -38,6 +47,7 @@ type Context = Data<Box<dyn SearcherService>>;
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while searching documents".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -48,6 +58,7 @@ type Context = Data<Box<dyn SearcherService>>;
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -55,12 +66,13 @@ type Context = Data<Box<dyn SearcherService>>;
 #[post("/fulltext")]
 async fn search_fulltext(
     cxt: Context,
-    form: Json<SearchParams>,
-    document_type: Query<DocumentType>,
+    form: Json<FulltextParams>,
+    document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
-    let search_form = form.0;
-    let documents = client.search_fulltext(&search_form, &document_type).await?;
+    let search_form = SearchParams::from(form.0);
+    let doc_type = document_type.0.get_type();
+    let documents = client.search_fulltext(&search_form, &doc_type).await?;
     Ok(Json(documents))
 }
 
@@ -69,8 +81,8 @@ async fn search_fulltext(
     path = "/search/semantic",
     tag = "Search",
     request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("Ocean Carrier")))
+        content = SemanticParams,
+        example = json!(SemanticParams::test_example(Some("Ocean Carrier")))
     ),
     responses(
         (
@@ -87,6 +99,7 @@ async fn search_fulltext(
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while searching tokens".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -97,6 +110,7 @@ async fn search_fulltext(
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -104,10 +118,10 @@ async fn search_fulltext(
 #[post("/semantic")]
 async fn search_semantic(
     cxt: Context,
-    form: Json<SearchParams>,
+    form: Json<SemanticParams>,
 ) -> PaginateResponse<Vec<DocumentVectors>> {
     let client = cxt.get_ref();
-    let search_form = form.0;
+    let search_form = SearchParams::from(form.0);
     let documents = client.search_semantic(&search_form).await?;
     Ok(Json(documents))
 }
@@ -116,9 +130,21 @@ async fn search_semantic(
     post,
     path = "/search/similar",
     tag = "Search",
+    params(
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        ),
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
     request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")))
+        content = SimilarParams,
+        example = json!(SimilarParams::test_example(Some("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")))
     ),
     responses(
         (
@@ -138,6 +164,7 @@ async fn search_semantic(
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while searching similar documents".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -148,6 +175,7 @@ async fn search_semantic(
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -155,18 +183,20 @@ async fn search_semantic(
 #[post("/similar")]
 async fn search_similar(
     cxt: Context,
-    form: Json<SearchParams>,
-) -> PaginateResponse<Vec<DocumentSimilar>> {
+    form: Json<SimilarParams>,
+    document_type: Query<SearchQuery>,
+) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
-    let search_form = form.0;
-    let documents = client.search_similar(&search_form).await?;
+    let search_form = SearchParams::from(form.0);
+    let doc_type = document_type.0.get_type();
+    let documents = client.search_similar(&search_form, &doc_type).await?;
     Ok(Json(documents))
 }
 
 #[utoipa::path(
     post,
-    path = "/folders/{folder_id}/documents",
-    tag = "Search",
+    path = "/storage/folders/{folder_id}/documents",
+    tag = "Documents",
     params(
         (
             "folder_id" = &str,
@@ -180,8 +210,8 @@ async fn search_similar(
         )
     ),
     request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("Ocean Carrier"))),
+        content = AllRecordsParams,
+        example = json!(AllRecordsParams::test_example(None)),
     ),
     responses(
         (
@@ -198,6 +228,7 @@ async fn search_similar(
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting stored documents into folder".to_string(),
+                attachments: None,
             }),
         ),
         (
@@ -208,6 +239,7 @@ async fn search_similar(
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
@@ -215,11 +247,12 @@ async fn search_similar(
 #[post("/folders/{folder_id}/documents")]
 async fn get_index_records(
     cxt: Data<Box<dyn SearcherService>>,
-    form: Json<SearchParams>,
-    document_type: Query<DocumentType>,
+    form: Json<AllRecordsParams>,
+    document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
-    let search_form = form.0;
-    let folder_documents = client.search_records(&search_form, &document_type).await?;
+    let search_form = SearchParams::from(form.0);
+    let doc_type = document_type.0.get_type();
+    let folder_documents = client.search_records(&search_form, &doc_type).await?;
     Ok(Json(folder_documents))
 }

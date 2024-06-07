@@ -1,4 +1,4 @@
-use crate::errors::{Successful, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::folders::folder::Folder;
 use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm};
 use crate::forms::folders::info::InfoFolder;
@@ -14,13 +14,17 @@ use serde_json::Value;
 
 #[async_trait::async_trait]
 impl FolderService for ElasticContext {
-    async fn get_all_folders(&self) -> WebResult<Vec<Folder>> {
+    async fn get_all_folders(&self, show_all: bool) -> WebResult<Vec<Folder>> {
         let ctx_opts = self.get_options();
         let elastic = self.get_cxt().read().await;
         let target_url = "/_cat/indices?format=json";
         let response = helper::send_elrequest(&elastic, Method::Get, None, target_url).await?;
         let folders = response.json::<Vec<Folder>>().await?;
-        f_helper::test(&elastic, ctx_opts, folders).await
+        if show_all {
+            return Ok(folders);
+        }
+        
+        f_helper::filter_folders(&elastic, ctx_opts, folders).await
     }
     async fn get_folder(&self, folder_id: &str) -> WebResult<Folder> {
         let elastic = self.get_cxt().read().await;
@@ -38,7 +42,8 @@ impl FolderService for ElasticContext {
         if !result.is_success() {
             let msg = format!("Failed to create folder: {}", folder_form.get_id());
             log::error!("{}", msg.as_str());
-            return Err(WebError::CreateFolder(msg));
+            let entity = WebErrorEntity::new(msg);
+            return Err(WebError::CreateFolder(entity));
         }
 
         let elastic = self.get_cxt().read().await;
@@ -57,12 +62,22 @@ impl FolderService for ElasticContext {
         let result = notifier::remove_folder(cxt_opts, folder_id, folder_form).await?;
         if !result.is_success() {
             log::warn!("Failed to remove folder: {}", folder_id);
-            return Err(WebError::DeleteFolder(folder_id.to_string()));
+            let entity = WebErrorEntity::new(folder_id.to_string());
+            return Err(WebError::DeleteFolder(entity));
         }
 
         let elastic = self.get_cxt().read().await;
-        let response =
-            helper::send_elrequest(&elastic, Method::Delete, None, folder_id).await?;
+        let response = helper::send_elrequest(&elastic, Method::Delete, None, folder_id).await?;
+        if result.is_success() {
+            match f_helper::del_from_info_folder(&elastic, folder_id).await {
+                Ok(success) => {
+                    log::warn!("{} - {}", success.code, success.message);
+                }
+                Err(err) => {
+                    log::warn!("Failed to remove from info-folder: {}", err);
+                }
+            }
+        }
 
         helper::parse_elastic_response(response).await
     }

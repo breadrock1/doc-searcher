@@ -1,4 +1,4 @@
-use crate::errors::{Successful, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::forms::MoveDocsForm;
 use crate::forms::documents::document::Document;
 use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm};
@@ -123,7 +123,10 @@ async fn extract_exception(response: Response) -> WebError {
 
     match parse_result {
         Err(err) => err,
-        Ok(err_resp) => WebError::UnknownError(err_resp.message),
+        Ok(err_resp) => {
+            let entity = WebErrorEntity::new(err_resp.message);
+            WebError::UnknownError(entity)
+        },
     }
 }
 

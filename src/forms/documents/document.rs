@@ -52,8 +52,8 @@ pub struct Document {
     #[serde(skip_serializing_if = "Option::is_none")]
     ocr_metadata: Option<OcrMetadata>,
     highlight: Option<HighlightEntity>,
-    #[serde(skip_deserializing)]
-    embeddings: Vec<EmbeddingsVector>,
+    #[serde(skip_serializing_if = "Option::is_none", default = "Option::default")]
+    embeddings: Option<Vec<EmbeddingsVector>>,
 }
 
 impl Document {
@@ -102,14 +102,17 @@ impl Document {
     pub fn get_ocr_metadata(&self) -> Option<&OcrMetadata> {
         self.ocr_metadata.as_ref()
     }
-    pub fn get_embeddings(&self) -> &Vec<EmbeddingsVector> {
-        self.embeddings.as_ref()
+    pub fn get_embeddings(&self) -> Vec<EmbeddingsVector> {
+        match &self.embeddings {
+            None => Vec::default(),
+            Some(vector) => vector.to_vec(),
+        }
     }
     pub fn append_highlight(&mut self, highlight: Option<HighlightEntity>) {
         self.highlight = highlight
     }
     pub fn exclude_tokens(&mut self) {
-        self.embeddings = Vec::default();
+        self.embeddings = None;
     }
 }
 
@@ -144,7 +147,7 @@ impl From<&Document> for Document {
             .quality_recognition(value.quality_recognition.to_owned())
             .highlight(None)
             .ocr_metadata(value.ocr_metadata.to_owned())
-            .embeddings(Vec::default())
+            .embeddings(None)
             .build()
             .unwrap()
     }
@@ -222,7 +225,7 @@ impl TestExample<Document> for Document {
             .quality_recognition(Some(10000))
             .highlight(None)
             .ocr_metadata(Some(ocr_metadata))
-            .embeddings(Vec::default())
+            .embeddings(Some(vec![]))
             .build()
             .unwrap()
     }

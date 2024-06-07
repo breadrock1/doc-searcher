@@ -1,7 +1,8 @@
-use crate::errors::{Successful, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::forms::MoveDocsForm;
+use crate::forms::documents::embeddings::DocumentVectors;
+use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
 use crate::services::notifier::notifier;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::helper as d_helper;
@@ -13,16 +14,24 @@ use serde_json::Value;
 
 #[async_trait::async_trait]
 impl DocumentService for ElasticContext {
-    async fn create_document(&self, doc_form: &Document) -> WebResult<Successful> {
+    async fn create_document(&self, doc_form: &Document, doc_type: &DocumentType) -> WebResult<Successful> {
         let doc_id = doc_form.get_doc_id();
         let elastic = self.get_cxt().read().await;
         let is_exists = d_helper::check_duplication(&elastic, doc_form).await?;
         if is_exists {
             let msg = format!("Passed document: {} already exists", doc_id);
-            return Err(WebError::CreateDocument(msg));
+            let entity = WebErrorEntity::new(msg);
+            return Err(WebError::CreateDocument(entity));
         }
 
-        d_helper::store_object(&elastic, doc_form).await
+        match doc_type {
+            DocumentType::Vectors => {
+                let doc_vecs = DocumentVectors::from(doc_form);
+                d_helper::store_object::<DocumentVectors>(&elastic, &doc_vecs).await
+            }
+            _ => d_helper::store_object::<Document>(&elastic, doc_form).await
+        }
+        
     }
     async fn get_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Document> {
         let elastic = self.get_cxt().read().await;
@@ -39,20 +48,6 @@ impl DocumentService for ElasticContext {
             helper::send_elrequest(&elastic, Method::Delete, None, s_path.as_str()).await?;
         helper::parse_elastic_response(response).await
     }
-    async fn update_document(&self, folder_id: &str, doc_id: &str, value: &Value) -> WebResult<Successful> {
-        let elastic = self.get_cxt().read().await;
-        let s_path = format!("/{}/_update/{}", folder_id, doc_id);
-        let mut bytes: Vec<u8> = Vec::new();
-        serde_json::to_writer(&mut bytes, value).unwrap();
-        let response = helper::send_elrequest(
-            &elastic,
-            Method::Put,
-            Some(bytes.as_slice()),
-            s_path.as_str(),
-        )
-        .await?;
-        helper::parse_elastic_response(response).await
-    }
     async fn move_documents(&self, folder_id: &str, move_form: &MoveDocsForm) -> WebResult<Successful> {
         let cxt_opts = self.get_options();
         let move_result = notifier::move_docs_to_folder(cxt_opts.as_ref(), folder_id, move_form)
@@ -62,7 +57,8 @@ impl DocumentService for ElasticContext {
         if !move_result.is_success() {
             let msg = format!("Failed while moving documents from: {}", folder_id);
             log::error!("{}", msg.as_str());
-            return Err(WebError::MoveDocuments(msg));
+            let entity = WebErrorEntity::new(msg);
+            return Err(WebError::MoveDocuments(entity));
         }
 
         let mut collected_errs = Vec::default();
@@ -78,9 +74,24 @@ impl DocumentService for ElasticContext {
         if !collected_errs.is_empty() {
             let collected_docs = collected_errs.join(", ");
             let msg = format!("Failed while move document: {}", collected_docs);
-            return Err(WebError::MoveDocuments(msg));
+            let entity = WebErrorEntity::new(msg);
+            return Err(WebError::MoveDocuments(entity));
         }
 
         Ok(Successful::success("Ok"))
+    }
+    async fn update_document(&self, folder_id: &str, doc_id: &str, value: &Value, _doc_type: &DocumentType) -> WebResult<Successful> {
+        let elastic = self.get_cxt().read().await;
+        let s_path = format!("/{}/_update/{}", folder_id, doc_id);
+        let mut bytes: Vec<u8> = Vec::new();
+        serde_json::to_writer(&mut bytes, value).unwrap();
+        let response = helper::send_elrequest(
+            &elastic,
+            Method::Put,
+            Some(bytes.as_slice()),
+            s_path.as_str(),
+        )
+        .await?;
+        helper::parse_elastic_response(response).await
     }
 }
