@@ -10,7 +10,10 @@ use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::DocumentService;
 
 use elasticsearch::http::Method;
+use serde::Deserialize;
 use serde_json::Value;
+use crate::forms::documents::preview::DocumentPreview;
+use crate::services::searcher::elastic::documents::update::UpdateTrait;
 
 #[async_trait::async_trait]
 impl DocumentService for ElasticContext {
@@ -80,18 +83,16 @@ impl DocumentService for ElasticContext {
 
         Ok(Successful::success("Ok"))
     }
-    async fn update_document(&self, folder_id: &str, doc_id: &str, value: &Value, _doc_type: &DocumentType) -> WebResult<Successful> {
-        let elastic = self.get_cxt().read().await;
-        let s_path = format!("/{}/_update/{}", folder_id, doc_id);
-        let mut bytes: Vec<u8> = Vec::new();
-        serde_json::to_writer(&mut bytes, value).unwrap();
-        let response = helper::send_elrequest(
-            &elastic,
-            Method::Put,
-            Some(bytes.as_slice()),
-            s_path.as_str(),
-        )
-        .await?;
-        helper::parse_elastic_response(response).await
+    async fn update_document(&self, folder_id: &str, value: &Value, doc_type: &DocumentType) -> WebResult<Successful> {
+        match doc_type {
+            DocumentType::Preview => {
+                let doc = DocumentPreview::deserialize(value)?;
+                DocumentPreview::update(self, folder_id, &doc).await
+            }
+            _ => {
+                let doc = Document::deserialize(value)?;
+                Document::update(self, folder_id, &doc).await
+            }
+        }
     }
 }

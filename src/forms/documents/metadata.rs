@@ -24,6 +24,9 @@ impl OcrMetadata {
     pub fn get_pages_count(&self) -> i32 {
         self.pages_count
     }
+    pub fn get_doc_type(&self) -> &str {
+        self.doc_type.as_str()
+    }
     pub fn get_artifacts(&self) -> Option<&Vec<Artifacts>> {
         self.artifacts.as_ref()
     }

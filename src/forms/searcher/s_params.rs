@@ -11,7 +11,7 @@ pub struct SearchParams {
     #[schema(example = "Hello world")]
     query: String,
     #[schema(example = "test_folder")]
-    folders: Option<String>,
+    folder_ids: Option<String>,
     #[schema(example = "document")]
     document_type: String,
     #[schema(example = "txt")]
@@ -70,7 +70,7 @@ impl SearchParams {
         self.scroll_lifetime.as_str()
     }
     pub fn get_folders(&self, all_buckets: bool) -> String {
-        match &self.folders {
+        match &self.folder_ids {
             None if all_buckets => "*".to_string(),
             None => DEFAULT_FOLDER_ID.to_string(),
             Some(data) => data.clone(),
@@ -88,7 +88,7 @@ impl Default for SearchParams {
     fn default() -> Self {
         SearchParams::builder()
             .query("*".to_string())
-            .folders(Some(DEFAULT_FOLDER_ID.to_string()))
+            .folder_ids(Some(DEFAULT_FOLDER_ID.to_string()))
             .document_type(String::default())
             .document_extension(String::default())
             .created_date_to(String::default())
@@ -109,7 +109,7 @@ impl TestExample<SearchParams> for SearchParams {
     fn test_example(query: Option<&str>) -> SearchParams {
         SearchParams::builder()
             .query(query.unwrap().to_string())
-            .folders(Some("test_folder".to_string()))
+            .folder_ids(Some("test_folder".to_string()))
             .document_type("document".to_string())
             .document_extension("txt".to_string())
             .created_date_to("2024-04-26T11:14:55Z".to_string())

@@ -50,6 +50,18 @@ impl DocumentPreview {
     pub fn get_location(&self) -> &str {
         self.location.as_str()
     }
+    pub fn get_artifacts(&self) -> Option<&Vec<Artifacts>> {
+        self.preview_properties.as_ref()
+    }
+    pub fn get_quality(&self) -> Option<i32> {
+        self.quality_recognition
+    }
+    pub fn get_size(&self) -> i32 {
+        self.file_size
+    }
+    pub fn get_created_date(&self) -> Option<&DateTime<Utc>> {
+        self.created_at.as_ref()
+    }
 }
 
 impl DocumentsTrait for DocumentPreview {

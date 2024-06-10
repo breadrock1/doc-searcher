@@ -9,7 +9,7 @@ pub struct SimilarParams {
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     query: String,
     #[schema(example = "test_folder")]
-    folders: Option<String>,
+    folder_ids: Option<String>,
     #[schema(example = 10)]
     result_size: i64,
 }
@@ -18,7 +18,7 @@ impl From<SimilarParams> for SearchParams {
     fn from(value: SimilarParams) -> Self {
         SearchParams::builder()
             .query(value.query)
-            .folders(value.folders)
+            .folder_ids(value.folder_ids)
             .result_size(value.result_size)
             .document_type(String::default())
             .document_extension(String::default())
@@ -39,7 +39,7 @@ impl TestExample<SimilarParams> for SimilarParams {
     fn test_example(value: Option<&str>) -> SimilarParams {
         SimilarParams {
             query:  value.unwrap().to_string(),
-            folders: Some("test_folder".to_string()),
+            folder_ids: Some("test_folder".to_string()),
             result_size: 25,
         }
     }

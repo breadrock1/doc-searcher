@@ -211,7 +211,7 @@ async fn delete_documents(
     }
 
     if !failed_tasks.is_empty() {
-        let msg = format!("{}", "Not deleted");
+        let msg = "Not deleted".to_string();
         let entity = WebErrorEntity::with_attachments(msg, failed_tasks);
         return Err(WebError::DeleteCluster(entity));
     }
@@ -350,7 +350,7 @@ async fn move_documents(
 #[utoipa::path(
     post,
     path = "/storage/folders/{folder_id}/documents/{document_id}",
-    tag = "Unimplemented",
+    tag = "Documents",
     params(
         (
             "folder_id" = &str,
@@ -414,11 +414,10 @@ async fn update_document(
     document_type: Query<DocTypeQuery>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    let (folder_id, doc_id) = path.as_ref();
+    let (folder_id, _) = path.as_ref();
     let doc_type = document_type.0.get_type();
     let status = client.update_document(
         folder_id.as_str(),
-        doc_id.as_str(),
         &form.0,
         &doc_type
     )
