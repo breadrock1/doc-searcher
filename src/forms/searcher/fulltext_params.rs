@@ -9,7 +9,7 @@ pub struct FulltextParams {
     #[schema(example = "Hello world")]
     query: String,
     #[schema(example = "test_folder")]
-    folders: Option<String>,
+    folder_ids: Option<String>,
     #[schema(example = "document")]
     document_type: String,
     #[schema(example = "txt")]
@@ -34,7 +34,7 @@ impl From<FulltextParams> for SearchParams {
     fn from(value: FulltextParams) -> Self {
         SearchParams::builder()
             .query(value.query)
-            .folders(value.folders)
+            .folder_ids(value.folder_ids)
             .document_type(value.document_type)
             .document_extension(value.document_extension)
             .document_size_to(value.document_size_to)
@@ -55,7 +55,7 @@ impl TestExample<FulltextParams> for FulltextParams {
     fn test_example(_value: Option<&str>) -> FulltextParams {
         FulltextParams {
             query: "Hello World".to_string(),
-            folders: Some("test_folder".to_string()),
+            folder_ids: Some("test_folder".to_string()),
             document_type: "document".to_string(),
             document_extension: "txt".to_string(),
             created_date_to: "2024-04-26T11:14:55Z".to_string(),

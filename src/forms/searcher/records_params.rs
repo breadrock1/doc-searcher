@@ -7,7 +7,7 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct AllRecordsParams {
     #[schema(example = "test_folder")]
-    folders: Option<String>,
+    folder_id: Option<String>,
     #[schema(example = "document")]
     document_type: String,
     #[schema(example = "txt")]
@@ -29,7 +29,7 @@ pub struct AllRecordsParams {
 impl From<AllRecordsParams> for SearchParams {
     fn from(value: AllRecordsParams) -> Self {
         SearchParams::builder()
-            .folders(value.folders)
+            .folder_ids(value.folder_id)
             .document_type(value.document_type)
             .document_extension(value.document_extension)
             .document_size_to(value.document_size_to)
@@ -50,7 +50,7 @@ impl From<AllRecordsParams> for SearchParams {
 impl TestExample<AllRecordsParams> for AllRecordsParams {
     fn test_example(_value: Option<&str>) -> AllRecordsParams {
         AllRecordsParams {
-            folders: Some("test_folder".to_string()),
+            folder_id: Some("test_folder".to_string()),
             document_type: "document".to_string(),
             document_extension: "txt".to_string(),
             created_date_to: "2024-04-26T11:14:55Z".to_string(),

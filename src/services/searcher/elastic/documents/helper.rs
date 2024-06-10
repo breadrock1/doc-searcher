@@ -9,6 +9,7 @@ use crate::services::searcher::service::DocumentService;
 
 use elasticsearch::http::response::Response;
 use elasticsearch::{BulkParts, CountParts, Elasticsearch};
+use elasticsearch::http::Method;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
@@ -87,4 +88,25 @@ pub(crate) async fn move_document(
     }
 
     Ok(())
+}
+
+pub(crate) async fn update_document(
+    es_cxt: &ElasticContext,
+    folder_id: &str,
+    doc_form: &Document
+) -> WebResult<Successful> {
+    let elastic = es_cxt.get_cxt().read().await;
+    let s_path = format!("/{}/_update/{}", folder_id, doc_form.get_doc_id());
+    
+    let mut bytes: Vec<u8> = Vec::new();
+    serde_json::to_writer(&mut bytes, doc_form).unwrap();
+    let response = helper::send_elrequest(
+        &elastic,
+        Method::Put,
+        Some(bytes.as_slice()),
+        s_path.as_str(),
+    )
+    .await?;
+    
+    helper::parse_elastic_response(response).await
 }

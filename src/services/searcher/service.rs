@@ -37,7 +37,7 @@ pub trait DocumentService {
     async fn get_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Document>;
     async fn delete_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Successful>;
     async fn move_documents(&self, folder_id: &str, form: &MoveDocsForm) -> WebResult<Successful>;
-    async fn update_document(&self, folder_id: &str, doc_id: &str, value: &Value, doc_type: &DocumentType) -> WebResult<Successful>;
+    async fn update_document(&self, folder_id: &str, value: &Value, doc_type: &DocumentType) -> WebResult<Successful>;
 }
 
 #[async_trait::async_trait]
