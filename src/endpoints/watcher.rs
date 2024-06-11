@@ -2,7 +2,7 @@ use crate::errors::{ErrorResponse, JsonResponse, WebError, WebErrorEntity};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::preview::DocumentPreview;
-use crate::forms::documents::forms::{AnalyseDocsForm, DocumentType};
+use crate::forms::documents::forms::{AnalyseDocsForm, DocTypeQuery};
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::{UploadedResult, WatcherService};
 
@@ -66,11 +66,12 @@ type Context = Data<Box<dyn WatcherService>>;
 async fn fetch_analysis(
     cxt: Context,
     form: Json<AnalyseDocsForm>,
-    document_type: Query<DocumentType>,
+    document_type: Query<DocTypeQuery>,
 ) -> JsonResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let document_ids = form.0.get_doc_ids();
-    let documents = client.analyse_docs(document_ids, &document_type).await?;
+    let doc_type = document_type.0.get_type();
+    let documents = client.analyse_docs(document_ids, &doc_type).await?;
     Ok(Json(documents))
 }
 
@@ -124,10 +125,10 @@ async fn fetch_analysis(
 async fn upload_files(
     cxt: Context,
     payload: Multipart,
-    document_type: Query<DocumentType>,
+    document_type: Query<DocTypeQuery>,
 ) -> JsonResponse<Vec<Value>> {
     let documents = upload_documents(cxt, payload).await?;
-    let document_type = document_type.0;
+    let document_type = document_type.0.get_type();
     let values = helper::to_unified_docs(documents, &document_type);
     Ok(Json(values))
 }

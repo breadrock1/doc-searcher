@@ -1,10 +1,10 @@
-use std::fmt::{Display, Formatter};
 use crate::forms::pagination::pagination::Paginated;
 
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::response::Exception;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::io::Error;
 use thiserror::Error;
 use utoipa::ToSchema;
@@ -174,7 +174,7 @@ impl ResponseError for WebError {
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct Successful {
     pub code: u16,
     pub message: String,
