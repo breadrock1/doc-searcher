@@ -51,7 +51,7 @@ impl FolderService for ElasticContext {
         let result = helper::parse_elastic_response(response).await?;
         if result.is_success() {
             let info_folder = InfoFolder::from(folder_form);
-            let res = d_helper::store_object(&elastic, &info_folder).await?;
+            let res = d_helper::store_object(&elastic, "info-folder", &info_folder).await?;
             log::warn!("{} - {}", res.code, res.message);
         }
         

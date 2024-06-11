@@ -16,6 +16,7 @@ use tokio::sync::RwLockReadGuard;
 
 pub(crate) async fn store_object<T>(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    folder_id: &str,
     doc_form: &T,
 ) -> WebResult<Successful>
 where
@@ -23,7 +24,7 @@ where
 {
     let body = T::create_body(doc_form).await;
     let response = elastic
-        .bulk(BulkParts::Index(doc_form.get_folder_id()))
+        .bulk(BulkParts::Index(folder_id))
         .body(body)
         .send()
         .await
@@ -34,10 +35,11 @@ where
 
 pub(super) async fn check_duplication(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    folder_id: &str,
     doc_form: &Document,
 ) -> Result<bool, WebError> {
     let response = elastic
-        .count(CountParts::Index(&[doc_form.get_folder_id()]))
+        .count(CountParts::Index(&[folder_id]))
         .body(json!({
             "query" : {
                 "term" : {
@@ -80,7 +82,7 @@ pub(crate) async fn move_document(
     }
 
     document.set_folder_id(dst_folder);
-    let status = es_cxt.create_document(&document, &DocumentType::Document).await?;
+    let status = es_cxt.create_document(dst_folder, &document, &DocumentType::Document).await?;
     if !status.is_success() {
         let msg = status.get_msg().to_string();
         let entity = WebErrorEntity::new(msg);

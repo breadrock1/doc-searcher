@@ -73,12 +73,14 @@ type Context = Data<Box<dyn DocumentService>>;
 async fn create_document(
     cxt: Context,
     form: Json<Document>,
+    path: Path<(String, String)>,
     document_type: Query<DocTypeQuery>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let doc_form = form.0;
+    let (folder_id, _) = path.as_ref();
     let doc_type = document_type.0.get_type();
-    let status = client.create_document(&doc_form, &doc_type).await?;
+    let status = client.create_document(folder_id.as_str(), &doc_form, &doc_type).await?;
     Ok(Json(status))
 }
 

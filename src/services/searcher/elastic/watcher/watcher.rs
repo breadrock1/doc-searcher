@@ -1,4 +1,4 @@
-use crate::errors::WebResult;
+use crate::errors::{Successful, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::folders::folder::HISTORY_FOLDER_ID;
@@ -17,9 +17,10 @@ impl WatcherService for context::ElasticContext {
         let elastic = self.get_cxt().read().await;
         let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await?;
         for doc_preview in analysed_docs.iter_mut() {
-            let _ = d_helper::store_object(&elastic, doc_preview).await;
-            doc_preview.set_folder_id(HISTORY_FOLDER_ID);
-            let _ = d_helper::store_object(&elastic, doc_preview).await;
+            let res = d_helper::store_object(&elastic, doc_preview.get_folder_id(), doc_preview).await;
+            println!("{:?}", res.unwrap_or(Successful::new(200, "Ok")));
+            let res = d_helper::store_object(&elastic, HISTORY_FOLDER_ID, doc_preview).await;
+            println!("{:?}", res.unwrap_or(Successful::new(200, "Ok2")));
         }
 
         Ok(helper::to_unified_docs(analysed_docs, doc_type))

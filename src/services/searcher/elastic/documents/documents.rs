@@ -3,24 +3,24 @@ use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::embeddings::DocumentVectors;
 use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
+use crate::forms::documents::preview::DocumentPreview;
 use crate::services::notifier::notifier;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::helper as d_helper;
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::DocumentService;
+use crate::services::searcher::elastic::documents::update::UpdateTrait;
 
 use elasticsearch::http::Method;
 use serde::Deserialize;
 use serde_json::Value;
-use crate::forms::documents::preview::DocumentPreview;
-use crate::services::searcher::elastic::documents::update::UpdateTrait;
 
 #[async_trait::async_trait]
 impl DocumentService for ElasticContext {
-    async fn create_document(&self, doc_form: &Document, doc_type: &DocumentType) -> WebResult<Successful> {
+    async fn create_document(&self, folder_id: &str, doc_form: &Document, doc_type: &DocumentType) -> WebResult<Successful> {
         let doc_id = doc_form.get_doc_id();
         let elastic = self.get_cxt().read().await;
-        let is_exists = d_helper::check_duplication(&elastic, doc_form).await?;
+        let is_exists = d_helper::check_duplication(&elastic, folder_id, doc_form).await?;
         if is_exists {
             let msg = format!("Passed document: {} already exists", doc_id);
             let entity = WebErrorEntity::new(msg);
@@ -30,9 +30,9 @@ impl DocumentService for ElasticContext {
         match doc_type {
             DocumentType::Vectors => {
                 let doc_vecs = DocumentVectors::from(doc_form);
-                d_helper::store_object::<DocumentVectors>(&elastic, &doc_vecs).await
+                d_helper::store_object::<DocumentVectors>(&elastic, folder_id, &doc_vecs).await
             }
-            _ => d_helper::store_object::<Document>(&elastic, doc_form).await
+            _ => d_helper::store_object::<Document>(&elastic, folder_id, doc_form).await
         }
         
     }
