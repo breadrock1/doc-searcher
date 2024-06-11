@@ -1,4 +1,4 @@
-use crate::errors::{Successful, WebResult};
+use crate::errors::WebResult;
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::folders::folder::HISTORY_FOLDER_ID;
@@ -16,11 +16,28 @@ impl WatcherService for context::ElasticContext {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
         let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await?;
-        for doc_preview in analysed_docs.iter_mut() {
-            let res = d_helper::store_object(&elastic, doc_preview.get_folder_id(), doc_preview).await;
-            println!("{:?}", res.unwrap_or(Successful::new(200, "Ok")));
-            let res = d_helper::store_object(&elastic, HISTORY_FOLDER_ID, doc_preview).await;
-            println!("{:?}", res.unwrap_or(Successful::new(200, "Ok2")));
+        for doc in analysed_docs.iter_mut() {
+            let _ = d_helper::store_object(&elastic, doc.get_folder_id(), doc)
+                .await
+                .is_err_and(|err| { 
+                    println!("Failed to store doc into {}: {:?}", doc.get_doc_id(), err); 
+                    false 
+                });
+            
+            let _ = d_helper::store_object(&elastic, HISTORY_FOLDER_ID, doc)
+                .await
+                .is_err_and(|err| {
+                    println!("Failed to store doc into {}: {:?}", doc.get_doc_id(), err);
+                    false 
+                });
+            
+            let vec_folder_id = format!("{}-vector", doc.get_folder_id());
+            let _ = d_helper::store_object(&elastic, vec_folder_id.as_str(), doc)
+                .await
+                .is_err_and(|err| {
+                    println!("Failed to store doc into {}: {:?}", doc.get_doc_id(), err);
+                    false 
+                });
         }
 
         Ok(helper::to_unified_docs(analysed_docs, doc_type))
