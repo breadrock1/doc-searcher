@@ -1,19 +1,26 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, SuccessfulResponse};
-use crate::errors::{JsonResponse, PaginateJsonResponse};
+use crate::errors::{ErrorResponse, Successful};
+use crate::errors::JsonResponse;
+use crate::forms::TestExample;
+use crate::forms::folders::folder::Folder;
+use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm, ShowAllFlag};
+use crate::services::searcher::service::FolderService;
 
-use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+use actix_web::{delete, get, put};
+use actix_web::web::{Data, Json, Path, Query};
 
-use wrappers::document::DocumentPreview;
-use wrappers::folder::{Folder, FolderForm};
-use wrappers::s_params::SearchParams;
-use wrappers::scroll::PaginatedResult;
-use wrappers::TestExample;
+type Context = Data<Box<dyn FolderService>>;
 
 #[utoipa::path(
     get,
-    path = "/folders/",
+    path = "/storage/folders",
     tag = "Folders",
+    params(
+        (
+            "show_all", Query,
+            description = "Show all folders",
+            example = "true",
+        )
+    ),
     responses(
         (
             status = 200,
@@ -29,25 +36,39 @@ use wrappers::TestExample;
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting folders".to_string(),
+                attachments: None,
             }),
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[get("/")]
-async fn all_folders(cxt: SearcherData) -> JsonResponse<Vec<Folder>> {
+#[get("/folders")]
+async fn get_folders(cxt: Context, show_all: Query<ShowAllFlag>) -> JsonResponse<Vec<Folder>> {
     let client = cxt.get_ref();
-    client.get_all_folders().await
+    let show_all_flag = show_all.0.flag();
+    let folders = client.get_all_folders(show_all_flag).await?;
+    Ok(Json(folders))
 }
 
 #[utoipa::path(
     get,
-    path = "/folders/{folder_id}",
+    path = "/storage/folders/{folder_id}",
     tag = "Folders",
     params(
         (
             "folder_id" = &str,
             description = "Passed folder id to get details",
-            example = "test_folder",
+            example = "test-folder",
         )
     ),
     responses(
@@ -65,30 +86,50 @@ async fn all_folders(cxt: SearcherData) -> JsonResponse<Vec<Folder>> {
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting folder by id".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[get("/{folder_id}")]
-async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Folder> {
+#[get("/folders/{folder_id}")]
+async fn get_folder(cxt: Context, path: Path<String>) -> JsonResponse<Folder> {
     let client = cxt.get_ref();
-    client.get_folder(path.as_str()).await
+    let folder = client.get_folder(path.as_ref()).await?;
+    Ok(Json(folder))
 }
 
 #[utoipa::path(
-    post,
-    path = "/folders/create",
+    put,
+    path = "/storage/folders/{folder_id}",
     tag = "Folders",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Passed folder id to get details",
+            example = "test-folder",
+        )
+    ),
     request_body(
-        content = FolderForm,
-        example = json!(FolderForm::default())
+        content = CreateFolderForm,
+        example = json!(CreateFolderForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             }),
@@ -101,37 +142,51 @@ async fn get_folder(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while creating new folder".to_string(),
+                attachments: None,
             }),
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/create")]
-async fn create_folder(cxt: SearcherData, form: web::Json<FolderForm>) -> HttpResponse {
+#[put("/folders/{folder_id}")]
+async fn create_folder(cxt: Context, form: Json<CreateFolderForm>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let folder_form = form.0;
-    match client.create_folder(&folder_form).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.create_folder(&folder_form).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/folders/{folder_id}",
+    path = "/storage/folders/{folder_id}",
     tag = "Folders",
     params(
         (
             "folder_id" = &str,
-            description = "Passed folder id to delete",
-            example = "test_folder",
+            description = "Passed folder id to get details",
+            example = "test-folder",
         )
+    ),
+    request_body(
+        content = DeleteFolderForm,
+        example = json!(DeleteFolderForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             }),
@@ -144,141 +199,31 @@ async fn create_folder(cxt: SearcherData, form: web::Json<FolderForm>) -> HttpRe
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while deleting folder".to_string(),
+                attachments: None,
             }),
         ),
-    )
-)]
-#[delete("/{folder_id}")]
-async fn delete_folder(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
-    let client = cxt.get_ref();
-    match client.delete_folder(path.as_str()).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
-}
-
-#[utoipa::path(
-    post,
-    path = "/folders/{folder_id}/documents",
-    tag = "Folders",
-    params(
         (
-            "folder_id" = &str,
-            description = "Passed folder id to get stored documents",
-            example = "test_folder",
-        ),
-    ),
-    request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("Ocean Carrier"))),
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = PaginatedResult<Vec<Document>>,
-            example = json!(PaginatedResult::<Vec<DocumentPreview>>::new_with_id(
-                vec![DocumentPreview::test_example(None)],
-                "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9lafytZndUQlNsdDcwakFMNjU1QQ==".to_string(),
-            )),
-        ),
-        (
-            status = 400,
-            description = "Failed while getting stored documents into folder",
+            status = 503,
+            description = "Server does not available",
             body = ErrorResponse,
             example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while getting stored documents into folder".to_string(),
-            }),
-        ),
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/{folder_id}/documents")]
-async fn get_folder_documents(
-    cxt: SearcherData,
-    path: web::Path<String>,
-    form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<Vec<DocumentPreview>> {
+#[delete("/folders/{folder_id}")]
+async fn delete_folder(
+    cxt: Context, 
+    path: Path<String>,
+    form: Json<DeleteFolderForm>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    let search_form = form.0;
-    match client
-        .get_folder_documents(path.as_str(), Some(search_form))
-        .await
-    {
-        Err(err) => Err(err),
-        Ok(value) => {
-            let scroll_id = value.get_scroll_id().cloned();
-            let preview = value
-                .get_founded()
-                .to_owned()
-                .into_iter()
-                .map(DocumentPreview::from)
-                .collect();
-
-            Ok(web::Json(PaginatedResult::new_with_opt_id(
-                preview, scroll_id,
-            )))
-        }
-    }
-}
-
-#[cfg(test)]
-mod buckets_endpoints {
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::SearcherService;
-
-    use wrappers::folder::FolderForm;
-
-    use actix_web::test;
-
-    const DEFAULT_FOLDER_ID: &str = "test_folder";
-
-    #[test]
-    async fn test_create_folder() {
-        let bucket_form = FolderForm::default();
-        let other_context = OtherContext::new("test".to_string());
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_delete_folder() {
-        let other_context = OtherContext::new("test".to_string());
-
-        let response = other_context.delete_folder(DEFAULT_FOLDER_ID).await;
-        assert_eq!(response.unwrap().code, 400_u16);
-
-        let bucket_form = FolderForm::default();
-
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-
-        let response = other_context.delete_folder(DEFAULT_FOLDER_ID).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn test_get_folders() {
-        let other_context = OtherContext::new("test".to_string());
-        let bucket_form = FolderForm::default();
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-
-        let response = other_context.get_all_folders().await;
-        let buckets_size = response.unwrap().0.len();
-        assert_eq!(buckets_size, 1);
-    }
-
-    #[test]
-    async fn test_get_folder_by_id() {
-        let bucket_form = FolderForm::default();
-        let other_context = OtherContext::new("test".to_string());
-        let response = other_context.create_folder(&bucket_form).await;
-        assert_eq!(response.unwrap().code, 200_u16);
-
-        let get_folder_result = other_context.get_folder(DEFAULT_FOLDER_ID).await;
-        let bucket_uuid = get_folder_result.unwrap().0;
-        assert_eq!(bucket_uuid.get_uuid(), DEFAULT_FOLDER_ID);
-    }
+    let folder_id = path.as_str();
+    let folder_form = form.0;
+    let status = client.delete_folder(folder_id, &folder_form).await?;
+    Ok(Json(status))
 }

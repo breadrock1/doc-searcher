@@ -1,60 +1,92 @@
-use wrappers::scroll::PaginatedResult;
+use crate::forms::pagination::pagination::Paginated;
 
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::response::Exception;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::io::Error;
 use thiserror::Error;
 use utoipa::ToSchema;
 
+pub(crate) type WebResult<T> = Result<T, WebError>;
 pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
-pub(crate) type PaginateJsonResponse<T> = JsonResponse<PaginatedResult<T>>;
+pub(crate) type PaginateResponse<T> = JsonResponse<Paginated<T>>;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct WebErrorEntity {
+    pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attachments: Option<Vec<String>>,
+}
+
+impl Display for WebErrorEntity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let self_data = &self.description;
+        write!(f, "{}", self_data.clone())
+    }
+}
+
+impl WebErrorEntity {
+    pub fn new(msg: String) -> WebErrorEntity {
+        WebErrorEntity {
+            description: msg.to_owned(),
+            attachments: None,
+        }
+    }
+    
+    pub fn with_attachments(msg: String, attach: Vec<String>) -> WebErrorEntity {
+        WebErrorEntity {
+            description: msg.to_owned(),
+            attachments: Some(attach),
+        }
+    }
+}
 
 #[derive(Error, Debug)]
 pub enum WebError {
     #[error("Failed to get all clusters: {0}")]
-    GetClusters(String),
+    GetClusters(WebErrorEntity),
     #[error("Failed to get cluster details: {0}")]
-    GetCluster(String),
+    GetCluster(WebErrorEntity),
     #[error("Failed to create new cluster: {0}")]
-    CreateCluster(String),
+    CreateCluster(WebErrorEntity),
     #[error("Failed to delete cluster: {0}")]
-    DeleteCluster(String),
+    DeleteCluster(WebErrorEntity),
     #[error("Failed to get all folders: {0}")]
-    GetFolders(String),
+    GetFolders(WebErrorEntity),
     #[error("Failed to get folder details: {0}")]
-    GetFolder(String),
+    GetFolder(WebErrorEntity),
     #[error("Failed to create new folder: {0}")]
-    CreateFolder(String),
+    CreateFolder(WebErrorEntity),
     #[error("Failed to delete folder: {0}")]
-    DeleteFolder(String),
+    DeleteFolder(WebErrorEntity),
     #[error("Failed to get document: {0}")]
-    GetDocument(String),
+    GetDocument(WebErrorEntity),
     #[error("Failed to create new document: {0}")]
-    CreateDocument(String),
+    CreateDocument(WebErrorEntity),
     #[error("Failed to delete document: {0}")]
-    DeleteDocument(String),
+    DeleteDocument(WebErrorEntity),
     #[error("Failed to update document: {0}")]
-    UpdateDocument(String),
+    UpdateDocument(WebErrorEntity),
     #[error("Failed to move documents to folder: {0}")]
-    MoveDocuments(String),
+    MoveDocuments(WebErrorEntity),
     #[error("Failed to (de)serialize object: {0}")]
-    SerdeError(String),
+    SerdeError(WebErrorEntity),
     #[error("Failed while searching: {0}")]
-    SearchError(String),
+    SearchError(WebErrorEntity),
     #[error("Error response from searcher service: {0}")]
-    SearchServiceError(String),
+    SearchServiceError(WebErrorEntity),
     #[error("Failed to upload file: {0}")]
-    UploadFileError(String),
+    UploadFileError(WebErrorEntity),
     #[error("Failed while paginating: {0}")]
-    PaginationError(String),
+    PaginationError(WebErrorEntity),
     #[error("Service unavailable: {0}")]
-    ServiceUnavailable(String),
+    ServiceUnavailable(WebErrorEntity),
     #[error("Response error: {0}")]
-    UnknownError(String),
+    UnknownError(WebErrorEntity),
     #[error("Continues executing: {0}")]
-    ResponseContinues(String),
+    ResponseContinues(WebErrorEntity),
 }
 
 impl WebError {
@@ -83,6 +115,31 @@ impl WebError {
             WebError::UnknownError(_) => "Runtime error",
         }
     }
+    pub fn attachments(&self) -> Option<Vec<String>> {
+        match self {
+            WebError::GetClusters(attach) => attach.attachments.clone(),
+            WebError::GetCluster(attach) => attach.attachments.clone(),
+            WebError::CreateCluster(attach) => attach.attachments.clone(),
+            WebError::DeleteCluster(attach) => attach.attachments.clone(),
+            WebError::GetFolders(attach) => attach.attachments.clone(),
+            WebError::GetFolder(attach) => attach.attachments.clone(),
+            WebError::CreateFolder(attach) => attach.attachments.clone(),
+            WebError::DeleteFolder(attach) => attach.attachments.clone(),
+            WebError::GetDocument(attach) => attach.attachments.clone(),
+            WebError::CreateDocument(attach) => attach.attachments.clone(),
+            WebError::DeleteDocument(attach) => attach.attachments.clone(),
+            WebError::UpdateDocument(attach) => attach.attachments.clone(),
+            WebError::MoveDocuments(attach) => attach.attachments.clone(),
+            WebError::SerdeError(attach) => attach.attachments.clone(),
+            WebError::SearchError(attach) => attach.attachments.clone(),
+            WebError::SearchServiceError(attach) => attach.attachments.clone(),
+            WebError::UploadFileError(attach) => attach.attachments.clone(),
+            WebError::PaginationError(attach) => attach.attachments.clone(),
+            WebError::ServiceUnavailable(attach) => attach.attachments.clone(),
+            WebError::ResponseContinues(attach) => attach.attachments.clone(),
+            WebError::UnknownError(attach) => attach.attachments.clone(),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
@@ -90,6 +147,8 @@ pub(crate) struct ErrorResponse {
     pub code: u16,
     pub error: String,
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attachments: Option<Vec<String>>,
 }
 
 impl ResponseError for WebError {
@@ -108,47 +167,35 @@ impl ResponseError for WebError {
             code: status_code.as_u16(),
             message: self.to_string(),
             error: self.name().to_string(),
+            attachments: self.attachments(),
         };
 
         HttpResponse::build(status_code).json(response)
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
-pub struct SuccessfulResponse {
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct Successful {
     pub code: u16,
     pub message: String,
 }
 
-impl SuccessfulResponse {
+impl Successful {
     pub fn new(code: u16, msg: &str) -> Self {
         let message = msg.to_string();
-        SuccessfulResponse { code, message }
+        Successful { code, message }
     }
-
     pub fn success(msg: &str) -> Self {
-        SuccessfulResponse {
+        Successful {
             code: 200u16,
             message: msg.to_string(),
         }
     }
-
-    pub fn ok_response(msg: &str) -> HttpResponse {
-        let status_code = StatusCode::OK;
-        let response = SuccessfulResponse {
-            code: status_code.as_u16(),
-            message: msg.to_string(),
-        };
-
-        HttpResponse::build(status_code).json(response)
-    }
-
-    pub fn to_response(&self) -> HttpResponse {
-        HttpResponse::build(StatusCode::OK).json(self)
-    }
-
     pub fn is_success(&self) -> bool {
         self.code == 200
+    }
+    pub fn get_msg(&self) -> &str {
+        self.message.as_str()
     }
 }
 
@@ -156,7 +203,10 @@ impl From<Exception> for WebError {
     fn from(value: Exception) -> Self {
         let err_msg = value.error().reason().unwrap();
         log::error!("{}", err_msg);
-        WebError::UnknownError(err_msg.to_string())
+        WebError::UnknownError(WebErrorEntity {
+            description: err_msg.to_string(),
+            attachments: None,
+        })
     }
 }
 
@@ -164,7 +214,10 @@ impl From<elasticsearch::Error> for WebError {
     fn from(value: elasticsearch::Error) -> Self {
         let err_msg = value.to_string();
         log::error!("{}", err_msg.as_str());
-        WebError::SearchServiceError(err_msg)
+        WebError::SearchServiceError(WebErrorEntity {
+            description: err_msg.to_string(),
+            attachments: None,
+        })
     }
 }
 
@@ -172,7 +225,10 @@ impl From<serde_json::Error> for WebError {
     fn from(value: serde_json::Error) -> Self {
         let err_msg = value.to_string();
         log::error!("{}", err_msg.as_str());
-        WebError::UnknownError(err_msg)
+        WebError::UnknownError(WebErrorEntity {
+            description: err_msg.to_string(),
+            attachments: None,
+        })
     }
 }
 
@@ -180,7 +236,10 @@ impl From<std::io::Error> for WebError {
     fn from(value: Error) -> Self {
         let err_msg = value.to_string();
         log::error!("{}", err_msg.as_str());
-        WebError::UploadFileError(err_msg)
+        WebError::UploadFileError(WebErrorEntity {
+            description: err_msg.to_string(),
+            attachments: None,
+        })
     }
 }
 
@@ -188,6 +247,9 @@ impl From<reqwest::Error> for WebError {
     fn from(value: reqwest::Error) -> Self {
         let err_msg = value.to_string();
         log::error!("{}", err_msg.as_str());
-        WebError::ServiceUnavailable(err_msg)
+        WebError::ServiceUnavailable(WebErrorEntity {
+            description: err_msg.to_string(),
+            attachments: None,
+        })
     }
 }
