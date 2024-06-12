@@ -1,7 +1,7 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, SuccessfulResponse};
+use crate::errors::{ErrorResponse, JsonResponse, Successful};
 
-use actix_web::{get, HttpResponse};
+use actix_web::get;
+use actix_web::web::Json;
 
 #[utoipa::path(
     get,
@@ -11,8 +11,8 @@ use actix_web::{get, HttpResponse};
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Hello".to_string(),
             })
@@ -25,12 +25,12 @@ use actix_web::{get, HttpResponse};
                 code: 503,
                 error: "Server error".to_string(),
                 message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     ),
 )]
 #[get("/")]
-async fn hello(cxt: SearcherData) -> HttpResponse {
-    let _client = cxt.get_ref();
-    SuccessfulResponse::ok_response("Ok")
+async fn hello() -> JsonResponse<Successful> {
+    Ok(Json(Successful::success("Ok")))
 }

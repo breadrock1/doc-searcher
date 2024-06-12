@@ -1,55 +1,58 @@
 extern crate doc_search;
 
-use doc_search::middlewares::logger::LoggerMiddlewareFactory;
-use doc_search::services::elastic::build_elastic_service;
-use doc_search::services::init::*;
-use doc_search::services::redis_cache::build_redis_service;
-use doc_search::services::searcher::SearcherService;
-use doc_search::swagger::{create_service, ApiDoc, OpenApi};
+use doc_search::services::cacher::rediska;
+use doc_search::services::config;
+use doc_search::services::init;
+use doc_search::services::searcher::elastic;
+use doc_search::services::searcher::service::*;
+use doc_search::services::swagger;
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let sv_params = init_service_parameters()?;
+    let s_config = config::init_service_config()?;
 
-    let search_context = build_elastic_service(&sv_params)?;
-    let redis_context = build_redis_service(&sv_params)?;
+    let search_service = elastic::build_searcher_service(&s_config)?;
+    let cacher_service = rediska::build_cacher_service(&s_config)?;
 
-    let service_port = sv_params.service_port();
-    let service_addr = sv_params.service_address().as_str();
-    let logger_host = sv_params.logger_service_host().to_owned();
-    let cors_origin = sv_params.cors_origin().to_owned();
+    let service_port = *s_config.service_port();
+    let service_addr = s_config.service_host().as_str();
+    let cors_origin = s_config.cors_origin().to_owned();
+    let workers_num = *s_config.workers_num();
 
     HttpServer::new(move || {
-        let searcher = search_context.clone();
-        let searcher_cxt: Box<dyn SearcherService> = Box::new(searcher);
+        let cacher_cxt = Box::new(cacher_service.clone());
 
-        let redis = redis_context.clone();
-        let redis_cxt = Box::new(redis);
-
-        let openapi = ApiDoc::openapi();
-        let cors = build_cors_config(cors_origin.as_str());
+        let searcher = search_service.clone();
+        let clusters_cxt: Box<dyn ClusterService> = Box::new(searcher.clone());
+        let documents_cxt: Box<dyn DocumentService> = Box::new(searcher.clone());
+        let folders_cxt: Box<dyn FolderService> = Box::new(searcher.clone());
+        let paginator_cxt: Box<dyn PaginatorService> = Box::new(searcher.clone());
+        let searcher_cxt: Box<dyn SearcherService> = Box::new(searcher.clone());
+        let watcher_cxt: Box<dyn WatcherService> = Box::new(searcher);
 
         App::new()
+            .app_data(web::Data::new(clusters_cxt))
+            .app_data(web::Data::new(documents_cxt))
+            .app_data(web::Data::new(folders_cxt))
+            .app_data(web::Data::new(paginator_cxt))
+            .app_data(web::Data::new(cacher_cxt))
             .app_data(web::Data::new(searcher_cxt))
-            .app_data(web::Data::new(redis_cxt))
-            .wrap(LoggerMiddlewareFactory::new(logger_host.as_str()))
+            .app_data(web::Data::new(watcher_cxt))
             .wrap(Logger::default())
-            .wrap(cors)
-            .service(create_service(&openapi))
-            .service(build_hello_scope())
-            .service(build_cluster_scope())
-            .service(build_folder_scope())
-            .service(build_document_scope())
-            .service(build_search_scope())
-            .service(build_similar_scope())
-            .service(build_pagination_scope())
-            .service(build_watcher_scope())
+            .wrap(init::build_cors_config(cors_origin.as_str()))
+            .service(init::build_hello_scope())
+            .service(init::build_cluster_scope())
+            .service(init::build_storage_scope())
+            .service(init::build_search_scope())
+            .service(init::build_pagination_scope())
+            .service(init::build_watcher_scope())
+            .service(swagger::build_swagger_service())
     })
-    .bind((service_addr, *service_port))?
-    .workers(6)
+    .bind((service_addr, service_port))?
+    .workers(workers_num)
     .run()
     .await?;
 

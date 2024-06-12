@@ -1,14 +1,17 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse};
+use crate::errors::{ErrorResponse, JsonResponse, Successful};
+use crate::forms::TestExample;
+use crate::forms::clusters::cluster::Cluster;
+use crate::forms::clusters::forms::CreateClusterForm;
+use crate::services::searcher::service::ClusterService;
 
-use wrappers::cluster::{Cluster, ClusterForm};
-use wrappers::TestExample;
+use actix_web::{delete, get, put};
+use actix_web::web::{Data, Json, Path};
 
-use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
+type Context = Data<Box<dyn ClusterService>>;
 
 #[utoipa::path(
     get,
-    path = "/clusters/",
+    path = "/orchestra/clusters",
     tag = "Clusters",
     responses(
         (
@@ -25,32 +28,42 @@ use actix_web::{delete, get, post, web, HttpResponse, ResponseError};
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting clusters".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[get("/")]
-async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
+#[get("/clusters")]
+async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
     let client = cxt.get_ref();
-    client.get_all_clusters().await
+    Ok(Json(client.get_all_clusters().await?))
 }
 
 #[utoipa::path(
-    post,
-    path = "/clusters/create",
+    put,
+    path = "/orchestra/clusters/{cluster_id}",
     tag = "Clusters",
     request_body(
-        content = ClusterForm,
-        example = json!({
-            "cluster_id": "test_slave"
-        })
+        content = CreateClusterForm,
+        example = json!(CreateClusterForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -63,6 +76,7 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while creating cluster".to_string(),
+                attachments: None,
             })
         ),
         (
@@ -73,27 +87,42 @@ async fn all_clusters(cxt: SearcherData) -> JsonResponse<Vec<Cluster>> {
                 code: 501,
                 error: "Not Implemented".to_string(),
                 message: "Not implemented functionality yet".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/create")]
-async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> HttpResponse {
-    let cluster_id = form.0.to_string();
+#[put("/clusters/{cluster_id}")]
+async fn create_cluster(
+    cxt: Context, 
+    path: Path<String>,
+    form: Json<CreateClusterForm>,
+) -> JsonResponse<Successful> {
+    let cluster_form = form.0;
+    let cluster_id = path.as_str();
     let client = cxt.get_ref();
-    match client.create_cluster(cluster_id.as_str()).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.create_cluster(cluster_id, &cluster_form).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/clusters/{cluster_id}",
+    path = "/orchestra/clusters/{cluster_id}",
     tag = "Clusters",
     params(
         (
-            "cluster_id" = &str, 
+            "cluster_id" = &str,
             description = "Cluster id to delete",
             example = "d93df49fa6ft",
         )
@@ -102,8 +131,8 @@ async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> Http
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -116,36 +145,36 @@ async fn create_cluster(cxt: SearcherData, form: web::Json<ClusterForm>) -> Http
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while deleting cluster".to_string(),
+                attachments: None,
             })
         ),
         (
-            status = 501,
-            description = "Failed while deleting cluster",
+            status = 503,
+            description = "Server does not available",
             body = ErrorResponse,
             example = json!(ErrorResponse {
-                code: 501,
-                error: "Not Implemented".to_string(),
-                message: "Not implemented functionality yet".to_string(),
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
             })
-        ),
+        )
     )
 )]
-#[delete("/{cluster_id}")]
-async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpResponse {
+#[delete("/clusters/{cluster_id}")]
+async fn delete_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    match client.delete_cluster(path.as_str()).await {
-        Ok(response) => response.to_response(),
-        Err(err) => err.error_response(),
-    }
+    let status = client.delete_cluster(path.as_str()).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     get,
-    path = "/clusters/{cluster_id}",
+    path = "/orchestra/clusters/{cluster_id}",
     tag = "Clusters",
     params(
         (
-            "cluster_id" = &str, 
+            "cluster_id" = &str,
             description = "Cluster id to get",
             example = "d93df49fa6ff",
         )
@@ -165,51 +194,24 @@ async fn delete_cluster(cxt: SearcherData, path: web::Path<String>) -> HttpRespo
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting cluster by id".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[get("/{cluster_id}")]
-async fn get_cluster(cxt: SearcherData, path: web::Path<String>) -> JsonResponse<Cluster> {
+#[get("/clusters/{cluster_id}")]
+async fn get_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Cluster> {
     let client = cxt.get_ref();
-    client.get_cluster(path.as_str()).await
-}
-
-#[cfg(test)]
-mod cluster_endpoints {
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::searcher::SearcherService;
-
-    use actix_web::test;
-
-    #[test]
-    async fn create_cluster() {
-        let other_context = OtherContext::new("test".to_string());
-        let response = other_context.create_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn delete_cluster() {
-        let other_context = OtherContext::new("test".to_string());
-        let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.delete_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().code, 200_u16);
-    }
-
-    #[test]
-    async fn get_clusters() {
-        let other_context = OtherContext::new("test".to_string());
-        let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.get_all_clusters().await;
-        assert_eq!(response.unwrap().len(), 1);
-    }
-
-    #[test]
-    async fn get_cluster_by_id() {
-        let other_context = OtherContext::new("test".to_string());
-        let _ = other_context.create_cluster("test_cluster").await;
-        let response = other_context.get_cluster("test_cluster").await;
-        assert_eq!(response.unwrap().get_ip(), "localhost");
-    }
+    Ok(Json(client.get_cluster(path.as_str()).await?))
 }
