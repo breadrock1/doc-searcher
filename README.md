@@ -41,15 +41,8 @@ These instructions will get you a copy of the project up and running on your loc
 ### Features of project
 
 Features to parse and store documents localy from current service (Not stable):
-- enable-parse-pdf        : enable parsing PDF files;
-- enable-parse-audio      : enable recognize text data from audio and store to db;
-- enable-parse-video      : enable recognize text data from video file and store to db;
-- enable-parse-image      : enable recognize text data from images file and store to db (using tesseract ocr);
-- enable-parse-documents  : enable parsing microsoft office files like docx and excel (not stable);
-
 - enable-dotenv   : enable parsing service options from .env file.
 - disable-caching : disable using cache service.
-- enable-semantic : enable semantic searching. Need pass additional env variables.
 - enable-chunked  : enable storing document to db by chunks. It helps for tokenizer limitations.
 
 default = []

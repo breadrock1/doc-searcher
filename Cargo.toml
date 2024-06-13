@@ -7,18 +7,10 @@ edition = "2021"
 maintenance = { status = "actively-developed" }
 
 [features]
-enable-parse-pdf        = ["loader/enable-pdf"]
-enable-parse-audio      = ["loader/enable-audio"]
-enable-parse-video      = ["loader/enable-video"]
-enable-parse-image      = ["loader/enable-image"]
-enable-parse-documents  = ["loader/enable-docx", "loader/enable-excel"]
-
-enable-dotenv    = ["dep:dotenv"]
-enable-chunked   = []
-enable-semantic  = ["dep:simsimd"]
-disable-caching  = []
-
-default = ["disable-caching"]
+default = []
+enable-caching  = []
+enable-semantic = []
+enable-dotenv   = ["dep:dotenv"]
 
 [dependencies]
 actix = "^0.13"
@@ -30,7 +22,7 @@ actix-multipart = "^0.6"
 anyhow = "^1.0"
 async-trait = "^0.1"
 derive_builder = "^0.20"
-derive-getters = "^0.3"
+derive-getters = "^0.4"
 elasticsearch = "8.5.0-alpha.1"
 env_logger = "^0.11"
 futures = "^0.3"
@@ -39,33 +31,18 @@ serde = "^1.0"
 serde_derive = "^1.0"
 serde_json = "^1.0"
 thiserror = "^1.0"
-walkdir = "^2.4"
-
-datetime = { path = "src/crates/datetime" }
-elquery = { path = "src/crates/elquery" }
-hasher = { path = "src/crates/hasher" }
-loader = { path = "src/crates/loader" }
-wrappers = { path = "src/crates/wrappers" }
-
-[dependencies.reqwest]
-version = "^0.12"
-features = ["json", "multipart"]
 
 [dependencies.chrono]
 version = "^0.4"
 features = ["rustc-serialize", "serde"]
 
-[dependencies.dotenv]
-version = "^0.15"
-optional = true
-
 [dependencies.redis]
 version = "^0.25"
 features = ["aio", "tokio-comp", "connection-manager"]
 
-[dependencies.simsimd]
-version = "^4.2"
-optional = true
+[dependencies.reqwest]
+version = "^0.12"
+features = ["json", "multipart"]
 
 [dependencies.tokio]
 version = "^1.36"
@@ -78,6 +55,21 @@ features = ["actix_extras", "chrono"]
 [dependencies.utoipa-swagger-ui]
 version = "^3.1"
 features = ["actix-web"]
+
+# There is optional crate that needed by selected features.
+[dependencies.dotenv]
+version = "^0.15"
+optional = true
+
+# There is local crates that imported from src/crates path.
+[dependencies.datetime]
+path = "src/crates/datetime"
+
+[dependencies.elquery]
+path = "src/crates/elquery"
+
+[dependencies.hasher]
+path = "src/crates/hasher"
 
 [[bin]]
 name = "elastic-main"
@@ -94,7 +86,3 @@ path = "src/crates/elquery/test/test.rs"
 [[test]]
 name = "hasher_tests"
 path = "src/crates/hasher/test/test.rs"
-
-[[test]]
-name = "loader_tests"
-path = "src/crates/loader/test/test.rs"

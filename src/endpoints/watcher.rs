@@ -1,26 +1,41 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, JsonResponse, PaginateJsonResponse};
+use crate::errors::{ErrorResponse, JsonResponse, WebError, WebErrorEntity};
+use crate::forms::TestExample;
+use crate::forms::documents::document::Document;
+use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::forms::{AnalyseDocsForm, DocTypeQuery};
+use crate::services::searcher::elastic::helper;
+use crate::services::searcher::service::{UploadedResult, WatcherService};
 
-use wrappers::document::{AnalyseDocumentsForm, DocumentPreview};
-use wrappers::scroll::PaginatedResult;
-use wrappers::search_params::SearchParams;
-use wrappers::TestExample;
+use actix_multipart::Multipart;
+use actix_web::post;
+use actix_web::web::block;
+use actix_web::web::{Data, Json, Query};
+use futures::{StreamExt, TryStreamExt};
+use serde_json::Value;
+use std::io::Write;
 
-use actix_web::{post, web};
+type Context = Data<Box<dyn WatcherService>>;
 
 #[utoipa::path(
     post,
-    path = "/watcher/analyse",
+    path = "/watcher/analysis/fetch",
     tag = "Watcher",
+    params(
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
     request_body(
-        content = AnalyseDocumentsForm,
-        example = json!(AnalyseDocumentsForm::test_example(None)),
+        content = AnalyseDocsForm,
+        example = json!(AnalyseDocsForm::test_example(None)),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
+            body = Successful,
             example = json!(vec![DocumentPreview::test_example(None)])
         ),
             (
@@ -31,73 +46,147 @@ use actix_web::{post, web};
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while analysing documents".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/analyse")]
-async fn analyse_documents(
-    cxt: SearcherData,
-    form: web::Json<AnalyseDocumentsForm>,
-) -> JsonResponse<Vec<DocumentPreview>> {
+#[post("/analysis/fetch")]
+async fn fetch_analysis(
+    cxt: Context,
+    form: Json<AnalyseDocsForm>,
+    document_type: Query<DocTypeQuery>,
+) -> JsonResponse<Vec<Value>> {
     let client = cxt.get_ref();
-    let document_ids = form.0.document_ids;
-    client
-        .launch_watcher_analysis(document_ids.as_slice())
-        .await
+    let document_ids = form.0.get_doc_ids();
+    let doc_type = document_type.0.get_type();
+    let documents = client.analyse_docs(document_ids, &doc_type).await?;
+    Ok(Json(documents))
 }
 
 #[utoipa::path(
     post,
-    path = "/watcher/unrecognized",
+    path = "/watcher/analysis/upload",
     tag = "Watcher",
+    params(
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
     request_body(
-        content = SearchParams,
-        example = json!(SearchParams::test_example(Some("Transport"))),
+        content_type = "multipart/formdata",
+        content = Multipart,
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(vec![DocumentPreview::test_example(None)])
+            body = Vec<DocumentPreview>,
+            example = json!(vec![DocumentPreview::test_example(None)]),
         ),
         (
             status = 400,
-            description = "Failed while analysing documents",
+            description = "Failed while downloading files",
             body = ErrorResponse,
             example = json!(ErrorResponse {
                 code: 400,
                 error: "Bad Request".to_string(),
-                message: "Failed while analysing documents".to_string(),
+                message: "Failed while uploading files to watcher".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/unrecognized")]
-async fn get_folder_documents2(
-    cxt: SearcherData,
-    form: web::Json<SearchParams>,
-) -> PaginateJsonResponse<Vec<DocumentPreview>> {
-    let client = cxt.get_ref();
-    let search_form = form.0;
-    match client
-        .get_folder_documents("unrecognized", Some(search_form))
-        .await
-    {
-        Err(err) => Err(err),
-        Ok(value) => {
-            let scroll_id = value.get_scroll_id().cloned();
-            let preview = value
-                .get_founded()
-                .to_owned()
-                .into_iter()
-                .map(DocumentPreview::from)
-                .collect();
+#[post("/analysis/upload")]
+async fn upload_files(
+    cxt: Context,
+    payload: Multipart,
+    document_type: Query<DocTypeQuery>,
+) -> JsonResponse<Vec<Value>> {
+    let documents = upload_documents(cxt, payload).await?;
+    let document_type = document_type.0.get_type();
+    let values = helper::to_unified_docs(documents, &document_type);
+    Ok(Json(values))
+}
 
-            Ok(web::Json(PaginatedResult::new_with_opt_id(
-                preview, scroll_id,
-            )))
+async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResult {
+    let client = cxt.get_ref();
+    let mut collected_docs: Vec<Document> = Vec::default();
+    while let Some(mut field) = payload
+        .try_next()
+        .await
+        .map_err(|err| {
+            let entity = WebErrorEntity::new(err.to_string());
+            WebError::UploadFileError(entity)
+        })?
+    {
+        let content_disposition = field.content_disposition();
+        let filename = content_disposition.get_filename().unwrap().to_string();
+        let filepath = format!("./uploads/{}", filename.as_str());
+
+        let filepath_cln = filepath.clone();
+        let create_file_result = block(|| std::fs::File::create(filepath_cln))
+            .await
+            .unwrap();
+
+        let mut file = create_file_result.unwrap();
+        while let Some(read_chunk_result) = field.next().await {
+            if read_chunk_result.is_err() {
+                let err = read_chunk_result.err().unwrap();
+                let entity = WebErrorEntity::new(err.to_string());
+                return Err(WebError::UploadFileError(entity));
+            }
+
+            let data = read_chunk_result.unwrap();
+            let file_res = block(move || file.write_all(&data).map(|_| file))
+                .await
+                .unwrap();
+
+            file = file_res.unwrap()
         }
+
+        let upload_result = client
+            .upload_files(filename.as_str(), filepath.as_str())
+            .await;
+
+        if upload_result.is_err() {
+            let err = upload_result.err().unwrap();
+            log::error!("Failed while deserialize response: {}", err);
+            continue;
+        }
+
+        let documents = upload_result.unwrap();
+        collected_docs.extend_from_slice(documents.as_slice());
+
+        let filepath_cln = filepath.clone();
+        let _ = block(|| std::fs::remove_file(filepath_cln))
+            .await
+            .unwrap();
     }
+
+    Ok(collected_docs)
 }

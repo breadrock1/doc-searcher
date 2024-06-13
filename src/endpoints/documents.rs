@@ -1,16 +1,36 @@
-use crate::endpoints::SearcherData;
-use crate::errors::{ErrorResponse, JsonResponse, SuccessfulResponse, WebError};
+use crate::errors::{ErrorResponse, JsonResponse, Successful, WebError, WebErrorEntity};
+use crate::forms::TestExample;
+use crate::forms::documents::document::Document;
+use crate::forms::documents::forms::{DeleteDocsForm, DocTypeQuery, MoveDocsForm};
+use crate::services::searcher::service::DocumentService;
 
-use wrappers::document::{Document, MoveDocumetsForm};
-use wrappers::TestExample;
+use actix_web::{delete, get, post, put};
+use actix_web::web::{Data, Json, Path, Query};
+use serde_json::Value;
 
-use actix_web::{delete, get, post, put, web};
-use actix_web::{HttpResponse, ResponseError};
+type Context = Data<Box<dyn DocumentService>>;
 
 #[utoipa::path(
-    post,
-    path = "/documents/create",
+    put,
+    path = "/storage/folders/{folder_id}/documents/{document_id}",
     tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Passed folder id to get details",
+            example = "test-folder",
+        ),
+        (
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        ),
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
     request_body(
         content = Document,
         example = json!(Document::test_example(None)),
@@ -19,8 +39,8 @@ use actix_web::{HttpResponse, ResponseError};
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -33,39 +53,59 @@ use actix_web::{HttpResponse, ResponseError};
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while creating document".to_string(),
+                attachments: None,
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/create")]
-async fn create_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
+#[put("/folders/{folder_id}/documents/{document_id}")]
+async fn create_document(
+    cxt: Context,
+    form: Json<Document>,
+    path: Path<(String, String)>,
+    document_type: Query<DocTypeQuery>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let doc_form = form.0;
-    client.create_document(&doc_form).await
+    let (folder_id, _) = path.as_ref();
+    let doc_type = document_type.0.get_type();
+    let status = client.create_document(folder_id.as_str(), &doc_form, &doc_type).await?;
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/documents/{folder_id}/{document_ids}",
+    path = "/storage/folders/{folder_id}/documents/{document_id}",
     tag = "Documents",
     params(
         (
             "folder_id" = &str, 
             description = "Folder id where documents is stored",
-            example = "test_folder",
+            example = "test-folder",
         ),
         (
-            "document_ids" = &str, 
-            description = "Document identifiers to delete (separate)",
-            example = "<document-id-1>,<document-id-2>,...",
-        ),
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        )
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -77,48 +117,130 @@ async fn create_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
             example = json!(ErrorResponse {
                 code: 400,
                 error: "Bad Request".to_string(),
-                message: "Failed while deleting documents".to_string(),
+                message: "Failed while deleting document".to_string(),
+                attachments: None,
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
 )]
-#[delete("/{folder_id}/{document_ids}")]
-async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) -> HttpResponse {
+#[delete("/folders/{folder_id}/documents/{document_id}")]
+async fn delete_document(
+    cxt: Context,
+    path: Path<(String, String)>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    let (folder_id, doc_ids) = path.as_ref();
+    let (folder_id, doc_id) = path.as_ref();
+    let status = client.delete_document(folder_id.as_str(), doc_id.as_str()).await?;
+    Ok(Json(status))
+}
 
-    let documents_id = doc_ids.split(',').collect::<Vec<&str>>();
-    let mut failed_tasks: Vec<&str> = Vec::with_capacity(documents_id.len());
-    for id in documents_id.into_iter() {
+#[utoipa::path(
+    delete,
+    path = "/storage/folders/{folder_id}/documents",
+    tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Folder id where documents is stored",
+            example = "test-folder",
+        )
+    ),
+    request_body(
+        content = DeleteDocsForm,
+        example = json!(DeleteDocsForm::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Successful,
+            example = json!(Successful {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while deleting documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while deleting documents: {ids}...".to_string(),
+                attachments: Some(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()]),
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
+    )
+)]
+#[delete("/folders/{folder_id}/documents")]
+async fn delete_documents(
+    cxt: Context,
+    path: Path<(String, String)>,
+    form: Json<DeleteDocsForm>,
+) -> JsonResponse<Successful> {
+    let client = cxt.get_ref();
+    let document_ids = form.get_doc_ids();
+    let (folder_id, _) = path.as_ref();
+
+    let mut failed_tasks = Vec::with_capacity(document_ids.len());
+    for id in document_ids.iter() {
         let result = client.delete_document(folder_id.as_str(), id).await;
-        if !result.status().is_success() {
-            failed_tasks.push(id);
+        if result.is_err() {
+            failed_tasks.push(id.to_owned());
         }
     }
 
     if !failed_tasks.is_empty() {
-        let msg = failed_tasks.join(",");
-        return WebError::DeletingCluster(msg).error_response();
+        let msg = "Not deleted".to_string();
+        let entity = WebErrorEntity::with_attachments(msg, failed_tasks);
+        return Err(WebError::DeleteCluster(entity));
     }
 
-    SuccessfulResponse::ok_response("Done")
+    Ok(Json(Successful::success("Done")))
 }
 
 #[utoipa::path(
     get,
-    path = "/documents/{folder_id}/{document_id}",
+    path = "/storage/folders/{folder_id}/documents/{document_id}",
     tag = "Documents",
     params(
         (
             "folder_id" = &str, 
             description = "Folder id where document is stored",
-            example = "test_folder",
+            example = "test-folder",
         ),
         (
-            "document_id" = &str, 
+            "document_id" = &str,
             description = "Document identifier to get",
             example = "<document-id>",
         ),
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
     ),
     responses(
         (
@@ -135,73 +257,57 @@ async fn delete_documents(cxt: SearcherData, path: web::Path<(String, String)>) 
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while getting document".to_string(),
+                attachments: None,
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
             })
         )
     )
 )]
-#[get("/{folder_id}/{document_id}")]
+#[get("/folders/{folder_id}/documents/{document_id}")]
 async fn get_document(
-    cxt: SearcherData,
-    path: web::Path<(String, String)>,
-) -> JsonResponse<Document> {
+    cxt: Context, 
+    path: Path<(String, String)>,
+    document_type: Query<DocTypeQuery>,
+) -> JsonResponse<Value> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
-    client
-        .get_document(folder_id.as_str(), doc_id.as_str())
-        .await
-}
-
-#[utoipa::path(
-    put,
-    path = "/documents/{folder_id}/{document_id}",
-    tag = "Documents",
-    request_body(
-        content = Document,
-        example = json!(Document::test_example(None)),
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
-                code: 200,
-                message: "Done".to_string(),
-            })
-        ),
-        (
-            status = 400,
-            description = "Failed while updating document",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while updating document".to_string(),
-            })
-        ),
-    )
-)]
-#[put("/update")]
-async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpResponse {
-    let client = cxt.get_ref();
-    let doc_form = form.0;
-    client.update_document(&doc_form).await
+    let document = client.get_document(folder_id.as_str(), doc_id).await?;
+    let doc_type = document_type.0.get_type();
+    let value = doc_type.to_value(&document)?;
+    Ok(Json(value))
 }
 
 #[utoipa::path(
     post,
-    path = "/documents/location",
+    path = "/storage/folders/{folder_id}/documents/move",
     tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Folder id where document is stored",
+            example = "test-folder",
+        )
+    ),
     request_body(
-        content = MoveDocumentsForm,
-        example = json!(MoveDocumetsForm::test_example(None)),
+        content = MoveDocsForm,
+        example = json!(MoveDocsForm::test_example(None)),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = SuccessfulResponse,
-            example = json!(SuccessfulResponse {
+            body = Successful,
+            example = json!(Successful {
                 code: 200,
                 message: "Done".to_string(),
             })
@@ -214,100 +320,109 @@ async fn update_document(cxt: SearcherData, form: web::Json<Document>) -> HttpRe
                 code: 400,
                 error: "Bad Request".to_string(),
                 message: "Failed while moving documents to folder".to_string(),
+                attachments: Some(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()]),
             })
         ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
     )
 )]
-#[post("/location")]
-async fn move_documents(cxt: SearcherData, form: web::Json<MoveDocumetsForm>) -> HttpResponse {
+#[post("/folders/{folder_id}/documents/move")]
+async fn move_documents(
+    cxt: Context,
+    path: Path<String>,
+    form: Json<MoveDocsForm>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
+    let folder_id = path.as_ref();
     let move_doc_form = form.0;
-    client
-        .move_documents(
-            move_doc_form.get_folder_id(),
-            move_doc_form.get_src_folder_id(),
-            move_doc_form.get_document_ids(),
-        )
-        .await
+    let status = client.move_documents(folder_id, &move_doc_form).await?;
+    Ok(Json(status))
 }
 
-#[cfg(test)]
-mod documents_endpoints {
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::SearcherService;
-
-    use wrappers::document::{Document, DocumentBuilderError};
-
-    use actix_web::test;
-
-    fn create_default_document(document_name: &str) -> Result<Document, DocumentBuilderError> {
-        Document::builder()
-            .folder_id("test_folder".to_string())
-            .folder_path("/test_folder".to_string())
-            .content_uuid("content_uuid".to_string())
-            .content_md5("md5 hash".to_string())
-            .content("Any document text".to_string())
-            .content_vector(Vec::default())
-            .document_name(document_name.to_string())
-            .document_path(format!("/test_folder/{}", document_name))
-            .document_size(1024)
-            .document_type("document".to_string())
-            .document_extension(".txt".to_string())
-            .document_permissions(777)
-            .document_md5("md5 hash".to_string())
-            .document_ssdeep("ssdeep hash".to_string())
-            .document_created(None)
-            .document_modified(None)
-            .highlight(None)
-            .ocr_metadata(None)
-            .quality_recognition(None)
-            .build()
-    }
-
-    #[test]
-    async fn test_create_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let res_document = create_default_document("test_doc");
-        let document = res_document.unwrap();
-        let response = other_context.create_document(&document).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
-    }
-
-    #[test]
-    async fn test_delete_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let document_name = "test_document";
-        let document = create_default_document(document_name).unwrap();
-        let _ = other_context.create_document(&document).await;
-
-        let response = other_context
-            .delete_document("test_folder", document_name)
-            .await;
-        assert_eq!(response.status().as_u16(), 200_u16);
-    }
-
-    #[test]
-    async fn test_update_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let document_name = "test_document";
-        let mut document = create_default_document(document_name).unwrap();
-        let _ = other_context.create_document(&document).await;
-
-        document.document_path = "/new-path".to_string();
-        let response = other_context.update_document(&document).await;
-        assert_eq!(response.status().as_u16(), 200_u16);
-    }
-
-    #[test]
-    async fn test_get_document() {
-        let other_context = OtherContext::new("test".to_string());
-        let document_name = "test_document";
-        let document = create_default_document(document_name).unwrap();
-        let _ = other_context.create_document(&document).await;
-
-        let response = other_context
-            .get_document("test_folder", document_name)
-            .await;
-        assert_eq!(response.unwrap().document_name.as_str(), document_name);
-    }
+#[utoipa::path(
+    post,
+    path = "/storage/folders/{folder_id}/documents/{document_id}",
+    tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Folder id where document is stored",
+            example = "test-folder",
+        ),
+        (
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        ),
+        (
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        )
+    ),
+    request_body(
+        content = Document,
+        example = json!(Document::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Successful,
+            example = json!(Successful {
+                code: 200,
+                message: "Done".to_string(),
+            })
+        ),
+        (
+            status = 400,
+            description = "Failed while updating document",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while updating document".to_string(),
+                attachments: None,
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
+    )
+)]
+#[post("/folders/{folder_id}/documents/{document_id}")]
+async fn update_document(
+    cxt: Context,
+    form: Json<Value>,
+    path: Path<(String, String)>,
+    document_type: Query<DocTypeQuery>,
+) -> JsonResponse<Successful> {
+    let client = cxt.get_ref();
+    let (folder_id, _) = path.as_ref();
+    let doc_type = document_type.0.get_type();
+    let status = client.update_document(
+        folder_id.as_str(),
+        &form.0,
+        &doc_type
+    )
+    .await?;
+    Ok(Json(status))
 }
