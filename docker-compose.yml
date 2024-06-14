@@ -35,7 +35,7 @@ services:
       - ELASTIC_SERVICE_USERNAME=elastic
       - CACHER_SERVICE_HOST=redis://cacher:6379
       - CACHER_SERVICE_PASSWORD=redis
-      - CACHER_SERVICE_EXPIRE=3600
+      - CACHER_VALUES_EXPIRE=3600
       - LLM_SERVICE_HOST=http://localhost:8085
       - LOGGER_SERVICE_HOST=http://localhost:4444
       - WATCHER_SERVICE_HOST=http://localhost:2893
