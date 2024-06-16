@@ -17,9 +17,8 @@ pub struct Document {
     folder_path: String,
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
-    #[schema(example = "98ac9896be35f47fb8442580cd9839b4", rename = "document_id")]
-    #[serde(rename(serialize = "document_id"))]
-    document_md5: String,
+    #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
+    document_id: String,
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     document_ssdeep: String,
     #[schema(example = "test_document.txt")]
@@ -122,7 +121,7 @@ impl DocumentsTrait for Document {
         self.folder_id.as_str()
     }
     fn get_doc_id(&self) -> &str {
-        self.document_md5.as_str()
+        self.document_id.as_str()
     }
     fn set_folder_id(&mut self, folder_id: &str) {
         self.folder_id = folder_id.to_string()
@@ -134,7 +133,7 @@ impl From<&Document> for Document {
         Document::builder()
             .folder_id(value.folder_id.to_owned())
             .folder_path(value.folder_path.to_owned())
-            .document_md5(value.document_md5.to_owned())
+            .document_id(value.document_id.to_owned())
             .document_ssdeep(value.document_ssdeep.to_owned())
             .document_name(value.document_name.to_owned())
             .document_path(value.document_path.to_owned())
@@ -212,7 +211,7 @@ impl TestExample<Document> for Document {
         DocumentBuilder::default()
             .folder_id("test_folder".to_string())
             .folder_path("/test_folder".to_string())
-            .document_md5("98ac9896be35f47fb8442580cd9839b4".to_string())
+            .document_id("98ac9896be35f47fb8442580cd9839b4".to_string())
             .document_ssdeep("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y".to_string())
             .document_name("test_document.txt".to_string())
             .document_path("/test_folder/test_document.txt".to_string())

@@ -55,7 +55,7 @@ impl UpdateTrait<DocumentPreview> for DocumentPreview {
         let new_doc = Document::builder()
             .folder_id(old_doc.get_folder_id().to_owned())
             .folder_path(old_doc.get_folder_path().to_owned())
-            .document_md5(old_doc.get_doc_id().to_owned())
+            .document_id(old_doc.get_doc_id().to_owned())
             .document_ssdeep(old_doc.get_doc_ssdeep().to_owned())
             .document_name(doc_form.get_name().to_string())
             .document_path(doc_form.get_location().to_owned())

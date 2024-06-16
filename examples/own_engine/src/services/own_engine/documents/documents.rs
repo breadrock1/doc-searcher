@@ -84,7 +84,7 @@ mod test_documents {
             .document_type("document".to_string())
             .document_extension(".txt".to_string())
             .document_permissions(777)
-            .document_md5("md5 hash".to_string())
+            .document_id("md5 hash".to_string())
             .document_ssdeep("ssdeep hash".to_string())
             .document_created(None)
             .document_modified(None)

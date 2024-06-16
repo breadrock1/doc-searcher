@@ -204,7 +204,7 @@ mod test_searcher {
                 .document_type("document".to_string())
                 .document_extension(".txt".to_string())
                 .document_permissions(document_size)
-                .document_md5(test_document_name.to_owned())
+                .document_id(test_document_name.to_owned())
                 .document_ssdeep(ssdeep_hash.to_string())
                 .highlight(None)
                 .document_created(None)
