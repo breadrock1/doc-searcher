@@ -75,13 +75,11 @@ impl SearcherTrait<Document> for Document {
 impl SearcherTrait<DocumentPreview> for DocumentPreview {
     async fn build_query(s_params: &SearchParams, _cxt_opts: &ContextOptions) -> Value {
         let (doc_size_from, doc_size_to) = s_params.get_doc_size();
-        let (doc_cr_from, _) = s_params.get_doc_dates();
-        let location = s_params.get_folders(false);
+        let (doc_cr_from, doc_cr_to) = s_params.get_doc_dates();
 
         let common_filter = CommonFilter::new()
-            .with_date::<FilterRange, CreatedAtDateQuery>("document_created", doc_cr_from, "")
+            .with_date::<FilterRange, CreatedAtDateQuery>("document_created", doc_cr_from, doc_cr_to)
             .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
-            // .with_match::<FilterMatch>("document_path", location.as_str())
             .with_match::<FilterMatch>("document_name", s_params.get_query())
             .build();
 
