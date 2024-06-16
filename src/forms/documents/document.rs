@@ -17,7 +17,8 @@ pub struct Document {
     folder_path: String,
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
-    #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
+    #[schema(example = "98ac9896be35f47fb8442580cd9839b4", rename = "document_id")]
+    #[serde(rename(serialize = "document_id"))]
     document_md5: String,
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     document_ssdeep: String,

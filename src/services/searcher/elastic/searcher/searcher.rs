@@ -24,7 +24,7 @@ impl SearcherService for ElasticContext {
     async fn search_fulltext(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value> {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
-        let folders = s_params.get_folders(false);
+        let folders = s_params.get_folders(true);
         let indexes = folders.split(',').collect::<Vec<&str>>();
         let paginated = 
             s_helper::search::<Document>(&elastic, s_params, cxt_opts, indexes.as_slice()).await?;
