@@ -12,6 +12,7 @@ use actix_web::web::block;
 use actix_web::web::{Data, Json, Query};
 use futures::{StreamExt, TryStreamExt};
 use serde_json::Value;
+use std::error::Error;
 use std::io::Write;
 
 type Context = Data<Box<dyn WatcherService>>;
@@ -139,58 +140,68 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
     while let Some(mut field) = payload
         .try_next()
         .await
-        .map_err(|err| {
-            let entity = WebErrorEntity::new(err.to_string());
-            WebError::UploadFileError(entity)
-        })?
+        .map_err(convert_err)?
     {
         let content_disposition = field.content_disposition();
-        let filename = content_disposition.get_filename().unwrap().to_string();
-        let filepath = format!("./uploads/{}", filename.as_str());
+        let filename = content_disposition
+            .get_filename()
+            .ok_or_else(|| {
+                let msg = "failed while get filename".to_string();
+                log::error!("{}", msg);
+                let entity = WebErrorEntity::new(msg);
+                WebError::UploadFileError(entity)
+            })?
+            .to_string();
 
+        let filepath = format!("./uploads/{}", filename);
         let filepath_cln = filepath.clone();
         let create_file_result = block(|| std::fs::File::create(filepath_cln))
             .await
-            .unwrap();
-
-        let mut file = create_file_result.map_err(|err| {
-            println!("{}", err);
-            let ent = WebErrorEntity::new(err.to_string());
-            WebError::UploadFileError(ent)
-        }).unwrap();
-        while let Some(read_chunk_result) = field.next().await {
-            if read_chunk_result.is_err() {
-                let err = read_chunk_result.err().unwrap();
+            .map_err(|err| {
+                log::error!("failed while creating temp file: {}", err);
                 let entity = WebErrorEntity::new(err.to_string());
-                return Err(WebError::UploadFileError(entity));
-            }
+                WebError::UploadFileError(entity)
+            })?;
 
-            let data = read_chunk_result.unwrap();
+        let mut file = create_file_result.map_err(convert_err)?;
+        while let Some(read_chunk_result) = field.next().await {
+            let data = read_chunk_result.map_err(convert_err)?;
             let file_res = block(move || file.write_all(&data).map(|_| file))
                 .await
-                .unwrap();
+                .map_err(|err| {
+                    log::error!("failed while writing chunk data: {}", err);
+                    let entity = WebErrorEntity::new(err.to_string());
+                    WebError::UploadFileError(entity)
+                })?;
 
             file = file_res.unwrap()
         }
 
-        let upload_result = client
+        let documents = client
             .upload_files(filename.as_str(), filepath.as_str())
-            .await;
+            .await
+            .map_err(convert_err)?;
 
-        if upload_result.is_err() {
-            let err = upload_result.err().unwrap();
-            log::error!("Failed while deserialize response: {}", err);
-            continue;
-        }
-
-        let documents = upload_result.unwrap();
         collected_docs.extend_from_slice(documents.as_slice());
 
         let filepath_cln = filepath.clone();
         let _ = block(|| std::fs::remove_file(filepath_cln))
             .await
-            .unwrap();
+            .map_err(|err| {
+                log::error!("failed while removing temp file: {}", err);
+                let entity = WebErrorEntity::new(err.to_string());
+                WebError::UploadFileError(entity)
+            })?;
     }
 
     Ok(collected_docs)
+}
+
+fn convert_err<T>(err: T) -> WebError
+where
+    T: Error
+{
+    log::error!("failed: {}", err);
+    let entity = WebErrorEntity::new(err.to_string());
+    WebError::UploadFileError(entity)
 }
