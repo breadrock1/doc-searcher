@@ -18,6 +18,7 @@ pub struct Document {
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
+    #[serde(alias = "document_md5")]
     document_id: String,
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     document_ssdeep: String,

@@ -78,9 +78,9 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
         let (doc_cr_from, doc_cr_to) = s_params.get_doc_dates();
 
         let common_filter = CommonFilter::new()
-            .with_date::<FilterRange, CreatedAtDateQuery>("document_created", doc_cr_from, doc_cr_to)
+            .with_date::<FilterRange, CreateDateQuery>("document_created", doc_cr_from, doc_cr_to)
             .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
-            .with_match::<FilterMatch>("document_name", s_params.get_query())
+            .with_match::<FilterMatch>("document_extension", s_params.get_extension())
             .build();
 
         json!({

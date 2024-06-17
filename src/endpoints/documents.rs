@@ -215,7 +215,7 @@ async fn delete_documents(
     if !failed_tasks.is_empty() {
         let msg = "Not deleted".to_string();
         let entity = WebErrorEntity::with_attachments(msg, failed_tasks);
-        return Err(WebError::DeleteCluster(entity));
+        return Err(WebError::DeleteDocument(entity));
     }
 
     Ok(Json(Successful::success("Done")))
