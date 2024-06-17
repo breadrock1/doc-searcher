@@ -115,6 +115,9 @@ impl Document {
     pub fn exclude_tokens(&mut self) {
         self.embeddings = None;
     }
+    pub fn set_folder_path(&mut self, folder_path: &str) {
+        self.folder_path = folder_path.to_string()
+    }
 }
 
 impl DocumentsTrait for Document {

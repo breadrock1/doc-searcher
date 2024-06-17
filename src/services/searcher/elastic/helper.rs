@@ -74,18 +74,22 @@ pub(crate) async fn parse_elastic_response(response: Response) -> WebResult<Succ
 }
 
 pub(crate) async fn extract_exception(response: Response) -> WebError {
-    let entity = WebErrorEntity::new(response.text().await.unwrap());
-    WebError::UnknownError(entity)
-    // let exception_res = response.exception().await;
-    // if exception_res.is_err() {
-    //     let err = exception_res.err().unwrap();
-    //     return WebError::UnknownError(err.to_string());
-    // }
-    // 
-    // match exception_res.unwrap() {
-    //     None => WebError::UnknownError("Unknown error".to_string()),
-    //     Some(exception) => WebError::from(exception),
-    // }
+    // let entity = WebErrorEntity::new(response.text().await.unwrap());
+    // WebError::UnknownError(entity)
+    let exception_res = response.exception().await;
+    if exception_res.is_err() {
+        let err = exception_res.err().unwrap();
+        let entity = WebErrorEntity::new(err.to_string());
+        return WebError::UnknownError(entity);
+    }
+
+    match exception_res.unwrap() {
+        Some(exception) => WebError::from(exception),
+        None => {
+            let entity = WebErrorEntity::new("Unknown error".to_string());
+            WebError::UnknownError(entity)
+        },
+    }
 }
 
 pub(crate) fn to_unified_docs(documents: Vec<Document>, doc_type: &DocumentType) -> Vec<Value> {

@@ -2,19 +2,17 @@ use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
+use crate::forms::folders::folder::HISTORY_FOLDER_ID;
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::store::StoreTrait;
 use crate::services::searcher::service::DocumentService;
 
 use elasticsearch::http::response::Response;
-use elasticsearch::{BulkParts, CountParts, Elasticsearch};
-use elasticsearch::http::Method;
+use elasticsearch::{BulkParts, CountParts, Elasticsearch, UpdateParts};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
-use crate::forms::folders::folder::HISTORY_FOLDER_ID;
-use crate::services::searcher::elastic::documents::update::UpdateTrait;
 
 pub(crate) async fn store_object<T>(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
@@ -73,8 +71,6 @@ pub(crate) async fn move_document(
     folder_id: &str,
     move_form: &MoveDocsForm,
 ) -> WebResult<()> {
-    let dst_folder = move_form.get_location();
-
     let mut document = es_cxt.get_document(folder_id, doc_id).await?;
     let status = es_cxt.delete_document(folder_id, doc_id).await?;
     if !status.is_success() {
@@ -83,7 +79,13 @@ pub(crate) async fn move_document(
         return Err(WebError::DeleteDocument(entity))
     }
 
+    let dst_folder = move_form.get_location();
     document.set_folder_id(dst_folder);
+
+    let location = std::path::Path::new("./inexer").join(folder_id);
+    let location_str = location.to_str().unwrap_or(folder_id);
+    document.set_folder_path(location_str);
+
     let status = es_cxt.create_document(dst_folder, &document, &DocumentType::Document).await?;
     if !status.is_success() {
         let msg = status.get_msg().to_string();
@@ -91,8 +93,8 @@ pub(crate) async fn move_document(
         return Err(WebError::CreateDocument(entity));
     }
 
-    let status = Document::update(es_cxt, HISTORY_FOLDER_ID, &document).await;
-    if !status.is_err() {
+    let status = update_document(es_cxt, HISTORY_FOLDER_ID, &document).await;
+    if status.is_err() {
         let msg = status.err().unwrap();
         log::warn!("failed while removing from history: {}", msg);
     }
@@ -106,17 +108,14 @@ pub(crate) async fn update_document(
     doc_form: &Document
 ) -> WebResult<Successful> {
     let elastic = es_cxt.get_cxt().read().await;
-    let s_path = format!("/{}/_update/{}", folder_id, doc_form.get_doc_id());
-    
-    let mut bytes: Vec<u8> = Vec::new();
-    serde_json::to_writer(&mut bytes, doc_form).unwrap();
-    let response = helper::send_elrequest(
-        &elastic,
-        Method::Put,
-        Some(bytes.as_slice()),
-        s_path.as_str(),
-    )
-    .await?;
+    let doc_id = doc_form.get_doc_id();
+    let response = elastic
+        .update(UpdateParts::IndexId(folder_id, doc_id))
+        .body(&json!({
+            "doc": doc_form,
+        }))
+        .send()
+        .await?;
     
     helper::parse_elastic_response(response).await
 }
