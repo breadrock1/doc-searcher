@@ -13,6 +13,7 @@ use elasticsearch::http::Method;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
+use crate::forms::folders::folder::HISTORY_FOLDER_ID;
 
 pub(crate) async fn store_object<T>(
     elastic: &RwLockReadGuard<'_, Elasticsearch>,
@@ -87,6 +88,19 @@ pub(crate) async fn move_document(
         let msg = status.get_msg().to_string();
         let entity = WebErrorEntity::new(msg);
         return Err(WebError::CreateDocument(entity));
+    }
+
+    // TODO: Impled this by simple updating.
+    let status = es_cxt.delete_document(HISTORY_FOLDER_ID, doc_id).await?;
+    if !status.is_success() {
+        let msg = status.get_msg().to_string();
+        log::warn!("failed while removing from history: {}", msg);
+    }
+    
+    let status = es_cxt.create_document(HISTORY_FOLDER_ID, &document, &DocumentType::Document).await?;
+    if !status.is_success() {
+        let msg = status.get_msg().to_string();
+        log::warn!("failed while removing from history: {}", msg);
     }
 
     Ok(())
