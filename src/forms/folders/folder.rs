@@ -14,7 +14,7 @@ pub struct Folder {
     health: String,
     #[schema(example = "open")]
     status: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test_folder", rename = "id")]
     #[serde(rename(serialize = "id"))]
     index: String,
     #[schema(example = "60qbF_yuTa2TXYd7soYb1A")]

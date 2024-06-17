@@ -197,12 +197,12 @@ async fn delete_document(
 #[delete("/folders/{folder_id}/documents")]
 async fn delete_documents(
     cxt: Context,
-    path: Path<(String, String)>,
+    path: Path<String>,
     form: Json<DeleteDocsForm>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let document_ids = form.get_doc_ids();
-    let (folder_id, _) = path.as_ref();
+    let folder_id = path.as_ref();
 
     let mut failed_tasks = Vec::with_capacity(document_ids.len());
     for id in document_ids.iter() {
@@ -289,7 +289,7 @@ async fn get_document(
 
 #[utoipa::path(
     post,
-    path = "/storage/folders/{folder_id}/documents/move",
+    path = "/storage/folders/{folder_id}/move",
     tag = "Documents",
     params(
         (
@@ -336,7 +336,7 @@ async fn get_document(
         )
     )
 )]
-#[post("/folders/{folder_id}/documents/move")]
+#[post("/folders/{folder_id}/move")]
 async fn move_documents(
     cxt: Context,
     path: Path<String>,

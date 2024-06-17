@@ -1,6 +1,6 @@
 [package]
 name = "doc-search"
-version = "0.1.21"
+version = "0.2.0"
 edition = "2021"
 
 [badges]
@@ -8,8 +8,6 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-enable-caching  = []
-enable-semantic = []
 enable-dotenv   = ["dep:dotenv"]
 
 [dependencies]

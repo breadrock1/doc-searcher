@@ -60,7 +60,7 @@ impl SearchParams {
     pub fn get_doc_dates(&self) -> (&str, &str) {
         (
             self.created_date_from.as_str(),
-            self.created_date_from.as_str(),
+            self.created_date_to.as_str(),
         )
     }
     pub fn get_results_params(&self) -> (i64, i64) {

@@ -5,8 +5,15 @@ to provide efficient and effective full-text search in documents. This project a
 indexing and searching through a large corpus of documents with the speed and accuracy provided by Elasticsearch.
 
 The main goal - implement simple but powerful system of storing and indexing documents with searching functionality (full-text, semantic).
-I decided to use elasticsearch as default searching engine, but you may use own solutions by implementing `SearcherService` async trait
-for Tantivy, QDrant or own solution...
+I decided to use elasticsearch as default searching engine, but you may use own solutions by implementing several async traits
+for Tantivy, QDrant or own solution:
+
+ - ClusterService   - API (CRUD) of cluster nodes of search service;
+ - FolderService    - API (CRUD) of indexed folders to store documents; 
+ - DocumentService  - API (CRUD) of documents stored into folders; 
+ - WatcherService   - API of doc-notifier service interactions;
+ - SearcherService  - API of searcher functionalities (fulltext, vector, similar);
+ - PaginatorService - API of searcher results pagination.
 
 ## Features
 
@@ -42,7 +49,5 @@ These instructions will get you a copy of the project up and running on your loc
 
 Features to parse and store documents localy from current service (Not stable):
 - enable-dotenv   : enable parsing service options from .env file.
-- disable-caching : disable using cache service.
-- enable-chunked  : enable storing document to db by chunks. It helps for tokenizer limitations.
 
 default = []
