@@ -153,7 +153,11 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
             .await
             .unwrap();
 
-        let mut file = create_file_result.unwrap();
+        let mut file = create_file_result.map_err(|err| {
+            println!("{}", err);
+            let ent = WebErrorEntity::new(err.to_string());
+            WebError::UploadFileError(ent)
+        }).unwrap();
         while let Some(read_chunk_result) = field.next().await {
             if read_chunk_result.is_err() {
                 let err = read_chunk_result.err().unwrap();
