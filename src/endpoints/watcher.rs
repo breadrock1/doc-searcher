@@ -1,4 +1,3 @@
-use std::error::Error;
 use crate::errors::{ErrorResponse, JsonResponse, WebError, WebErrorEntity};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
@@ -13,6 +12,7 @@ use actix_web::web::block;
 use actix_web::web::{Data, Json, Query};
 use futures::{StreamExt, TryStreamExt};
 use serde_json::Value;
+use std::error::Error;
 use std::io::Write;
 
 type Context = Data<Box<dyn WatcherService>>;
@@ -147,6 +147,7 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
             .get_filename()
             .ok_or_else(|| {
                 let msg = "failed while get filename".to_string();
+                log::error!("{}", msg);
                 let entity = WebErrorEntity::new(msg);
                 WebError::UploadFileError(entity)
             })?
@@ -157,6 +158,7 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
         let create_file_result = block(|| std::fs::File::create(filepath_cln))
             .await
             .map_err(|err| {
+                log::error!("failed while creating temp file: {}", err);
                 let entity = WebErrorEntity::new(err.to_string());
                 WebError::UploadFileError(entity)
             })?;
@@ -167,6 +169,7 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
             let file_res = block(move || file.write_all(&data).map(|_| file))
                 .await
                 .map_err(|err| {
+                    log::error!("failed while writing chunk data: {}", err);
                     let entity = WebErrorEntity::new(err.to_string());
                     WebError::UploadFileError(entity)
                 })?;
@@ -185,6 +188,7 @@ async fn upload_documents(cxt: Context, mut payload: Multipart) -> UploadedResul
         let _ = block(|| std::fs::remove_file(filepath_cln))
             .await
             .map_err(|err| {
+                log::error!("failed while removing temp file: {}", err);
                 let entity = WebErrorEntity::new(err.to_string());
                 WebError::UploadFileError(entity)
             })?;
@@ -197,6 +201,7 @@ fn convert_err<T>(err: T) -> WebError
 where
     T: Error
 {
+    log::error!("failed: {}", err);
     let entity = WebErrorEntity::new(err.to_string());
     WebError::UploadFileError(entity)
 }
