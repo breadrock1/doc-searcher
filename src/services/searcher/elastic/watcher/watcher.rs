@@ -8,7 +8,10 @@ use crate::services::searcher::elastic::documents::helper as d_helper;
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::{UploadedResult, WatcherService};
 
-use serde_json::Value;
+use elasticsearch::BulkParts;
+use elasticsearch::http::request::JsonBody;
+use elasticsearch::params::Refresh;
+use serde_json::{json, Value};
 
 #[async_trait::async_trait]
 impl WatcherService for context::ElasticContext {
@@ -16,29 +19,32 @@ impl WatcherService for context::ElasticContext {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
         let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await?;
+
+        let mut bulk_history: Vec<JsonBody<Value>> = Vec::new();
         for doc in analysed_docs.iter_mut() {
-            let _ = d_helper::store_object(&elastic, doc.get_folder_id(), doc)
-                .await
-                .is_err_and(|err| { 
-                    println!("Failed to store doc into {}: {:?}", doc.get_doc_id(), err); 
-                    false 
-                });
-            
-            let _ = d_helper::store_object(&elastic, HISTORY_FOLDER_ID, doc)
-                .await
-                .is_err_and(|err| {
-                    println!("Failed to store doc into {}: {:?}", doc.get_doc_id(), err);
-                    false 
-                });
-            
+            let status = d_helper::store_object(&elastic, doc.get_folder_id(), doc).await?;
+            println!("{}", status.message);
+
             let vec_folder_id = format!("{}-vector", doc.get_folder_id());
-            let _ = d_helper::store_object(&elastic, vec_folder_id.as_str(), doc)
-                .await
-                .is_err_and(|err| {
-                    println!("Failed to store doc into {}: {:?}", doc.get_doc_id(), err);
-                    false 
-                });
+            let status = d_helper::store_object(&elastic, vec_folder_id.as_str(), doc).await?;
+            println!("{}", status.message);
+
+            let to_value_result = serde_json::to_value(&doc);
+            let document_json = to_value_result.unwrap();
+            bulk_history.push(json!({"index": { "_id": doc.get_doc_id() }}).into());
+            bulk_history.push(document_json.clone().into());
         }
+
+        let response = elastic
+            .bulk(BulkParts::Index(HISTORY_FOLDER_ID))
+            .refresh(Refresh::True)
+            .timeout("1m")
+            .body(bulk_history)
+            .send()
+            .await?;
+
+        let status = helper::parse_elastic_response(response).await?;
+        println!("{}", status.message);
 
         Ok(helper::to_unified_docs(analysed_docs, doc_type))
     }

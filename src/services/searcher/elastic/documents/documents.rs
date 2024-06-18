@@ -11,7 +11,9 @@ use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::DocumentService;
 use crate::services::searcher::elastic::documents::update::UpdateTrait;
 
+use elasticsearch::DeleteParts;
 use elasticsearch::http::Method;
+use elasticsearch::params::Refresh;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -46,9 +48,13 @@ impl DocumentService for ElasticContext {
     }
     async fn delete_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Successful> {
         let elastic = self.get_cxt().read().await;
-        let s_path = format!("/{}/_doc/{}", folder_id, doc_id);
-        let response =
-            helper::send_elrequest(&elastic, Method::Delete, None, s_path.as_str()).await?;
+        let response = elastic
+            .delete(DeleteParts::IndexId(folder_id, doc_id))
+            .refresh(Refresh::True)
+            .timeout("1m")
+            .send()
+            .await?;
+
         helper::parse_elastic_response(response).await
     }
     async fn move_documents(&self, folder_id: &str, move_form: &MoveDocsForm) -> WebResult<Successful> {

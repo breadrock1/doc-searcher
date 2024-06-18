@@ -74,8 +74,6 @@ pub(crate) async fn parse_elastic_response(response: Response) -> WebResult<Succ
 }
 
 pub(crate) async fn extract_exception(response: Response) -> WebError {
-    // let entity = WebErrorEntity::new(response.text().await.unwrap());
-    // WebError::UnknownError(entity)
     let exception_res = response.exception().await;
     if exception_res.is_err() {
         let err = exception_res.err().unwrap();
