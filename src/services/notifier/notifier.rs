@@ -87,11 +87,11 @@ pub(crate) async fn move_docs_to_folder(
 ) -> WebResult<Successful> {
     if !move_form.use_watcher() {
         let msg = "Disabled moving documents into watcher";
-        log::warn!("{}: {} -> {}", msg, src_folder_id, move_form.get_location());
+        log::warn!("{}: {} -> {}", msg, src_folder_id, move_form.get_folder_id());
         return Ok(Successful::success(msg));
     }
 
-    let dst_folder_id = move_form.get_location();
+    let dst_folder_id = move_form.get_folder_id();
     let document_ids = move_form.get_doc_ids();
 
     let body = &json!({

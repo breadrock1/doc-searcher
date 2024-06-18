@@ -74,19 +74,20 @@ pub(crate) async fn move_document(
     move_form: &MoveDocsForm,
 ) -> WebResult<()> {
     let mut document = es_cxt.get_document(folder_id, doc_id).await?;
+
+    let dst_folder = move_form.get_folder_id();
+    document.set_folder_id(dst_folder);
+    
+    let location = std::path::Path::new("./indexer").join(dst_folder);
+    let location_str = location.to_str().unwrap_or(dst_folder);
+    document.set_folder_path(location_str);
+    
     let status = es_cxt.delete_document(folder_id, doc_id).await?;
     if !status.is_success() {
         let msg = status.get_msg().to_string();
         let entity = WebErrorEntity::new(msg);
         return Err(WebError::DeleteDocument(entity))
     }
-
-    let dst_folder = move_form.get_location();
-    document.set_folder_id(dst_folder);
-
-    let location = std::path::Path::new("./inexer").join(folder_id);
-    let location_str = location.to_str().unwrap_or(folder_id);
-    document.set_folder_path(location_str);
 
     let status = es_cxt.create_document(dst_folder, &document, &DocumentType::Document).await?;
     if !status.is_success() {

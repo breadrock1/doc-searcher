@@ -18,7 +18,11 @@ impl WatcherService for context::ElasticContext {
     async fn analyse_docs(&self, document_ids: &[String], doc_type: &DocumentType) -> WebResult<Vec<Value>> {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
-        let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await?;
+        let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await
+            .map_err(|err| {
+                log::warn!("{}", err);
+                err
+            })?;
 
         let mut errors = Vec::new();
         let mut bulk_history: Vec<JsonBody<Value>> = Vec::new();
@@ -53,7 +57,11 @@ impl WatcherService for context::ElasticContext {
             .timeout("1m")
             .body(bulk_history)
             .send()
-            .await?;
+            .await
+            .map_err(|err| {
+                log::warn!("{}", err);
+                err
+            })?;
 
         let store_res = helper::parse_elastic_response(response).await;
         if store_res.is_err() {
