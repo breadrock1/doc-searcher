@@ -83,16 +83,40 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
             .with_match::<FilterMatch>("document_extension", s_params.get_extension())
             .build();
 
-        json!({
-            "query": {
-                "bool": {
-                    "filter": common_filter,
-                    "must": {
-                        "match_all": {}
+        match s_params.get_query().is_empty() {
+            true => {
+                json!({
+                    "query": {
+                        "bool": {
+                            "filter": common_filter,
+                            "must": {
+                                "match_all": {}
+                            }
+                        }
                     }
-                }
+                })
             }
-        })
+            false => {
+                json!({
+                    "query": {
+                        "bool": {
+                            "filter": common_filter,
+                            "should": [
+                                {
+                                    "multi_match": {
+                                        "query": s_params.get_query(),
+                                        "fields": [
+                                            "document_name",
+                                            "document_path"
+                                        ],
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                })
+            }
+        }
     }
 
     async fn extract_from_response(value: &Value) -> Result<DocumentPreview, WebError> {

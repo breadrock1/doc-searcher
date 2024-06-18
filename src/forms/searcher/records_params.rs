@@ -6,6 +6,8 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct AllRecordsParams {
+    #[schema(example = "Test Folder name or path")]
+    query: String,
     #[schema(example = "test_folder")]
     folder_id: Option<String>,
     #[schema(example = "document")]
@@ -39,7 +41,7 @@ impl From<AllRecordsParams> for SearchParams {
             .result_size(value.result_size)
             .scroll_lifetime(value.scroll_lifetime)
             .result_offset(0)
-            .query(String::default())
+            .query(value.query)
             .knn_amount(None)
             .knn_candidates(None)
             .build()
@@ -50,6 +52,7 @@ impl From<AllRecordsParams> for SearchParams {
 impl TestExample<AllRecordsParams> for AllRecordsParams {
     fn test_example(_value: Option<&str>) -> AllRecordsParams {
         AllRecordsParams {
+            query: "Test Folder name".to_string(),
             folder_id: Some("test_folder".to_string()),
             document_type: "document".to_string(),
             document_extension: "txt".to_string(),
