@@ -113,7 +113,8 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                                 }
                             ]
                         }
-                    }
+                    },
+                    "min_score": 2
                 })
             }
         }
