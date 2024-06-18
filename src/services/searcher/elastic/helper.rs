@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::DocumentType;
@@ -10,6 +11,8 @@ use elasticsearch::http::response::Response;
 use elasticsearch::http::Method;
 use elasticsearch::Elasticsearch;
 use serde_json::{json, Value};
+use crate::forms::documents::DocumentsTrait;
+use crate::forms::documents::embeddings::DocumentVectors;
 
 pub(crate) async fn send_llm_request(cxt_opts: &ContextOptions, query: &str) -> Vec<f64> {
     let target_url = format!("{}/embed", cxt_opts.llm_address());
@@ -121,4 +124,38 @@ pub(crate) fn similar_to_doc(mut paginated: Paginated<Vec<DocumentSimilar>>) -> 
         .collect::<Vec<Document>>();
 
     Paginated::new_with_opt_id(converted, scroll_id)
+}
+
+pub(crate) fn vec_to_value(mut paginated: Paginated<Vec<DocumentVectors>>) -> Paginated<Vec<Value>> {
+    let scroll_id = paginated.get_scroll_id().cloned();
+    let converted = paginated
+        .get_founded_mut()
+        .iter()
+        .map(|doc| serde_json::to_value(doc))
+        .filter(Result::is_ok)
+        .map(Result::unwrap)
+        .collect::<Vec<Value>>();
+
+    Paginated::new_with_opt_id(converted, scroll_id)
+}
+
+pub(crate) fn vec_to_grouped_value(paginated: Paginated<Vec<DocumentVectors>>) -> Paginated<Vec<Value>> {
+    let scroll_id = paginated.get_scroll_id().cloned();
+    let converted = group_document_chunks(paginated.get_founded());
+    let values = serde_json::to_value(converted).unwrap();
+    Paginated::new_with_opt_id(vec![values], scroll_id)
+}
+
+fn group_document_chunks(documents: &[DocumentVectors]) -> HashMap<String, Vec<DocumentVectors>> {
+    let mut grouped_documents: HashMap<String, Vec<DocumentVectors>> = HashMap::new();
+    documents
+        .iter()
+        .for_each(|doc| {
+            grouped_documents
+                .entry(doc.get_doc_id().to_string())
+                .or_default()
+                .push(doc.to_owned())
+        });
+
+    grouped_documents
 }

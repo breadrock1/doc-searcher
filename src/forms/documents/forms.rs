@@ -21,6 +21,8 @@ pub enum DocumentType {
     Vectors,
     #[serde(rename(deserialize = "similar", serialize = "similar",))]
     Similar,
+    #[serde(rename(deserialize = "grouped-vectors", serialize = "grouped-vectors",))]
+    GroupedVectors,
 }
 
 impl DocumentType {

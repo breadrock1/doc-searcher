@@ -40,11 +40,17 @@ impl SearcherService for ElasticContext {
         let similar_docs = helper::similar_to_doc(similar);
         Ok(helper::to_unified_pag(similar_docs, doc_type))
     }
-    async fn search_semantic(&self, s_params: &SearchParams) -> PaginatedResult<DocumentVectors> {
+    async fn search_semantic(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value> {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
         let folders = s_params.get_folders(true);
         let indexes = folders.split(',').collect::<Vec<&str>>();
-        s_helper::search::<DocumentVectors>(&elastic, s_params, cxt_opts, indexes.as_slice()).await
+        let paginated = 
+            s_helper::search::<DocumentVectors>(&elastic, s_params, cxt_opts, indexes.as_slice()).await?;
+        
+        match doc_type {
+            DocumentType::GroupedVectors => Ok(helper::vec_to_grouped_value(paginated)),
+            _ => Ok(helper::vec_to_value(paginated)),
+        }
     }
 }
