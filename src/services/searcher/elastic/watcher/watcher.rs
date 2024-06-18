@@ -1,4 +1,4 @@
-use crate::errors::WebResult;
+use crate::errors::{WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::folders::folder::HISTORY_FOLDER_ID;
@@ -30,7 +30,7 @@ impl WatcherService for context::ElasticContext {
             if store_res.is_err() {
                 let err = store_res.err().unwrap();
                 log::error!("{} already exists into {}: {}", doc_id, folder_id, err);
-                errors.push(doc_id);
+                errors.push(doc_id.to_string());
                 continue
             }
 
@@ -59,6 +59,12 @@ impl WatcherService for context::ElasticContext {
         if store_res.is_err() {
             let err = store_res.err().unwrap();
             log::error!("{}", err);
+        }
+        
+        if !errors.is_empty() {
+            let msg = "failed to fetch docs".to_string();
+            let entity = WebErrorEntity::with_attachments(msg, errors);
+            return Err(WebError::SearchServiceError(entity));
         }
 
         Ok(helper::to_unified_docs(analysed_docs, doc_type))

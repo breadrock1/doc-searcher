@@ -10,6 +10,7 @@ use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::FolderService;
 
 use elasticsearch::http::Method;
+use elasticsearch::indices::{IndicesCreateParts, IndicesDeleteParts, IndicesGetParts};
 use serde_json::Value;
 
 #[async_trait::async_trait]
@@ -17,8 +18,15 @@ impl FolderService for ElasticContext {
     async fn get_all_folders(&self, show_all: bool) -> WebResult<Vec<Folder>> {
         let ctx_opts = self.get_options();
         let elastic = self.get_cxt().read().await;
-        let target_url = "/_cat/indices?format=json";
-        let response = helper::send_elrequest(&elastic, Method::Get, None, target_url).await?;
+        let response = elastic
+            .indices()
+            .get(IndicesGetParts::Index(&["*"]))
+            .send()
+            .await
+            .map_err(WebError::from)?;
+
+        // let target_url = "/_cat/indices?format=json";
+        // let response = helper::send_elrequest(&elastic, Method::Get, None, target_url).await?;
         let folders = response.json::<Vec<Folder>>().await?;
         if show_all {
             return Ok(folders);
@@ -28,9 +36,16 @@ impl FolderService for ElasticContext {
     }
     async fn get_folder(&self, folder_id: &str) -> WebResult<Folder> {
         let elastic = self.get_cxt().read().await;
-        let target_url = format!("/{}/_stats", folder_id);
-        let response =
-            helper::send_elrequest(&elastic, Method::Get, None, target_url.as_str()).await?;
+        let response = elastic
+            .indices()
+            .get(IndicesGetParts::Index(&[folder_id]))
+            .send()
+            .await
+            .map_err(WebError::from)?;
+        
+        // let target_url = format!("/{}/_stats", folder_id);
+        // let response =
+        //     helper::send_elrequest(&elastic, Method::Get, None, target_url.as_str()).await?;
 
         let json_value = response.json::<Value>().await?;
         let folder = f_helper::extract_folder_stats(&json_value)?;
@@ -47,7 +62,13 @@ impl FolderService for ElasticContext {
         }
 
         let elastic = self.get_cxt().read().await;
-        let response = f_helper::create_index(&elastic, folder_form).await?;
+        let response = elastic
+            .indices()
+            .create(IndicesCreateParts::Index(folder_form.get_id()))
+            .send()
+            .await?;
+        
+        // let response = f_helper::create_index(&elastic, folder_form).await?;
         let result = helper::parse_elastic_response(response).await?;
         if result.is_success() {
             let info_folder = InfoFolder::from(folder_form);
@@ -67,7 +88,6 @@ impl FolderService for ElasticContext {
         }
 
         let elastic = self.get_cxt().read().await;
-        let response = helper::send_elrequest(&elastic, Method::Delete, None, folder_id).await?;
         if result.is_success() {
             match f_helper::del_from_info_folder(&elastic, folder_id).await {
                 Ok(success) => {
@@ -79,6 +99,13 @@ impl FolderService for ElasticContext {
             }
         }
 
+        let response = elastic
+            .indices()
+            .delete(IndicesDeleteParts::Index(&[folder_id]))
+            .send()
+            .await?;
+        
+        // let response = helper::send_elrequest(&elastic, Method::Delete, None, folder_id).await?;
         helper::parse_elastic_response(response).await
     }
 }
