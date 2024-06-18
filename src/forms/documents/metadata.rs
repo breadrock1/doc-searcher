@@ -46,6 +46,9 @@ impl Artifacts {
     pub fn builder() -> ArtifactsBuilder {
         ArtifactsBuilder::default()
     }
+    pub fn get_group_name(&self) -> &str {
+        self.group_name.as_str()
+    }
 }
 
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]

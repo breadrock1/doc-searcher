@@ -3,6 +3,7 @@ use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
 use crate::forms::folders::folder::HISTORY_FOLDER_ID;
+use crate::services::notifier::notifier;
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::store::StoreTrait;
@@ -81,6 +82,10 @@ pub(crate) async fn move_document(
     let location = std::path::Path::new("./indexer").join(dst_folder);
     let location_str = location.to_str().unwrap_or(dst_folder);
     document.set_folder_path(location_str);
+
+    let cxt_opts = es_cxt.get_options();
+    let artifacts = notifier::get_artifacts(cxt_opts, dst_folder).await.ok();
+    document.set_artifacts(artifacts);
     
     let status = es_cxt.delete_document(folder_id, doc_id).await?;
     if !status.is_success() {

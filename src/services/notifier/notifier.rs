@@ -14,6 +14,7 @@ const ANALYSE_FILES_URL: &str = "/watcher/files/analyse";
 const CREATE_FOLDER_URL: &str = "/watcher/folders/create";
 const REMOVE_FOLDER_URL: &str = "/watcher/folders/remove";
 const UPLOAD_FILES_URL: &str = "/watcher/files/upload";
+const ARTIFACTS_FILES_URL: &str = "/watcher/files/artifacts";
 
 #[derive(Deserialize)]
 struct ResponseError {
@@ -78,6 +79,16 @@ pub(crate) async fn launch_analysis(
         .json::<Vec<Document>>()
         .await
         .map_err(WebError::from)
+}
+
+pub(crate) async fn get_artifacts(
+    cxt_opts: &ContextOptions,
+    folder_id: &str,
+) -> WebResult<Value> {
+    let target_url = format!("{}{}?document_type={}", cxt_opts.watcher_address(), ARTIFACTS_FILES_URL, folder_id);
+    let client = reqwest::Client::new();
+    let response = client.get(target_url).send().await?;
+    Ok(response.json::<Value>().await?)
 }
 
 pub(crate) async fn move_docs_to_folder(
