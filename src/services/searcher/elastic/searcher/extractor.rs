@@ -93,7 +93,14 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                                 "match_all": {}
                             }
                         }
-                    }
+                    },
+                    "sort": [
+                        {
+                            "document_created": {
+                                "format": "strict_date_optional_time_nanos"
+                            }
+                        }
+                    ],
                 })
             }
             false => {
@@ -114,6 +121,13 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                             ]
                         }
                     },
+                    "sort": [
+                        {
+                            "document_created": {
+                                "format": "strict_date_optional_time_nanos"
+                            }
+                        }
+                    ],
                     "min_score": 2
                 })
             }
