@@ -30,6 +30,9 @@ impl OcrMetadata {
     pub fn get_artifacts(&self) -> Option<&Vec<Artifacts>> {
         self.artifacts.as_ref()
     }
+    pub fn set_artifacts(&mut self, artifacts: Option<Vec<Artifacts>>) {
+        self.artifacts = artifacts
+    }
 }
 
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
@@ -40,6 +43,16 @@ pub struct Artifacts {
     group_json_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     group_values: Option<Vec<GroupValue>>,
+}
+
+impl Default for Artifacts {
+    fn default() -> Self {
+        Artifacts {
+            group_name: "".to_string(),
+            group_json_name: "".to_string(),
+            group_values: None,
+        }
+    }
 }
 
 impl Artifacts {
