@@ -2,6 +2,7 @@ use crate::forms::TestExample;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use utoipa::ToSchema;
 
 pub const DEFAULT_FOLDER_ID: &str = "common_folder";
@@ -88,6 +89,15 @@ impl Folder {
     }
     pub fn set_name(&mut self, name: Option<String>) {
         self.name = name
+    }
+    pub fn update_docs_count(&mut self) {
+        let def_val = "1".to_string();
+        let count = self.get_docs_count().unwrap_or(&def_val);
+        let count_int = i32::from_str(count.as_str()).unwrap_or(2);
+        let deleted = self.get_docs_deleted().unwrap_or(&def_val);
+        let deleted_int = i32::from_str(deleted.as_str()).unwrap_or(1);
+        let result = count_int - deleted_int - 1;
+        self.docs_count = Some(result.to_string());
     }
 }
 

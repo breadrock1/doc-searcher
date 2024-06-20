@@ -47,6 +47,8 @@ pub(super) fn extract_folder_stats(value: &Value) -> Result<Folder, WebError> {
         .as_i64()
         .unwrap();
 
+    let docs_count = docs_count - docs_deleted - 1;
+
     let folder = Folder::builder()
         .name(None)
         .health(health.to_string())
