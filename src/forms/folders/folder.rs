@@ -6,6 +6,7 @@ use utoipa::ToSchema;
 
 pub const DEFAULT_FOLDER_ID: &str = "common_folder";
 pub const HISTORY_FOLDER_ID: &str = "history";
+pub const ARTIFACTS_FOLDER_ID: &str = "artifacts";
 pub const INFO_FOLDER_ID: &str = "info-folder";
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]

@@ -35,6 +35,21 @@ impl OcrMetadata {
     }
 }
 
+#[allow(dead_code)]
+#[derive(Clone, Deserialize, ToSchema)]
+pub struct DocsArtifacts {
+    name: String,
+    json_name: String,
+    sample_file_name: String,
+    artifacts: Artifacts,
+}
+
+impl DocsArtifacts {
+    pub fn get_artifacts(&self) -> &Artifacts {
+        &self.artifacts
+    }
+}
+
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
 pub struct Artifacts {
     #[schema(example = "Information of TN")]
@@ -48,8 +63,8 @@ pub struct Artifacts {
 impl Default for Artifacts {
     fn default() -> Self {
         Artifacts {
-            group_name: "".to_string(),
-            group_json_name: "".to_string(),
+            group_name: "unknown".to_string(),
+            group_json_name: "unknown".to_string(),
             group_values: None,
         }
     }
