@@ -7,7 +7,6 @@ use chrono::{DateTime, Datelike, NaiveDateTime, Timelike, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
@@ -119,26 +118,25 @@ impl Document {
     pub fn set_folder_path(&mut self, folder_path: &str) {
         self.folder_path = folder_path.to_string()
     }
-    pub fn set_artifacts(&mut self, value: Option<Value>) {
-        if value.is_none() {
-            return;
-        }
-
-        let ocr = self
+    pub fn set_artifacts(&mut self, artifacts: Artifacts) {
+        let mut ocr_metadata = self
             .get_ocr_metadata()
             .cloned()
             .unwrap_or_else(|| {
-                let arts = Artifacts::deserialize(value.unwrap()).unwrap();
                 OcrMetadata::builder()
                     .job_id(String::default())
                     .pages_count(0)
-                    .doc_type(arts.get_group_name().to_string())
-                    .artifacts(Some(vec![arts]))
+                    .doc_type(artifacts.get_group_name().to_string())
+                    .artifacts(None)
                     .build()
                     .unwrap()
             });
 
-        self.ocr_metadata = Some(ocr)
+        if ocr_metadata.get_artifacts().is_none() {
+            ocr_metadata.set_artifacts(Some(vec![artifacts]))
+        }
+
+        self.ocr_metadata = Some(ocr_metadata)
     }
 }
 

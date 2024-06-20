@@ -2,17 +2,16 @@ use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
-use crate::forms::folders::folder::HISTORY_FOLDER_ID;
-use crate::services::notifier::notifier;
+use crate::forms::documents::metadata::{Artifacts, DocsArtifacts};
+use crate::forms::folders::folder::{ARTIFACTS_FOLDER_ID, HISTORY_FOLDER_ID};
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::store::StoreTrait;
 use crate::services::searcher::service::DocumentService;
 
 use elasticsearch::http::response::Response;
-use elasticsearch::{CountParts, Elasticsearch, IndexParts, UpdateParts};
+use elasticsearch::{CountParts, Elasticsearch, GetParts, IndexParts, UpdateParts};
 use elasticsearch::params::Refresh;
-use serde::Deserialize;
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
 
@@ -62,10 +61,10 @@ pub(super) async fn check_duplication(
     Ok(result)
 }
 
-pub(super) async fn extract_document(response: Response) -> Result<Document, WebError> {
+pub(super) async fn extract_document<'de, T: serde::Deserialize<'de>>(response: Response) -> Result<T, WebError> {
     let common_object = response.json::<Value>().await?;
     let document_json = &common_object[&"_source"];
-    Document::deserialize(document_json).map_err(WebError::from)
+    T::deserialize(document_json.to_owned()).map_err(WebError::from)
 }
 
 pub(crate) async fn move_document(
@@ -83,8 +82,9 @@ pub(crate) async fn move_document(
     let location_str = location.to_str().unwrap_or(dst_folder);
     document.set_folder_path(location_str);
 
-    let cxt_opts = es_cxt.get_options();
-    let artifacts = notifier::get_artifacts(cxt_opts, dst_folder).await.ok();
+    let doc_artifacts = load_artifacts(es_cxt, ARTIFACTS_FOLDER_ID, dst_folder).await.ok();
+    let artifacts = doc_artifacts
+        .map_or_else(|| Artifacts::default(), |arts| arts.get_artifacts().to_owned());
     document.set_artifacts(artifacts);
     
     let status = es_cxt.delete_document(folder_id, doc_id).await?;
@@ -126,4 +126,19 @@ pub(crate) async fn update_document(
         .await?;
     
     helper::parse_elastic_response(response).await
+}
+
+pub(crate) async fn load_artifacts(
+    es_cxt: &ElasticContext,
+    folder_id: &str,
+    doc_id: &str,
+) -> WebResult<DocsArtifacts> {
+    let elastic = es_cxt.get_cxt().read().await;
+    let response = elastic
+        .get(GetParts::IndexId(folder_id, doc_id))
+        .send()
+        .await
+        .map_err(WebError::from)?;
+
+    extract_document::<DocsArtifacts>(response).await.map_err(WebError::from)
 }
