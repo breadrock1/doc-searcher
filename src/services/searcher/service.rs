@@ -2,7 +2,6 @@ use crate::errors::{Successful, WebError, WebResult};
 use crate::forms::clusters::cluster::Cluster;
 use crate::forms::clusters::forms::CreateClusterForm;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::embeddings::DocumentVectors;
 use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
 use crate::forms::folders::folder::Folder;
 use crate::forms::folders::forms::{CreateFolderForm, DeleteFolderForm};
@@ -57,5 +56,5 @@ pub trait SearcherService {
     async fn search_records(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
     async fn search_fulltext(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
     async fn search_similar(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
-    async fn search_semantic(&self, s_params: &SearchParams) -> PaginatedResult<DocumentVectors>;
+    async fn search_semantic(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
 }
