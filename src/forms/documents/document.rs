@@ -118,6 +118,26 @@ impl Document {
     pub fn set_folder_path(&mut self, folder_path: &str) {
         self.folder_path = folder_path.to_string()
     }
+    pub fn set_artifacts(&mut self, artifacts: Artifacts) {
+        let mut ocr_metadata = self
+            .get_ocr_metadata()
+            .cloned()
+            .unwrap_or_else(|| {
+                OcrMetadata::builder()
+                    .job_id(String::default())
+                    .pages_count(0)
+                    .doc_type(artifacts.get_group_name().to_string())
+                    .artifacts(None)
+                    .build()
+                    .unwrap()
+            });
+
+        if ocr_metadata.get_artifacts().is_none() {
+            ocr_metadata.set_artifacts(Some(vec![artifacts]))
+        }
+
+        self.ocr_metadata = Some(ocr_metadata)
+    }
 }
 
 impl DocumentsTrait for Document {

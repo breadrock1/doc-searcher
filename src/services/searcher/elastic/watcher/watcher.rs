@@ -18,20 +18,36 @@ impl WatcherService for context::ElasticContext {
     async fn analyse_docs(&self, document_ids: &[String], doc_type: &DocumentType) -> WebResult<Vec<Value>> {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
-        let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await?;
+        let mut analysed_docs = notifier::launch_analysis(cxt_opts, document_ids).await
+            .map_err(|err| {
+                log::warn!("{}", err);
+                err
+            })?;
 
+        let mut errors = Vec::new();
         let mut bulk_history: Vec<JsonBody<Value>> = Vec::new();
         for doc in analysed_docs.iter_mut() {
-            let status = d_helper::store_object(&elastic, doc.get_folder_id(), doc).await?;
-            println!("{}", status.message);
+            let doc_id = doc.get_doc_id();
+            let folder_id = doc.get_folder_id();
+            
+            let store_res = d_helper::store_object(&elastic, folder_id, doc).await;
+            if store_res.is_err() {
+                let err = store_res.err().unwrap();
+                log::error!("{} already exists into {}: {}", doc_id, folder_id, err);
+                errors.push(doc_id);
+                continue
+            }
 
-            let vec_folder_id = format!("{}-vector", doc.get_folder_id());
-            let status = d_helper::store_object(&elastic, vec_folder_id.as_str(), doc).await?;
-            println!("{}", status.message);
+            let vec_folder_id = format!("{}-vector", folder_id);
+            let store_res = d_helper::store_object(&elastic, vec_folder_id.as_str(), doc).await;
+            if store_res.is_err() {
+                let err = store_res.err().unwrap();
+                log::warn!("{} already exists into {}: {}", doc_id, vec_folder_id.as_str(), err);
+            }
 
             let to_value_result = serde_json::to_value(&doc);
             let document_json = to_value_result.unwrap();
-            bulk_history.push(json!({"index": { "_id": doc.get_doc_id() }}).into());
+            bulk_history.push(json!({"index": { "_id": doc_id }}).into());
             bulk_history.push(document_json.clone().into());
         }
 
@@ -41,10 +57,17 @@ impl WatcherService for context::ElasticContext {
             .timeout("1m")
             .body(bulk_history)
             .send()
-            .await?;
+            .await
+            .map_err(|err| {
+                log::warn!("{}", err);
+                err
+            })?;
 
-        let status = helper::parse_elastic_response(response).await?;
-        println!("{}", status.message);
+        let store_res = helper::parse_elastic_response(response).await;
+        if store_res.is_err() {
+            let err = store_res.err().unwrap();
+            log::error!("{}", err);
+        }
 
         Ok(helper::to_unified_docs(analysed_docs, doc_type))
     }

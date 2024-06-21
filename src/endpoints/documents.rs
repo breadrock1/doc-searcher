@@ -157,8 +157,8 @@ async fn delete_document(
         )
     ),
     request_body(
-        content = DeleteDocsForm,
-        example = json!(DeleteDocsForm::test_example(None)),
+        content = Vec<DeleteDocsForm>,
+        example = json!(vec![DeleteDocsForm::test_example(None)])
     ),
     responses(
         (
@@ -197,18 +197,18 @@ async fn delete_document(
 #[delete("/folders/{folder_id}/documents")]
 async fn delete_documents(
     cxt: Context,
-    path: Path<String>,
-    form: Json<DeleteDocsForm>,
+    _path: Path<String>,
+    form: Json<Vec<DeleteDocsForm>>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    let document_ids = form.get_doc_ids();
-    let folder_id = path.as_ref();
-
-    let mut failed_tasks = Vec::with_capacity(document_ids.len());
-    for id in document_ids.iter() {
-        let result = client.delete_document(folder_id.as_str(), id).await;
-        if result.is_err() {
-            failed_tasks.push(id.to_owned());
+    let mut failed_tasks = Vec::new();
+    for doc_form in form.0.iter() {
+        let folder_id = doc_form.get_folder_id();
+        for id in doc_form.get_doc_ids() {
+            let result = client.delete_document(folder_id, id).await;
+            if result.is_err() {
+                failed_tasks.push(id.to_owned());
+            }
         }
     }
 
@@ -299,8 +299,8 @@ async fn get_document(
         )
     ),
     request_body(
-        content = MoveDocsForm,
-        example = json!(MoveDocsForm::test_example(None)),
+        content = Vec<MoveDocsForm>,
+        example = json!(vec![MoveDocsForm::test_example(None)]),
     ),
     responses(
         (
@@ -339,14 +339,28 @@ async fn get_document(
 #[post("/folders/{folder_id}/move")]
 async fn move_documents(
     cxt: Context,
-    path: Path<String>,
-    form: Json<MoveDocsForm>,
+    _path: Path<String>,
+    form: Json<Vec<MoveDocsForm>>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
-    let folder_id = path.as_ref();
-    let move_doc_form = form.0;
-    let status = client.move_documents(folder_id, &move_doc_form).await?;
-    Ok(Json(status))
+    let mut failed_tasks = Vec::new();
+    for doc_form in form.0.iter() {
+        let folder_id = doc_form.get_folder_id();
+        let result = client.move_documents(folder_id, doc_form).await;
+        if result.is_err() {
+            let err = result.err().unwrap();
+            let ids = err.attachments().unwrap_or_default();
+            failed_tasks.extend_from_slice(ids.as_slice());
+        }
+    }
+
+    if !failed_tasks.is_empty() {
+        let msg = "Not deleted".to_string();
+        let entity = WebErrorEntity::with_attachments(msg, failed_tasks);
+        return Err(WebError::DeleteDocument(entity));
+    }
+
+    Ok(Json(Successful::success("Done")))
 }
 
 #[utoipa::path(
