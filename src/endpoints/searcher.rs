@@ -80,6 +80,13 @@ async fn search_fulltext(
     post,
     path = "/search/semantic",
     tag = "Search",
+    params(
+        (
+            "group_result", Query,
+            description = "Group result by document_id",
+            example = "true"
+        )
+    ),
     request_body(
         content = SemanticParams,
         example = json!(SemanticParams::test_example(Some("Ocean Carrier")))
@@ -119,10 +126,12 @@ async fn search_fulltext(
 async fn search_semantic(
     cxt: Context,
     form: Json<SemanticParams>,
-) -> PaginateResponse<Vec<DocumentVectors>> {
+    document_type: Query<SearchQuery>,
+) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let search_form = SearchParams::from(form.0);
-    let documents = client.search_semantic(&search_form).await?;
+    let doc_type = document_type.0.get_type();
+    let documents = client.search_semantic(&search_form, &doc_type).await?;
     Ok(Json(documents))
 }
 

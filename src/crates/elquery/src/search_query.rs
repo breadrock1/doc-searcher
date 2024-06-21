@@ -13,7 +13,11 @@ impl QueryString {
         QueryString {
             query: value.to_string(),
             operator: "or".to_string(),
-            fields: vec!["content".to_string(), "document_path".to_string()],
+            fields: vec![
+                "content".to_string(),
+                "document_path".to_string(),
+                "document_name".to_string(),
+            ],
         }
     }
 

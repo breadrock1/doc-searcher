@@ -2,6 +2,9 @@ use crate::forms::documents::document::Document;
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::TestExample;
 
+use datetime::{serialize_dt, deserialize_dt};
+
+use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -11,8 +14,16 @@ pub struct DocumentVectors {
     #[schema(example = "test_llama_folder")]
     folder_id: String,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    #[serde(skip_deserializing)]
     document_id: String,
+    #[schema(example = "test-document.docx")]
+    document_name: String,
+    #[serde(
+        serialize_with = "serialize_dt",
+        deserialize_with = "deserialize_dt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schema(example = "2024-04-25T11:14:55Z")]
+    document_modified: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     match_score: Option<f64>,
     embeddings: Vec<EmbeddingsVector>,
@@ -58,7 +69,9 @@ impl From<&Document> for DocumentVectors {
         DocumentVectors::builder()
             .folder_id(value.get_folder_id().to_string())
             .document_id(value.get_doc_id().to_string())
+            .document_name(value.get_doc_name().to_string())
             .embeddings(value.get_embeddings().to_vec())
+            .document_modified(value.get_doc_modified().cloned())
             .match_score(None)
             .build()
             .unwrap()
@@ -85,9 +98,13 @@ impl From<&DocumentVectors> for Vec<DocumentVectors> {
 
 impl TestExample<DocumentVectors> for DocumentVectors {
     fn test_example(_value: Option<&str>) -> DocumentVectors {
+        let local_now = datetime::get_local_now();
+        let datetime_now = DateTime::<Utc>::from(local_now);
         DocumentVectors::builder()
             .folder_id("test_folder".to_string())
             .document_id("98ac9896be35f47fb8442580cd9839b4".to_string())
+            .document_name("test-document.docx".to_string())
+            .document_modified(Some(datetime_now))
             .embeddings(vec![EmbeddingsVector::default()])
             .match_score(None)
             .build()

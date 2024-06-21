@@ -21,6 +21,8 @@ pub enum DocumentType {
     Vectors,
     #[serde(rename(deserialize = "similar", serialize = "similar",))]
     Similar,
+    #[serde(rename(deserialize = "grouped-vectors", serialize = "grouped-vectors",))]
+    GroupedVectors,
 }
 
 impl DocumentType {
@@ -40,6 +42,7 @@ impl DocumentType {
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct MoveDocsForm {
+    folder_id: String,
     location: String,
     document_ids: Vec<String>,
     is_watcher_enabled: bool,
@@ -48,6 +51,9 @@ pub struct MoveDocsForm {
 impl MoveDocsForm {
     pub fn builder() -> MoveDocsFormBuilder {
         MoveDocsFormBuilder::default()
+    }
+    pub fn get_folder_id(&self) -> &str {
+        self.folder_id.as_str()
     }
     pub fn get_location(&self) -> &str {
         self.location.as_str()
@@ -63,7 +69,8 @@ impl MoveDocsForm {
 impl TestExample<MoveDocsForm> for MoveDocsForm {
     fn test_example(_value: Option<&str>) -> MoveDocsForm {
         MoveDocsForm::builder()
-            .location("Test Folder".to_string())
+            .folder_id("test_folder".to_string())
+            .location("target_folder".to_string())
             .document_ids(vec!["98ac9896be35f47fb8442580cd9839b4".to_string()])
             .is_watcher_enabled(false)
             .build()
@@ -73,6 +80,7 @@ impl TestExample<MoveDocsForm> for MoveDocsForm {
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct DeleteDocsForm {
+    folder_id: String,
     document_ids: Vec<String>,
 }
 
@@ -83,11 +91,15 @@ impl DeleteDocsForm {
     pub fn get_doc_ids(&self) -> &Vec<String> {
         self.document_ids.as_ref()
     }
+    pub fn get_folder_id(&self) -> &str {
+        self.folder_id.as_str()
+    }
 }
 
 impl TestExample<DeleteDocsForm> for DeleteDocsForm {
     fn test_example(_value: Option<&str>) -> DeleteDocsForm {
         DeleteDocsForm::builder()
+            .folder_id("test_folder".to_string())
             .document_ids(vec![
                 "98ac9896be35f47fb8442580cd9839b4".to_string()
             ])

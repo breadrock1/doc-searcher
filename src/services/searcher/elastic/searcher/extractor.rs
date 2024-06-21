@@ -78,21 +78,60 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
         let (doc_cr_from, doc_cr_to) = s_params.get_doc_dates();
 
         let common_filter = CommonFilter::new()
-            .with_date::<FilterRange, CreatedAtDateQuery>("document_created", doc_cr_from, doc_cr_to)
+            .with_date::<FilterRange, CreateDateQuery>("document_created", doc_cr_from, doc_cr_to)
             .with_range::<FilterRange>("document_size", doc_size_from, doc_size_to)
-            .with_match::<FilterMatch>("document_name", s_params.get_query())
+            .with_match::<FilterMatch>("document_extension", s_params.get_extension())
             .build();
 
-        json!({
-            "query": {
-                "bool": {
-                    "filter": common_filter,
-                    "must": {
-                        "match_all": {}
-                    }
-                }
+        match s_params.get_query().is_empty() {
+            true => {
+                json!({
+                    "query": {
+                        "bool": {
+                            "filter": common_filter,
+                            "must": {
+                                "match_all": {}
+                            }
+                        }
+                    },
+                    "sort": [
+                        {
+                            "document_created": {
+                                "format": "strict_date_optional_time_nanos"
+                            }
+                        }
+                    ],
+                })
             }
-        })
+            false => {
+                json!({
+                    "query": {
+                        "bool": {
+                            "filter": common_filter,
+                            "should": [
+                                {
+                                    "multi_match": {
+                                        "query": s_params.get_query(),
+                                        "fields": [
+                                            "document_name",
+                                            "document_path"
+                                        ],
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "sort": [
+                        {
+                            "document_created": {
+                                "format": "strict_date_optional_time_nanos"
+                            }
+                        }
+                    ],
+                    "min_score": 1
+                })
+            }
+        }
     }
 
     async fn extract_from_response(value: &Value) -> Result<DocumentPreview, WebError> {

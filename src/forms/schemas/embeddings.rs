@@ -1,4 +1,4 @@
-use crate::forms::schemas::FieldType;
+use crate::forms::schemas::{AsDateField, FieldType};
 use crate::forms::schemas::SchemaFieldType;
 use crate::forms::schemas::SettingsSchema;
 
@@ -20,6 +20,8 @@ impl Default for DocumentVectorSchema {
         let doc_vec_properties = DocumentVectorProperties {
             folder_id: SchemaFieldType::new(FieldType::Keyword),
             document_id: SchemaFieldType::new(FieldType::Keyword),
+            document_name: SchemaFieldType::new(FieldType::Keyword),
+            document_modified: AsDateField::default(),
             embeddings: TextVectorSchema {
                 field_type: FieldType::Nested,
                 properties: text_vec_properties,
@@ -44,6 +46,8 @@ struct DocumentVectorMappings {
 struct DocumentVectorProperties {
     folder_id: SchemaFieldType,
     document_id: SchemaFieldType,
+    document_name: SchemaFieldType,
+    document_modified: AsDateField,
     embeddings: TextVectorSchema,
 }
 

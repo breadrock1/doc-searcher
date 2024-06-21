@@ -51,14 +51,17 @@ impl UpdateTrait<DocumentPreview> for DocumentPreview {
                     .build()
                     .unwrap()
             );
-        
+
+        let location = std::path::Path::new("./inexer").join(folder_id);
+        let location_str = location.to_str().unwrap_or(folder_id);
+
         let new_doc = Document::builder()
             .folder_id(old_doc.get_folder_id().to_owned())
             .folder_path(old_doc.get_folder_path().to_owned())
             .document_id(old_doc.get_doc_id().to_owned())
             .document_ssdeep(old_doc.get_doc_ssdeep().to_owned())
             .document_name(doc_form.get_name().to_string())
-            .document_path(doc_form.get_location().to_owned())
+            .document_path(location_str.to_string())
             .document_size(doc_form.get_size())
             .document_type(old_doc.get_doc_type().to_owned())
             .document_extension(old_doc.get_doc_ext().to_owned())
