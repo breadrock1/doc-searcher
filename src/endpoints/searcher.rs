@@ -82,10 +82,10 @@ async fn search_fulltext(
     tag = "Search",
     params(
         (
-            "group_result", Query,
-            description = "Group result by document_id",
-            example = "true"
-        )
+            "document_type", Query,
+            description = "Document type to convert",
+            example = "document"
+        ),
     ),
     request_body(
         content = SemanticParams,
