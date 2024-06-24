@@ -19,8 +19,7 @@ impl FolderService for ElasticContext {
         let elastic = self.get_cxt().read().await;
         let target_url = "/_cat/indices?format=json";
         let response = helper::send_elrequest(&elastic, Method::Get, None, target_url).await?;
-        let mut folders = response.json::<Vec<Folder>>().await?;
-        folders.iter_mut().for_each(|fold| fold.update_docs_count());
+        let folders = response.json::<Vec<Folder>>().await?;
         if show_all {
             return Ok(folders);
         }
