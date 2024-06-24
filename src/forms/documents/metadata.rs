@@ -123,6 +123,7 @@ where
 {
     let value = Value::deserialize(deserializer)?;
     let str_value = match value {
+        Value::Null => String::default(),
         Value::Bool(val) => val.to_string(),
         Value::Number(val) => val.to_string(),
         Value::String(val) => val,
