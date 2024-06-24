@@ -106,7 +106,7 @@ pub struct GroupValue {
     #[serde(rename = "type")]
     group_type: String,
     #[schema(example = "2023-10-29")]
-    #[serde(deserialize_with = "deser_group_value")]
+    #[serde(default, deserialize_with = "deser_group_value")]
     value: Option<String>,
 }
 
