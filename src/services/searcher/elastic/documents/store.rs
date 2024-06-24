@@ -45,7 +45,7 @@ impl StoreTrait<DocumentVectors> for DocumentVectors {
     async fn create_body(doc_form: &DocumentVectors) -> Vec<JsonBody<Value>> {
         let mut base_doc_vecs = doc_form.clone();
         base_doc_vecs.exclude_embeddings();
-        
+
         let all_embeddings = doc_form.get_embeddings();
         let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(all_embeddings.len() * 2);
         for vector in doc_form.get_embeddings() {
@@ -57,7 +57,7 @@ impl StoreTrait<DocumentVectors> for DocumentVectors {
             body.push(json!({"index": { "_id": vector.get_id() }}).into());
             body.push(doc_json.into());
         }
-        
+
         body
     }
 }

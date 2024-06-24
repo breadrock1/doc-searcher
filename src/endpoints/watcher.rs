@@ -1,4 +1,4 @@
-use crate::errors::{ErrorResponse, JsonResponse, WebError, WebErrorEntity};
+use crate::errors::{ErrorResponse, JsonResponse, Successful, WebError, WebErrorEntity};
 use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::preview::DocumentPreview;
@@ -16,6 +16,58 @@ use std::error::Error;
 use std::io::Write;
 
 type Context = Data<Box<dyn WatcherService>>;
+
+#[utoipa::path(
+    post,
+    path = "/watcher/analysis/artifacts",
+    tag = "Watcher",
+    request_body(
+        content = Value,
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Successful,
+            example = json!(Successful {
+                code: 200,
+                message: "Done".to_string(),
+            }),
+        ),
+        (
+            status = 400,
+            description = "Failed while creating artifacts",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while creating artifacts".to_string(),
+                attachments: None,
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
+    )
+)]
+#[post("/analysis/artifacts")]
+async fn create_artifacts(
+    cxt: Context,
+    form: Json<Value>,
+) -> JsonResponse<Successful> {
+    let client = cxt.get_ref();
+    let artifacts = form.0;
+    let documents = client.create_artifacts(&artifacts).await?;
+    Ok(Json(documents))
+}
 
 #[utoipa::path(
     post,

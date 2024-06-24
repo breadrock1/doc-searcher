@@ -1,7 +1,7 @@
-use crate::errors::WebResult;
+use crate::errors::{Successful, WebError, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::forms::DocumentType;
-use crate::forms::folders::folder::HISTORY_FOLDER_ID;
+use crate::forms::folders::folder::{ARTIFACTS_FOLDER_ID, HISTORY_FOLDER_ID};
 use crate::services::notifier::notifier;
 use crate::services::searcher::elastic::context;
 use crate::services::searcher::elastic::documents::helper as d_helper;
@@ -15,6 +15,27 @@ use serde_json::{json, Value};
 
 #[async_trait::async_trait]
 impl WatcherService for context::ElasticContext {
+    async fn create_artifacts(&self, artifacts: &Value) -> WebResult<Successful> {
+        let doc_types = artifacts[&"doc_types"].as_array().unwrap();
+        let mut records: Vec<JsonBody<Value>> = Vec::with_capacity(doc_types.len() * 2);
+        for doc_value in doc_types.iter() {
+            let json_name = &doc_value[&"json_name"];
+            records.push(json!({"index": { "_id": json_name }}).into());
+            records.push(JsonBody::new(doc_value.clone()));
+        }
+
+        let elastic = self.get_cxt().read().await;
+        let response = elastic
+            .bulk(BulkParts::Index(ARTIFACTS_FOLDER_ID))
+            .refresh(Refresh::True)
+            .timeout("1m")
+            .body(records)
+            .send()
+            .await
+            .map_err(WebError::from)?;
+
+        helper::parse_elastic_response(response).await
+    }
     async fn analyse_docs(&self, document_ids: &[String], doc_type: &DocumentType) -> WebResult<Vec<Value>> {
         let cxt_opts = self.get_options().as_ref();
         let elastic = self.get_cxt().read().await;
