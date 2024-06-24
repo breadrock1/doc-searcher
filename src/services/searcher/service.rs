@@ -41,6 +41,7 @@ pub trait DocumentService {
 
 #[async_trait::async_trait]
 pub trait WatcherService {
+    async fn create_artifacts(&self, artifacts: &Value) -> WebResult<Successful>;
     async fn analyse_docs(&self, doc_ids: &[String], doc_type: &DocumentType) -> WebResult<Vec<Value>>;
     async fn upload_files(&self, name: &str, path: &str) -> UploadedResult;
 }

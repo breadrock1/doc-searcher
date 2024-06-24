@@ -53,6 +53,7 @@ use utoipa_swagger_ui::SwaggerUi;
         fetch_analysis,
         move_documents,
         upload_files,
+        create_artifacts,
     ),
     components(
         schemas(

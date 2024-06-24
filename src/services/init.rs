@@ -67,4 +67,5 @@ pub fn build_watcher_scope() -> Scope {
     web::scope("/watcher")
         .service(watcher::fetch_analysis)
         .service(watcher::upload_files)
+        .service(watcher::create_artifacts)
 }
