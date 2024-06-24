@@ -120,7 +120,20 @@ fn deser_group_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error
 where
     D: Deserializer<'de>,
 {
-    String::deserialize(deserializer).and_then(|value| Ok(Some(value.replace("-", "   "))))
+
+    let value = Option::deserialize(deserializer);
+    let str_value = match value {
+        Ok(opt_value) => {
+            let test: Option<String> = opt_value;
+            test.unwrap_or_default()
+        }
+        Err(err) => {
+            log::warn!("{:?}", err);
+            String::default()
+        }
+    };
+
+    Ok(Some(str_value.replace("-", "   ")))
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
