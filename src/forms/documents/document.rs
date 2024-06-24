@@ -132,10 +132,7 @@ impl Document {
                     .unwrap()
             });
 
-        if ocr_metadata.get_artifacts().is_none() {
-            ocr_metadata.set_artifacts(Some(vec![artifacts]))
-        }
-
+        ocr_metadata.set_artifacts(Some(vec![artifacts]));
         self.ocr_metadata = Some(ocr_metadata)
     }
 }
