@@ -2,7 +2,7 @@ use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
-use crate::forms::documents::metadata::{Artifacts, DocsArtifacts};
+use crate::forms::documents::metadata::DocsArtifacts;
 use crate::forms::folders::folder::{ARTIFACTS_FOLDER_ID, HISTORY_FOLDER_ID};
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::context::ElasticContext;
@@ -103,10 +103,10 @@ pub(crate) async fn move_document(
     let location_str = location.to_str().unwrap_or(dst_folder);
     document.set_folder_path(location_str);
 
-    let doc_artifacts = load_artifacts(es_cxt, ARTIFACTS_FOLDER_ID, dst_folder).await.ok();
-    let artifacts = doc_artifacts
-        .map_or_else(|| Artifacts::default(), |arts| arts.get_artifacts().to_owned());
-    document.set_artifacts(artifacts);
+    let doc_artifacts = load_artifacts(es_cxt, ARTIFACTS_FOLDER_ID, dst_folder)
+        .await
+        .unwrap_or_default();
+    document.set_artifacts(&doc_artifacts);
     
     let status = es_cxt.delete_document(folder_id, doc_id).await?;
     if !status.is_success() {

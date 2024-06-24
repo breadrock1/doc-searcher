@@ -33,6 +33,9 @@ impl OcrMetadata {
     pub fn set_artifacts(&mut self, artifacts: Option<Vec<Artifacts>>) {
         self.artifacts = artifacts
     }
+    pub fn set_doc_type(&mut self, doc_type: &str) {
+        self.doc_type = doc_type.to_string();
+    }
 }
 
 #[allow(dead_code)]
@@ -41,12 +44,26 @@ pub struct DocsArtifacts {
     name: String,
     json_name: String,
     sample_file_name: String,
-    artifacts: Artifacts,
+    artifacts: Vec<Artifacts>,
 }
 
 impl DocsArtifacts {
-    pub fn get_artifacts(&self) -> &Artifacts {
+    pub fn get_artifacts(&self) -> &Vec<Artifacts> {
         &self.artifacts
+    }
+    pub fn get_name(&self) -> &str {
+        self.name.as_str()
+    }
+}
+
+impl Default for DocsArtifacts {
+    fn default() -> Self {
+        DocsArtifacts {
+            name: "unknown".to_string(),
+            json_name: "unknown".to_string(),
+            sample_file_name: "PLACE_SAMPLE_FILE_NAME".to_string(),
+            artifacts: Vec::default(),
+        }
     }
 }
 
