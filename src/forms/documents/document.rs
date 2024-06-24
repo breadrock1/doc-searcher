@@ -1,5 +1,5 @@
 use crate::forms::documents::embeddings::EmbeddingsVector;
-use crate::forms::documents::metadata::{Artifacts, GroupValue, HighlightEntity, OcrMetadata};
+use crate::forms::documents::metadata::{Artifacts, DocsArtifacts, GroupValue, HighlightEntity, OcrMetadata};
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::TestExample;
 
@@ -118,7 +118,7 @@ impl Document {
     pub fn set_folder_path(&mut self, folder_path: &str) {
         self.folder_path = folder_path.to_string()
     }
-    pub fn set_artifacts(&mut self, artifacts: Artifacts) {
+    pub fn set_artifacts(&mut self, doc_artifacts: &DocsArtifacts) {
         let mut ocr_metadata = self
             .get_ocr_metadata()
             .cloned()
@@ -126,13 +126,18 @@ impl Document {
                 OcrMetadata::builder()
                     .job_id(String::default())
                     .pages_count(0)
-                    .doc_type(artifacts.get_group_name().to_string())
+                    .doc_type(String::default())
                     .artifacts(None)
                     .build()
                     .unwrap()
             });
 
-        ocr_metadata.set_artifacts(Some(vec![artifacts]));
+        let doc_type = doc_artifacts.get_name();
+        ocr_metadata.set_doc_type(doc_type);
+
+        let artifacts = doc_artifacts.get_artifacts().to_vec();
+        ocr_metadata.set_artifacts(Some(artifacts));
+
         self.ocr_metadata = Some(ocr_metadata)
     }
 }
