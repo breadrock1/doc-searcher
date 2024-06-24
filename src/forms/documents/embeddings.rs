@@ -50,6 +50,9 @@ impl DocumentVectors {
     pub fn append_embeddings(&mut self, embeds: EmbeddingsVector) {
         self.embeddings.push(embeds);
     }
+    pub fn set_embeddings(&mut self, embeds: Vec<EmbeddingsVector>) {
+        self.embeddings = embeds;
+    }
 }
 
 impl DocumentsTrait for DocumentVectors {
@@ -66,15 +69,19 @@ impl DocumentsTrait for DocumentVectors {
 
 impl From<&Document> for DocumentVectors {
     fn from(value: &Document) -> Self {
-        DocumentVectors::builder()
+        let mut test = DocumentVectors::builder()
             .folder_id(value.get_folder_id().to_string())
             .document_id(value.get_doc_id().to_string())
             .document_name(value.get_doc_name().to_string())
-            .embeddings(value.get_embeddings().to_vec())
             .document_modified(value.get_doc_modified().cloned())
+            .embeddings(Vec::default())
             .match_score(None)
             .build()
-            .unwrap()
+            .unwrap();
+
+        let test_embeds = value.get_embeddings();
+        test.set_embeddings(test_embeds.clone());
+        test
     }
 }
 

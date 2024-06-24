@@ -32,9 +32,13 @@ impl DocumentService for ElasticContext {
         match doc_type {
             DocumentType::Vectors => {
                 let doc_vecs = DocumentVectors::from(doc_form);
-                d_helper::store_object::<DocumentVectors>(&elastic, folder_id, &doc_vecs).await
+                d_helper::store_objects::<DocumentVectors>(&elastic, folder_id, &doc_vecs).await
             }
-            _ => d_helper::store_object::<Document>(&elastic, folder_id, doc_form).await
+            _ => {
+                let mut doc_cln = doc_form.clone();
+                doc_cln.exclude_tokens();
+                d_helper::store_object::<Document>(&elastic, folder_id, &doc_cln).await
+            }
         }
         
     }

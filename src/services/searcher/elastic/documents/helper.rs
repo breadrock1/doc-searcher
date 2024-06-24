@@ -10,7 +10,7 @@ use crate::services::searcher::elastic::documents::store::StoreTrait;
 use crate::services::searcher::service::DocumentService;
 
 use elasticsearch::http::response::Response;
-use elasticsearch::{CountParts, Elasticsearch, GetParts, IndexParts, UpdateParts};
+use elasticsearch::{BulkParts, CountParts, Elasticsearch, GetParts, IndexParts, UpdateParts};
 use elasticsearch::params::Refresh;
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
@@ -28,6 +28,27 @@ where
         .refresh(Refresh::True)
         .timeout("1m")
         .body(&doc_form)
+        .send()
+        .await
+        .map_err(WebError::from)?;
+
+    helper::parse_elastic_response(response).await
+}
+
+pub(crate) async fn store_objects<T>(
+    elastic: &RwLockReadGuard<'_, Elasticsearch>,
+    folder_id: &str,
+    doc_form: &T,
+) -> WebResult<Successful>
+where
+    T: DocumentsTrait + StoreTrait<T> + serde::Serialize + Sized,
+{
+    let body = T::create_body(doc_form).await;
+    let response = elastic
+        .bulk(BulkParts::Index(folder_id))
+        .refresh(Refresh::True)
+        .timeout("1m")
+        .body(body)
         .send()
         .await
         .map_err(WebError::from)?;
