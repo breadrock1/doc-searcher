@@ -52,7 +52,7 @@ impl UpdateTrait<DocumentPreview> for DocumentPreview {
                     .unwrap()
             );
 
-        let location = std::path::Path::new("./inexer").join(folder_id);
+        let location = std::path::Path::new("./indexer").join(folder_id);
         let location_str = location.to_str().unwrap_or(folder_id);
 
         let new_doc = Document::builder()

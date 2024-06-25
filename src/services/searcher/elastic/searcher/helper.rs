@@ -22,8 +22,9 @@ where
     let body_value = T::build_query(s_params, cxt_opts).await;
     let response = send_search_request(elastic, s_params, &body_value, indexes).await?;
     if !response.status_code().is_success() {
-        let msg = "Failed while parsing elastic response.";
-        let entity = WebErrorEntity::new(msg.to_string());
+        let msg = response.json::<Value>().await.unwrap();
+        let msg = serde_json::to_string_pretty(&msg).unwrap();
+        let entity = WebErrorEntity::new(msg);
         return Err(WebError::SearchError(entity));
     }
     Ok(extract_elastic_response(response).await)
@@ -41,7 +42,8 @@ where
     let body_value = DocumentPreview::build_query(s_params, cxt_opts).await;
     let response = send_search_request(elastic, s_params, &body_value, indexes).await?;
     if !response.status_code().is_success() {
-        let msg = "Failed while parsing elastic response.";
+        let msg = response.json::<Value>().await.unwrap();
+        let msg = serde_json::to_string_pretty(&msg).unwrap();
         let entity = WebErrorEntity::new(msg.to_string());
         return Err(WebError::SearchError(entity));
     }
