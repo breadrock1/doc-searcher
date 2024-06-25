@@ -1,5 +1,6 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use utoipa::ToSchema;
 
 #[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
@@ -120,17 +121,13 @@ fn deser_group_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error
 where
     D: Deserializer<'de>,
 {
-
-    let value = Option::deserialize(deserializer);
+    let value = Value::deserialize(deserializer)?;
     let str_value = match value {
-        Ok(opt_value) => {
-            let test: Option<String> = opt_value;
-            test.unwrap_or_default()
-        }
-        Err(err) => {
-            log::warn!("{:?}", err);
-            String::default()
-        }
+        Value::Null => String::default(),
+        Value::Bool(val) => val.to_string(),
+        Value::Number(val) => val.to_string(),
+        Value::String(val) => val,
+        _ => value.to_string()
     };
 
     Ok(Some(str_value.replace("-", "   ")))

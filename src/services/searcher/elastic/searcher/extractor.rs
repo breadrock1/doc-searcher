@@ -97,6 +97,7 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                     "sort": [
                         {
                             "document_created": {
+                                "order": "desc",
                                 "format": "strict_date_optional_time_nanos"
                             }
                         }
@@ -112,10 +113,12 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                                 {
                                     "multi_match": {
                                         "query": s_params.get_query(),
+                                        "type": "phrase_prefix",
                                         "fields": [
                                             "document_name",
                                             "document_path"
                                         ],
+                                        "minimum_should_match": "50%"
                                     }
                                 }
                             ]
