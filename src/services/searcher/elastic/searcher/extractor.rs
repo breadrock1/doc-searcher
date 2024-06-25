@@ -97,6 +97,7 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                     "sort": [
                         {
                             "document_created": {
+                                "order": "desc",
                                 "format": "strict_date_optional_time_nanos"
                             }
                         }
