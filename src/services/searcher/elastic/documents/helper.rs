@@ -94,9 +94,12 @@ pub(crate) async fn move_document(
     folder_id: &str,
     move_form: &MoveDocsForm,
 ) -> WebResult<()> {
-    let mut document = es_cxt.get_document(folder_id, doc_id).await?;
-
     let dst_folder = move_form.get_location();
+    if folder_id.eq(dst_folder) {
+        return Ok(())
+    }
+
+    let mut document = es_cxt.get_document(folder_id, doc_id).await?;
     document.set_folder_id(dst_folder);
     
     let location = std::path::Path::new("./indexer").join(dst_folder);
