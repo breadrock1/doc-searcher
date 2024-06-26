@@ -44,6 +44,7 @@ impl From<AllRecordsParams> for SearchParams {
             .query(value.query)
             .knn_amount(None)
             .knn_candidates(None)
+            .show_all(None)
             .build()
             .unwrap()
     }

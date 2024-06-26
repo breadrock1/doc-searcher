@@ -20,11 +20,7 @@ impl FolderService for ElasticContext {
         let target_url = "/_cat/indices?format=json";
         let response = helper::send_elrequest(&elastic, Method::Get, None, target_url).await?;
         let folders = response.json::<Vec<Folder>>().await?;
-        if show_all {
-            return Ok(folders);
-        }
-        
-        f_helper::filter_folders(&elastic, ctx_opts, folders).await
+        f_helper::filter_folders(&elastic, ctx_opts, folders, show_all).await
     }
     async fn get_folder(&self, folder_id: &str) -> WebResult<Folder> {
         let elastic = self.get_cxt().read().await;
@@ -33,7 +29,9 @@ impl FolderService for ElasticContext {
             helper::send_elrequest(&elastic, Method::Get, None, target_url.as_str()).await?;
 
         let json_value = response.json::<Value>().await?;
-        let folder = f_helper::extract_folder_stats(&json_value)?;
+        let mut folder = f_helper::extract_folder_stats(&json_value)?;
+        // TODO: Why getting all records does not work by matching substring.
+        let _ = f_helper::load_info_doc(&elastic, &mut folder).await;
         Ok(folder)
     }
     async fn create_folder(&self, folder_form: &CreateFolderForm) -> WebResult<Successful> {

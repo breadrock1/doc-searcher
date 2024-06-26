@@ -88,8 +88,8 @@ impl Folder {
     pub fn get_pri_store_size(&self) -> Option<&String> {
         self.pri_store_size.as_ref()
     }
-    pub fn set_name(&mut self, name: Option<String>) {
-        self.name = name
+    pub fn set_name(&mut self, name: &str) {
+        self.name = Some(name.to_string());
     }
     pub fn update_docs_count(&mut self) {
         let def_val = "1".to_string();
@@ -99,6 +99,9 @@ impl Folder {
         let deleted_int = i32::from_str(deleted.as_str()).unwrap_or(1);
         let result = count_int - deleted_int - 1;
         self.docs_count = Some(result.to_string());
+    }
+    pub fn set_docs_count(&mut self, docs_count: &str) {
+        self.docs_count = Some(docs_count.to_string());
     }
 }
 
