@@ -189,12 +189,31 @@ impl SearcherTrait<DocumentSimilar> for DocumentSimilar {
 
 #[async_trait::async_trait]
 impl SearcherTrait<InfoFolder> for InfoFolder {
-    async fn build_query(_: &SearchParams, _: &ContextOptions) -> Value {
+    async fn build_query(s_params: &SearchParams, _: &ContextOptions) -> Value {
+        let filter_item = match s_params.get_show_all() {
+            true => {
+                let def_vec: Vec<String> = Vec::default();
+                json!({"must": def_vec})
+            },
+            false => json!({
+                "must": [
+                    {
+                        "term": {
+                            "is_system": false
+                        }
+                    }
+                ]
+            })
+        };
+
         json!({
             "query": {
                 "bool": {
                     "must": {
                         "match_all": {}
+                    },
+                    "filter": {
+                        "bool": filter_item
                     }
                 }
             }

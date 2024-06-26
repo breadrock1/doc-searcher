@@ -50,7 +50,7 @@ where
     Ok(extract_elastic_response::<T>(response).await)
 }
 
-async fn send_search_request(
+pub(crate) async fn send_search_request(
     elastic: &Elasticsearch,
     es_params: &SearchParams,
     body_value: &Value,

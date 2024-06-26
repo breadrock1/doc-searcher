@@ -36,6 +36,9 @@ pub struct SearchParams {
     #[schema(example = 100)]
     #[serde(skip_serializing_if = "Option::is_none")]
     knn_candidates: Option<u32>,
+    #[schema(example = true)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_all: Option<bool>
 }
 
 impl SearchParams {
@@ -82,6 +85,12 @@ impl SearchParams {
     pub fn get_candidates(&self) -> u32 {
         self.knn_candidates.unwrap_or(100u32)
     }
+    pub fn set_show_all(&mut self, flag: bool) {
+        self.show_all = Some(flag);
+    }
+    pub fn get_show_all(&self) -> bool {
+        self.show_all.unwrap_or(false)
+    }
 }
 
 impl Default for SearchParams {
@@ -100,6 +109,7 @@ impl Default for SearchParams {
             .scroll_lifetime("10m".to_string())
             .knn_amount(Some(5))
             .knn_candidates(Some(100))
+            .show_all(Some(true))
             .build()
             .unwrap()
     }
@@ -121,6 +131,7 @@ impl TestExample<SearchParams> for SearchParams {
             .scroll_lifetime("1m".to_string())
             .knn_amount(Some(5))
             .knn_candidates(Some(100))
+            .show_all(Some(true))
             .build()
             .unwrap()
     }
