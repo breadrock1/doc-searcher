@@ -30,7 +30,6 @@ impl FolderService for ElasticContext {
 
         let json_value = response.json::<Value>().await?;
         let mut folder = f_helper::extract_folder_stats(&json_value)?;
-        // TODO: Why getting all records does not work by matching substring.
         let _ = f_helper::load_info_doc(&elastic, &mut folder).await;
         Ok(folder)
     }
