@@ -17,7 +17,6 @@ impl From<&Vec<Document>> for CacherDocuments {
     }
 }
 
-
 impl From<CacherDocuments> for Vec<Document> {
     fn from(value: CacherDocuments) -> Vec<Document> {
         value.documents

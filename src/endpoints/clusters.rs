@@ -1,11 +1,11 @@
 use crate::errors::{ErrorResponse, JsonResponse, Successful};
-use crate::forms::TestExample;
 use crate::forms::clusters::cluster::Cluster;
 use crate::forms::clusters::forms::CreateClusterForm;
+use crate::forms::TestExample;
 use crate::services::searcher::service::ClusterService;
 
-use actix_web::{delete, get, put};
 use actix_web::web::{Data, Json, Path};
+use actix_web::{delete, get, put};
 
 type Context = Data<Box<dyn ClusterService>>;
 
@@ -153,7 +153,7 @@ async fn get_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Cluster> 
 )]
 #[put("/clusters/{cluster_id}")]
 async fn create_cluster(
-    cxt: Context, 
+    cxt: Context,
     path: Path<String>,
     form: Json<CreateClusterForm>,
 ) -> JsonResponse<Successful> {

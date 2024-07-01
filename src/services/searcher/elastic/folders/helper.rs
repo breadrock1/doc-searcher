@@ -1,13 +1,13 @@
 use crate::errors::{WebError, WebErrorEntity, WebResult};
+use crate::forms::documents::schema::{DocumentSchema, DocumentVectorSchema};
 use crate::forms::folders::folder::{Folder, INFO_FOLDER_ID};
 use crate::forms::folders::forms::{CreateFolderForm, FolderType};
 use crate::forms::folders::info::InfoFolder;
-use crate::forms::documents::schema::{DocumentSchema, DocumentVectorSchema};
 use crate::forms::folders::schema::InfoFolderSchema;
 use crate::forms::searcher::s_params::SearchParams;
 use crate::services::searcher::elastic::context::ContextOptions;
-use crate::services::searcher::elastic::searcher::helper as s_helper;
 use crate::services::searcher::elastic::searcher::extractor::SearcherTrait;
+use crate::services::searcher::elastic::searcher::helper as s_helper;
 
 use elasticsearch::http::response::Response;
 use elasticsearch::{Elasticsearch, GetParts, IndexParts};
@@ -76,7 +76,12 @@ pub(super) fn create_folder_schema(schema_type: &FolderType) -> Value {
 }
 
 // TODO: Need refactoring this method
-pub(crate) async fn filter_folders(elastic: &Elasticsearch, ctx_opts: &ContextOptions, folders: Vec<Folder>, show_all: bool) -> WebResult<Vec<Folder>> {
+pub(crate) async fn filter_folders(
+    elastic: &Elasticsearch,
+    ctx_opts: &ContextOptions,
+    folders: Vec<Folder>,
+    show_all: bool,
+) -> WebResult<Vec<Folder>> {
     let indexes = &[INFO_FOLDER_ID];
 
     let mut s_params = SearchParams::default();
@@ -86,15 +91,12 @@ pub(crate) async fn filter_folders(elastic: &Elasticsearch, ctx_opts: &ContextOp
     let response = s_helper::send_search_request(elastic, &s_params, &body_value, indexes).await?;
     let info_folders = s_helper::extract_elastic_response::<InfoFolder>(response).await;
 
-    let mut info_folders_map: HashMap<&str, InfoFolder > = HashMap::new();
-    info_folders
-        .get_founded()
-        .iter()
-        .for_each(|info| {
-            let id = info.get_id();
-            let info_cln = info.to_owned();
-            info_folders_map.insert(id, info_cln);
-        });
+    let mut info_folders_map: HashMap<&str, InfoFolder> = HashMap::new();
+    info_folders.get_founded().iter().for_each(|info| {
+        let id = info.get_id();
+        let info_cln = info.to_owned();
+        info_folders_map.insert(id, info_cln);
+    });
 
     let mut common_folders_info: Vec<Folder> = Vec::new();
     for mut folder in folders {
@@ -119,7 +121,7 @@ pub(crate) async fn filter_folders(elastic: &Elasticsearch, ctx_opts: &ContextOp
             common_folders_info.push(folder);
         }
     }
-    
+
     Ok(common_folders_info)
 }
 
@@ -131,6 +133,9 @@ pub(crate) async fn load_info_doc(elastic: &Elasticsearch, folder: &mut Folder) 
         .await
         .map_err(WebError::from)?;
 
-    let info_folder = response.json::<InfoFolder>().await.map_err(WebError::from)?;
+    let info_folder = response
+        .json::<InfoFolder>()
+        .await
+        .map_err(WebError::from)?;
     Ok(folder.set_name(info_folder.get_name()))
 }

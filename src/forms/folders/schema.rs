@@ -19,8 +19,8 @@ impl Default for InfoFolderSchema {
                     user_id: SchemaFieldType::new(FieldType::Text),
                     document_type: SchemaFieldType::new(FieldType::Text),
                     is_system: SchemaFieldType::new(FieldType::Boolean),
-                }
-            }
+                },
+            },
         }
     }
 }

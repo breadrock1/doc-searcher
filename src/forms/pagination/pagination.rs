@@ -1,5 +1,5 @@
-use crate::forms::TestExample;
 use crate::forms::documents::DocumentsTrait;
+use crate::forms::TestExample;
 
 use derive_builder::Builder;
 use serde_derive::Serialize;
@@ -41,15 +41,12 @@ impl<D> Paginated<D> {
     }
 }
 
-impl <T> TestExample<Paginated<Vec<T>>> for Paginated<Vec<T>>
-where 
+impl<T> TestExample<Paginated<Vec<T>>> for Paginated<Vec<T>>
+where
     T: DocumentsTrait + TestExample<T>,
 {
     fn test_example(_value: Option<&str>) -> Paginated<Vec<T>> {
         let id = "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFMNjU1QQ==";
-        Paginated::new_with_id(
-            vec![T::test_example(None)],
-            id.to_string()
-        )
+        Paginated::new_with_id(vec![T::test_example(None)], id.to_string())
     }
 }

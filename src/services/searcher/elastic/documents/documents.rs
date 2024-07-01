@@ -1,23 +1,28 @@
 use crate::errors::{Successful, WebError, WebResult};
 use crate::forms::documents::document::Document;
-use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::vector::DocumentVectors;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::helper as d_helper;
+use crate::services::searcher::elastic::documents::update::UpdateTrait;
 use crate::services::searcher::elastic::helper;
 use crate::services::searcher::service::DocumentService;
-use crate::services::searcher::elastic::documents::update::UpdateTrait;
 
-use elasticsearch::DeleteParts;
 use elasticsearch::http::Method;
 use elasticsearch::params::Refresh;
+use elasticsearch::DeleteParts;
 use serde::Deserialize;
 use serde_json::Value;
 
 #[async_trait::async_trait]
 impl DocumentService for ElasticContext {
-    async fn create_document(&self, folder_id: &str, doc_form: &Document, doc_type: &DocumentType) -> WebResult<Successful> {
+    async fn create_document(
+        &self,
+        folder_id: &str,
+        doc_form: &Document,
+        doc_type: &DocumentType,
+    ) -> WebResult<Successful> {
         let elastic = self.get_cxt().read().await;
         match doc_type {
             DocumentType::Vectors => {
@@ -30,7 +35,6 @@ impl DocumentService for ElasticContext {
                 d_helper::store_object::<Document>(&elastic, folder_id, &doc_cln).await
             }
         }
-        
     }
     async fn get_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Document> {
         let elastic = self.get_cxt().read().await;
@@ -52,7 +56,12 @@ impl DocumentService for ElasticContext {
 
         helper::parse_elastic_response(response).await
     }
-    async fn update_document(&self, folder_id: &str, value: &Value, doc_type: &DocumentType) -> WebResult<Successful> {
+    async fn update_document(
+        &self,
+        folder_id: &str,
+        value: &Value,
+        doc_type: &DocumentType,
+    ) -> WebResult<Successful> {
         match doc_type {
             DocumentType::Preview => {
                 let doc = DocumentPreview::deserialize(value)?;

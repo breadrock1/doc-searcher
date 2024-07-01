@@ -1,6 +1,6 @@
 use crate::errors::{WebError, WebErrorEntity};
-use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::DocumentsTrait;
 use crate::forms::pagination::pagination::Paginated;
 use crate::forms::searcher::s_params::SearchParams;
 use crate::services::searcher::elastic::context::ContextOptions;

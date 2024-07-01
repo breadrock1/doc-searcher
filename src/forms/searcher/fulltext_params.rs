@@ -1,5 +1,5 @@
-use crate::forms::TestExample;
 use crate::forms::searcher::s_params::SearchParams;
+use crate::forms::TestExample;
 
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};

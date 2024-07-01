@@ -38,7 +38,7 @@ impl CreateFolderForm {
     }
     pub fn get_name(&self) -> &str {
         self.folder_name.as_str()
-    } 
+    }
     pub fn get_schema(&self) -> &FolderType {
         &self.folder_type
     }

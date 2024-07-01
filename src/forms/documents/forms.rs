@@ -1,7 +1,7 @@
 use crate::errors::WebError;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::vector::DocumentVectors;
 
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
@@ -25,7 +25,7 @@ impl DocumentType {
         match self {
             DocumentType::Preview => serde_json::to_value(DocumentPreview::from(document)),
             DocumentType::Vectors => serde_json::to_value(DocumentVectors::from(document)),
-            _ => serde_json::to_value(document)
+            _ => serde_json::to_value(document),
         }
         .map_err(WebError::from)
     }

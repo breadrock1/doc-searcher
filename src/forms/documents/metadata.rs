@@ -127,7 +127,7 @@ where
         Value::Bool(val) => val.to_string(),
         Value::Number(val) => val.to_string(),
         Value::String(val) => val,
-        _ => value.to_string()
+        _ => value.to_string(),
     };
 
     Ok(Some(str_value.replace("-", "   ")))

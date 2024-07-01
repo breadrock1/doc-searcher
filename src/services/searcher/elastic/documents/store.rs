@@ -1,7 +1,7 @@
-use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::vector::DocumentVectors;
+use crate::forms::documents::DocumentsTrait;
 use crate::forms::folders::info::InfoFolder;
 
 use elasticsearch::http::request::JsonBody;
@@ -68,7 +68,7 @@ impl StoreTrait<InfoFolder> for InfoFolder {
         let to_value_result = serde_json::to_value(info_folder);
         let info_folder_json = to_value_result.unwrap();
         let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        
+
         body.push(json!({"index": { "_id": info_folder.get_id() }}).into());
         body.push(info_folder_json.into());
 

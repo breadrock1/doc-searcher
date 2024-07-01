@@ -1,12 +1,12 @@
-use crate::errors::{ErrorResponse, Successful};
 use crate::errors::JsonResponse;
-use crate::forms::TestExample;
+use crate::errors::{ErrorResponse, Successful};
 use crate::forms::folders::folder::Folder;
 use crate::forms::folders::forms::{CreateFolderForm, ShowAllFlag};
+use crate::forms::TestExample;
 use crate::services::searcher::service::FolderService;
 
-use actix_web::{delete, get, put};
 use actix_web::web::{Data, Json, Path, Query};
+use actix_web::{delete, get, put};
 
 type Context = Data<Box<dyn FolderService>>;
 
@@ -212,10 +212,7 @@ async fn create_folder(cxt: Context, form: Json<CreateFolderForm>) -> JsonRespon
     )
 )]
 #[delete("/folders/{folder_id}")]
-async fn delete_folder(
-    cxt: Context, 
-    path: Path<String>,
-) -> JsonResponse<Successful> {
+async fn delete_folder(cxt: Context, path: Path<String>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let folder_id = path.as_str();
     let status = client.delete_folder(folder_id).await?;

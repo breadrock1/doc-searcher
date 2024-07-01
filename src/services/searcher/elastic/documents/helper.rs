@@ -1,13 +1,13 @@
 use crate::errors::{Successful, WebError, WebResult};
-use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
-use crate::services::searcher::elastic::helper;
+use crate::forms::documents::DocumentsTrait;
 use crate::services::searcher::elastic::context::ElasticContext;
 use crate::services::searcher::elastic::documents::store::StoreTrait;
+use crate::services::searcher::elastic::helper;
 
 use elasticsearch::http::response::Response;
-use elasticsearch::{BulkParts, Elasticsearch, IndexParts, UpdateParts};
 use elasticsearch::params::Refresh;
+use elasticsearch::{BulkParts, Elasticsearch, IndexParts, UpdateParts};
 use serde_json::{json, Value};
 use tokio::sync::RwLockReadGuard;
 
@@ -53,7 +53,9 @@ where
     helper::parse_elastic_response(response).await
 }
 
-pub(super) async fn extract_document<'de, T: serde::Deserialize<'de>>(response: Response) -> Result<T, WebError> {
+pub(super) async fn extract_document<'de, T: serde::Deserialize<'de>>(
+    response: Response,
+) -> Result<T, WebError> {
     let common_object = response.json::<Value>().await?;
     let document_json = &common_object[&"_source"];
     T::deserialize(document_json.to_owned()).map_err(WebError::from)
@@ -62,7 +64,7 @@ pub(super) async fn extract_document<'de, T: serde::Deserialize<'de>>(response: 
 pub(crate) async fn update_document(
     es_cxt: &ElasticContext,
     folder_id: &str,
-    doc_form: &Document
+    doc_form: &Document,
 ) -> WebResult<Successful> {
     let elastic = es_cxt.get_cxt().read().await;
     let doc_id = doc_form.get_doc_id();
@@ -73,6 +75,6 @@ pub(crate) async fn update_document(
         }))
         .send()
         .await?;
-    
+
     helper::parse_elastic_response(response).await
 }

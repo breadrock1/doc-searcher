@@ -31,21 +31,47 @@ pub trait FolderService {
 
 #[async_trait::async_trait]
 pub trait DocumentService {
-    async fn create_document(&self, folder_id: &str, doc: &Document, doc_type: &DocumentType) -> WebResult<Successful>;
+    async fn create_document(
+        &self,
+        folder_id: &str,
+        doc: &Document,
+        doc_type: &DocumentType,
+    ) -> WebResult<Successful>;
     async fn get_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Document>;
     async fn delete_document(&self, folder_id: &str, doc_id: &str) -> WebResult<Successful>;
-    async fn update_document(&self, folder_id: &str, value: &Value, doc_type: &DocumentType) -> WebResult<Successful>;
+    async fn update_document(
+        &self,
+        folder_id: &str,
+        value: &Value,
+        doc_type: &DocumentType,
+    ) -> WebResult<Successful>;
 }
 
 #[async_trait::async_trait]
 pub trait PaginatorService {
     async fn delete_session(&self, scroll_ids: &DeletePaginationsForm) -> WebResult<Successful>;
-    async fn paginate(&self, curr_scroll: &PaginateNextForm, doc_type: &DocumentType) -> PaginatedResult<Value>;
+    async fn paginate(
+        &self,
+        curr_scroll: &PaginateNextForm,
+        doc_type: &DocumentType,
+    ) -> PaginatedResult<Value>;
 }
 
 #[async_trait::async_trait]
 pub trait SearcherService {
-    async fn search_records(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
-    async fn search_fulltext(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
-    async fn search_semantic(&self, s_params: &SearchParams, doc_type: &DocumentType) -> PaginatedResult<Value>;
+    async fn search_records(
+        &self,
+        s_params: &SearchParams,
+        doc_type: &DocumentType,
+    ) -> PaginatedResult<Value>;
+    async fn search_fulltext(
+        &self,
+        s_params: &SearchParams,
+        doc_type: &DocumentType,
+    ) -> PaginatedResult<Value>;
+    async fn search_semantic(
+        &self,
+        s_params: &SearchParams,
+        doc_type: &DocumentType,
+    ) -> PaginatedResult<Value>;
 }

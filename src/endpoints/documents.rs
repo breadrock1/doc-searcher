@@ -1,11 +1,11 @@
 use crate::errors::{ErrorResponse, JsonResponse, Successful};
-use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
 use crate::forms::documents::forms::DocTypeQuery;
+use crate::forms::TestExample;
 use crate::services::searcher::service::DocumentService;
 
-use actix_web::{delete, get, post, put};
 use actix_web::web::{Data, Json, Path, Query};
+use actix_web::{delete, get, post, put};
 use serde_json::Value;
 
 type Context = Data<Box<dyn DocumentService>>;
@@ -80,7 +80,9 @@ async fn create_document(
     let doc_form = form.0;
     let (folder_id, _) = path.as_ref();
     let doc_type = document_type.0.get_type();
-    let status = client.create_document(folder_id.as_str(), &doc_form, &doc_type).await?;
+    let status = client
+        .create_document(folder_id.as_str(), &doc_form, &doc_type)
+        .await?;
     Ok(Json(status))
 }
 
@@ -135,13 +137,12 @@ async fn create_document(
     )
 )]
 #[delete("/folders/{folder_id}/documents/{document_id}")]
-async fn delete_document(
-    cxt: Context,
-    path: Path<(String, String)>,
-) -> JsonResponse<Successful> {
+async fn delete_document(cxt: Context, path: Path<(String, String)>) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
-    let status = client.delete_document(folder_id.as_str(), doc_id.as_str()).await?;
+    let status = client
+        .delete_document(folder_id.as_str(), doc_id.as_str())
+        .await?;
     Ok(Json(status))
 }
 
@@ -199,7 +200,7 @@ async fn delete_document(
 )]
 #[get("/folders/{folder_id}/documents/{document_id}")]
 async fn get_document(
-    cxt: Context, 
+    cxt: Context,
     path: Path<(String, String)>,
     document_type: Query<DocTypeQuery>,
 ) -> JsonResponse<Value> {
@@ -280,11 +281,8 @@ async fn update_document(
     let client = cxt.get_ref();
     let (folder_id, _) = path.as_ref();
     let doc_type = document_type.0.get_type();
-    let status = client.update_document(
-        folder_id.as_str(),
-        &form.0,
-        &doc_type
-    )
-    .await?;
+    let status = client
+        .update_document(folder_id.as_str(), &form.0, &doc_type)
+        .await?;
     Ok(Json(status))
 }

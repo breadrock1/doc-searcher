@@ -41,7 +41,7 @@ impl FolderService for ElasticContext {
             let res = d_helper::store_object(&elastic, "info-folder", &info_folder).await?;
             log::warn!("{} - {}", res.code, res.message);
         }
-        
+
         Ok(result)
     }
     async fn delete_folder(&self, folder_id: &str) -> WebResult<Successful> {

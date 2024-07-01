@@ -1,16 +1,16 @@
 use crate::errors::{ErrorResponse, PaginateResponse};
-use crate::forms::TestExample;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::pagination::pagination::Paginated;
 use crate::forms::searcher::fulltext_params::FulltextParams;
 use crate::forms::searcher::records_params::AllRecordsParams;
-use crate::forms::searcher::semantic_params::SemanticParams;
 use crate::forms::searcher::s_params::{SearchParams, SearchQuery};
+use crate::forms::searcher::semantic_params::SemanticParams;
+use crate::forms::TestExample;
 use crate::services::searcher::service::SearcherService;
 
-use actix_web::{post};
+use actix_web::post;
 use actix_web::web::{Data, Json, Query};
 use serde_json::Value;
 

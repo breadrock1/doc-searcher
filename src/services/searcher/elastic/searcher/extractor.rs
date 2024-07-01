@@ -1,8 +1,8 @@
 use crate::errors::WebError;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::metadata::HighlightEntity;
 use crate::forms::documents::preview::DocumentPreview;
+use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::folders::info::InfoFolder;
 use crate::forms::searcher::s_params::SearchParams;
@@ -178,7 +178,7 @@ impl SearcherTrait<InfoFolder> for InfoFolder {
             true => {
                 let def_vec: Vec<String> = Vec::default();
                 json!({"must": def_vec})
-            },
+            }
             false => json!({
                 "must": [
                     {
@@ -187,7 +187,7 @@ impl SearcherTrait<InfoFolder> for InfoFolder {
                         }
                     }
                 ]
-            })
+            }),
         };
 
         json!({

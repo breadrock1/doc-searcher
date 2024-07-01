@@ -1,6 +1,6 @@
-use crate::forms::schemas::{AsDateField, FieldType};
 use crate::forms::schemas::SchemaFieldType;
 use crate::forms::schemas::SettingsSchema;
+use crate::forms::schemas::{AsDateField, FieldType};
 
 use serde_derive::Serialize;
 

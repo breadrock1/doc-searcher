@@ -2,7 +2,7 @@ use crate::forms::documents::document::Document;
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::TestExample;
 
-use datetime::{serialize_dt, deserialize_dt};
+use datetime::{deserialize_dt, serialize_dt};
 
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
@@ -88,10 +88,10 @@ impl From<&Document> for DocumentVectors {
 impl From<&DocumentVectors> for Vec<DocumentVectors> {
     fn from(value: &DocumentVectors) -> Self {
         let embeds = value.embeddings.to_vec();
-        
+
         let mut base_doc_vecs = value.clone();
         base_doc_vecs.exclude_embeddings();
-         
+
         embeds
             .into_iter()
             .map(|vecs| {

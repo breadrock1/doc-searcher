@@ -1,6 +1,6 @@
-use crate::forms::TestExample;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::folders::folder::DEFAULT_FOLDER_ID;
+use crate::forms::TestExample;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ pub struct SearchParams {
     knn_candidates: Option<u32>,
     #[schema(example = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    show_all: Option<bool>
+    show_all: Option<bool>,
 }
 
 impl SearchParams {
