@@ -67,8 +67,12 @@ path = "src/crates/elquery"
 path = "src/crates/hasher"
 
 [[bin]]
-name = "elastic-main"
-path = "src/bin/main.rs"
+name = "doc-searcher-run"
+path = "src/bin/doc-searcher-run.rs"
+
+[[bin]]
+name = "doc-searcher-init"
+path = "src/bin/doc-searcher-init.rs"
 
 [[test]]
 name = "datetime_tests"
