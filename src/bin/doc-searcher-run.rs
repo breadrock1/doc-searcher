@@ -1,8 +1,7 @@
 extern crate doc_search;
 
 use doc_search::services::cacher::rediska;
-use doc_search::services::config;
-use doc_search::services::init;
+use doc_search::services::{config, init};
 use doc_search::services::searcher::elastic;
 use doc_search::services::searcher::service::*;
 use doc_search::services::swagger;
