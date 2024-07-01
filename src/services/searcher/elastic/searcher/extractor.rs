@@ -1,9 +1,8 @@
 use crate::errors::WebError;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::embeddings::DocumentVectors;
 use crate::forms::documents::metadata::HighlightEntity;
 use crate::forms::documents::preview::DocumentPreview;
-use crate::forms::documents::similar::DocumentSimilar;
+use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::folders::info::InfoFolder;
 use crate::forms::searcher::s_params::SearchParams;
@@ -14,7 +13,6 @@ use elquery::exclude_fields::ExcludeFields;
 use elquery::filter_query::*;
 use elquery::highlight_query::HighlightOrder;
 use elquery::search_query::MultiMatchQuery;
-use elquery::similar_query::SimilarQuery;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -83,6 +81,7 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
             .with_match::<FilterMatch>("document_extension", s_params.get_extension())
             .build();
 
+        // TODO: Create body by elquery!
         match s_params.get_query().is_empty() {
             true => {
                 json!({
@@ -172,29 +171,14 @@ impl SearcherTrait<DocumentVectors> for DocumentVectors {
 }
 
 #[async_trait::async_trait]
-impl SearcherTrait<DocumentSimilar> for DocumentSimilar {
-    async fn build_query(s_params: &SearchParams, _cxt_opts: &ContextOptions) -> Value {
-        let ssdeep_hash = s_params.get_query();
-        let fields = DocumentSimilar::get_query_fields();
-        json!(SimilarQuery::new(ssdeep_hash.into(), fields))
-    }
-
-    async fn extract_from_response(value: &Value) -> Result<DocumentSimilar, WebError> {
-        let source_value = value[&"_source"].to_owned();
-        let document = Document::deserialize(source_value)?;
-        let doc_similar = DocumentSimilar::new(document);
-        Ok(doc_similar)
-    }
-}
-
-#[async_trait::async_trait]
 impl SearcherTrait<InfoFolder> for InfoFolder {
     async fn build_query(s_params: &SearchParams, _: &ContextOptions) -> Value {
+        // TODO: Create body by elquery!
         let filter_item = match s_params.get_show_all() {
             true => {
                 let def_vec: Vec<String> = Vec::default();
                 json!({"must": def_vec})
-            },
+            }
             false => json!({
                 "must": [
                     {
@@ -203,7 +187,7 @@ impl SearcherTrait<InfoFolder> for InfoFolder {
                         }
                     }
                 ]
-            })
+            }),
         };
 
         json!({

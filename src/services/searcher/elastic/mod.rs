@@ -5,7 +5,6 @@ mod folders;
 pub(crate) mod helper;
 mod paginator;
 mod searcher;
-mod watcher;
 
 use crate::services::config::ServiceConfig;
 use crate::services::searcher::elastic::context::ElasticContext;
@@ -20,11 +19,11 @@ use elasticsearch::Elasticsearch;
 pub type InitSearcherResult = Result<ElasticContext, BuildError>;
 
 pub fn build_searcher_service(s_config: &ServiceConfig) -> InitSearcherResult {
-    let es_url = Url::parse(s_config.elastic_host()).unwrap();
+    let es_url = Url::parse(s_config.get_elastic_host()).unwrap();
     let conn_pool = SingleNodeConnectionPool::new(es_url);
 
-    let es_user = s_config.elastic_user();
-    let es_passwd = s_config.elastic_passwd();
+    let es_user = s_config.get_elastic_user();
+    let es_passwd = s_config.get_elastic_passwd();
     let creds = Credentials::Basic(es_user.into(), es_passwd.into());
     let validation = CertificateValidation::None;
     let transport = TransportBuilder::new(conn_pool)

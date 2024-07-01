@@ -38,42 +38,12 @@ services:
       - CACHER_VALUES_EXPIRE=3600
       - LLM_SERVICE_HOST=http://localhost:8085
       - LOGGER_SERVICE_HOST=http://localhost:4444
-      - WATCHER_SERVICE_HOST=http://localhost:2893
       - ALLOWED_CORS=http://localhost:3000
       - WORKERS_NUMBER=6
     ports:
       - "2892:2892"
     networks:
       - elasticnet
-    volumes:
-      - dsdata1:/archiver
-
-  doc-notifier:
-    depends_on:
-      - doc-searcher
-    image: doc-notifier:latest
-    container_name: doc-notifier
-    restart: on-failure
-    environment:
-      - DOC_NOTIFIER_SERVICE_ADDRESS=0.0.0.0:2893
-      - DOC_NOTIFIER_WATCHED_DIRS=./indexer/watcher
-      - DOC_NOTIFIER_ENABLE_FILE_LOG=false
-      - OCR_SERVICE_ADDRESS=http://localhost:1231
-      - OCR_SERVICE_MODE=read-raw-file
-      - DOC_SEARCHER_SERVICE_ADDRESS=http://doc-searcher:2892
-      - TOKENIZER_MODE=none
-      - TOKENIZER_CHUNK_SIZE=800
-      - TOKENIZER_CHUNK_OVERLAP=100
-      - TOKENIZER_RETURN_CHUNKS=false
-      - TOKENIZER_CHUNK_BY_SELF=false
-      - TOKENIZER_TIMEOUT_SECONDS=300
-      - TOKENIZER_SERVICE_ADDRESS=http://localhost:8001
-    ports:
-      - "9800:9800"
-    networks:
-      - elasticnet
-    volumes:
-      - notifier1:/indexer
 
   cacher:
     depends_on:
@@ -103,11 +73,7 @@ services:
 volumes:
   esdata1:
     driver: local
-  dsdata1:
-    driver: local
   cacher1:
-    driver: local
-  notifier1:
     driver: local
 
 networks:

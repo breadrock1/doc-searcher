@@ -1,7 +1,7 @@
-use crate::errors::{Successful, WebError, WebResult};
-use crate::forms::clusters::cluster::Cluster;
-use crate::services::own_engine::context::OtherContext;
-use crate::services::service;
+use doc_search::errors::{Successful, WebError, WebResult};
+use doc_search::forms::clusters::cluster::Cluster;
+use doc_search::services::own_engine::context::OtherContext;
+use doc_search::services::service;
 
 #[async_trait::async_trait]
 impl service::ClustersService for OtherContext {
@@ -11,7 +11,6 @@ impl service::ClustersService for OtherContext {
         let clusters_vec = map.values().cloned().collect::<Vec<Cluster>>();
         Ok(clusters_vec)
     }
-
     async fn get_cluster(&self, cluster_id: &str) -> WebResult<Cluster> {
         let cxt = self.get_cxt().read().await;
         let map = cxt.clusters.read().await;
@@ -24,8 +23,19 @@ impl service::ClustersService for OtherContext {
             }
         }
     }
-
-    async fn create_cluster(&self, cluster_id: &str) -> WebResult<Successful> {
+    async fn delete_cluster(&self, cluster_id: &str) -> WebResult<Successful> {
+        let cxt = self.get_cxt().write().await;
+        let mut map = cxt.clusters.write().await;
+        match map.remove(cluster_id) {
+            Some(_) => Ok(Successful::success("Ok")),
+            None => {
+                let msg = "Not exist cluster".to_string();
+                log::warn!("Failed while deleting cluster: {}", msg.as_str());
+                Err(WebError::DeleteCluster(msg))
+            }
+        }
+    }
+    async fn create_cluster(&self, cluster_id: &str, _form: &CreateClusterForm) -> WebResult<Successful> {
         let cluster = Cluster::builder()
             .ip("localhost".to_string())
             .heap_percent("70%".to_string())
@@ -51,19 +61,6 @@ impl service::ClustersService for OtherContext {
             }
         }
     }
-
-    async fn delete_cluster(&self, cluster_id: &str) -> WebResult<Successful> {
-        let cxt = self.get_cxt().write().await;
-        let mut map = cxt.clusters.write().await;
-        match map.remove(cluster_id) {
-            Some(_) => Ok(Successful::success("Ok")),
-            None => {
-                let msg = "Not exist cluster".to_string();
-                log::warn!("Failed while deleting cluster: {}", msg.as_str());
-                Err(WebError::DeleteCluster(msg))
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -73,7 +70,7 @@ mod test_clusters {
 
     use actix_web::test;
 
-    const CLUSTER_ID: &str = "test_cluster";
+    const CLUSTER_ID: &str = "test-cluster";
 
     #[test]
     async fn create_cluster() {

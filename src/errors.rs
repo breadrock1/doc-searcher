@@ -34,7 +34,7 @@ impl WebErrorEntity {
             attachments: None,
         }
     }
-    
+
     pub fn with_attachments(msg: String, attach: Vec<String>) -> WebErrorEntity {
         WebErrorEntity {
             description: msg.to_owned(),

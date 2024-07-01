@@ -23,14 +23,18 @@ impl PaginatorService for ElasticContext {
 
         helper::parse_elastic_response(response).await
     }
-    async fn paginate(&self, scroll_form: &PaginateNextForm, doc_type: &DocumentType) -> PaginatedResult<Value> {
+    async fn paginate(
+        &self,
+        scroll_form: &PaginateNextForm,
+        doc_type: &DocumentType,
+    ) -> PaginatedResult<Value> {
         if doc_type.is_vector_type() {
             let msg = "Can't paginate vectors search result";
             log::error!("Failed while paginate: {}", msg);
             let entity = WebErrorEntity::new(msg.to_string());
             return Err(WebError::PaginationError(entity));
         }
-        
+
         let elastic = self.get_cxt().read().await;
         let response_result = elastic
             .scroll(ScrollParts::ScrollId(scroll_form.get_scroll_id()))

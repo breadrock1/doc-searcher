@@ -1,9 +1,4 @@
-pub(crate) mod document;
-pub(crate) mod embeddings;
-pub(crate) mod folder;
-
-use crate::forms::schemas::document::DocumentSchema;
-use crate::forms::schemas::embeddings::DocumentVectorSchema;
+use crate::forms::documents::schema::{DocumentSchema, DocumentVectorSchema};
 
 use serde::Serializer;
 use serde_derive::Serialize;
@@ -13,7 +8,7 @@ impl ElasticSchema for DocumentSchema {}
 impl ElasticSchema for DocumentVectorSchema {}
 
 #[derive(Serialize)]
-struct EnabledFlag {
+pub(crate) struct EnabledFlag {
     enabled: bool,
 }
 
@@ -27,7 +22,7 @@ impl EnabledFlag {
 }
 
 #[derive(Serialize)]
-struct SettingsSchema {
+pub(crate) struct SettingsSchema {
     number_of_shards: i32,
     number_of_replicas: i32,
 }
@@ -42,7 +37,7 @@ impl Default for SettingsSchema {
 }
 
 #[derive(Clone, Default)]
-enum FieldType {
+pub(crate) enum FieldType {
     Date,
     DenseVector,
     Integer,
@@ -75,7 +70,7 @@ impl serde::Serialize for FieldType {
 }
 
 #[derive(Serialize)]
-struct SchemaFieldType {
+pub(crate) struct SchemaFieldType {
     #[serde(rename(serialize = "type"))]
     field_type: FieldType,
 }
@@ -87,7 +82,7 @@ impl SchemaFieldType {
 }
 
 #[derive(Serialize)]
-struct AsDateField {
+pub(crate) struct AsDateField {
     #[serde(rename(serialize = "type"))]
     field_type: FieldType,
     ignore_malformed: bool,

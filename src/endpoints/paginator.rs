@@ -1,11 +1,11 @@
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
-use crate::forms::TestExample;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::pagination::forms::{DeletePaginationsForm, PaginateNextForm};
+use crate::forms::TestExample;
 use crate::services::searcher::service::PaginatorService;
 
-use actix_web::{delete, post};
 use actix_web::web::{Data, Json, Query};
+use actix_web::{delete, post};
 use serde_json::Value;
 
 type Context = Data<Box<dyn PaginatorService>>;
@@ -53,7 +53,10 @@ type Context = Data<Box<dyn PaginatorService>>;
     )
 )]
 #[delete("/paginate/sessions")]
-async fn delete_paginate_sessions(cxt: Context, form: Json<DeletePaginationsForm>) -> JsonResponse<Successful> {
+async fn delete_paginate_sessions(
+    cxt: Context,
+    form: Json<DeletePaginationsForm>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
     let status = client.delete_session(&pagination_form).await?;

@@ -1,6 +1,6 @@
-use crate::forms::TestExample;
 use crate::forms::documents::forms::DocumentType;
 use crate::forms::folders::folder::DEFAULT_FOLDER_ID;
+use crate::forms::TestExample;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct SearchParams {
     #[schema(example = "Hello world")]
     query: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_ids: Option<String>,
     #[schema(example = "document")]
     document_type: String,
@@ -38,7 +38,7 @@ pub struct SearchParams {
     knn_candidates: Option<u32>,
     #[schema(example = true)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    show_all: Option<bool>
+    show_all: Option<bool>,
 }
 
 impl SearchParams {
@@ -119,7 +119,7 @@ impl TestExample<SearchParams> for SearchParams {
     fn test_example(query: Option<&str>) -> SearchParams {
         SearchParams::builder()
             .query(query.unwrap().to_string())
-            .folder_ids(Some("test_folder".to_string()))
+            .folder_ids(Some("test-folder".to_string()))
             .document_type("document".to_string())
             .document_extension("txt".to_string())
             .created_date_to("2024-04-26T11:14:55Z".to_string())

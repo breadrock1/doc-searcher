@@ -1,5 +1,5 @@
-use crate::forms::TestExample;
 use crate::forms::searcher::s_params::SearchParams;
+use crate::forms::TestExample;
 
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -8,7 +8,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct SemanticParams {
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     query: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_ids: Option<String>,
     #[schema(example = 0)]
     document_size_from: i64,
@@ -47,7 +47,7 @@ impl TestExample<SemanticParams> for SemanticParams {
     fn test_example(_value: Option<&str>) -> SemanticParams {
         SemanticParams {
             query: "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y".to_string(),
-            folder_ids: Some("test_folder".to_string()),
+            folder_ids: Some("test-folder".to_string()),
             document_size_from: 0,
             knn_amount: Some(5),
             knn_candidates: Some(100),

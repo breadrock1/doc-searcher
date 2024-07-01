@@ -1,8 +1,8 @@
-use crate::errors::{Successful, WebError, WebResult};
-use crate::forms::documents::document::Document;
-use crate::forms::documents::forms::{DocumentType, MoveDocsForm};
-use crate::services::own_engine::context::OtherContext;
-use crate::services::service;
+use doc_search::errors::{Successful, WebError, WebResult};
+use doc_search::forms::documents::document::Document;
+use doc_search::forms::documents::forms::{DocumentType, MoveDocsForm};
+use doc_search::services::own_engine::context::OtherContext;
+use doc_search::services::service;
 
 #[async_trait::async_trait]
 impl service::DocumentsService for OtherContext {
@@ -38,8 +38,7 @@ impl service::DocumentsService for OtherContext {
     }
 
     async fn update_document(&self, doc_form: &Document) -> WebResult<Successful> {
-        self.create_document(&doc_form, &DocumentType::Document)
-            .await
+        self.create_document(&doc_form, &DocumentType::Document).await
     }
 
     async fn delete_document(&self, _bucket_id: &str, doc_id: &str) -> WebResult<Successful> {
@@ -54,10 +53,6 @@ impl service::DocumentsService for OtherContext {
             }
         }
     }
-
-    async fn move_documents(&self, _move_form: &MoveDocsForm) -> WebResult<Successful> {
-        Ok(Successful::success("Ok"))
-    }
 }
 
 #[cfg(test)]
@@ -69,17 +64,17 @@ mod test_documents {
 
     use actix_web::test;
 
-    const FOLDER_ID: &str = "test_folder";
-    const DOCUMENT_ID: &str = "test_document";
+    const FOLDER_ID: &str = "test-folder";
+    const DOCUMENT_ID: &str = "test-document";
 
     fn create_default_document(document_name: &str) -> Result<Document, DocumentBuilderError> {
         Document::builder()
             .folder_id(FOLDER_ID.to_string())
-            .folder_path("/test_folder".to_string())
+            .folder_path("/test-folder".to_string())
             .content("Any document text".to_string())
             .embeddings(Vec::default())
             .document_name(document_name.to_string())
-            .document_path(format!("/test_folder/{}", document_name))
+            .document_path(format!("/test-folder/{}", document_name))
             .document_size(1024)
             .document_type("document".to_string())
             .document_extension(".txt".to_string())

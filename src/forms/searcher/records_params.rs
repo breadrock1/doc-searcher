@@ -1,5 +1,5 @@
-use crate::forms::TestExample;
 use crate::forms::searcher::s_params::SearchParams;
+use crate::forms::TestExample;
 
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -8,7 +8,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct AllRecordsParams {
     #[schema(example = "Test Folder name or path")]
     query: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_id: Option<String>,
     #[schema(example = "document")]
     document_type: String,
@@ -54,7 +54,7 @@ impl TestExample<AllRecordsParams> for AllRecordsParams {
     fn test_example(_value: Option<&str>) -> AllRecordsParams {
         AllRecordsParams {
             query: "Test Folder name".to_string(),
-            folder_id: Some("test_folder".to_string()),
+            folder_id: Some("test-folder".to_string()),
             document_type: "document".to_string(),
             document_extension: "txt".to_string(),
             created_date_to: "2024-04-26T11:14:55Z".to_string(),

@@ -4,7 +4,6 @@ pub mod documents;
 pub mod folders;
 pub mod paginator;
 pub mod searcher;
-pub mod watcher;
 
 use crate::services::init::ServiceParameters;
 use crate::services::own_engine::context::OtherContext;

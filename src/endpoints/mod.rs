@@ -4,7 +4,6 @@ pub mod folders;
 pub mod hello;
 pub mod paginator;
 pub mod searcher;
-pub mod watcher;
 
 use crate::services::cacher::rediska::client::RedisService;
 use crate::services::cacher::service::CacherClient;

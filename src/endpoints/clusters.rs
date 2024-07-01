@@ -1,11 +1,11 @@
 use crate::errors::{ErrorResponse, JsonResponse, Successful};
-use crate::forms::TestExample;
 use crate::forms::clusters::cluster::Cluster;
 use crate::forms::clusters::forms::CreateClusterForm;
+use crate::forms::TestExample;
 use crate::services::searcher::service::ClusterService;
 
-use actix_web::{delete, get, put};
 use actix_web::web::{Data, Json, Path};
+use actix_web::{delete, get, put};
 
 type Context = Data<Box<dyn ClusterService>>;
 
@@ -48,6 +48,54 @@ type Context = Data<Box<dyn ClusterService>>;
 async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
     let client = cxt.get_ref();
     Ok(Json(client.get_all_clusters().await?))
+}
+
+#[utoipa::path(
+    get,
+    path = "/orchestra/clusters/{cluster_id}",
+    tag = "Clusters",
+    params(
+        (
+            "cluster_id" = &str,
+            description = "Cluster id to get",
+            example = "d93df49fa6ff",
+        )
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Cluster,
+            example = json!(Cluster::test_example(None))
+        ),
+        (
+            status = 400,
+            description = "Failed while getting cluster by id",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 400,
+                error: "Bad Request".to_string(),
+                message: "Failed while getting cluster by id".to_string(),
+                attachments: None,
+            })
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse {
+                code: 503,
+                error: "Server error".to_string(),
+                message: "Server does not available".to_string(),
+                attachments: None,
+            })
+        )
+    )
+)]
+#[get("/clusters/{cluster_id}")]
+async fn get_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Cluster> {
+    let client = cxt.get_ref();
+    Ok(Json(client.get_cluster(path.as_str()).await?))
 }
 
 #[utoipa::path(
@@ -105,7 +153,7 @@ async fn get_clusters(cxt: Context) -> JsonResponse<Vec<Cluster>> {
 )]
 #[put("/clusters/{cluster_id}")]
 async fn create_cluster(
-    cxt: Context, 
+    cxt: Context,
     path: Path<String>,
     form: Json<CreateClusterForm>,
 ) -> JsonResponse<Successful> {
@@ -166,52 +214,4 @@ async fn delete_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Succes
     let client = cxt.get_ref();
     let status = client.delete_cluster(path.as_str()).await?;
     Ok(Json(status))
-}
-
-#[utoipa::path(
-    get,
-    path = "/orchestra/clusters/{cluster_id}",
-    tag = "Clusters",
-    params(
-        (
-            "cluster_id" = &str,
-            description = "Cluster id to get",
-            example = "d93df49fa6ff",
-        )
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = Cluster,
-            example = json!(Cluster::test_example(None))
-        ),
-        (
-            status = 400,
-            description = "Failed while getting cluster by id",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while getting cluster by id".to_string(),
-                attachments: None,
-            })
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
-    )
-)]
-#[get("/clusters/{cluster_id}")]
-async fn get_cluster(cxt: Context, path: Path<String>) -> JsonResponse<Cluster> {
-    let client = cxt.get_ref();
-    Ok(Json(client.get_cluster(path.as_str()).await?))
 }

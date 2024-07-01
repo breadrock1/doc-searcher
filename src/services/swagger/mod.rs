@@ -4,7 +4,6 @@ use crate::endpoints::folders::*;
 use crate::endpoints::hello::*;
 use crate::endpoints::paginator::*;
 use crate::endpoints::searcher::*;
-use crate::endpoints::watcher::*;
 
 use crate::errors::*;
 
@@ -12,14 +11,13 @@ use crate::forms::clusters::cluster::*;
 use crate::forms::clusters::forms::*;
 use crate::forms::documents::document::*;
 use crate::forms::documents::forms::*;
-use crate::forms::documents::preview::*;
 use crate::forms::documents::metadata::*;
+use crate::forms::documents::preview::*;
 use crate::forms::folders::folder::*;
 use crate::forms::folders::forms::*;
 use crate::forms::pagination::forms::*;
 use crate::forms::pagination::pagination::Paginated;
 use crate::forms::searcher::s_params::*;
-
 
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -43,17 +41,11 @@ use utoipa_swagger_ui::SwaggerUi;
         update_document,
         create_document,
         delete_document,
-        delete_documents,
         search_fulltext,
         search_semantic,
-        search_similar,
         get_index_records,
         delete_paginate_sessions,
         paginate_next,
-        fetch_analysis,
-        move_documents,
-        upload_files,
-        create_artifacts,
     ),
     components(
         schemas(
@@ -61,7 +53,6 @@ use utoipa_swagger_ui::SwaggerUi;
             ErrorResponse,
             Folder,
             CreateFolderForm,
-            DeleteFolderForm,
             Cluster,
             CreateClusterForm,
             Document,
@@ -71,9 +62,6 @@ use utoipa_swagger_ui::SwaggerUi;
             GroupValue,
             HighlightEntity,
             DocumentType,
-            MoveDocsForm,
-            DeleteDocsForm,
-            AnalyseDocsForm,
             SearchParams,
             Paginated<Vec<Document>>,
             DeletePaginationsForm,

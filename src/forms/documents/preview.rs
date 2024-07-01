@@ -30,7 +30,7 @@ pub struct DocumentPreview {
     file_size: i32,
     #[schema(example = "Test Folder")]
     location: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     preview_properties: Option<Vec<Artifacts>>,

@@ -1,5 +1,7 @@
-use crate::forms::documents::embeddings::EmbeddingsVector;
-use crate::forms::documents::metadata::{Artifacts, DocsArtifacts, GroupValue, HighlightEntity, OcrMetadata};
+use crate::forms::documents::metadata::{
+    Artifacts, DocsArtifacts, GroupValue, HighlightEntity, OcrMetadata,
+};
+use crate::forms::documents::vector::EmbeddingsVector;
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::TestExample;
 
@@ -11,9 +13,9 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
 pub struct Document {
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_id: String,
-    #[schema(example = "/test_folder")]
+    #[schema(example = "/test-folder")]
     folder_path: String,
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
@@ -24,7 +26,7 @@ pub struct Document {
     document_ssdeep: String,
     #[schema(example = "test_document.txt")]
     document_name: String,
-    #[schema(example = "/test_folder/test_document.txt")]
+    #[schema(example = "/test-folder/test_document.txt")]
     document_path: String,
     #[schema(example = 35345)]
     document_size: i32,
@@ -119,18 +121,15 @@ impl Document {
         self.folder_path = folder_path.to_string()
     }
     pub fn set_artifacts(&mut self, doc_artifacts: &DocsArtifacts) {
-        let mut ocr_metadata = self
-            .get_ocr_metadata()
-            .cloned()
-            .unwrap_or_else(|| {
-                OcrMetadata::builder()
-                    .job_id(String::default())
-                    .pages_count(0)
-                    .doc_type(String::default())
-                    .artifacts(None)
-                    .build()
-                    .unwrap()
-            });
+        let mut ocr_metadata = self.get_ocr_metadata().cloned().unwrap_or_else(|| {
+            OcrMetadata::builder()
+                .job_id(String::default())
+                .pages_count(0)
+                .doc_type(String::default())
+                .artifacts(None)
+                .build()
+                .unwrap()
+        });
 
         let doc_type = doc_artifacts.get_name();
         ocr_metadata.set_doc_type(doc_type);
@@ -235,12 +234,12 @@ impl TestExample<Document> for Document {
             .unwrap();
 
         DocumentBuilder::default()
-            .folder_id("test_folder".to_string())
-            .folder_path("/test_folder".to_string())
+            .folder_id("test-folder".to_string())
+            .folder_path("/test-folder".to_string())
             .document_id("98ac9896be35f47fb8442580cd9839b4".to_string())
             .document_ssdeep("12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y".to_string())
-            .document_name("test_document.txt".to_string())
-            .document_path("/test_folder/test_document.txt".to_string())
+            .document_name("test-document.txt".to_string())
+            .document_path("/test-folder/test_document.txt".to_string())
             .document_size(35345)
             .document_type("document".to_string())
             .document_extension(".txt".to_string())
