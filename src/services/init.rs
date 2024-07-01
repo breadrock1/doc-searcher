@@ -44,9 +44,7 @@ pub fn build_storage_scope() -> Scope {
         .service(documents::get_document)
         .service(documents::create_document)
         .service(documents::delete_document)
-        .service(documents::delete_documents)
         .service(documents::update_document)
-        .service(documents::move_documents)
         .service(searcher::get_index_records)
 }
 
@@ -54,18 +52,10 @@ pub fn build_search_scope() -> Scope {
     web::scope("/search")
         .service(searcher::search_fulltext)
         .service(searcher::search_semantic)
-        .service(searcher::search_similar)
 }
 
 pub fn build_pagination_scope() -> Scope {
     web::scope("/search")
         .service(paginator::delete_paginate_sessions)
         .service(paginator::paginate_next)
-}
-
-pub fn build_watcher_scope() -> Scope {
-    web::scope("/watcher")
-        .service(watcher::fetch_analysis)
-        .service(watcher::upload_files)
-        .service(watcher::create_artifacts)
 }

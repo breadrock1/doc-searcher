@@ -8,7 +8,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct FulltextParams {
     #[schema(example = "Hello world")]
     query: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_ids: Option<String>,
     #[schema(example = "document")]
     document_type: String,
@@ -55,7 +55,7 @@ impl TestExample<FulltextParams> for FulltextParams {
     fn test_example(_value: Option<&str>) -> FulltextParams {
         FulltextParams {
             query: "Hello World".to_string(),
-            folder_ids: Some("test_folder".to_string()),
+            folder_ids: Some("test-folder".to_string()),
             document_type: "document".to_string(),
             document_extension: "txt".to_string(),
             created_date_to: "2024-04-26T11:14:55Z".to_string(),

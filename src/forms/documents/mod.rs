@@ -1,9 +1,9 @@
 pub(crate) mod document;
-pub(crate) mod embeddings;
+pub(crate) mod vector;
 pub(crate) mod forms;
 pub(crate) mod metadata;
 pub(crate) mod preview;
-pub(crate) mod similar;
+pub(crate) mod schema;
 
 pub(crate) trait DocumentsTrait {
     fn get_folder_id(&self) -> &str;

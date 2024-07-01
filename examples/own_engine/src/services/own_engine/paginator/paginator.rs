@@ -1,16 +1,12 @@
-use crate::errors::{Successful, WebResult};
-use crate::forms::documents::document::Document;
-use crate::forms::pagination::forms::{AllScrollsForm, NextScrollForm};
-use crate::forms::pagination::pagination::Paginated;
-use crate::services::own_engine::context::OtherContext;
-use crate::services::service::{PaginatedResult, PaginatorService};
+use doc_search::errors::{Successful, WebResult};
+use doc_search::forms::documents::document::Document;
+use doc_search::forms::pagination::forms::{AllScrollsForm, NextScrollForm};
+use doc_search::forms::pagination::pagination::Paginated;
+use doc_search::services::own_engine::context::OtherContext;
+use doc_search::services::service::{PaginatedResult, PaginatorService};
 
 #[async_trait::async_trait]
 impl PaginatorService for OtherContext {
-    async fn get_pagination_ids(&self) -> WebResult<Vec<String>> {
-        Ok(Vec::default())
-    }
-
     async fn delete_pagination(&self, _ids: &AllScrollsForm) -> WebResult<Successful> {
         Ok(Successful::success("Ok"))
     }

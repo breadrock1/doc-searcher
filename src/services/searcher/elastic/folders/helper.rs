@@ -1,21 +1,18 @@
-use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
+use crate::errors::{WebError, WebErrorEntity, WebResult};
 use crate::forms::folders::folder::{Folder, INFO_FOLDER_ID};
 use crate::forms::folders::forms::{CreateFolderForm, FolderType};
 use crate::forms::folders::info::InfoFolder;
-use crate::forms::schemas::document::DocumentSchema;
-use crate::forms::schemas::embeddings::DocumentVectorSchema;
-use crate::forms::schemas::folder::InfoFolderSchema;
+use crate::forms::documents::schema::{DocumentSchema, DocumentVectorSchema};
+use crate::forms::folders::schema::InfoFolderSchema;
 use crate::forms::searcher::s_params::SearchParams;
 use crate::services::searcher::elastic::context::ContextOptions;
-use crate::services::searcher::elastic::helper;
 use crate::services::searcher::elastic::searcher::helper as s_helper;
 use crate::services::searcher::elastic::searcher::extractor::SearcherTrait;
 
 use elasticsearch::http::response::Response;
-use elasticsearch::{CountParts, Elasticsearch, GetParts, IndexParts};
+use elasticsearch::{Elasticsearch, GetParts, IndexParts};
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use elasticsearch::http::Method;
 
 pub(super) async fn create_index(
     elastic: &Elasticsearch,
@@ -78,6 +75,7 @@ pub(super) fn create_folder_schema(schema_type: &FolderType) -> Value {
     .unwrap()
 }
 
+// TODO: Need refactoring this method
 pub(crate) async fn filter_folders(elastic: &Elasticsearch, ctx_opts: &ContextOptions, folders: Vec<Folder>, show_all: bool) -> WebResult<Vec<Folder>> {
     let indexes = &[INFO_FOLDER_ID];
 
@@ -125,19 +123,6 @@ pub(crate) async fn filter_folders(elastic: &Elasticsearch, ctx_opts: &ContextOp
     Ok(common_folders_info)
 }
 
-pub(crate) async fn count_docs(elastic: &Elasticsearch, folder: &mut Folder) -> WebResult<()> {
-    let indices = folder.get_index();
-    let response = elastic
-        .count(CountParts::Index(&[indices]))
-        .send()
-        .await
-        .map_err(WebError::from)?;
-
-    let value = response.json::<Value>().await?;
-    let count = value[&"count"].as_str().unwrap_or_default();
-    Ok(folder.set_docs_count(count))
-}
-
 pub(crate) async fn load_info_doc(elastic: &Elasticsearch, folder: &mut Folder) -> WebResult<()> {
     let response = elastic
         .get(GetParts::IndexId(INFO_FOLDER_ID, folder.get_index()))
@@ -147,12 +132,5 @@ pub(crate) async fn load_info_doc(elastic: &Elasticsearch, folder: &mut Folder) 
         .map_err(WebError::from)?;
 
     let info_folder = response.json::<InfoFolder>().await.map_err(WebError::from)?;
-    let a = info_folder.get_name().to_string();
     Ok(folder.set_name(info_folder.get_name()))
-}
-
-pub(crate) async fn del_from_info_folder(elastic: &Elasticsearch, folder_id: &str) -> WebResult<Successful> {
-    let s_path = format!("/{}/_doc/{}", INFO_FOLDER_ID, folder_id);
-    let response = helper::send_elrequest(&elastic, Method::Delete, None, s_path.as_str()).await?;
-    helper::parse_elastic_response(response).await
 }

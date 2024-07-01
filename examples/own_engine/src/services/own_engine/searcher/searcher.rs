@@ -1,13 +1,13 @@
-use crate::forms::documents::document::Document;
-use crate::forms::documents::embeddings::DocumentEmbeddings;
-use crate::forms::documents::similar::DocumentSimilar;
-use crate::forms::documents::DocumentsTrait;
-use crate::forms::documents::preview::DocumentPreview;
-use crate::forms::pagination::pagination::Paginated;
-use crate::forms::searcher::s_params::SearchParams;
-use crate::services::own_engine::context::OtherContext;
-use crate::services::own_engine::searcher::helper;
-use crate::services::service::{PaginatedResult, SearcherService};
+use doc_search::forms::documents::document::Document;
+use doc_search::forms::documents::embeddings::DocumentEmbeddings;
+use doc_search::forms::documents::similar::DocumentSimilar;
+use doc_search::forms::documents::DocumentsTrait;
+use doc_search::forms::documents::preview::DocumentPreview;
+use doc_search::forms::pagination::pagination::Paginated;
+use doc_search::forms::searcher::s_params::SearchParams;
+use doc_search::services::own_engine::context::OtherContext;
+use doc_search::services::own_engine::searcher::helper;
+use doc_search::services::service::{PaginatedResult, SearcherService};
 
 #[async_trait::async_trait]
 impl SearcherService for OtherContext {
@@ -41,36 +41,19 @@ impl SearcherService for OtherContext {
         // let documents_vec = helper::filter_founded_documents(&map, folder_id.as_str(), s_params);
         Ok(Paginated::new(Vec::default()))
     }
-
-    async fn search_similar(&self, s_params: &SearchParams) -> PaginatedResult<DocumentSimilar> {
-        let cxt = self.get_cxt().read().await;
-        let map = cxt.documents.read().await;
-        let folder_id = s_params.get_folders(true);
-        let documents_vec = map
-            .values()
-            .filter(|doc| doc.get_folder_id().eq(folder_id.as_str()))
-            .filter(|document| {
-                hasher::compare_ssdeep_hashes(s_params.get_query(), document.get_doc_ssdeep())
-            })
-            .cloned()
-            .into_iter()
-            .map(DocumentSimilar::from)
-            .collect::<Vec<DocumentSimilar>>();
-        Ok(Paginated::new(documents_vec))
-    }
 }
 
 #[cfg(test)]
 mod test_searcher {
-    use crate::forms::documents::document::Document;
-    use crate::forms::searcher::s_params::SearchParams;
-    use crate::services::own_engine::context::OtherContext;
-    use crate::services::service::{DocumentsService, SearcherService};
+    use doc_search::forms::documents::document::Document;
+    use doc_search::forms::documents::forms::DocumentType;
+    use doc_search::forms::searcher::s_params::SearchParams;
+    use doc_search::services::own_engine::context::OtherContext;
+    use doc_search::services::service::{DocumentsService, SearcherService};
 
     use actix_web::test;
-    use crate::forms::documents::forms::DocumentType;
 
-    const FOLDER_ID: &str = "test_folder";
+    const FOLDER_ID: &str = "test-folder";
 
     #[test]
     async fn test_search_all() {
@@ -189,7 +172,7 @@ mod test_searcher {
         let test_folder_name = FOLDER_ID;
         for document_index in 1..17 {
             let document_size = 1024 + document_index * 10;
-            let test_document_name = &format!("test_document_{}", document_index);
+            let test_document_name = &format!("test-document_{}", document_index);
             let test_document_path = &format!("{}/{}", test_folder_name, test_document_name);
             let ssdeep_hash = *vec_hashes.get(document_index as usize).unwrap();
             let entity_data = *entity_data_vec.get(document_index as usize).unwrap();

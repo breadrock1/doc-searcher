@@ -26,7 +26,7 @@ pub struct CreateFolderForm {
     create_into_watcher: bool,
     #[schema(example = "/tmp")]
     location: String,
-    #[schema(example = "aTfbs823bfs8a")]
+    #[schema(example = "admin")]
     user_id: String,
     #[schema(example = false)]
     is_system: bool,
@@ -63,29 +63,9 @@ impl TestExample<CreateFolderForm> for CreateFolderForm {
             folder_name: "Test Folder".to_string(),
             folder_type: FolderType::Document,
             create_into_watcher: false,
-            location: "/tmp".to_string(),
-            user_id: "aTfbs823bfs8a".to_string(),
+            location: "/test-folder".to_string(),
+            user_id: "admin".to_string(),
             is_system: false,
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, IntoParams, ToSchema)]
-pub struct DeleteFolderForm {
-    #[schema(example = false)]
-    delete_into_watcher: bool,
-}
-
-impl DeleteFolderForm {
-    pub fn delete_into_watcher(&self) -> bool {
-        self.delete_into_watcher
-    }
-}
-
-impl TestExample<DeleteFolderForm> for DeleteFolderForm {
-    fn test_example(_value: Option<&str>) -> DeleteFolderForm {
-        DeleteFolderForm {
-            delete_into_watcher: false,
         }
     }
 }

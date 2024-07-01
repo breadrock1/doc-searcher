@@ -10,7 +10,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct SearchParams {
     #[schema(example = "Hello world")]
     query: String,
-    #[schema(example = "test_folder")]
+    #[schema(example = "test-folder")]
     folder_ids: Option<String>,
     #[schema(example = "document")]
     document_type: String,
@@ -119,7 +119,7 @@ impl TestExample<SearchParams> for SearchParams {
     fn test_example(query: Option<&str>) -> SearchParams {
         SearchParams::builder()
             .query(query.unwrap().to_string())
-            .folder_ids(Some("test_folder".to_string()))
+            .folder_ids(Some("test-folder".to_string()))
             .document_type("document".to_string())
             .document_extension("txt".to_string())
             .created_date_to("2024-04-26T11:14:55Z".to_string())

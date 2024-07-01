@@ -8,8 +8,8 @@ pub mod values;
 pub type InitCacherResult = Result<CacherClient<RedisService>, anyhow::Error>;
 
 pub fn build_cacher_service(s_config: &ServiceConfig) -> InitCacherResult {
-    let address = s_config.cacher_host();
-    let expire = s_config.cacher_expire();
-    let redis_client = RedisService::new(address, *expire);
+    let address = s_config.get_cacher_addr();
+    let expire = s_config.get_cacher_expire();
+    let redis_client = RedisService::new(address, expire);
     Ok(CacherClient::new(redis_client))
 }

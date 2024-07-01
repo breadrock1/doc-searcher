@@ -1,8 +1,8 @@
-use crate::errors::{Successful, WebError, WebResult};
-use crate::forms::folders::folder::Folder;
-use crate::forms::folders::forms::FolderForm;
-use crate::services::own_engine::context::OtherContext;
-use crate::services::service::FoldersService;
+use doc_search::errors::{Successful, WebError, WebResult};
+use doc_search::forms::folders::folder::Folder;
+use doc_search::forms::folders::forms::FolderForm;
+use doc_search::services::own_engine::context::OtherContext;
+use doc_search::services::service::FoldersService;
 
 #[async_trait::async_trait]
 impl FoldersService for OtherContext {
@@ -73,7 +73,7 @@ mod test_folders {
 
     use actix_web::test;
 
-    const FOLDER_ID: &str = "common_folder";
+    const FOLDER_ID: &str = "common-folder";
 
     #[test]
     async fn test_create_folder() {

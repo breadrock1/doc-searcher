@@ -17,10 +17,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let search_service = elastic::build_searcher_service(&s_config)?;
     let cacher_service = rediska::build_cacher_service(&s_config)?;
 
-    let service_port = *s_config.service_port();
-    let service_addr = s_config.service_host().as_str();
-    let cors_origin = s_config.cors_origin().to_owned();
-    let workers_num = *s_config.workers_num();
+    let service_port = s_config.get_service_port();
+    let service_addr = s_config.get_service_host();
+    let cors_origin = s_config.get_cors().to_string();
+    let workers_num = s_config.get_workers_num();
 
     HttpServer::new(move || {
         let cacher_cxt = Box::new(cacher_service.clone());
@@ -31,7 +31,6 @@ async fn main() -> Result<(), anyhow::Error> {
         let folders_cxt: Box<dyn FolderService> = Box::new(searcher.clone());
         let paginator_cxt: Box<dyn PaginatorService> = Box::new(searcher.clone());
         let searcher_cxt: Box<dyn SearcherService> = Box::new(searcher.clone());
-        let watcher_cxt: Box<dyn WatcherService> = Box::new(searcher);
 
         App::new()
             .app_data(web::Data::new(clusters_cxt))
@@ -40,7 +39,6 @@ async fn main() -> Result<(), anyhow::Error> {
             .app_data(web::Data::new(paginator_cxt))
             .app_data(web::Data::new(cacher_cxt))
             .app_data(web::Data::new(searcher_cxt))
-            .app_data(web::Data::new(watcher_cxt))
             .wrap(Logger::default())
             .wrap(init::build_cors_config(cors_origin.as_str()))
             .service(init::build_hello_scope())
@@ -48,7 +46,6 @@ async fn main() -> Result<(), anyhow::Error> {
             .service(init::build_storage_scope())
             .service(init::build_search_scope())
             .service(init::build_pagination_scope())
-            .service(init::build_watcher_scope())
             .service(swagger::build_swagger_service())
     })
     .bind((service_addr, service_port))?

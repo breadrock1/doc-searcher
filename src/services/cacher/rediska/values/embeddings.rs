@@ -1,4 +1,4 @@
-use crate::forms::documents::embeddings::DocumentVectors;
+use crate::forms::documents::vector::DocumentVectors;
 
 use redis::{ErrorKind, RedisError, RedisResult};
 use redis::{FromRedisValue, RedisWrite, ToRedisArgs, Value};

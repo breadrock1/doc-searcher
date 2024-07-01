@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use utoipa::ToSchema;
 
-pub const DEFAULT_FOLDER_ID: &str = "common_folder";
-pub const HISTORY_FOLDER_ID: &str = "history";
-pub const ARTIFACTS_FOLDER_ID: &str = "artifacts";
+pub const DEFAULT_FOLDER_ID: &str = "common-folder";
 pub const INFO_FOLDER_ID: &str = "info-folder";
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
@@ -16,7 +14,7 @@ pub struct Folder {
     health: String,
     #[schema(example = "open")]
     status: String,
-    #[schema(example = "test_folder", rename = "id")]
+    #[schema(example = "test-folder", rename = "id")]
     #[serde(rename(serialize = "id"))]
     index: String,
     #[schema(example = "60qbF_yuTa2TXYd7soYb1A")]
@@ -110,7 +108,7 @@ impl TestExample<Folder> for Folder {
         Folder::builder()
             .health("yellow".to_string())
             .status("open".to_string())
-            .index("test_folder".to_string())
+            .index("test-folder".to_string())
             .uuid("fDdHOrwMSESM9OlhLsrMWQ".to_string())
             .pri(Some("1".to_string()))
             .rep(Some("1".to_string()))

@@ -11,7 +11,7 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, Builder, Default, Clone, ToSchema)]
 pub struct DocumentVectors {
-    #[schema(example = "test_llama_folder")]
+    #[schema(example = "test-llama-folder")]
     folder_id: String,
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     document_id: String,
@@ -108,7 +108,7 @@ impl TestExample<DocumentVectors> for DocumentVectors {
         let local_now = datetime::get_local_now();
         let datetime_now = DateTime::<Utc>::from(local_now);
         DocumentVectors::builder()
-            .folder_id("test_folder".to_string())
+            .folder_id("test-folder".to_string())
             .document_id("98ac9896be35f47fb8442580cd9839b4".to_string())
             .document_name("test-document.docx".to_string())
             .document_modified(Some(datetime_now))

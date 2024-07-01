@@ -1,5 +1,4 @@
 use crate::forms::documents::document::Document;
-use crate::forms::documents::similar::DocumentSimilar;
 
 use redis::{ErrorKind, FromRedisValue, RedisError, RedisResult};
 use redis::{RedisWrite, ToRedisArgs, Value};
@@ -18,30 +17,10 @@ impl From<&Vec<Document>> for CacherDocuments {
     }
 }
 
-impl From<&Vec<DocumentSimilar>> for CacherDocuments {
-    fn from(value: &Vec<DocumentSimilar>) -> Self {
-        let documents = value
-            .into_iter()
-            .map(DocumentSimilar::get_document)
-            .collect::<Vec<Document>>();
-
-        CacherDocuments { documents }
-    }
-}
 
 impl From<CacherDocuments> for Vec<Document> {
     fn from(value: CacherDocuments) -> Vec<Document> {
         value.documents
-    }
-}
-
-impl From<CacherDocuments> for Vec<DocumentSimilar> {
-    fn from(value: CacherDocuments) -> Self {
-        value
-            .documents
-            .iter()
-            .map(DocumentSimilar::from)
-            .collect::<Vec<DocumentSimilar>>()
     }
 }
 

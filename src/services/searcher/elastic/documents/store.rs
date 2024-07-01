@@ -1,6 +1,6 @@
 use crate::forms::documents::DocumentsTrait;
 use crate::forms::documents::document::Document;
-use crate::forms::documents::embeddings::DocumentVectors;
+use crate::forms::documents::vector::DocumentVectors;
 use crate::forms::documents::preview::DocumentPreview;
 use crate::forms::folders::info::InfoFolder;
 

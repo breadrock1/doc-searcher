@@ -1,6 +1,5 @@
 use crate::services::config::ServiceConfig;
 
-use derive_getters::Getters;
 use elasticsearch::Elasticsearch;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -27,13 +26,26 @@ impl ElasticContext {
     }
 }
 
-#[derive(Getters)]
 pub struct ContextOptions {
     cacher_address: String,
     cacher_expire: u64,
     llm_address: String,
     logger_address: String,
-    watcher_address: String,
+}
+
+impl ContextOptions {
+    pub fn get_cacher_addr(&self) -> &str {
+        self.cacher_address.as_str()
+    }
+    pub fn get_cacher_expire(&self) -> u64 {
+        self.cacher_expire
+    }
+    pub fn get_llm_addr(&self) -> &str {
+        self.llm_address.as_str()
+    }
+    pub fn get_logger_addr(&self) -> &str {
+        self.logger_address.as_str()
+    }
 }
 
 impl Default for ContextOptions {
@@ -43,7 +55,6 @@ impl Default for ContextOptions {
             cacher_address: "redis://localhost:6379".into(),
             llm_address: "http://localhost:8085".into(),
             logger_address: "http://localhost:4444".into(),
-            watcher_address: "http://localhost:2893".into(),
         }
     }
 }
@@ -51,11 +62,10 @@ impl Default for ContextOptions {
 impl From<&ServiceConfig> for ContextOptions {
     fn from(value: &ServiceConfig) -> Self {
         ContextOptions {
-            cacher_address: value.cacher_host().into(),
-            cacher_expire: *value.cacher_expire(),
-            llm_address: value.llm_host().into(),
-            logger_address: value.logger_host().into(),
-            watcher_address: value.watcher_host().into(),
+            cacher_address: value.get_cacher_addr().into(),
+            cacher_expire: value.get_cacher_expire(),
+            llm_address: value.get_llm_addr().into(),
+            logger_address: value.get_logger_addr().into(),
         }
     }
 }
