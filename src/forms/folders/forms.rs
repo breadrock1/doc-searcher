@@ -1,5 +1,6 @@
 use crate::forms::TestExample;
 
+use derive_builder::{Builder};
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
@@ -14,7 +15,7 @@ pub enum FolderType {
     InfoFolder,
 }
 
-#[derive(Deserialize, Serialize, IntoParams, ToSchema)]
+#[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct CreateFolderForm {
     #[schema(example = "test-folder")]
     folder_id: String,
@@ -33,6 +34,9 @@ pub struct CreateFolderForm {
 }
 
 impl CreateFolderForm {
+    pub fn builder() -> CreateFolderFormBuilder {
+        CreateFolderFormBuilder::default()
+    }
     pub fn get_id(&self) -> &str {
         self.folder_id.as_str()
     }

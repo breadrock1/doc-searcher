@@ -1,6 +1,6 @@
 pub(crate) mod clusters;
 pub(crate) mod documents;
-pub(crate) mod folders;
+pub mod folders;
 pub(crate) mod pagination;
 pub(crate) mod schemas;
 pub(crate) mod searcher;
