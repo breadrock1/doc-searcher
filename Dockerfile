@@ -15,6 +15,6 @@ COPY --from=builder /home/docsearch/target/release .
 
 RUN apt install -y openssl
 
-ENTRYPOINT ["/app/elastic-main"]
+ENTRYPOINT ["/app/doc-searcher-init", "/app/doc-searcher-run"]
 
 EXPOSE 2892
