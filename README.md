@@ -41,9 +41,10 @@ These instructions will get you a copy of the project up and running on your loc
 ### Installation
 
 1. Clone the repository
-2. Run `cargo install --features enable-dotenv` to build project
+2. Run `cargo install --release --features enable-dotenv` to build project
 3. Setting up `.env` file
-4. Run `cargo run --package doc-search --bin elastic-main`
+4. Run `cargo run --bin doc-searcher-init` to init elasticsearch schemas
+4. Run `cargo run --bin doc-searcher-run` to launch service
 
 ### Features of project
 
