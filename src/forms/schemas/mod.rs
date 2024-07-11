@@ -3,6 +3,7 @@ use crate::forms::documents::schema::{DocumentSchema, DocumentVectorSchema};
 use serde::Serializer;
 use serde_derive::Serialize;
 
+#[allow(dead_code)]
 pub trait ElasticSchema {}
 impl ElasticSchema for DocumentSchema {}
 impl ElasticSchema for DocumentVectorSchema {}

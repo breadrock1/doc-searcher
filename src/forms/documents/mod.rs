@@ -8,5 +8,6 @@ pub(crate) mod vector;
 pub(crate) trait DocumentsTrait {
     fn get_folder_id(&self) -> &str;
     fn get_doc_id(&self) -> &str;
+    #[allow(dead_code)]
     fn set_folder_id(&mut self, folder_id: &str);
 }
