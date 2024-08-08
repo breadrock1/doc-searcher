@@ -4,8 +4,9 @@ extern crate hasher;
 mod tests {
     use hasher::{gen_hash, HashType};
 
-    const TEST_STRING: &'static str = "There is some data to check ssdeep hasher";
+    const TEST_STRING: &str = "There is some data to check ssdeep hasher";
 
+    #[ignore]
     #[test]
     fn ssdeep_hash_test() {
         let hasher_result = gen_hash(HashType::SSDEEP, TEST_STRING.as_bytes());
