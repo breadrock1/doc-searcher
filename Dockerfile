@@ -15,6 +15,7 @@ COPY --from=builder /home/docsearch/target/release .
 
 RUN apt install -y openssl
 
-ENTRYPOINT ["/app/doc-searcher-init", "/app/doc-searcher-run"]
+CMD ["/app/doc-searcher-init"]
+ENTRYPOINT ["/app/doc-searcher-run"]
 
 EXPOSE 2892
