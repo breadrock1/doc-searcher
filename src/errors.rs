@@ -1,4 +1,4 @@
-use crate::forms::pagination::pagination::Paginated;
+use crate::searcher::models::Paginated;
 
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
@@ -9,9 +9,9 @@ use std::io::Error;
 use thiserror::Error;
 use utoipa::ToSchema;
 
-pub(crate) type WebResult<T> = Result<T, WebError>;
-pub(crate) type JsonResponse<T> = Result<web::Json<T>, WebError>;
-pub(crate) type PaginateResponse<T> = JsonResponse<Paginated<T>>;
+pub type WebResult<T> = Result<T, WebError>;
+pub type JsonResponse<T> = Result<web::Json<T>, WebError>;
+pub type PaginateResponse<T> = JsonResponse<Paginated<T>>;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct WebErrorEntity {
@@ -202,7 +202,7 @@ impl Successful {
 impl From<Exception> for WebError {
     fn from(value: Exception) -> Self {
         let err_msg = value.error().reason().unwrap();
-        log::error!("{}", err_msg);
+        tracing::error!("{}", err_msg);
         WebError::UnknownError(WebErrorEntity {
             description: err_msg.to_string(),
             attachments: None,
@@ -213,7 +213,7 @@ impl From<Exception> for WebError {
 impl From<elasticsearch::Error> for WebError {
     fn from(value: elasticsearch::Error) -> Self {
         let err_msg = value.to_string();
-        log::error!("{}", err_msg.as_str());
+        tracing::error!("{}", err_msg.as_str());
         WebError::SearchServiceError(WebErrorEntity {
             description: err_msg.to_string(),
             attachments: None,
@@ -224,7 +224,7 @@ impl From<elasticsearch::Error> for WebError {
 impl From<serde_json::Error> for WebError {
     fn from(value: serde_json::Error) -> Self {
         let err_msg = value.to_string();
-        log::error!("{}", err_msg.as_str());
+        tracing::error!("{}", err_msg.as_str());
         WebError::UnknownError(WebErrorEntity {
             description: err_msg.to_string(),
             attachments: None,
@@ -235,7 +235,7 @@ impl From<serde_json::Error> for WebError {
 impl From<std::io::Error> for WebError {
     fn from(value: Error) -> Self {
         let err_msg = value.to_string();
-        log::error!("{}", err_msg.as_str());
+        tracing::error!("{}", err_msg.as_str());
         WebError::UploadFileError(WebErrorEntity {
             description: err_msg.to_string(),
             attachments: None,
@@ -246,7 +246,7 @@ impl From<std::io::Error> for WebError {
 impl From<reqwest::Error> for WebError {
     fn from(value: reqwest::Error) -> Self {
         let err_msg = value.to_string();
-        log::error!("{}", err_msg.as_str());
+        tracing::error!("{}", err_msg.as_str());
         WebError::ServiceUnavailable(WebErrorEntity {
             description: err_msg.to_string(),
             attachments: None,

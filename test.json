@@ -1,0 +1,137 @@
+[
+  {
+    "_id": "JJB6A5ABKG8T_vAQ39uF",
+    "_index": "info-folder",
+    "_score": 1.0,
+    "_source": {
+      "info-folder": {
+        "mappings": {
+          "properties": {
+            "document_type": {
+              "type": "text"
+            },
+            "index": {
+              "type": "text"
+            },
+            "is_system": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "text"
+            },
+            "user_id": {
+              "type": "text"
+            }
+          }
+        },
+        "settings": {
+          "number_of_replicas": 1,
+          "number_of_shards": 1
+        }
+      }
+    }
+  },
+  {
+    "_id": "IoEz848BBxWZXCsFGjtV",
+    "_index": "info-folder",
+    "_score": 1.0,
+    "_source": {
+      "info-folder": {
+        "mappings": {
+          "properties": {
+            "document_type": {
+              "type": "text"
+            },
+            "index": {
+              "type": "text"
+            },
+            "is_system": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "text"
+            },
+            "user_id": {
+              "type": "text"
+            }
+          }
+        },
+        "settings": {
+          "number_of_replicas": 1,
+          "number_of_shards": 1
+        }
+      }
+    }
+  },
+  {
+    "_id": "JbBw5ZEBELwYROIGpDAD",
+    "_index": "info-folder",
+    "_score": 1.0,
+    "_source": {
+      "info-folder": {
+        "mappings": {
+          "properties": {
+            "document_type": {
+              "type": "text"
+            },
+            "index": {
+              "type": "text"
+            },
+            "is_system": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "text"
+            },
+            "user_id": {
+              "type": "text"
+            }
+          }
+        },
+        "settings": {
+          "number_of_replicas": 1,
+          "number_of_shards": 1
+        }
+      }
+    }
+  },
+  {
+    "_id": "info-folder",
+    "_index": "info-folder",
+    "_score": 1.0,
+    "_source": {
+      "folder_type": "info-folder",
+      "index": "info-folder",
+      "is_system": true,
+      "location": "/",
+      "name": "Info Folder",
+      "user_id": "admin"
+    }
+  },
+  {
+    "_id": "common-folder",
+    "_index": "info-folder",
+    "_score": 1.0,
+    "_source": {
+      "folder_type": "document",
+      "index": "common-folder",
+      "is_system": false,
+      "location": "/indexer/watcher",
+      "name": "Common Folder",
+      "user_id": "admin"
+    }
+  },
+  {
+    "_id": "common-folder-vector",
+    "_index": "info-folder",
+    "_score": 1.0,
+    "_source": {
+      "folder_type": "vectors",
+      "index": "common-folder-vector",
+      "is_system": true,
+      "location": "/indexer/watcher",
+      "name": "Common Folder Vector",
+      "user_id": "admin"
+    }
+  }
+]

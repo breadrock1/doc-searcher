@@ -7,75 +7,79 @@ services:
     container_name: elasticsearch
     restart: on-failure
     environment:
-      - discovery.type=single-node
-      - cluster.name=master
-      - ELASTIC_PASSWORD=elastic
-      - ES_JAVA_OPTS=-Xms2g -Xmx2g
+      discovery.type: 'single-node'
+      cluster.name: 'master'
+      ELASTIC_PASSWORD: 'elastic'
+      ES_JAVA_OPTS: '-Xms2g -Xmx2g'
     ulimits:
       memlock:
         soft: -1
         hard: -1
     ports:
-      - "9200:9200"
+      - '9200:9200'
     networks:
-      - elasticnet
+      - elastic-net
     volumes:
-      - esdata1:/usr/share/elasticsearch/data
+      - es-vol-1:/usr/share/elasticsearch/data
 
   doc-searcher:
+    image: doc-searcher:latest
     depends_on:
       - elasticsearch
-    image: doc-searcher:latest
-    container_name: doc-searcher
     environment:
-      - SERVICE_HOST=0.0.0.0
-      - SERVICE_PORT=2892
-      - ELASTIC_SERVICE_HOST=http://elasticsearch:9200
-      - ELASTIC_SERVICE_PASSWORD=elastic
-      - ELASTIC_SERVICE_USERNAME=elastic
-      - CACHER_SERVICE_HOST=redis://cacher:6379
-      - CACHER_SERVICE_PASSWORD=redis
-      - CACHER_VALUES_EXPIRE=3600
-      - LLM_SERVICE_HOST=http://localhost:8085
-      - LOGGER_SERVICE_HOST=http://localhost:4444
-      - ALLOWED_CORS=http://localhost:3000
-      - WORKERS_NUMBER=6
+      DOC_SEARCHER_LOGGER_LEVEL: 'info'
+      DOC_SEARCHER_SERVER_ADDRESS: '0.0.0.0'
+      DOC_SEARCHER_SERVER_PORT: 2893
+      DOC_SEARCHER_SERVER_WORKERS_NUM: 6
+      DOC_SEARCHER_SERVER_ENABLED_TLS: 'false'
+      DOC_SEARCHER_CORS_METHODS: 'GET,POST,PUT,DELETE,OPTIONS'
+      DOC_SEARCHER_CORS_ALLOWED: '*'
+      DOC_SEARCHER_CORS_MAX_AGE: 3600
+      DOC_SEARCHER_ENGINE_ADDRESS:
+      DOC_SEARCHER_ENGINE_ENABLED_TLS: 'false'
+      DOC_SEARCHER_ENGINE_USERNAME: 'elastic'
+      DOC_SEARCHER_ENGINE_PASSWORD: 'elastic'
+      DOC_SEARCHER_CACHER_ADDRESS: 'cacher:6379'
+      DOC_SEARCHER_CACHER_USERNAME: 'cacher'
+      DOC_SEARCHER_CACHER_PASSWORD: 'cacher'
+      DOC_SEARCHER_CACHER_EXPIRED: 3600
+      DOC_SEARCHER_EMBEDDINGS_ADDRESS: 'embeddings:8085'
+      DOC_SEARCHER_EMBEDDINGS_IS_TRUNCATE: 'false'
+      DOC_SEARCHER_EMBEDDINGS_IS_NORMALIZE: 'false'
     ports:
-      - "2892:2892"
+      - '2892:2892'
     networks:
-      - elasticnet
+      - elastic-net
 
   cacher:
-    depends_on:
-      - doc-searcher
     image: redis:latest
     restart: on-failure
-    ports:
-      - "6379:6379"
-    networks:
-      - elasticnet
-    volumes:
-      - cacher1:/data/cacher
-
-  kibana:
     depends_on:
-      - elasticsearch
-    image: kibana:8.11.2
-    container_name: kibana
+      - doc-searcher
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      REDIS_PASSWORD: 'cacher'
+      REDIS_USER: 'cacher'
+      REDIS_USER_PASSWORD: 'cacher'
     ports:
-      - "5601:5601"
+      - '6379:6379'
     networks:
-      - elasticnet
+      - elastic-net
+    volumes:
+      - cacher-vol-1:/data/cacher
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
-  esdata1:
+  es-vol-1:
     driver: local
-  cacher1:
+  cacher-vol-1:
     driver: local
 
 networks:
-  elasticnet:
-
+  elastic-net:
