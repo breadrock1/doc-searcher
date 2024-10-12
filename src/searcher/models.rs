@@ -1,15 +1,17 @@
 use crate::storage::models::DEFAULT_FOLDER_ID;
 
 use derive_builder::Builder;
-use getset::Getters;
+use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Builder, Clone, Deserialize, Serialize, IntoParams, ToSchema, Getters)]
+#[derive(Builder, Clone, Deserialize, Serialize, IntoParams, ToSchema, Getters, Setters)]
 pub struct SearchParams {
     #[getset(get = "pub")]
     #[schema(example = "Hello world")]
     query: String,
+    #[getset(get = "pub", set = "pub")]
+    query_tokens: Option<Vec<f64>>,
     #[schema(example = "test-folder")]
     folder_ids: Option<String>,
     #[getset(get = "pub")]
@@ -57,6 +59,10 @@ impl SearchParams {
 
     pub fn set_query(&mut self, query: &str) {
         self.query = query.to_string();
+    }
+
+    pub fn set_tokens(&mut self, tokens: Vec<f64>) {
+        self.query_tokens = Some(tokens);
     }
 
     pub fn get_doc_size(&self) -> (i64, i64) {

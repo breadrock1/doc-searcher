@@ -4,12 +4,13 @@ use actix_web::{App, HttpServer, web};
 use actix_web::middleware::Logger;
 use doc_search::{config, Connectable, swagger};
 use doc_search::cacher::redis::RedisClient;
+use doc_search::cors::build_cors;
 use doc_search::elastic::ElasticClient;
+use doc_search::logger::init_logger;
 use doc_search::searcher::{PaginatorService, SearcherService};
 use doc_search::storage::{DocumentService, FolderService};
-
-use doc_search::logger::init_logger;
-use doc_search::cors::build_cors;
+use doc_search::embeddings::native::EmbeddingsClient;
+use doc_search::embeddings::EmbeddingsService;
 use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
 use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
 use doc_search::storage::endpoints::build_scope as build_storage_scope;
@@ -25,6 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let cacher_service = RedisClient::connect(s_config.cacher())?;
     let search_service = ElasticClient::connect(s_config.elastic())?;
+    let embeddings_service = EmbeddingsClient::connect(s_config.embeddings())?;
 
     HttpServer::new(move || {
         let cors = build_cors(&cors_config.clone());
@@ -35,6 +37,7 @@ async fn main() -> Result<(), anyhow::Error> {
         let folders_cxt: Box<dyn FolderService> = Box::new(search_service.clone());
         let paginator_cxt: Box<dyn PaginatorService> = Box::new(search_service.clone());
         let searcher_cxt: Box<dyn SearcherService> = Box::new(search_service.clone());
+        let embeddings_cxt: Box<dyn EmbeddingsService> = Box::new(embeddings_service.clone());
 
         App::new()
             .app_data(web::Data::new(documents_cxt))
@@ -42,6 +45,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .app_data(web::Data::new(paginator_cxt))
             .app_data(web::Data::new(cacher_cxt))
             .app_data(web::Data::new(searcher_cxt))
+            .app_data(web::Data::new(embeddings_cxt))
             .wrap(logger)
             .wrap(cors)
             .service(build_metrics_scope())

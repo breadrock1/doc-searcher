@@ -44,14 +44,6 @@ impl WebErrorEntity {
 
 #[derive(Error, Debug)]
 pub enum WebError {
-    #[error("Failed to get all clusters: {0}")]
-    GetClusters(WebErrorEntity),
-    #[error("Failed to get cluster details: {0}")]
-    GetCluster(WebErrorEntity),
-    #[error("Failed to create new cluster: {0}")]
-    CreateCluster(WebErrorEntity),
-    #[error("Failed to delete cluster: {0}")]
-    DeleteCluster(WebErrorEntity),
     #[error("Failed to get all folders: {0}")]
     GetFolders(WebErrorEntity),
     #[error("Failed to get folder details: {0}")]
@@ -70,29 +62,30 @@ pub enum WebError {
     UpdateDocument(WebErrorEntity),
     #[error("Failed to move documents to folder: {0}")]
     MoveDocuments(WebErrorEntity),
-    #[error("Failed to (de)serialize object: {0}")]
-    SerdeError(WebErrorEntity),
     #[error("Failed while searching: {0}")]
     SearchError(WebErrorEntity),
-    #[error("Error response from searcher service: {0}")]
-    SearchServiceError(WebErrorEntity),
     #[error("Failed while paginating: {0}")]
     PaginationError(WebErrorEntity),
-    #[error("Service unavailable: {0}")]
-    ServiceUnavailable(WebErrorEntity),
-    #[error("Response error: {0}")]
-    UnknownError(WebErrorEntity),
+    #[error("Failed while loading embeddings: {0}")]
+    EmbeddingsError(WebErrorEntity),
+
+    #[error("Error response from searcher service: {0}")]
+    SearchServiceError(WebErrorEntity),
+    #[error("Failed to (de)serialize object: {0}")]
+    SerdeError(WebErrorEntity),
+
     #[error("Continues executing: {0}")]
     ResponseContinues(WebErrorEntity),
+    #[error("Service unavailable: {0}")]
+    ServiceUnavailable(WebErrorEntity),
+
+    #[error("Response error: {0}")]
+    UnknownError(WebErrorEntity),
 }
 
 impl WebError {
     pub fn name(&self) -> &str {
         match self {
-            WebError::GetClusters(_) => "Get clusters error",
-            WebError::GetCluster(_) => "Get cluster error",
-            WebError::CreateCluster(_) => "Create cluster error",
-            WebError::DeleteCluster(_) => "Delete cluster error",
             WebError::GetFolders(_) => "Get folders error",
             WebError::GetFolder(_) => "Get folder error",
             WebError::CreateFolder(_) => "Create folder error",
@@ -102,21 +95,21 @@ impl WebError {
             WebError::DeleteDocument(_) => "Delete document error",
             WebError::UpdateDocument(_) => "Update document error",
             WebError::MoveDocuments(_) => "Move documents error",
-            WebError::SerdeError(_) => "Serde error",
             WebError::SearchError(_) => "Search data error",
-            WebError::SearchServiceError(_) => "Search server error",
             WebError::PaginationError(_) => "Pagination error",
+            WebError::EmbeddingsError(_) => "Load embeddings error",
+
+            WebError::SearchServiceError(_) => "Search server error",
+            WebError::SerdeError(_) => "Serde error",
+
             WebError::ServiceUnavailable(_) => "Service unavailable",
             WebError::ResponseContinues(_) => "Processing...",
+
             WebError::UnknownError(_) => "Runtime error",
         }
     }
     pub fn attachments(&self) -> Option<Vec<String>> {
         match self {
-            WebError::GetClusters(attach) => attach.attachments.clone(),
-            WebError::GetCluster(attach) => attach.attachments.clone(),
-            WebError::CreateCluster(attach) => attach.attachments.clone(),
-            WebError::DeleteCluster(attach) => attach.attachments.clone(),
             WebError::GetFolders(attach) => attach.attachments.clone(),
             WebError::GetFolder(attach) => attach.attachments.clone(),
             WebError::CreateFolder(attach) => attach.attachments.clone(),
@@ -126,12 +119,16 @@ impl WebError {
             WebError::DeleteDocument(attach) => attach.attachments.clone(),
             WebError::UpdateDocument(attach) => attach.attachments.clone(),
             WebError::MoveDocuments(attach) => attach.attachments.clone(),
-            WebError::SerdeError(attach) => attach.attachments.clone(),
             WebError::SearchError(attach) => attach.attachments.clone(),
-            WebError::SearchServiceError(attach) => attach.attachments.clone(),
             WebError::PaginationError(attach) => attach.attachments.clone(),
+            WebError::EmbeddingsError(attach) => attach.attachments.clone(),
+
+            WebError::SearchServiceError(attach) => attach.attachments.clone(),
+            WebError::SerdeError(attach) => attach.attachments.clone(),
+
             WebError::ServiceUnavailable(attach) => attach.attachments.clone(),
             WebError::ResponseContinues(attach) => attach.attachments.clone(),
+
             WebError::UnknownError(attach) => attach.attachments.clone(),
         }
     }

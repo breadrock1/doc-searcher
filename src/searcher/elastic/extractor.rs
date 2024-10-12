@@ -150,10 +150,9 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
 #[async_trait::async_trait]
 impl SearcherTrait<DocumentVectors> for DocumentVectors {
     async fn build_query(s_params: &SearchParams) -> Value {
-        let query = s_params.query();
         let (size, _) = s_params.get_doc_size();
-        let query_vector: Vec<f64> = Vec::default();
         let candidates = s_params.get_candidates();
+        let query_vector = s_params.query_tokens();
 
         json!({
             "size": size,

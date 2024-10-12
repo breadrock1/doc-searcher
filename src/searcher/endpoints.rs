@@ -1,3 +1,4 @@
+use crate::embeddings::EmbeddingsService;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
 use crate::searcher::forms::{AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SearchQuery, SemanticParams};
 use crate::searcher::models::{Paginated, SearchParams};
@@ -10,10 +11,12 @@ use actix_web::{delete, post, Scope, web};
 use actix_web::web::{Data, Json, Query};
 use serde_json::Value;
 
+type EmbeddingsContext = Data<Box<dyn EmbeddingsService>>;
 type SearchContext = Data<Box<dyn SearcherService>>;
 type PaginateContext = Data<Box<dyn PaginatorService>>;
 
 pub fn build_scope() -> Scope {
+
     web::scope("/search")
         .service(search_fulltext)
         .service(search_semantic)
@@ -129,12 +132,17 @@ async fn search_fulltext(
 #[post("/semantic")]
 async fn search_semantic(
     cxt: SearchContext,
+    em_cxt: EmbeddingsContext,
     form: Json<SemanticParams>,
     document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
-    let search_form = SearchParams::from(form.0);
     let doc_type = document_type.0.get_type();
+
+    let mut search_form = SearchParams::from(form.0);
+    let query_tokens = em_cxt.load_from_text(search_form.query()).await?;
+    search_form.set_tokens(query_tokens);
+
     let documents = client.search_semantic(&search_form, &doc_type).await?;
     Ok(Json(documents))
 }

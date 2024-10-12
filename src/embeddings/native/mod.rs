@@ -1,5 +1,6 @@
 use crate::embeddings::config::EmbeddingsConfig;
-use crate::embeddings::EmbeddingsLoader;
+use crate::embeddings::EmbeddingsService;
+use crate::errors::{WebError, WebResult};
 use crate::Connectable;
 
 use getset::{CopyGetters, Getters};
@@ -8,7 +9,7 @@ use std::sync::Arc;
 
 const NATIVE_SERVICE_URL: &str = "/embed";
 
-#[derive(CopyGetters, Getters)]
+#[derive(Clone, CopyGetters, Getters)]
 pub struct EmbeddingsClient {
     #[getset(get = "pub")]
     address: String,
@@ -47,10 +48,9 @@ impl Connectable for EmbeddingsClient {
     }
 }
 
-impl EmbeddingsLoader for EmbeddingsClient {
-    type Error = reqwest::Error;
-
-    async fn load_from_text(&self, text: &str) -> Result<Vec<f64>, Self::Error> {
+#[async_trait::async_trait]
+impl EmbeddingsService for EmbeddingsClient {
+    async fn load_from_text(&self, text: &str) -> WebResult<Vec<f64>> {
         let client_addr = self.address();
         let target_url = format!("{client_addr}{NATIVE_SERVICE_URL}");
         let response = self.client()
@@ -62,7 +62,8 @@ impl EmbeddingsLoader for EmbeddingsClient {
                 "normalize": self.is_normalize(),
             }))
             .send()
-            .await?;
+            .await
+            .map_err(WebError::from)?;
 
         let embed_data = response.json::<Vec<Vec<f64>>>().await?;
         let slice = embed_data.first().unwrap().to_owned();

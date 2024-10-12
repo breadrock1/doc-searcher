@@ -1,9 +1,10 @@
+use crate::errors::WebResult;
+
 pub mod config;
 pub mod native;
 
-#[allow(async_fn_in_trait)]
-pub trait EmbeddingsLoader {
-    type Error;
+#[async_trait::async_trait]
+pub trait EmbeddingsService {
 
-    async fn load_from_text(&self, text: &str) -> Result<Vec<f64>, Self::Error>;
+    async fn load_from_text(&self, text: &str) -> WebResult<Vec<f64>>;
 }
