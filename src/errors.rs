@@ -5,7 +5,6 @@ use actix_web::{web, HttpResponse, ResponseError};
 use elasticsearch::http::response::Exception;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-use std::io::Error;
 use thiserror::Error;
 use utoipa::ToSchema;
 
@@ -77,8 +76,6 @@ pub enum WebError {
     SearchError(WebErrorEntity),
     #[error("Error response from searcher service: {0}")]
     SearchServiceError(WebErrorEntity),
-    #[error("Failed to upload file: {0}")]
-    UploadFileError(WebErrorEntity),
     #[error("Failed while paginating: {0}")]
     PaginationError(WebErrorEntity),
     #[error("Service unavailable: {0}")]
@@ -108,7 +105,6 @@ impl WebError {
             WebError::SerdeError(_) => "Serde error",
             WebError::SearchError(_) => "Search data error",
             WebError::SearchServiceError(_) => "Search server error",
-            WebError::UploadFileError(_) => "Upload file error",
             WebError::PaginationError(_) => "Pagination error",
             WebError::ServiceUnavailable(_) => "Service unavailable",
             WebError::ResponseContinues(_) => "Processing...",
@@ -133,7 +129,6 @@ impl WebError {
             WebError::SerdeError(attach) => attach.attachments.clone(),
             WebError::SearchError(attach) => attach.attachments.clone(),
             WebError::SearchServiceError(attach) => attach.attachments.clone(),
-            WebError::UploadFileError(attach) => attach.attachments.clone(),
             WebError::PaginationError(attach) => attach.attachments.clone(),
             WebError::ServiceUnavailable(attach) => attach.attachments.clone(),
             WebError::ResponseContinues(attach) => attach.attachments.clone(),
@@ -226,17 +221,6 @@ impl From<serde_json::Error> for WebError {
         let err_msg = value.to_string();
         tracing::error!("{}", err_msg.as_str());
         WebError::UnknownError(WebErrorEntity {
-            description: err_msg.to_string(),
-            attachments: None,
-        })
-    }
-}
-
-impl From<std::io::Error> for WebError {
-    fn from(value: Error) -> Self {
-        let err_msg = value.to_string();
-        tracing::error!("{}", err_msg.as_str());
-        WebError::UploadFileError(WebErrorEntity {
             description: err_msg.to_string(),
             attachments: None,
         })

@@ -7,6 +7,7 @@ pub struct SimilarQuery {
     more_like_this: MoreLikeThisQuery,
 }
 
+#[allow(dead_code)]
 impl SimilarQuery {
     pub fn set_query(mut self, query: MoreLikeThisQuery) -> Self {
         self.more_like_this = query;

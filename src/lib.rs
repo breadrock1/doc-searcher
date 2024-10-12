@@ -4,7 +4,6 @@ pub mod cors;
 pub mod elastic;
 pub mod embeddings;
 pub mod errors;
-pub mod orchestra;
 pub mod logger;
 pub mod metrics;
 pub mod searcher;

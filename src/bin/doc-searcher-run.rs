@@ -5,14 +5,12 @@ use actix_web::middleware::Logger;
 use doc_search::{config, Connectable, swagger};
 use doc_search::cacher::redis::RedisClient;
 use doc_search::elastic::ElasticClient;
-use doc_search::orchestra::ClusterService;
 use doc_search::searcher::{PaginatorService, SearcherService};
 use doc_search::storage::{DocumentService, FolderService};
 
 use doc_search::logger::init_logger;
 use doc_search::cors::build_cors;
 use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
-use doc_search::orchestra::endpoints::build_scope as build_orchestra_scope;
 use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
 use doc_search::storage::endpoints::build_scope as build_storage_scope;
 
@@ -33,14 +31,12 @@ async fn main() -> Result<(), anyhow::Error> {
         let logger = Logger::default();
         let cacher_cxt = Box::new(cacher_service.clone());
 
-        let clusters_cxt: Box<dyn ClusterService> = Box::new(search_service.clone());
         let documents_cxt: Box<dyn DocumentService> = Box::new(search_service.clone());
         let folders_cxt: Box<dyn FolderService> = Box::new(search_service.clone());
         let paginator_cxt: Box<dyn PaginatorService> = Box::new(search_service.clone());
         let searcher_cxt: Box<dyn SearcherService> = Box::new(search_service.clone());
 
         App::new()
-            .app_data(web::Data::new(clusters_cxt))
             .app_data(web::Data::new(documents_cxt))
             .app_data(web::Data::new(folders_cxt))
             .app_data(web::Data::new(paginator_cxt))
@@ -49,7 +45,6 @@ async fn main() -> Result<(), anyhow::Error> {
             .wrap(logger)
             .wrap(cors)
             .service(build_metrics_scope())
-            .service(build_orchestra_scope())
             .service(build_storage_scope())
             .service(build_searcher_scope())
             .service(swagger::build_swagger_service())

@@ -1,6 +1,3 @@
-use crate::orchestra::forms::CreateClusterForm;
-use crate::orchestra::models::Cluster;
-
 use crate::searcher::forms::{AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SemanticParams};
 use crate::searcher::models::{Paginated, SearchParams};
 use crate::storage::models::{Document, DocumentBuilder, DocumentPreview, DocumentVectors};
@@ -11,9 +8,6 @@ use crate::storage::models::Folder;
 
 use chrono::{Datelike, DateTime, NaiveDateTime, Timelike, Utc};
 
-const TEST_CLUSTER_NAME: &str = "test-slave-cluster";
-const TEST_CLUSTER_ROLE: &str = "slave";
-const TEST_CLUSTER_IP: &str = "172.19.0.2";
 const TEST_CLUSTER_ID: &str = "d93df49fa6ff";
 
 const TEST_FOLDER_ID: &str = "test-folder";
@@ -39,31 +33,6 @@ const PAGINATE_HASH_ID: &str = "DXF1ZXJ5QW5kRmV0Y2gBAD4WYm9laVYtZndUQlNsdDcwakFM
 
 pub trait TestExample<T> {
     fn test_example(value: Option<&str>) -> T;
-}
-
-impl TestExample<CreateClusterForm> for CreateClusterForm {
-    fn test_example(_value: Option<&str>) -> CreateClusterForm {
-        CreateClusterForm::builder()
-            .cluster_id(TEST_CLUSTER_NAME.to_string())
-            .role(TEST_CLUSTER_ROLE.to_string())
-            .build()
-            .unwrap()
-    }
-}
-
-impl TestExample<Cluster> for Cluster {
-    fn test_example(_value: Option<&str>) -> Cluster {
-        Cluster::builder()
-            .ip(TEST_CLUSTER_IP.to_string())
-            .heap_percent("32".to_string())
-            .ram_percent("67".to_string())
-            .cpu("2".to_string())
-            .node_role("cdfhilmrstw".to_string())
-            .master("*".to_string())
-            .name(TEST_CLUSTER_ID.to_string())
-            .build()
-            .unwrap()
-    }
 }
 
 impl TestExample<CreateFolderForm> for CreateFolderForm {
