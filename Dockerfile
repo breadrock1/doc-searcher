@@ -1,20 +1,19 @@
-FROM rust:latest as builder
+FROM rust:1.75 as builder
 
 WORKDIR /app
 
-RUN apt update && apt install -y musl-dev musl-tools
-RUN rustup target add x86_64-unknown-linux-musl
+RUN apt update && apt install -y libssl-dev
 
 COPY . .
-RUN cargo install --target x86_64-unknown-linux-musl --bins --path .
 
-FROM alpine:latest
+RUN cargo install --bins --path .
+
+FROM ubuntu:rolling
 
 WORKDIR /app
 
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/doc-searcher-* .
-
-RUN apk add --no-cache openssl
+COPY --from=builder /app/target/release/doc-searcher-init .
+COPY --from=builder /app/target/release/doc-searcher-run .
 
 CMD ["/app/doc-searcher-init"]
 ENTRYPOINT ["/app/doc-searcher-run"]
