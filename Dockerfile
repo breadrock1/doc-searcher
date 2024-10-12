@@ -1,19 +1,20 @@
 FROM rust:latest as builder
 
-ARG DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-WORKDIR /home/docsearch
+RUN apt update && apt install -y musl-dev musl-tools
+RUN rustup target add x86_64-unknown-linux-musl
+
 COPY . .
+RUN cargo install --target x86_64-unknown-linux-musl --bins --path .
 
-RUN cargo install --path .
-
-FROM rust:latest
+FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder /home/docsearch/target/release .
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/doc-searcher-* .
 
-RUN apt install -y openssl
+RUN apk add --no-cache openssl
 
 CMD ["/app/doc-searcher-init"]
 ENTRYPOINT ["/app/doc-searcher-run"]

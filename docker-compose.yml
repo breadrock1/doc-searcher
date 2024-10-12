@@ -26,6 +26,8 @@ services:
     image: doc-searcher:latest
     depends_on:
       - elasticsearch
+    volumes:
+      - ./config:/app/config
     environment:
       DOC_SEARCHER_LOGGER_LEVEL: 'info'
       DOC_SEARCHER_SERVER_ADDRESS: '0.0.0.0'
