@@ -4,17 +4,12 @@ services:
 
   elasticsearch:
     image: elasticsearch:8.11.2
-    container_name: elasticsearch
     restart: on-failure
     environment:
       discovery.type: 'single-node'
       cluster.name: 'master'
-      ELASTIC_PASSWORD: 'elastic'
       ES_JAVA_OPTS: '-Xms2g -Xmx2g'
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
     ports:
       - '9200:9200'
     networks:
@@ -22,61 +17,53 @@ services:
     volumes:
       - es-vol-1:/usr/share/elasticsearch/data
 
-  doc-searcher:
-    image: doc-searcher:latest
-    depends_on:
-      - elasticsearch
-    volumes:
-      - ./config:/app/config
-    environment:
-      DOC_SEARCHER_RUN_MODE: 'production'
-      DOC_SEARCHER_LOGGER_LEVEL: 'info'
-      DOC_SEARCHER_SERVER_ADDRESS: '0.0.0.0'
-      DOC_SEARCHER_SERVER_PORT: 2893
-      DOC_SEARCHER_SERVER_WORKERS_NUM: 6
-      DOC_SEARCHER_SERVER_ENABLED_TLS: 'false'
-      DOC_SEARCHER_CORS_METHODS: 'GET,POST,PUT,DELETE,OPTIONS'
-      DOC_SEARCHER_CORS_ALLOWED: '*'
-      DOC_SEARCHER_CORS_MAX_AGE: 3600
-      DOC_SEARCHER_ENGINE_ADDRESS:
-      DOC_SEARCHER_ENGINE_ENABLED_TLS: 'false'
-      DOC_SEARCHER_ENGINE_USERNAME: 'elastic'
-      DOC_SEARCHER_ENGINE_PASSWORD: 'elastic'
-      DOC_SEARCHER_CACHER_ADDRESS: 'cacher:6379'
-      DOC_SEARCHER_CACHER_USERNAME: 'cacher'
-      DOC_SEARCHER_CACHER_PASSWORD: 'cacher'
-      DOC_SEARCHER_CACHER_EXPIRED: 3600
-      DOC_SEARCHER_EMBEDDINGS_ADDRESS: 'embeddings:8085'
-      DOC_SEARCHER_EMBEDDINGS_IS_TRUNCATE: 'false'
-      DOC_SEARCHER_EMBEDDINGS_IS_NORMALIZE: 'false'
-    ports:
-      - '2892:2892'
-    networks:
-      - elastic-net
-
   cacher:
     image: redis:latest
     restart: on-failure
-    depends_on:
-      - doc-searcher
     environment:
-      REDIS_PASSWORD: 'cacher'
-      REDIS_USER: 'cacher'
-      REDIS_USER_PASSWORD: 'cacher'
+      REDIS_PASSWORD: ${REDIS_ROOT_PASSWORD}
+      REDIS_USER: ${REDIS_CLIENT_USERNAME}
+      REDIS_USER_PASSWORD: ${REDIS_CLIENT_PASSWORD}
     ports:
       - '6379:6379'
     networks:
       - elastic-net
     volumes:
       - cacher-vol-1:/data/cacher
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+
+  doc-searcher:
+    image: doc-searcher:latest
+    depends_on:
+      - elasticsearch
+      - cacher
+    volumes:
+      - ./config:/app/config
+    environment:
+      DOC_SEARCHER_RUN_MODE: ${SERVICE_RUN_MODE}
+      DOC_SEARCHER_LOGGER_LEVEL: 'info'
+      DOC_SEARCHER_SERVER_ADDRESS: '0.0.0.0'
+      DOC_SEARCHER_SERVER_PORT: 2893
+      DOC_SEARCHER_SERVER_WORKERS_NUM: ${SERVICE_WORKERS_NUM}
+      DOC_SEARCHER_SERVER_ENABLED_TLS: ${SERVICE_ENABLE_TLS}
+      DOC_SEARCHER_CORS_METHODS: 'GET,POST,PUT,DELETE,OPTIONS'
+      DOC_SEARCHER_CORS_ALLOWED: ${SERVICE_ALLOWED_CORS}
+      DOC_SEARCHER_CORS_MAX_AGE: ${REDIS_DATA_EXPIRED}
+      DOC_SEARCHER_ENGINE_ADDRESS: 'elasticsearch:9200'
+      DOC_SEARCHER_ENGINE_ENABLED_TLS: ${ELASTIC_ENABLE_TLS}
+      DOC_SEARCHER_ENGINE_USERNAME: ${ELASTIC_USERNAME}
+      DOC_SEARCHER_ENGINE_PASSWORD: ${ELASTIC_PASSWORD}
+      DOC_SEARCHER_CACHER_ADDRESS: 'cacher:6379'
+      DOC_SEARCHER_CACHER_USERNAME: ${REDIS_CLIENT_USERNAME}
+      DOC_SEARCHER_CACHER_PASSWORD: ${REDIS_CLIENT_PASSWORD}
+      DOC_SEARCHER_CACHER_EXPIRED: 3600
+      DOC_SEARCHER_EMBEDDINGS_ADDRESS: 'embeddings:8085'
+      DOC_SEARCHER_EMBEDDINGS_IS_TRUNCATE: 'false'
+      DOC_SEARCHER_EMBEDDINGS_IS_NORMALIZE: 'false'
+      DOC_SEARCHER_EMBEDDINGS_ENABLE_TLS: ${EMBEDDINGS_ENABLE_TLS}
+    ports:
+      - '2892:2892'
+    networks:
+      - elastic-net
 
 volumes:
   es-vol-1:
