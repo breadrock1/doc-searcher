@@ -1,11 +1,34 @@
-pub mod exclude_fields;
-pub mod filter_query;
-pub mod highlight_query;
-pub mod search_query;
-pub mod similar_query;
-pub mod sort_query;
-pub mod must_filter;
-pub mod should_filter;
-mod common_query;
-mod bool_query_must;
-mod bool_query_should;
+use crate::exclude::ExcludeFields;
+use crate::highlight::HighlightQuery;
+use crate::r#match::BoolQuery;
+
+use derive_builder::Builder;
+use serde_derive::Serialize;
+use serde_json::Value;
+
+pub mod exclude;
+pub mod filter;
+pub mod highlight;
+pub mod search;
+pub mod sort;
+pub mod r#match;
+mod similar;
+
+#[derive(Builder, Clone, Default, Serialize)]
+pub struct CommonQuery {
+    query: BoolQuery,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sort: Option<Vec<Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    highlight: Option<HighlightQuery>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_score: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    _source: Option<ExcludeFields>,
+}
+
+impl CommonQuery {
+    pub fn builder() -> CommonQueryBuilder {
+        CommonQueryBuilder::default()
+    }
+}

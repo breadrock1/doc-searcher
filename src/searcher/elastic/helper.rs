@@ -3,7 +3,7 @@ use crate::searcher::SearcherTrait;
 use crate::searcher::models::{Paginated, SearchParams};
 use crate::storage::DocumentsTrait;
 use crate::storage::forms::DocumentType;
-use crate::storage::models::{Document, DocumentPreview, DocumentVectors, INFO_FOLDER_ID};
+use crate::storage::models::{Document, DocumentPreview, DocumentVectors};
 
 use elasticsearch::http::response::Response;
 use elasticsearch::{Elasticsearch, SearchParts};
