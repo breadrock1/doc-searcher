@@ -76,9 +76,7 @@ pub fn to_unified_pag(
     let converted = paginated
         .get_founded_mut()
         .iter()
-        .map(|doc| doc_type.to_value(doc))
-        .filter(Result::is_ok)
-        .map(Result::unwrap)
+        .flat_map(|doc| doc_type.to_value(doc))
         .collect::<Vec<Value>>();
 
     Paginated::new_with_opt_id(converted, scroll_id)
@@ -89,9 +87,7 @@ pub fn vec_to_value(mut paginated: Paginated<Vec<DocumentVectors>>) -> Paginated
     let converted = paginated
         .get_founded_mut()
         .iter()
-        .map(serde_json::to_value)
-        .filter(Result::is_ok)
-        .map(Result::unwrap)
+        .flat_map(serde_json::to_value)
         .collect::<Vec<Value>>();
 
     Paginated::new_with_opt_id(converted, scroll_id)
@@ -195,8 +191,7 @@ where
 
     let founded_documents = extracted_values
         .into_iter()
-        .filter(Result::is_ok)
-        .map(Result::unwrap)
+        .flatten()
         .collect::<Vec<T>>();
 
     Paginated::new_with_opt_id(founded_documents, scroll_id)
