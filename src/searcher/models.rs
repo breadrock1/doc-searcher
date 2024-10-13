@@ -109,6 +109,7 @@ impl Default for SearchParams {
     fn default() -> Self {
         SearchParams::builder()
             .query("*".to_string())
+            .query_tokens(Some(Vec::default()))
             .folder_ids(Some(DEFAULT_FOLDER_ID.to_string()))
             .document_type(String::default())
             .document_extension(String::default())

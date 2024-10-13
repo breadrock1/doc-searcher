@@ -263,6 +263,7 @@ mod test_all_search_queries {
     fn build_search_params() -> SearchParams {
         SearchParams::builder()
             .query("Some query".to_string())
+            .query_tokens(Some(Vec::default()))
             .folder_ids(Some("test-folder-id".to_string()))
             .document_type("document".to_string())
             .document_extension("txt".to_string())

@@ -32,7 +32,14 @@ services:
       - cacher-vol-1:/data/cacher
 
   doc-searcher:
+# To build docker image from sources with tag 'doc-searcher:latest'
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#      tags:
+#        - 'doc-searcher:latest'
     image: doc-searcher:latest
+    command: /app/doc-searcher-init && /app/doc-searcher-run
     depends_on:
       - elasticsearch
       - cacher

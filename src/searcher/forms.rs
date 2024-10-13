@@ -35,6 +35,7 @@ impl From<FulltextParams> for SearchParams {
     fn from(value: FulltextParams) -> Self {
         SearchParams::builder()
             .query(value.query)
+            .query_tokens(Some(Vec::default()))
             .folder_ids(value.folder_ids)
             .document_type(value.document_type)
             .document_extension(value.document_extension)
@@ -85,6 +86,8 @@ pub struct AllRecordsParams {
 impl From<AllRecordsParams> for SearchParams {
     fn from(value: AllRecordsParams) -> Self {
         SearchParams::builder()
+            .query(value.query)
+            .query_tokens(Some(Vec::default()))
             .folder_ids(value.folder_id)
             .document_type(value.document_type)
             .document_extension(value.document_extension)
@@ -95,7 +98,6 @@ impl From<AllRecordsParams> for SearchParams {
             .result_size(value.result_size)
             .scroll_lifetime(value.scroll_lifetime)
             .result_offset(0)
-            .query(value.query)
             .knn_amount(None)
             .knn_candidates(None)
             .show_all(None)
@@ -132,6 +134,7 @@ impl From<SemanticParams> for SearchParams {
     fn from(value: SemanticParams) -> Self {
         SearchParams::builder()
             .query(value.query)
+            .query_tokens(Some(Vec::default()))
             .folder_ids(value.folder_ids)
             .document_size_from(value.document_size_from)
             .knn_amount(value.knn_amount)

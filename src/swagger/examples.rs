@@ -204,6 +204,7 @@ impl TestExample<SearchParams> for SearchParams {
     fn test_example(query: Option<&str>) -> SearchParams {
         SearchParams::builder()
             .query(query.unwrap().to_string())
+            .query_tokens(Some(Vec::default()))
             .folder_ids(Some(TEST_FOLDER_ID.to_string()))
             .document_type(DOCUMENT_TYPE.to_string())
             .document_extension(DOCUMENT_EXTENSION.to_string())

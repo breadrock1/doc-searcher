@@ -37,7 +37,6 @@ WORKDIR /app
 
 COPY --from=builder /app/target/release/doc-searcher-init .
 COPY --from=builder /app/target/release/doc-searcher-run .
-COPY --from=builder /app/target/release/config .
 
 # Execute to initliaze elasticsearch environment
 CMD ["/app/doc-searcher-init"]

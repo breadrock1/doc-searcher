@@ -12,7 +12,7 @@ allowed = "*"
 max_age = 3600
 
 [elastic]
-address = "elasticsearcher:9200"
+address = "elasticsearch:9200"
 enabled_tls = "false"
 username = "elastic"
 password = "elastic"
