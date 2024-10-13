@@ -1,54 +1,60 @@
 extern crate doc_search;
 
-use doc_search::services::cacher::rediska;
-use doc_search::services::{config, init};
-use doc_search::services::searcher::elastic;
-use doc_search::services::searcher::service::*;
-use doc_search::services::swagger;
-
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
+use doc_search::cacher::redis::RedisClient;
+use doc_search::cors::build_cors;
+use doc_search::elastic::ElasticClient;
+use doc_search::embeddings::native::EmbeddingsClient;
+use doc_search::embeddings::EmbeddingsService;
+use doc_search::logger::init_logger;
+use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
+use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
+use doc_search::searcher::{PaginatorService, SearcherService};
+use doc_search::storage::endpoints::build_scope as build_storage_scope;
+use doc_search::storage::{DocumentService, FolderService};
+use doc_search::{config, swagger, Connectable};
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let s_config = config::init_service_config()?;
+    let s_config = config::ServiceConfig::new()?;
 
-    let search_service = elastic::build_searcher_service(&s_config)?;
-    let cacher_service = rediska::build_cacher_service(&s_config)?;
+    let server_config = s_config.server();
+    let cors_config = s_config.cors().clone();
+    let logger_config = s_config.logger();
+    init_logger(logger_config)?;
 
-    let service_port = s_config.get_service_port();
-    let service_addr = s_config.get_service_host();
-    let cors_origin = s_config.get_cors().to_string();
-    let workers_num = s_config.get_workers_num();
+    let cacher_service = RedisClient::connect(s_config.cacher())?;
+    let search_service = ElasticClient::connect(s_config.elastic())?;
+    let embeddings_service = EmbeddingsClient::connect(s_config.embeddings())?;
 
     HttpServer::new(move || {
+        let cors = build_cors(&cors_config.clone());
+        let logger = Logger::default();
         let cacher_cxt = Box::new(cacher_service.clone());
 
-        let searcher = search_service.clone();
-        let clusters_cxt: Box<dyn ClusterService> = Box::new(searcher.clone());
-        let documents_cxt: Box<dyn DocumentService> = Box::new(searcher.clone());
-        let folders_cxt: Box<dyn FolderService> = Box::new(searcher.clone());
-        let paginator_cxt: Box<dyn PaginatorService> = Box::new(searcher.clone());
-        let searcher_cxt: Box<dyn SearcherService> = Box::new(searcher.clone());
+        let documents_cxt: Box<dyn DocumentService> = Box::new(search_service.clone());
+        let folders_cxt: Box<dyn FolderService> = Box::new(search_service.clone());
+        let paginator_cxt: Box<dyn PaginatorService> = Box::new(search_service.clone());
+        let searcher_cxt: Box<dyn SearcherService> = Box::new(search_service.clone());
+        let embeddings_cxt: Box<dyn EmbeddingsService> = Box::new(embeddings_service.clone());
 
         App::new()
-            .app_data(web::Data::new(clusters_cxt))
             .app_data(web::Data::new(documents_cxt))
             .app_data(web::Data::new(folders_cxt))
             .app_data(web::Data::new(paginator_cxt))
             .app_data(web::Data::new(cacher_cxt))
             .app_data(web::Data::new(searcher_cxt))
-            .wrap(Logger::default())
-            .wrap(init::build_cors_config(cors_origin.as_str()))
-            .service(init::build_hello_scope())
-            .service(init::build_cluster_scope())
-            .service(init::build_storage_scope())
-            .service(init::build_search_scope())
-            .service(init::build_pagination_scope())
+            .app_data(web::Data::new(embeddings_cxt))
+            .wrap(logger)
+            .wrap(cors)
+            .service(build_metrics_scope())
+            .service(build_storage_scope())
+            .service(build_searcher_scope())
             .service(swagger::build_swagger_service())
     })
-    .bind((service_addr, service_port))?
-    .workers(workers_num)
+    .bind((server_config.address().to_owned(), server_config.port()))?
+    .workers(server_config.workers_num())
     .run()
     .await?;
 

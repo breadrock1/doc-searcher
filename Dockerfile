@@ -1,20 +1,46 @@
-FROM rust:latest as builder
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-WORKDIR /home/docsearch
-COPY . .
-
-RUN cargo install --path .
-
-FROM rust:latest
+FROM rust:1.75 AS chef
 
 WORKDIR /app
 
-COPY --from=builder /home/docsearch/target/release .
+RUN cargo install cargo-chef
 
-RUN apt install -y openssl
 
-ENTRYPOINT ["/app/doc-searcher-init", "/app/doc-searcher-run"]
+# Planner layer with cargo-chef cli tool and projects sources to create recipe.json
+FROM chef AS planner
+
+RUN apt update && apt install -y libssl-dev
+
+COPY . .
+
+RUN cargo chef prepare --recipe-path recipe.json
+
+
+# Builder layer with build project binaries based on previous planner layer
+FROM chef AS builder
+
+WORKDIR /app
+
+COPY --from=planner /app/recipe.json recipe.json
+COPY --from=planner /app/crates/ crates
+
+RUN cargo chef cook --release --recipe-path recipe.json
+
+COPY . .
+
+RUN cargo install --bins --path .
+
+
+# Target layer based on tiny official ubuntu image with neccessary binaries and data to run.
+FROM ubuntu:rolling
+
+WORKDIR /app
+
+COPY --from=builder /app/target/release/doc-searcher-init .
+COPY --from=builder /app/target/release/doc-searcher-run .
+
+# Execute to initliaze elasticsearch environment
+CMD ["/app/doc-searcher-init"]
+
+ENTRYPOINT ["/app/doc-searcher-run"]
 
 EXPOSE 2892
