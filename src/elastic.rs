@@ -6,8 +6,8 @@ use elasticsearch::http::transport::{BuildError, SingleNodeConnectionPool, Trans
 use elasticsearch::http::Url;
 use elasticsearch::Elasticsearch;
 use getset::{CopyGetters, Getters};
-use std::sync::Arc;
 use serde_derive::Deserialize;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[derive(Default, Clone, CopyGetters)]
@@ -31,7 +31,7 @@ impl Connectable for ElasticClient {
             true => "https://",
             false => "http://",
         };
-        
+
         let es_address = format!("{http_protocol}{}", config.address());
         let es_url = Url::parse(&es_address).unwrap();
         let conn_pool = SingleNodeConnectionPool::new(es_url);

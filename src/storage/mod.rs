@@ -4,8 +4,8 @@ pub mod forms;
 pub mod models;
 
 use crate::errors::{Successful, WebResult};
-use crate::storage::forms::DocumentType;
 use crate::storage::forms::CreateFolderForm;
+use crate::storage::forms::DocumentType;
 use crate::storage::models::Document;
 use crate::storage::models::Folder;
 

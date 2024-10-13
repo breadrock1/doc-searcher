@@ -1,19 +1,19 @@
 extern crate doc_search;
 
-use actix_web::{App, HttpServer, web};
 use actix_web::middleware::Logger;
-use doc_search::{config, Connectable, swagger};
+use actix_web::{web, App, HttpServer};
 use doc_search::cacher::redis::RedisClient;
 use doc_search::cors::build_cors;
 use doc_search::elastic::ElasticClient;
-use doc_search::logger::init_logger;
-use doc_search::searcher::{PaginatorService, SearcherService};
-use doc_search::storage::{DocumentService, FolderService};
 use doc_search::embeddings::native::EmbeddingsClient;
 use doc_search::embeddings::EmbeddingsService;
+use doc_search::logger::init_logger;
 use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
 use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
+use doc_search::searcher::{PaginatorService, SearcherService};
 use doc_search::storage::endpoints::build_scope as build_storage_scope;
+use doc_search::storage::{DocumentService, FolderService};
+use doc_search::{config, swagger, Connectable};
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {

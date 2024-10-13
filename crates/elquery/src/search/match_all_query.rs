@@ -9,7 +9,7 @@ pub struct BoolMatchAllQuery {
 impl Default for BoolMatchAllQuery {
     fn default() -> Self {
         BoolMatchAllQuery {
-            match_all: json!({})
+            match_all: json!({}),
         }
     }
 }

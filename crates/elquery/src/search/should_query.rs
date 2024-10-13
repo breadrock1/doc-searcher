@@ -6,7 +6,7 @@ use serde_json::Value;
 
 pub trait ShouldMatchItemTrait {}
 impl ShouldMatchItemTrait for MatchItemQuery {}
-impl ShouldMatchItemTrait for BoolMultiMatchQuery{}
+impl ShouldMatchItemTrait for BoolMultiMatchQuery {}
 
 #[derive(Clone, Default, Serialize)]
 pub struct BoolShouldQuery {

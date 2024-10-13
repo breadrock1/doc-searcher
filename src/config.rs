@@ -4,8 +4,8 @@ use crate::elastic::ElasticConfig;
 use crate::embeddings::config::EmbeddingsConfig;
 use crate::logger::LoggerConfig;
 
-use derive_builder::Builder;
 use config::{Config, ConfigError, Environment, File};
+use derive_builder::Builder;
 use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 

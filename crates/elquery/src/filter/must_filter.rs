@@ -55,9 +55,7 @@ impl TermFilterItem {
         T: serde::Serialize,
     {
         let term_item = json!({key: value});
-        TermFilterItem {
-            term: term_item,
-        }
+        TermFilterItem { term: term_item }
     }
 }
 
@@ -74,10 +72,7 @@ impl RangeFilterItem {
         U: serde::Serialize,
     {
         let gte_value = serde_json::to_value(gte).unwrap();
-        let lte_value = lte.map_or_else(
-            || None,
-            |val| serde_json::to_value(val).ok(),
-        );
+        let lte_value = lte.map_or_else(|| None, |val| serde_json::to_value(val).ok());
 
         RangeFilterItem {
             gte: gte_value,

@@ -430,7 +430,6 @@ impl DocumentPreview {
     pub fn created_date(&self) -> Option<&DateTime<Utc>> {
         self.created_at.as_ref()
     }
-
 }
 
 impl DocumentsTrait for DocumentPreview {
@@ -442,8 +441,6 @@ impl DocumentsTrait for DocumentPreview {
         self.id.as_str()
     }
 }
-
-
 
 impl From<&Document> for DocumentPreview {
     fn from(value: &Document) -> Self {

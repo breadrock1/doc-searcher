@@ -1,14 +1,14 @@
 use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
-use crate::searcher::SearcherTrait;
 use crate::searcher::models::{Paginated, SearchParams};
-use crate::storage::DocumentsTrait;
+use crate::searcher::SearcherTrait;
 use crate::storage::forms::DocumentType;
 use crate::storage::models::{Document, DocumentPreview, DocumentVectors};
+use crate::storage::DocumentsTrait;
 
-use elasticsearch::http::response::Response;
-use elasticsearch::{Elasticsearch, SearchParts};
 use elasticsearch::http::headers::HeaderMap;
+use elasticsearch::http::response::Response;
 use elasticsearch::http::Method;
+use elasticsearch::{Elasticsearch, SearchParts};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -84,9 +84,7 @@ pub fn to_unified_pag(
     Paginated::new_with_opt_id(converted, scroll_id)
 }
 
-pub fn vec_to_value(
-    mut paginated: Paginated<Vec<DocumentVectors>>,
-) -> Paginated<Vec<Value>> {
+pub fn vec_to_value(mut paginated: Paginated<Vec<DocumentVectors>>) -> Paginated<Vec<Value>> {
     let scroll_id = paginated.get_scroll_id().cloned();
     let converted = paginated
         .get_founded_mut()
@@ -99,9 +97,7 @@ pub fn vec_to_value(
     Paginated::new_with_opt_id(converted, scroll_id)
 }
 
-pub fn vec_to_grouped_value(
-    paginated: Paginated<Vec<DocumentVectors>>,
-) -> Paginated<Vec<Value>> {
+pub fn vec_to_grouped_value(paginated: Paginated<Vec<DocumentVectors>>) -> Paginated<Vec<Value>> {
     let scroll_id = paginated.get_scroll_id().cloned();
     let converted = group_document_chunks(paginated.get_founded());
     let values = serde_json::to_value(converted).unwrap();

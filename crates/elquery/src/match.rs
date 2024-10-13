@@ -25,7 +25,7 @@ impl BoolQuery {
                 self.bool.must = must_all_value;
                 self.bool.match_ = None;
                 self.bool.should = None;
-            },
+            }
             BoolQueryType::Should => {
                 self.bool.should = must_all_value;
                 self.bool.must = None;
@@ -38,7 +38,7 @@ impl BoolQuery {
 
     pub fn with_query<T>(mut self, query: T, query_type: BoolQueryType) -> Self
     where
-        T: SearchQueryTrait + serde::Serialize
+        T: SearchQueryTrait + serde::Serialize,
     {
         let query_value = serde_json::to_value(query).unwrap();
         match query_type {
@@ -51,7 +51,7 @@ impl BoolQuery {
                 self.bool.must = Some(query_value);
                 self.bool.match_ = None;
                 self.bool.should = None;
-            },
+            }
             BoolQueryType::Should => {
                 self.bool.should = Some(query_value);
                 self.bool.must = None;

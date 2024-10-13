@@ -3,7 +3,7 @@ use crate::storage::models::Document;
 use crate::storage::models::DocumentPreview;
 use crate::storage::models::DocumentVectors;
 
-use derive_builder::{Builder};
+use derive_builder::Builder;
 use getset::{CopyGetters, Getters};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
@@ -82,7 +82,7 @@ impl DocumentType {
             DocumentType::Vectors => serde_json::to_value(DocumentVectors::from(document)),
             _ => serde_json::to_value(document),
         }
-            .map_err(WebError::from)
+        .map_err(WebError::from)
     }
     pub fn is_vector_type(&self) -> bool {
         matches!(self, DocumentType::Vectors)

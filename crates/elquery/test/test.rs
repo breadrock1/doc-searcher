@@ -72,6 +72,9 @@ mod test {
             .append_post_tag("")
             .build();
 
-        println!("{}", serde_json::to_string_pretty(&highlight_query).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&highlight_query).unwrap()
+        );
     }
 }

@@ -1,14 +1,17 @@
 use crate::embeddings::EmbeddingsService;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
-use crate::searcher::forms::{AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SearchQuery, SemanticParams};
+use crate::searcher::forms::{
+    AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SearchQuery,
+    SemanticParams,
+};
 use crate::searcher::models::{Paginated, SearchParams};
 use crate::searcher::{PaginatorService, SearcherService};
-use crate::storage::models::{Document, DocumentPreview, DocumentVectors};
 use crate::storage::forms::DocumentType;
+use crate::storage::models::{Document, DocumentPreview, DocumentVectors};
 use crate::swagger::examples::TestExample;
 
-use actix_web::{delete, post, Scope, web};
 use actix_web::web::{Data, Json, Query};
+use actix_web::{delete, post, web, Scope};
 use serde_json::Value;
 
 type EmbeddingsContext = Data<Box<dyn EmbeddingsService>>;
@@ -16,7 +19,6 @@ type SearchContext = Data<Box<dyn SearcherService>>;
 type PaginateContext = Data<Box<dyn PaginatorService>>;
 
 pub fn build_scope() -> Scope {
-
     web::scope("/search")
         .service(search_fulltext)
         .service(search_semantic)

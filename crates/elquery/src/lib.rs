@@ -9,10 +9,10 @@ use serde_json::Value;
 pub mod exclude;
 pub mod filter;
 pub mod highlight;
-pub mod search;
-pub mod sort;
 pub mod r#match;
+pub mod search;
 mod similar;
+pub mod sort;
 
 #[derive(Builder, Clone, Default, Serialize)]
 pub struct CommonQuery {

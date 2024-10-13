@@ -1,17 +1,19 @@
-use crate::storage::models::{Document, DocumentPreview, DocumentVectors, HighlightEntity, InfoFolder};
 use crate::errors::WebError;
 use crate::searcher::models::SearchParams;
 use crate::searcher::SearcherTrait;
+use crate::storage::models::{
+    Document, DocumentPreview, DocumentVectors, HighlightEntity, InfoFolder,
+};
 
-use elquery::CommonQuery;
 use elquery::exclude::ExcludeFields;
 use elquery::filter::must_filter::BoolMustFilter;
 use elquery::highlight::HighlightQuery;
 use elquery::r#match::{BoolQuery, BoolQueryType};
 use elquery::search::multi_match_query::BoolMultiMatchQuery;
 use elquery::search::must_query::BoolMustQuery;
-use elquery::search::should_query::{BoolShouldQuery, MatchItemType, MatchItemQuery};
+use elquery::search::should_query::{BoolShouldQuery, MatchItemQuery, MatchItemType};
 use elquery::sort::{SortItem, SortItemFormat, SortItemOrder, SortQuery};
+use elquery::CommonQuery;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -43,8 +45,7 @@ impl SearcherTrait<Document> for Document {
             .build();
 
         let highlight_query = HighlightQuery::default().build();
-        let exclude_query = ExcludeFields::default()
-            .with_fields(vec!["embeddings".to_string()]);
+        let exclude_query = ExcludeFields::default().with_fields(vec!["embeddings".to_string()]);
 
         let query = CommonQuery::builder()
             .query(bool_query)
@@ -93,16 +94,13 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
 
         let sort_queries = vec![serde_json::to_value(sort_query).unwrap()];
 
-        let exclude_query = ExcludeFields::default()
-            .with_fields(vec!["embeddings".to_string()]);
+        let exclude_query = ExcludeFields::default().with_fields(vec!["embeddings".to_string()]);
 
         let bool_query = match query.is_empty() {
-            true => {
-                BoolQuery::default()
-                    .with_match_all(BoolQueryType::Should)
-                    .with_filter(must_filter)
-                    .build()
-            }
+            true => BoolQuery::default()
+                .with_match_all(BoolQueryType::Should)
+                .with_filter(must_filter)
+                .build(),
             false => {
                 let fields = vec!["document_name".to_string(), "document_path".to_string()];
 
@@ -114,9 +112,7 @@ impl SearcherTrait<DocumentPreview> for DocumentPreview {
                     .build()
                     .unwrap();
 
-                let multi_match_query = BoolMultiMatchQuery::default()
-                    .set_item(item_query)
-                    .build();
+                let multi_match_query = BoolMultiMatchQuery::default().set_item(item_query).build();
 
                 let should_query = BoolShouldQuery::default()
                     .append_item(multi_match_query)
@@ -181,7 +177,7 @@ impl SearcherTrait<InfoFolder> for InfoFolder {
         let must_filter = BoolMustFilter::default();
         let must_filter = match s_params.is_show_all() {
             true => must_filter,
-            false => must_filter.with_term("is_system", "false")
+            false => must_filter.with_term("is_system", "false"),
         }
         .with_exists("folder_type")
         .build();

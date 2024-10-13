@@ -1,17 +1,17 @@
 use crate::errors::JsonResponse;
 use crate::errors::{ErrorResponse, Successful};
 use crate::searcher;
-use crate::storage::models::Document;
 use crate::storage::forms::DocTypeQuery;
-use crate::storage::DocumentService;
-use crate::storage::models::Folder;
 use crate::storage::forms::{CreateFolderForm, ShowAllFlag};
+use crate::storage::models::Document;
+use crate::storage::models::Folder;
+use crate::storage::DocumentService;
 use crate::storage::FolderService;
 use crate::swagger::examples::TestExample;
 
 use actix_web::web::{Data, Json, Path, Query};
 use actix_web::{delete, get, post, put};
-use actix_web::{Scope, web};
+use actix_web::{web, Scope};
 use serde_json::Value;
 
 type FolderContext = Data<Box<dyn FolderService>>;
@@ -73,7 +73,10 @@ pub fn build_scope() -> Scope {
     )
 )]
 #[get("/folders")]
-async fn get_folders(cxt: FolderContext, show_all: Query<ShowAllFlag>) -> JsonResponse<Vec<Folder>> {
+async fn get_folders(
+    cxt: FolderContext,
+    show_all: Query<ShowAllFlag>,
+) -> JsonResponse<Vec<Folder>> {
     let client = cxt.get_ref();
     let show_all_flag = show_all.0.flag();
     let folders = client.get_all_folders(show_all_flag).await?;
@@ -179,7 +182,10 @@ async fn get_folder(cxt: FolderContext, path: Path<String>) -> JsonResponse<Fold
     )
 )]
 #[put("/folders/{folder_id}")]
-async fn create_folder(cxt: FolderContext, form: Json<CreateFolderForm>) -> JsonResponse<Successful> {
+async fn create_folder(
+    cxt: FolderContext,
+    form: Json<CreateFolderForm>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let folder_form = form.0;
     let status = client.create_folder(&folder_form).await?;
@@ -366,7 +372,10 @@ async fn create_document(
     )
 )]
 #[delete("/folders/{folder_id}/documents/{document_id}")]
-async fn delete_document(cxt: DocumentContext, path: Path<(String, String)>) -> JsonResponse<Successful> {
+async fn delete_document(
+    cxt: DocumentContext,
+    path: Path<(String, String)>,
+) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
     let status = client

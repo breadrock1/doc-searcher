@@ -25,8 +25,7 @@ impl SearcherService for ElasticClient {
         let folders = s_params.get_folders(true);
         let indexes = folders.split(',').collect::<Vec<&str>>();
         let paginated =
-            s_helper::search_all::<Document>(&elastic, s_params, indexes.as_slice())
-                .await?;
+            s_helper::search_all::<Document>(&elastic, s_params, indexes.as_slice()).await?;
         Ok(helper::to_unified_pag(paginated, doc_type))
     }
     async fn search_fulltext(
@@ -52,8 +51,7 @@ impl SearcherService for ElasticClient {
         let folders = s_params.get_folders(true);
         let indexes = folders.split(',').collect::<Vec<&str>>();
         let paginated =
-            s_helper::search::<DocumentVectors>(&elastic, s_params, indexes.as_slice())
-                .await?;
+            s_helper::search::<DocumentVectors>(&elastic, s_params, indexes.as_slice()).await?;
 
         match doc_type {
             DocumentType::GroupedVectors => Ok(helper::vec_to_grouped_value(paginated)),

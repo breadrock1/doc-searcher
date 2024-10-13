@@ -1,14 +1,14 @@
-use crate::errors::{Successful, WebErrorEntity, WebError, WebResult};
+use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
 use crate::searcher::elastic::helper as s_helper;
 use crate::searcher::models::SearchParams;
 use crate::searcher::SearcherTrait;
-use crate::storage::DocumentsTrait;
-use crate::storage::elastic::schema::{DocumentSchema, DocumentVectorSchema};
 use crate::storage::elastic::schema::InfoFolderSchema;
+use crate::storage::elastic::schema::{DocumentSchema, DocumentVectorSchema};
 use crate::storage::elastic::store::StoreTrait;
-use crate::storage::models::Document;
-use crate::storage::models::{Folder, INFO_FOLDER_ID, InfoFolder};
 use crate::storage::forms::{CreateFolderForm, FolderType};
+use crate::storage::models::Document;
+use crate::storage::models::{Folder, InfoFolder, INFO_FOLDER_ID};
+use crate::storage::DocumentsTrait;
 
 use elasticsearch::http::response::Response;
 use elasticsearch::params::Refresh;
@@ -86,7 +86,10 @@ pub async fn update_document(
     s_helper::parse_elastic_response(response).await
 }
 
-pub async fn create_index(elastic: &Elasticsearch, folder_form: &CreateFolderForm) -> WebResult<Response> {
+pub async fn create_index(
+    elastic: &Elasticsearch,
+    folder_form: &CreateFolderForm,
+) -> WebResult<Response> {
     let folder_id = folder_form.folder_id();
     let folder_type = folder_form.folder_type();
     let folder_schema = create_folder_schema(folder_type);

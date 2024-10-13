@@ -1,9 +1,9 @@
+use crate::errors::{Successful, WebResult};
 use crate::storage::elastic::helper as d_helper;
 use crate::storage::models::Document;
-use crate::storage::models::OcrMetadata;
 use crate::storage::models::DocumentPreview;
+use crate::storage::models::OcrMetadata;
 use crate::storage::DocumentsTrait;
-use crate::errors::{Successful, WebResult};
 
 use chrono::Utc;
 use elasticsearch::{Elasticsearch, GetParts};

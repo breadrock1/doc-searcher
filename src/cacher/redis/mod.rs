@@ -28,7 +28,7 @@ impl RedisClient {
 #[derive(CopyGetters)]
 pub struct RedisOptions {
     #[getset(get_copy = "pub")]
-    expire: u64
+    expire: u64,
 }
 
 impl From<&CacherConfig> for RedisOptions {
@@ -56,10 +56,10 @@ impl Connectable for RedisClient {
 }
 
 #[async_trait::async_trait]
-impl <K, V> CacherService<K, V> for RedisClient
+impl<K, V> CacherService<K, V> for RedisClient
 where
     K: redis::ToRedisArgs + Sync,
-    V: redis::ToRedisArgs + redis::FromRedisValue + Sync
+    V: redis::ToRedisArgs + redis::FromRedisValue + Sync,
 {
     async fn insert(&self, key: &K, value: &V) {
         let expired_secs = self.options().expire();

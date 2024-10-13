@@ -1,5 +1,5 @@
-use crate::storage::forms::DocumentType;
 use crate::searcher::models::SearchParams;
+use crate::storage::forms::DocumentType;
 
 use derive_builder::Builder;
 use serde_derive::{Deserialize, Serialize};

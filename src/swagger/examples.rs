@@ -1,12 +1,14 @@
-use crate::searcher::forms::{AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SemanticParams};
+use crate::searcher::forms::{
+    AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SemanticParams,
+};
 use crate::searcher::models::{Paginated, SearchParams};
-use crate::storage::models::{Document, DocumentBuilder, DocumentPreview, DocumentVectors};
-use crate::storage::models::{Artifacts, EmbeddingsVector, GroupValue, OcrMetadata};
-use crate::storage::DocumentsTrait;
 use crate::storage::forms::{CreateFolderForm, FolderType};
 use crate::storage::models::Folder;
+use crate::storage::models::{Artifacts, EmbeddingsVector, GroupValue, OcrMetadata};
+use crate::storage::models::{Document, DocumentBuilder, DocumentPreview, DocumentVectors};
+use crate::storage::DocumentsTrait;
 
-use chrono::{Datelike, DateTime, NaiveDateTime, Timelike, Utc};
+use chrono::{DateTime, Datelike, NaiveDateTime, Timelike, Utc};
 
 const TEST_CLUSTER_ID: &str = "d93df49fa6ff";
 
@@ -147,7 +149,6 @@ impl TestExample<Document> for Document {
     }
 }
 
-
 impl TestExample<DocumentPreview> for DocumentPreview {
     fn test_example(_val: Option<&str>) -> DocumentPreview {
         let document = Document::test_example(None);
@@ -179,7 +180,6 @@ where
         Paginated::new_with_id(vec![T::test_example(None)], PAGINATE_HASH_ID.to_string())
     }
 }
-
 
 impl TestExample<PaginateNextForm> for PaginateNextForm {
     fn test_example(_value: Option<&str>) -> PaginateNextForm {
@@ -271,6 +271,5 @@ impl TestExample<SemanticParams> for SemanticParams {
             .scroll_lifetime(SEARCH_SCROLL_LIFETIME.to_string())
             .build()
             .unwrap()
-
     }
 }

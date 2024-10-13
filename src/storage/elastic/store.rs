@@ -1,7 +1,7 @@
-use crate::storage::models::InfoFolder;
 use crate::storage::models::Document;
 use crate::storage::models::DocumentPreview;
 use crate::storage::models::DocumentVectors;
+use crate::storage::models::InfoFolder;
 use crate::storage::DocumentsTrait;
 
 use elasticsearch::http::request::JsonBody;

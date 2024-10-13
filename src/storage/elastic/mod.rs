@@ -11,11 +11,11 @@ use crate::storage::elastic::helper as d_helper;
 use crate::storage::elastic::update::UpdateTrait;
 use crate::storage::forms::CreateFolderForm;
 use crate::storage::forms::DocumentType;
-use crate::storage::models::Folder;
-use crate::storage::models::InfoFolder;
 use crate::storage::models::Document;
 use crate::storage::models::DocumentPreview;
 use crate::storage::models::DocumentVectors;
+use crate::storage::models::Folder;
+use crate::storage::models::InfoFolder;
 use crate::storage::DocumentService;
 use crate::storage::FolderService;
 
@@ -32,12 +32,8 @@ impl FolderService for ElasticClient {
     async fn get_all_folders(&self, show_all: bool) -> WebResult<Vec<Folder>> {
         let es_client = self.es_client();
         let elastic = es_client.read().await;
-        let response = s_helper::send_elrequest(
-            &elastic,
-            Method::Get,
-            None,
-            CAT_INDICES_URL
-        ).await?;
+        let response =
+            s_helper::send_elrequest(&elastic, Method::Get, None, CAT_INDICES_URL).await?;
 
         let folders = response.json::<Vec<Folder>>().await?;
         f_helper::filter_folders(&elastic, folders, show_all).await

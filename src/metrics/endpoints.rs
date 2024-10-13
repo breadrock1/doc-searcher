@@ -1,7 +1,7 @@
 use crate::errors::{ErrorResponse, JsonResponse, Successful};
 
-use actix_web::{get, Scope, web};
 use actix_web::web::Json;
+use actix_web::{get, web, Scope};
 
 pub fn build_scope() -> Scope {
     web::scope("/metrics").service(metrics)

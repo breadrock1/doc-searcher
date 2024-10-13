@@ -53,7 +53,8 @@ impl EmbeddingsService for EmbeddingsClient {
     async fn load_from_text(&self, text: &str) -> WebResult<Vec<f64>> {
         let client_addr = self.address();
         let target_url = format!("{client_addr}{NATIVE_SERVICE_URL}");
-        let response = self.client()
+        let response = self
+            .client()
             .clone()
             .post(target_url)
             .json(&json!({
