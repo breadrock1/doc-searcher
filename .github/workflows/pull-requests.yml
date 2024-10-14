@@ -33,6 +33,7 @@ jobs:
 
   clippy:
     runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       - uses: actions/checkout@v4
       - name: Install clippy
@@ -52,8 +53,9 @@ jobs:
 
   build-platforms:
     if: github.event_name == 'push'
-    needs: [test]
     runs-on: ubuntu-latest
+    permissions: write-all
+    needs: [test]
     strategy:
       matrix:
         rust-target: [
