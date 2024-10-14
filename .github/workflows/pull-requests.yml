@@ -51,9 +51,8 @@ jobs:
       - name: Test
         run: cargo test --all --verbose
 
-  choose-platforms:
-    runs-on: ubuntu-latest
-    needs: [test]
+  build-platforms:
+    if: github.event_name == 'push'
     strategy:
       matrix:
         platform:
@@ -69,11 +68,9 @@ jobs:
             runs-on: macOS-latest
             target: x86_64-apple-darwin
 
-  build-platforms:
-    if: github.event_name == 'push'
     runs-on: ${{ matrix.platform.runs-on }}
     permissions: write-all
-    needs: [choose-platforms]
+    needs: [test]
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
