@@ -48,6 +48,7 @@ impl From<FulltextParams> for SearchParams {
             .scroll_lifetime(value.scroll_lifetime)
             .knn_amount(None)
             .knn_candidates(None)
+            .show_all(None)
             .build()
             .unwrap()
     }
@@ -169,7 +170,7 @@ impl SearchQuery {
     }
 }
 
-#[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema)]
+#[derive(Builder, Debug, Deserialize, Serialize, IntoParams, ToSchema)]
 pub struct PaginateNextForm {
     #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     scroll_id: String,

@@ -118,7 +118,7 @@ pub async fn search<T>(
     indexes: &[&str],
 ) -> Result<Paginated<Vec<T>>, WebError>
 where
-    T: DocumentsTrait + SearcherTrait<T>,
+    T: DocumentsTrait + SearcherTrait<T> + serde::Serialize,
 {
     let body_value = T::build_query(s_params).await;
     let response = send_search_request(elastic, s_params, &body_value, indexes).await?;
@@ -137,7 +137,7 @@ pub async fn search_all<T>(
     indexes: &[&str],
 ) -> Result<Paginated<Vec<T>>, WebError>
 where
-    T: DocumentsTrait + SearcherTrait<T>,
+    T: DocumentsTrait + SearcherTrait<T> + serde::Serialize,
 {
     let body_value = DocumentPreview::build_query(s_params).await;
     let response = send_search_request(elastic, s_params, &body_value, indexes).await?;
@@ -171,7 +171,7 @@ pub async fn send_search_request(
 
 pub async fn extract_elastic_response<T>(response: Response) -> Paginated<Vec<T>>
 where
-    T: DocumentsTrait + SearcherTrait<T>,
+    T: DocumentsTrait + SearcherTrait<T> + serde::Serialize,
 {
     let common_object = response.json::<Value>().await.unwrap();
     let document_json = &common_object[&"hits"][&"hits"];
