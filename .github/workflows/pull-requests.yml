@@ -1,7 +1,9 @@
 name: Pull Request Actions
 
 on:
-  pull_request_target:
+  pull_request:
+    branches:
+      - master
     types: [ assigned, opened, synchronize ]
 
 env:
@@ -11,30 +13,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Build project
+      - uses: actions/checkout@v2
+      - name: Build
         run: cargo build --verbose
 
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+      - name: Get branch name
+        run: echo "Branch name is ${{ github.head_ref }}"
       - name: Fmt
         run: cargo fmt --all --verbose --check
 
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - name: Install clippy
         run: rustup component add clippy
-      - name: Clippy
-        run: cargo clippy --all
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
 
   test:
-    needs: [build, fmt]
+    needs: [build, clippy, fmt]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - name: Test
         run: cargo test --all --verbose
