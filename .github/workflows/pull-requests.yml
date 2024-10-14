@@ -52,6 +52,7 @@ jobs:
 
   build-platforms:
     if: github.event_name == 'push'
+    needs: [test]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -68,4 +69,4 @@ jobs:
       - name: Add rustup target ${{ matrix.rust-target }}
         run: rustup target add ${{ matrix.rust-target }}
       - name: Build app for ${{ matrix.rust-target }}
-        run: cargo build --release --target ${{ matrix.rust-target }} Cargo.toml
+        run: cargo build --release --target ${{ matrix.rust-target }}
