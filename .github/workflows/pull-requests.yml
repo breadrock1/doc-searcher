@@ -1,8 +1,9 @@
 name: Pull Request Actions
 
 on:
-  pull_request_target:
-    types: [ assigned, opened, synchronize ]
+  pull_request:
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -11,21 +12,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build
         run: cargo build --verbose
 
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Test
+        run: git status
       - name: Fmt
         run: cargo fmt --all --verbose --check
 
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install clippy
         run: rustup component add clippy
       - uses: actions-rs/clippy-check@v1
@@ -37,6 +40,6 @@ jobs:
     needs: [build, clippy, fmt]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Test
         run: cargo test --all --verbose
