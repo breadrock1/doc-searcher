@@ -1,6 +1,7 @@
 use serde_derive::Serialize;
 use serde_json::{json, Value};
 
+#[allow(dead_code)]
 trait MustFilterItemTrait {}
 impl MustFilterItemTrait for TermFilterItem {}
 impl MustFilterItemTrait for RangeFilterItem {}
