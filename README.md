@@ -1,3 +1,11 @@
+[![Pull Request Actions](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-requests.yml/badge.svg)](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-requests.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/breadrock1/doc-searcher/pull-requests.yml?branch=master&event=push)](https://img.shields.io/github/actions/workflow/status/breadrock1/doc-searcher/pull-requests.yml?branch=master&event=push)
+
+
+[![Target - Linux](https://img.shields.io/badge/OS-Linux-blue?logo=linux&logoColor=white)](https://www.linux.org/ "Go to Linux homepage")
+[![Target - MacOS](https://img.shields.io/badge/OS-MacOS-blue?logo=linux&logoColor=white)](https://www.apple.com/ "Go to Apple homepage")
+[![Target - Windows](https://img.shields.io/badge/OS-Windows-blue?logo=linux&logoColor=white)](https://www.microsoft.com/ "Go to Apple homepage")
+
 # Doc-Searcher
 
 Doc-Searcher is a simple and flexible document search application, leveraging the capabilities of Rust and Elasticsearch (by default)
@@ -8,7 +16,6 @@ The main goal - implement simple but powerful system of storing and indexing doc
 I decided to use elasticsearch as default searching engine, but you may use own solutions by implementing several async traits
 for Tantivy, QDrant or own solution:
 
- - ClusterService   - API (CRUD) of cluster nodes of search service;
  - FolderService    - API (CRUD) of indexed folders to store documents; 
  - DocumentService  - API (CRUD) of documents stored into folders; 
  - WatcherService   - API of doc-notifier service interactions;
@@ -41,14 +48,19 @@ These instructions will get you a copy of the project up and running on your loc
 ### Installation
 
 1. Clone the repository
-2. Run `cargo install --release --features enable-dotenv` to build project
-3. Setting up `.env` file
+2. Run `cargo install --path .` to build project
+3. Setting up `.env` file with services creds
 4. Run `cargo run --bin doc-searcher-init` to init elasticsearch schemas
 4. Run `cargo run --bin doc-searcher-run` to launch service
 
 ### Features of project
 
 Features to parse and store documents localy from current service (Not stable):
-- enable-dotenv   : enable parsing service options from .env file.
+- enable-cacher   : enable cacher service like redis oe other custom implementation;
 
 default = []
+
+[![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
+
+[![stars - doc-searcher](https://img.shields.io/github/stars/breadrock1/doc-searcher?style=social)](https://github.com/breadrock1/doc-searcher)
+[![forks - doc-searcher](https://img.shields.io/github/forks/breadrock1/doc-searcher?style=social)](https://github.com/breadrock1/doc-searcher)
