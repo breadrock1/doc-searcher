@@ -8,8 +8,8 @@ use crate::Connectable;
 
 use getset::CopyGetters;
 use redis::{AsyncCommands, Client, RedisError, RedisResult};
-use std::sync::Arc;
 use serde_json::Value;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub type SearchParamsCached = Box<dyn CacherService<SearchParams, Paginated<Vec<Value>>>>;

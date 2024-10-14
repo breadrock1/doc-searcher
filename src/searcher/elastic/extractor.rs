@@ -2,11 +2,7 @@ use crate::errors::WebError;
 use crate::searcher::models::SearchParams;
 use crate::searcher::SearcherTrait;
 use crate::storage::models::{
-    Document,
-    DocumentPreview,
-    DocumentVectors,
-    HighlightEntity,
-    InfoFolder,
+    Document, DocumentPreview, DocumentVectors, HighlightEntity, InfoFolder,
 };
 
 use elquery::exclude::ExcludeFields;

@@ -4,11 +4,7 @@ use crate::cacher::CacherService;
 use crate::embeddings::EmbeddingsService;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
 use crate::searcher::forms::{
-    AllRecordsParams,
-    DeletePaginationsForm,
-    FulltextParams,
-    PaginateNextForm,
-    SearchQuery,
+    AllRecordsParams, DeletePaginationsForm, FulltextParams, PaginateNextForm, SearchQuery,
     SemanticParams,
 };
 use crate::searcher::models::{Paginated, SearchParams};
@@ -87,8 +83,7 @@ pub fn build_scope() -> Scope {
 #[post("/fulltext")]
 async fn search_fulltext(
     cxt: SearchContext,
-    #[cfg(feature = "enable-cacher")]
-    cacher: CacherSearchContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherSearchContext,
     form: Json<FulltextParams>,
     document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
@@ -159,8 +154,7 @@ async fn search_fulltext(
 #[post("/semantic")]
 async fn search_semantic(
     cxt: SearchContext,
-    #[cfg(feature = "enable-cacher")]
-    cacher: CacherSearchContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherSearchContext,
     em_cxt: EmbeddingsContext,
     form: Json<SemanticParams>,
     document_type: Query<SearchQuery>,
@@ -240,8 +234,7 @@ async fn search_semantic(
 #[post("/folders/{folder_id}/documents")]
 async fn get_index_records(
     cxt: SearchContext,
-    #[cfg(feature = "enable-cacher")]
-    cacher: CacherSearchContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherSearchContext,
     form: Json<AllRecordsParams>,
     document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
@@ -368,8 +361,7 @@ async fn delete_paginate_sessions(
 #[post("/paginate/next")]
 async fn paginate_next(
     cxt: PaginateContext,
-    #[cfg(feature = "enable-cacher")]
-    cacher: CacherPaginateContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherPaginateContext,
     form: Json<PaginateNextForm>,
     document_type: Query<DocumentType>,
 ) -> PaginateResponse<Vec<Value>> {

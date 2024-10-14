@@ -1,6 +1,6 @@
-use crate::storage::models::Document;
 use crate::searcher::forms::PaginateNextForm;
 use crate::searcher::models::{Paginated, SearchParams};
+use crate::storage::models::Document;
 
 use redis::{RedisError, RedisResult, RedisWrite, Value};
 use serde::ser::Error;
@@ -8,7 +8,7 @@ use serde::ser::Error;
 impl redis::ToRedisArgs for PaginateNextForm {
     fn write_redis_args<W>(&self, out: &mut W)
     where
-        W: ?Sized + RedisWrite
+        W: ?Sized + RedisWrite,
     {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
@@ -22,7 +22,7 @@ impl redis::ToRedisArgs for PaginateNextForm {
 impl redis::ToRedisArgs for SearchParams {
     fn write_redis_args<W>(&self, out: &mut W)
     where
-        W: ?Sized + RedisWrite
+        W: ?Sized + RedisWrite,
     {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
@@ -36,7 +36,7 @@ impl redis::ToRedisArgs for SearchParams {
 impl redis::ToRedisArgs for Document {
     fn write_redis_args<W>(&self, out: &mut W)
     where
-        W: ?Sized + RedisWrite
+        W: ?Sized + RedisWrite,
     {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
@@ -50,7 +50,7 @@ impl redis::ToRedisArgs for Document {
 impl redis::ToRedisArgs for Paginated<Vec<serde_json::Value>> {
     fn write_redis_args<W>(&self, out: &mut W)
     where
-        W: ?Sized + RedisWrite
+        W: ?Sized + RedisWrite,
     {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
@@ -65,8 +65,7 @@ impl redis::FromRedisValue for Document {
     fn from_redis_value(v: &Value) -> RedisResult<Self> {
         match v {
             Value::BulkString(data) => {
-                serde_json::from_slice::<Document>(data.as_slice())
-                    .map_err(RedisError::from)
+                serde_json::from_slice::<Document>(data.as_slice()).map_err(RedisError::from)
             }
             _ => {
                 let err = serde_json::Error::custom("failed to extract redis value type");

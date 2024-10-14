@@ -58,8 +58,7 @@ async fn main() -> Result<(), anyhow::Error> {
             .app_data(web::Data::new(cacher_search_cxt))
             .app_data(web::Data::new(cacher_paginate_cxt));
 
-        app
-            .wrap(logger)
+        app.wrap(logger)
             .wrap(cors)
             .service(build_metrics_scope())
             .service(build_storage_scope())

@@ -189,10 +189,7 @@ where
         extracted_values.push(extracted);
     }
 
-    let founded_documents = extracted_values
-        .into_iter()
-        .flatten()
-        .collect::<Vec<T>>();
+    let founded_documents = extracted_values.into_iter().flatten().collect::<Vec<T>>();
 
     Paginated::new_with_opt_id(founded_documents, scroll_id)
 }
