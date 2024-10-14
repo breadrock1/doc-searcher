@@ -7,15 +7,12 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Build
         run: cargo build --verbose
 
@@ -23,10 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Check some test
-        run: git
+      - name: Test
+        run: git status
       - name: Fmt
         run: cargo fmt --all --verbose --check
 
@@ -34,8 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Install clippy
         run: rustup component add clippy
       - uses: actions-rs/clippy-check@v1
@@ -48,7 +41,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Test
         run: cargo test --all --verbose
