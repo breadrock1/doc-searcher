@@ -2,6 +2,8 @@ name: Pull Request Actions
 
 on:
   pull_request:
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}"
+          fetch-depth: 0
       - name: Build
         run: cargo build --verbose
 
@@ -21,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}"
+          fetch-depth: 0
       - name: Fmt
         run: cargo fmt --all --verbose --check
 
@@ -30,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}"
+          fetch-depth: 0
       - name: Install clippy
         run: rustup component add clippy
       - uses: actions-rs/clippy-check@v1
@@ -44,6 +46,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}"
+          fetch-depth: 0
       - name: Test
         run: cargo test --all --verbose
