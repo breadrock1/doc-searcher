@@ -174,7 +174,7 @@ impl TestExample<DocumentVectors> for DocumentVectors {
 
 impl<T> TestExample<Paginated<Vec<T>>> for Paginated<Vec<T>>
 where
-    T: DocumentsTrait + TestExample<T>,
+    T: DocumentsTrait + TestExample<T> + serde::Serialize,
 {
     fn test_example(_value: Option<&str>) -> Paginated<Vec<T>> {
         Paginated::new_with_id(vec![T::test_example(None)], PAGINATE_HASH_ID.to_string())

@@ -1,17 +1,23 @@
+mod models;
+
 use crate::cacher::config::CacherConfig;
 use crate::cacher::CacherService;
+use crate::searcher::forms::PaginateNextForm;
+use crate::searcher::models::{Paginated, SearchParams};
 use crate::Connectable;
 
 use getset::CopyGetters;
 use redis::{AsyncCommands, Client, RedisError, RedisResult};
+use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+pub type SearchParamsCached = Box<dyn CacherService<SearchParams, Paginated<Vec<Value>>>>;
+pub type PaginatedCached = Box<dyn CacherService<PaginateNextForm, Paginated<Vec<Value>>>>;
+
 #[derive(Clone, CopyGetters)]
 pub struct RedisClient {
-    // #[getset(get_copy = "pub")]
     options: Arc<RedisOptions>,
-    // #[getset(get_copy = "pub")]
     client: Arc<RwLock<Client>>,
 }
 

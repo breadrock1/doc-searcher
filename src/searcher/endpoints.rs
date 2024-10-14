@@ -1,3 +1,6 @@
+#[cfg(feature = "enable-cacher")]
+use crate::cacher::CacherService;
+
 use crate::embeddings::EmbeddingsService;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
 use crate::searcher::forms::{
@@ -17,6 +20,11 @@ use serde_json::Value;
 type EmbeddingsContext = Data<Box<dyn EmbeddingsService>>;
 type SearchContext = Data<Box<dyn SearcherService>>;
 type PaginateContext = Data<Box<dyn PaginatorService>>;
+
+#[cfg(feature = "enable-cacher")]
+type CacherSearchContext = Data<Box<dyn CacherService<SearchParams, Paginated<Vec<Value>>>>>;
+#[cfg(feature = "enable-cacher")]
+type CacherPaginateContext = Data<Box<dyn CacherService<PaginateNextForm, Paginated<Vec<Value>>>>>;
 
 pub fn build_scope() -> Scope {
     web::scope("/search")
@@ -75,13 +83,25 @@ pub fn build_scope() -> Scope {
 #[post("/fulltext")]
 async fn search_fulltext(
     cxt: SearchContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherSearchContext,
     form: Json<FulltextParams>,
     document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let search_form = SearchParams::from(form.0);
+
+    #[cfg(feature = "enable-cacher")]
+    if let Some(docs) = cacher.load(&search_form).await {
+        tracing::info!("loaded from cache by params: {:?}", &search_form);
+        return Ok(Json(docs));
+    }
+
     let doc_type = document_type.0.get_type();
     let documents = client.search_fulltext(&search_form, &doc_type).await?;
+
+    #[cfg(feature = "enable-cacher")]
+    cacher.insert(&search_form, &documents).await;
+
     Ok(Json(documents))
 }
 
@@ -134,6 +154,7 @@ async fn search_fulltext(
 #[post("/semantic")]
 async fn search_semantic(
     cxt: SearchContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherSearchContext,
     em_cxt: EmbeddingsContext,
     form: Json<SemanticParams>,
     document_type: Query<SearchQuery>,
@@ -145,7 +166,17 @@ async fn search_semantic(
     let query_tokens = em_cxt.load_from_text(search_form.query()).await?;
     search_form.set_tokens(query_tokens);
 
+    #[cfg(feature = "enable-cacher")]
+    if let Some(docs) = cacher.load(&search_form).await {
+        tracing::info!("loaded from cache by params: {:?}", &search_form);
+        return Ok(Json(docs));
+    }
+
     let documents = client.search_semantic(&search_form, &doc_type).await?;
+
+    #[cfg(feature = "enable-cacher")]
+    cacher.insert(&search_form, &documents).await;
+
     Ok(Json(documents))
 }
 
@@ -202,15 +233,27 @@ async fn search_semantic(
 )]
 #[post("/folders/{folder_id}/documents")]
 async fn get_index_records(
-    cxt: Data<Box<dyn SearcherService>>,
+    cxt: SearchContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherSearchContext,
     form: Json<AllRecordsParams>,
     document_type: Query<SearchQuery>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let search_form = SearchParams::from(form.0);
+
+    #[cfg(feature = "enable-cacher")]
+    if let Some(docs) = cacher.load(&search_form).await {
+        tracing::info!("loaded from cache by params: {:?}", &search_form);
+        return Ok(Json(docs));
+    }
+
     let doc_type = document_type.0.get_type();
-    let folder_documents = client.search_records(&search_form, &doc_type).await?;
-    Ok(Json(folder_documents))
+    let documents = client.search_records(&search_form, &doc_type).await?;
+
+    #[cfg(feature = "enable-cacher")]
+    cacher.insert(&search_form, &documents).await;
+
+    Ok(Json(documents))
 }
 
 #[utoipa::path(
@@ -318,11 +361,23 @@ async fn delete_paginate_sessions(
 #[post("/paginate/next")]
 async fn paginate_next(
     cxt: PaginateContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherPaginateContext,
     form: Json<PaginateNextForm>,
     document_type: Query<DocumentType>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let pag_form = form.0;
-    let founded_docs = client.paginate(&pag_form, &document_type).await?;
-    Ok(Json(founded_docs))
+
+    #[cfg(feature = "enable-cacher")]
+    if let Some(docs) = cacher.load(&pag_form).await {
+        tracing::info!("loaded from cache by paginate form: {:?}", &pag_form);
+        return Ok(Json(docs));
+    }
+
+    let documents = client.paginate(&pag_form, &document_type).await?;
+
+    #[cfg(feature = "enable-cacher")]
+    cacher.insert(&pag_form, &documents).await;
+
+    Ok(Json(documents))
 }

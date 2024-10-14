@@ -1,9 +1,17 @@
 name: Pull Request Actions
 
 on:
+  push:
+    branches:
+      - master
+
   pull_request:
     branches:
       - master
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,8 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Test
-        run: git status
       - name: Fmt
         run: cargo fmt --all --verbose --check
 
@@ -43,3 +49,23 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test
         run: cargo test --all --verbose
+
+  build-platforms:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-target: [
+          'x86_64-unknown-linux-gnu',
+          'aarch64-apple-darwin',
+          'x86_64-apple-darwin'
+        ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.rust-target }}
+      - name: Add rustup target ${{ matrix.rust-target }}
+        run: rustup target add ${{ matrix.rust-target }}
+      - name: Build app for ${{ matrix.rust-target }}
+        run: cargo build --release --target ${{ matrix.rust-target }} Cargo.toml

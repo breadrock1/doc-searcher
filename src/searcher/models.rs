@@ -5,7 +5,7 @@ use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Builder, Clone, Deserialize, Serialize, IntoParams, ToSchema, Getters, Setters)]
+#[derive(Builder, Clone, Debug, Deserialize, Serialize, IntoParams, ToSchema, Getters, Setters)]
 pub struct SearchParams {
     #[getset(get = "pub")]
     #[schema(example = "Hello world")]
@@ -128,8 +128,11 @@ impl Default for SearchParams {
     }
 }
 
-#[derive(Serialize, Builder, ToSchema)]
-pub struct Paginated<D> {
+#[derive(Builder, Deserialize, Serialize, ToSchema)]
+pub struct Paginated<D>
+where
+    D: serde::Serialize,
+{
     #[schema(value_type = Paginated<Vec<Document>>)]
     founded: D,
     #[schema(example = "10m")]
@@ -137,7 +140,10 @@ pub struct Paginated<D> {
     scroll_id: Option<String>,
 }
 
-impl<D> Paginated<D> {
+impl<D> Paginated<D>
+where
+    D: serde::Serialize,
+{
     pub fn new(founded: D) -> Self {
         Paginated {
             founded,
