@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Check some test
+        run: cargo --version
       - name: Fmt
         run: cargo fmt --all --verbose --check
 
