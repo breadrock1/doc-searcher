@@ -1,11 +1,11 @@
-use crate::searcher::forms::PaginateNextForm;
-use crate::searcher::models::{Paginated, SearchParams};
+use crate::searcher::forms::{ScrollNextForm, SemanticParams};
+use crate::searcher::models::Paginated;
 use crate::storage::models::Document;
 
 use redis::{RedisError, RedisResult, RedisWrite, Value};
 use serde::ser::Error;
 
-impl redis::ToRedisArgs for PaginateNextForm {
+impl redis::ToRedisArgs for ScrollNextForm {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,
@@ -19,7 +19,7 @@ impl redis::ToRedisArgs for PaginateNextForm {
     }
 }
 
-impl redis::ToRedisArgs for SearchParams {
+impl redis::ToRedisArgs for SemanticParams {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,

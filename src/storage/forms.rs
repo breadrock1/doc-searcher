@@ -1,45 +1,44 @@
-use crate::errors::WebError;
-use crate::storage::models::Document;
-use crate::storage::models::DocumentPreview;
-use crate::storage::models::DocumentVectors;
+use crate::storage::models::FolderType;
 
 use derive_builder::Builder;
-use getset::{CopyGetters, Getters};
+use getset::{CopyGetters, Getters, Setters};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
-#[serde(rename_all = "kebab-case")]
-pub enum FolderType {
-    #[default]
-    #[serde(rename = "document")]
-    Document,
-    #[serde(rename = "vectors")]
-    Vectors,
-    #[serde(rename = "info-folder")]
-    InfoFolder,
+#[derive(Default, Deserialize, IntoParams, ToSchema)]
+pub struct FolderTypeQuery {
+    folder_type: Option<FolderType>,
+}
+
+impl FolderTypeQuery {
+    pub fn folder_type(&self) -> FolderType {
+        self.folder_type.clone().unwrap_or_default()
+    }
 }
 
 #[derive(Builder, Deserialize, Serialize, Getters, CopyGetters, IntoParams, ToSchema)]
+#[getset(get = "pub")]
 pub struct CreateFolderForm {
-    #[getset(get = "pub")]
     #[schema(example = "test-folder")]
     folder_id: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "Test Folder")]
     folder_name: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "preview")]
     folder_type: FolderType,
+
+    #[getset(skip)]
     #[schema(example = false)]
     create_into_watcher: bool,
-    #[getset(get = "pub")]
+
     #[schema(example = "/tmp")]
     location: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "admin")]
     user_id: String,
+
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = false)]
     is_system: bool,
@@ -51,51 +50,87 @@ impl CreateFolderForm {
     }
 }
 
-#[derive(Deserialize, Default, IntoParams, ToSchema)]
+#[derive(Default, Deserialize, IntoParams, ToSchema)]
 pub struct ShowAllFlag {
     show_all: Option<bool>,
 }
 
 impl ShowAllFlag {
-    pub fn flag(&self) -> bool {
+    pub fn show_all(&self) -> bool {
         self.show_all.unwrap_or(false)
     }
 }
 
-#[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
-pub enum DocumentType {
-    #[default]
-    #[serde(rename_all = "kebab-case")]
-    Document,
-    #[serde(rename_all = "kebab-case")]
-    Preview,
-    #[serde(rename_all = "kebab-case")]
-    Vectors,
-    #[serde(rename_all = "kebab-case")]
-    GroupedVectors,
+#[derive(
+    Builder, Debug, Deserialize, Serialize, Getters, CopyGetters, Setters, IntoParams, ToSchema,
+)]
+#[getset(get = "pub")]
+pub struct RetrieveParams {
+    #[schema(example = "Any folder or document name or path")]
+    query: Option<String>,
+
+    #[schema(example = "txt")]
+    document_extension: Option<String>,
+
+    #[getset(skip)]
+    #[schema(example = 0)]
+    document_size_to: Option<i64>,
+
+    #[getset(skip)]
+    #[schema(example = 0)]
+    document_size_from: Option<i64>,
+
+    #[getset(skip)]
+    #[schema(example = "2024-04-26T11:14:55Z")]
+    created_date_to: Option<String>,
+
+    #[getset(skip)]
+    #[schema(example = "2024-04-02T13:51:32Z")]
+    created_date_from: Option<String>,
+
+    #[getset(skip)]
+    #[getset(get_copy = "pub")]
+    #[schema(example = 10)]
+    result_size: i64,
+
+    #[getset(skip)]
+    #[getset(get_copy = "pub")]
+    #[schema(example = 0)]
+    result_offset: i64,
+
+    #[getset(skip)]
+    #[getset(get_copy = "pub", set = "pub")]
+    #[schema(example = true)]
+    is_show_all: bool,
 }
 
-impl DocumentType {
-    pub fn to_value(&self, document: &Document) -> Result<Value, WebError> {
-        match self {
-            DocumentType::Preview => serde_json::to_value(DocumentPreview::from(document)),
-            DocumentType::Vectors => serde_json::to_value(DocumentVectors::from(document)),
-            _ => serde_json::to_value(document),
-        }
-        .map_err(WebError::from)
+impl Default for RetrieveParams {
+    fn default() -> Self {
+        RetrieveParams::builder()
+            .query(None)
+            .document_extension(None)
+            .created_date_to(None)
+            .created_date_from(None)
+            .document_size_to(None)
+            .document_size_from(None)
+            .result_size(25)
+            .result_offset(0)
+            .is_show_all(false)
+            .build()
+            .unwrap()
     }
-    pub fn is_vector_type(&self) -> bool {
-        matches!(self, DocumentType::Vectors)
+}
+
+impl RetrieveParams {
+    pub fn builder() -> RetrieveParamsBuilder {
+        RetrieveParamsBuilder::default()
     }
-}
 
-#[derive(Deserialize, Default, IntoParams, ToSchema)]
-pub struct DocTypeQuery {
-    document_type: Option<DocumentType>,
-}
+    pub fn document_size(&self) -> (Option<i64>, Option<i64>) {
+        (self.document_size_from, self.document_size_to)
+    }
 
-impl DocTypeQuery {
-    pub fn get_type(&self) -> DocumentType {
-        self.document_type.clone().unwrap_or(DocumentType::Document)
+    pub fn document_dates(&self) -> (Option<String>, Option<String>) {
+        (self.created_date_from.clone(), self.created_date_to.clone())
     }
 }

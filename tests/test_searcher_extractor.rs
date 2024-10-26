@@ -1,5 +1,5 @@
-use doc_search::searcher::models::SearchParams;
-use doc_search::searcher::SearcherTrait;
+use doc_search::searcher::models::SemanticParams;
+use doc_search::searcher::SearchQueryBuilder;
 use doc_search::storage::models::{Document, DocumentPreview, DocumentVectors, InfoFolder};
 
 const DOCUMENT_QUERY: &str = "{\"_source\":{\"exclude\":[\"embeddings\"]},\"highlight\":{\"fields\":{\"content\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]}},\"order\":\"\"},\"query\":{\"bool\":{\"filter\":{\"bool\":{\"must\":[{\"range\":{\"document_created\":{\"gte\":\"2024-04-26T11:14:55Z\",\"lte\":\"2025-04-26T11:14:55Z\"}}},{\"range\":{\"document_size\":{\"gte\":0,\"lte\":37000}}},{\"term\":{\"document_extension\":\"txt\"}},{\"term\":{\"document_type\":\"document\"}}]}},\"must\":{\"multi_match\":{\"fields\":[\"content\",\"document_path\"],\"query\":\"Some query\"}}}}}";
@@ -11,7 +11,7 @@ const NON_SYSTEM_RECORDS_QUERY: &str = "{\"query\":{\"bool\":{\"filter\":{\"bool
 #[tokio::test]
 async fn test_document_build_query() -> Result<(), anyhow::Error> {
     let s_params = build_search_params();
-    let build_query = Document::build_query(&s_params).await;
+    let build_query = Document::build_search_query(&s_params).await;
     let query = serde_json::to_string(&build_query)?;
     assert_eq!(DOCUMENT_QUERY, query);
     Ok(())
@@ -29,7 +29,7 @@ async fn test_document_preview_build_query() -> Result<(), anyhow::Error> {
 #[tokio::test]
 async fn test_document_vectors_build_query() -> Result<(), anyhow::Error> {
     let s_params = build_search_params();
-    let build_query = DocumentVectors::build_query(&s_params).await;
+    let build_query = DocumentVectors::build_search_query(&s_params).await;
     let query = serde_json::to_string(&build_query)?;
     assert_eq!(SEMANTIC_QUERY, query);
     Ok(())
@@ -56,8 +56,8 @@ async fn test_info_folder_build_query() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn build_search_params() -> SearchParams {
-    SearchParams::builder()
+fn build_search_params() -> SemanticParams {
+    SemanticParams::builder()
         .query("Some query".to_string())
         .query_tokens(Some(Vec::default()))
         .folder_ids(Some("test-folder-id".to_string()))

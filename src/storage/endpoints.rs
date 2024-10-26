@@ -1,10 +1,12 @@
+#[cfg(feature = "enable-cacher")]
+use crate::cacher::CacherService;
+
 use crate::errors::JsonResponse;
 use crate::errors::{ErrorResponse, Successful};
-use crate::searcher;
-use crate::storage::forms::DocTypeQuery;
-use crate::storage::forms::{CreateFolderForm, ShowAllFlag};
-use crate::storage::models::Document;
-use crate::storage::models::Folder;
+use crate::searcher::models::Paginated;
+use crate::storage::forms::FolderTypeQuery;
+use crate::storage::forms::{CreateFolderForm, RetrieveParams, ShowAllFlag};
+use crate::storage::models::{Document, Folder};
 use crate::storage::DocumentService;
 use crate::storage::FolderService;
 use crate::swagger::examples::TestExample;
@@ -14,8 +16,10 @@ use actix_web::{delete, get, post, put};
 use actix_web::{web, Scope};
 use serde_json::Value;
 
-type FolderContext = Data<Box<dyn FolderService>>;
+#[cfg(feature = "enable-cacher")]
+type CacherRetrieveContext = Data<Box<dyn CacherService<RetrieveParams, Vec<Value>>>>;
 type DocumentContext = Data<Box<dyn DocumentService>>;
+type FolderContext = Data<Box<dyn FolderService>>;
 
 pub fn build_scope() -> Scope {
     web::scope("/storage")
@@ -24,10 +28,10 @@ pub fn build_scope() -> Scope {
         .service(create_folder)
         .service(delete_folder)
         .service(get_document)
+        .service(get_documents)
         .service(create_document)
         .service(delete_document)
         .service(update_document)
-        .service(searcher::endpoints::get_index_records)
 }
 
 #[utoipa::path(
@@ -39,7 +43,7 @@ pub fn build_scope() -> Scope {
             "show_all", Query,
             description = "Show all folders",
             example = "true",
-        )
+        ),
     ),
     responses(
         (
@@ -52,24 +56,14 @@ pub fn build_scope() -> Scope {
             status = 400,
             description = "Failed while getting all folders",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while getting folders".to_string(),
-                attachments: None,
-            }),
+            example = json!(ErrorResponse::test_example(Some("Failed while getting all folders"))),
         ),
         (
             status = 503,
             description = "Server does not available",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
     )
 )]
 #[get("/folders")]
@@ -78,8 +72,9 @@ async fn get_folders(
     show_all: Query<ShowAllFlag>,
 ) -> JsonResponse<Vec<Folder>> {
     let client = cxt.get_ref();
-    let show_all_flag = show_all.0.flag();
-    let folders = client.get_all_folders(show_all_flag).await?;
+    let show_all_flag = show_all.0.show_all();
+    let folders = client.get_folders(show_all_flag).await?;
+
     Ok(Json(folders))
 }
 
@@ -92,96 +87,67 @@ async fn get_folders(
             "folder_id" = &str,
             description = "Passed folder id to get details",
             example = "test-folder",
-        )
+        ),
     ),
     responses(
         (
             status = 200,
-            description = "Successful",
+            description = "Returned Folder structure",
             body = Folder,
-            example = json!(Folder::test_example(None))
+            example = json!(Folder::test_example(None)),
         ),
         (
             status = 400,
             description = "Failed while getting folder by id",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while getting folder by id".to_string(),
-                attachments: None,
-            })
+            example = json!(ErrorResponse::test_example(Some("Failed while getting folder by id"))),
         ),
         (
             status = 503,
             description = "Server does not available",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
     )
 )]
 #[get("/folders/{folder_id}")]
 async fn get_folder(cxt: FolderContext, path: Path<String>) -> JsonResponse<Folder> {
     let client = cxt.get_ref();
     let folder = client.get_folder(path.as_ref()).await?;
+
     Ok(Json(folder))
 }
 
 #[utoipa::path(
     put,
-    path = "/storage/folders/{folder_id}",
+    path = "/storage/folders/create",
     tag = "Folders",
-    params(
-        (
-            "folder_id" = &str,
-            description = "Passed folder id to get details",
-            example = "test-folder",
-        )
-    ),
     request_body(
         content = CreateFolderForm,
-        example = json!(CreateFolderForm::test_example(None))
+        example = json!(CreateFolderForm::test_example(None)),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
             body = Successful,
-            example = json!(Successful {
-                code: 200,
-                message: "Done".to_string(),
-            }),
+            example = json!(Successful::default()),
         ),
         (
             status = 400,
             description = "Failed while creating new folder",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while creating new folder".to_string(),
-                attachments: None,
-            }),
+            example = json!(ErrorResponse::test_example(Some("Failed while creating new folder"))),
         ),
         (
             status = 503,
             description = "Server does not available",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
     )
 )]
-#[put("/folders/{folder_id}")]
+#[put("/folders/create")]
 async fn create_folder(
     cxt: FolderContext,
     form: Json<CreateFolderForm>,
@@ -189,6 +155,7 @@ async fn create_folder(
     let client = cxt.get_ref();
     let folder_form = form.0;
     let status = client.create_folder(&folder_form).await?;
+
     Ok(Json(status))
 }
 
@@ -201,40 +168,27 @@ async fn create_folder(
             "folder_id" = &str,
             description = "Passed folder id to get details",
             example = "test-folder",
-        )
+        ),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
             body = Successful,
-            example = json!(Successful {
-                code: 200,
-                message: "Done".to_string(),
-            }),
+            example = json!(Successful::default()),
         ),
         (
             status = 400,
             description = "Failed while deleting folder",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while deleting folder".to_string(),
-                attachments: None,
-            }),
+            example = json!(ErrorResponse::test_example(Some("Failed while deleting folder"))),
         ),
         (
             status = 503,
             description = "Server does not available",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
     )
 )]
 #[delete("/folders/{folder_id}")]
@@ -242,145 +196,7 @@ async fn delete_folder(cxt: FolderContext, path: Path<String>) -> JsonResponse<S
     let client = cxt.get_ref();
     let folder_id = path.as_str();
     let status = client.delete_folder(folder_id).await?;
-    Ok(Json(status))
-}
 
-#[utoipa::path(
-    put,
-    path = "/storage/folders/{folder_id}/documents/{document_id}",
-    tag = "Documents",
-    params(
-        (
-            "folder_id" = &str,
-            description = "Passed folder id to get details",
-            example = "test-folder",
-        ),
-        (
-            "document_id" = &str,
-            description = "Document identifier to get",
-            example = "98ac9896be35f47fb8442580cd9839b4",
-        ),
-        (
-            "document_type", Query,
-            description = "Document type to convert",
-            example = "document"
-        )
-    ),
-    request_body(
-        content = Document,
-        example = json!(Document::test_example(None)),
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = Successful,
-            example = json!(Successful {
-                code: 200,
-                message: "Done".to_string(),
-            })
-        ),
-        (
-            status = 400,
-            description = "Failed while creating document",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while creating document".to_string(),
-                attachments: None,
-            })
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
-    )
-)]
-#[put("/folders/{folder_id}/documents/{document_id}")]
-async fn create_document(
-    cxt: DocumentContext,
-    form: Json<Document>,
-    path: Path<(String, String)>,
-    document_type: Query<DocTypeQuery>,
-) -> JsonResponse<Successful> {
-    let client = cxt.get_ref();
-    let doc_form = form.0;
-    let (folder_id, _) = path.as_ref();
-    let doc_type = document_type.0.get_type();
-    let status = client
-        .create_document(folder_id.as_str(), &doc_form, &doc_type)
-        .await?;
-    Ok(Json(status))
-}
-
-#[utoipa::path(
-    delete,
-    path = "/storage/folders/{folder_id}/documents/{document_id}",
-    tag = "Documents",
-    params(
-        (
-            "folder_id" = &str,
-            description = "Folder id where documents is stored",
-            example = "test-folder",
-        ),
-        (
-            "document_id" = &str,
-            description = "Document identifier to get",
-            example = "98ac9896be35f47fb8442580cd9839b4",
-        )
-    ),
-    responses(
-        (
-            status = 200,
-            description = "Successful",
-            body = Successful,
-            example = json!(Successful {
-                code: 200,
-                message: "Done".to_string(),
-            })
-        ),
-        (
-            status = 400,
-            description = "Failed while deleting documents",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while deleting document".to_string(),
-                attachments: None,
-            })
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
-    )
-)]
-#[delete("/folders/{folder_id}/documents/{document_id}")]
-async fn delete_document(
-    cxt: DocumentContext,
-    path: Path<(String, String)>,
-) -> JsonResponse<Successful> {
-    let client = cxt.get_ref();
-    let (folder_id, doc_id) = path.as_ref();
-    let status = client
-        .delete_document(folder_id.as_str(), doc_id.as_str())
-        .await?;
     Ok(Json(status))
 }
 
@@ -400,54 +216,153 @@ async fn delete_document(
             example = "<document-id>",
         ),
         (
-            "document_type", Query,
-            description = "Document type to convert",
-            example = "document"
-        )
+            "folder_type", Query,
+            description = "Folder type to get",
+            example = "document",
+        ),
     ),
     responses(
         (
             status = 200,
-            description = "Successful",
+            description = "Returned document by id",
             body = Document,
-            example = json!(Document::test_example(None))
+            example = json!(Document::test_example(None)),
         ),
         (
             status = 400,
             description = "Failed while getting document",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while getting document".to_string(),
-                attachments: None,
-            })
+            example = json!(ErrorResponse::test_example(Some("Failed while getting document"))),
         ),
         (
             status = 503,
             description = "Server does not available",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
     )
 )]
 #[get("/folders/{folder_id}/documents/{document_id}")]
 async fn get_document(
     cxt: DocumentContext,
     path: Path<(String, String)>,
-    document_type: Query<DocTypeQuery>,
+    folder_type: Query<FolderTypeQuery>,
 ) -> JsonResponse<Value> {
     let client = cxt.get_ref();
     let (folder_id, doc_id) = path.as_ref();
-    let document = client.get_document(folder_id.as_str(), doc_id).await?;
-    let doc_type = document_type.0.get_type();
-    let value = doc_type.to_value(&document)?;
-    Ok(Json(value))
+    let folder_type = folder_type.0.folder_type();
+    let document = client.get_document(folder_id, doc_id, &folder_type).await?;
+
+    Ok(Json(document))
+}
+
+#[utoipa::path(
+    put,
+    path = "/storage/folders/{folder_id}/documents/create",
+    tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Passed folder id to get details",
+            example = "test-folder",
+        ),
+        (
+            "folder_type", Query,
+            description = "Folder type to create document",
+            example = "document",
+        ),
+    ),
+    request_body(
+        content = Document,
+        example = json!(Document::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = Successful,
+            example = json!(Successful::default()),
+        ),
+        (
+            status = 400,
+            description = "Failed while creating document",
+            body = ErrorResponse,
+            example = json!(ErrorResponse::test_example(Some("Failed while creating document"))),
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
+    )
+)]
+#[put("/folders/{folder_id}/documents/create")]
+async fn create_document(
+    cxt: DocumentContext,
+    form: Json<Document>,
+    path: Path<String>,
+    folder_type: Query<FolderTypeQuery>,
+) -> JsonResponse<Successful> {
+    let doc_form = form.0;
+    let folder_id = path.as_ref();
+    let folder_type = folder_type.0.folder_type();
+
+    let client = cxt.get_ref();
+    let status = client
+        .create_document(folder_id, &doc_form, &folder_type)
+        .await?;
+
+    Ok(Json(status))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/storage/folders/{folder_id}/documents/{document_id}",
+    tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Folder id where documents is stored",
+            example = "test-folder",
+        ),
+        (
+            "document_id" = &str,
+            description = "Document identifier to get",
+            example = "98ac9896be35f47fb8442580cd9839b4",
+        ),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Deleted document by id",
+            body = Successful,
+            example = json!(Successful::default()),
+        ),
+        (
+            status = 400,
+            description = "Failed while deleting documents",
+            body = ErrorResponse,
+            example = json!(ErrorResponse::test_example(Some("Failed while deleting documents"))),
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
+    )
+)]
+#[delete("/folders/{folder_id}/documents/{document_id}")]
+async fn delete_document(
+    cxt: DocumentContext,
+    path: Path<(String, String)>,
+) -> JsonResponse<Successful> {
+    let client = cxt.get_ref();
+    let (folder_id, doc_id) = path.as_ref();
+    let status = client.delete_document(folder_id, doc_id).await?;
+
+    Ok(Json(status))
 }
 
 #[utoipa::path(
@@ -466,10 +381,10 @@ async fn get_document(
             example = "98ac9896be35f47fb8442580cd9839b4",
         ),
         (
-            "document_type", Query,
-            description = "Document type to convert",
-            example = "document"
-        )
+            "folder_type", Query,
+            description = "Folder type to update document",
+            example = "document",
+        ),
     ),
     request_body(
         content = Document,
@@ -480,33 +395,20 @@ async fn get_document(
             status = 200,
             description = "Successful",
             body = Successful,
-            example = json!(Successful {
-                code: 200,
-                message: "Done".to_string(),
-            })
+            example = json!(Successful::default()),
         ),
         (
             status = 400,
             description = "Failed while updating document",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 400,
-                error: "Bad Request".to_string(),
-                message: "Failed while updating document".to_string(),
-                attachments: None,
-            })
+            example = json!(ErrorResponse::test_example(Some("Failed while updating document"))),
         ),
         (
             status = 503,
             description = "Server does not available",
             body = ErrorResponse,
-            example = json!(ErrorResponse {
-                code: 503,
-                error: "Server error".to_string(),
-                message: "Server does not available".to_string(),
-                attachments: None,
-            })
-        )
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
     )
 )]
 #[post("/folders/{folder_id}/documents/{document_id}")]
@@ -514,13 +416,84 @@ async fn update_document(
     cxt: DocumentContext,
     form: Json<Value>,
     path: Path<(String, String)>,
-    document_type: Query<DocTypeQuery>,
+    folder_type: Query<FolderTypeQuery>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let (folder_id, _) = path.as_ref();
-    let doc_type = document_type.0.get_type();
+    let folder_type = folder_type.0.folder_type();
     let status = client
-        .update_document(folder_id.as_str(), &form.0, &doc_type)
+        .update_document(folder_id, &form.0, &folder_type)
         .await?;
+
     Ok(Json(status))
+}
+
+#[utoipa::path(
+    post,
+    path = "/storage/folders/{folder_id}/documents",
+    tag = "Documents",
+    params(
+        (
+            "folder_id" = &str,
+            description = "Passed folder id to get stored documents",
+            example = "test-folder",
+        ),
+        (
+            "folder_type", Query,
+            description = "Folder type to retrieve",
+            example = "document",
+        ),
+    ),
+    request_body(
+        content = AllRecordsParams,
+        example = json!(RetrieveParams::test_example(None)),
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Successful",
+            body = PaginatedResult<Vec<Document>>,
+            example = json!(Paginated::<Vec<Document>>::test_example(None)),
+        ),
+        (
+            status = 400,
+            description = "Failed while getting all records",
+            body = ErrorResponse,
+            example = json!(ErrorResponse::test_example(Some("Failed while getting all records"))),
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ErrorResponse,
+            example = json!(ErrorResponse::new(503, "Server error", "Server does not available")),
+        ),
+    )
+)]
+#[post("/folders/{folder_id}/documents")]
+async fn get_documents(
+    cxt: DocumentContext,
+    #[cfg(feature = "enable-cacher")] cacher: CacherRetrieveContext,
+    path: Path<String>,
+    form: Json<RetrieveParams>,
+    folder_type: Query<FolderTypeQuery>,
+) -> JsonResponse<Vec<Value>> {
+    let client = cxt.get_ref();
+    let folder_id = path.as_ref();
+    let params = form.0;
+
+    #[cfg(feature = "enable-cacher")]
+    if let Some(docs) = cacher.load(&params).await {
+        tracing::info!("loaded from cache by params: {:?}", &params);
+        return Ok(Json(docs));
+    }
+
+    let folder_type = folder_type.0.folder_type();
+    let documents = client
+        .get_documents(folder_id, &folder_type, &params)
+        .await?;
+
+    #[cfg(feature = "enable-cacher")]
+    cacher.insert(&params, &documents).await;
+
+    Ok(Json(documents))
 }

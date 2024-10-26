@@ -12,31 +12,41 @@ pub struct BoolMustFilter {
 }
 
 impl BoolMustFilter {
-    pub fn with_term<T>(mut self, key: &str, value: T) -> Self
+    pub fn with_term<T>(mut self, key: &str, value: Option<T>) -> Self
     where
         T: serde::Serialize,
     {
-        let term_item = TermFilterItem::term_value(key, value);
-        let term_item_val = serde_json::to_value(term_item).unwrap();
-        self.must.push(term_item_val);
+        if value.is_some() {
+            let term_item = TermFilterItem::term_value(key, value);
+            let term_item_val = serde_json::to_value(term_item).unwrap();
+            self.must.push(term_item_val);
+        }
+
         self
     }
 
-    pub fn with_range<T, U>(mut self, key: &str, gte: T, lte: Option<U>) -> Self
+    pub fn with_range<T, U>(mut self, key: &str, gte: Option<T>, lte: Option<U>) -> Self
     where
         T: serde::Serialize,
         U: serde::Serialize,
     {
+        if gte.is_none() && lte.is_none() {
+            return self;
+        }
+
         let range_item = RangeFilterItem::range_value(gte, lte);
         let range_value = json!({"range": { key: range_item }});
         self.must.push(range_value);
         self
     }
 
-    pub fn with_exists(mut self, field: &str) -> Self {
-        let exists_query = ExistsFilterItem::exists_value(field);
-        let exists_query_val = serde_json::to_value(exists_query).unwrap();
-        self.must.push(exists_query_val);
+    pub fn with_exists(mut self, field: Option<&str>) -> Self {
+        if let Some(value) = field {
+            let exists_query = ExistsFilterItem::exists_value(value);
+            let exists_query_val = serde_json::to_value(exists_query).unwrap();
+            self.must.push(exists_query_val);
+        }
+
         self
     }
 
@@ -67,7 +77,7 @@ struct RangeFilterItem {
 }
 
 impl RangeFilterItem {
-    pub fn range_value<T, U>(gte: T, lte: Option<U>) -> Self
+    pub fn range_value<T, U>(gte: Option<T>, lte: Option<U>) -> Self
     where
         T: serde::Serialize,
         U: serde::Serialize,

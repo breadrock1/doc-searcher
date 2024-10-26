@@ -2,20 +2,18 @@ extern crate doc_search;
 
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
-use doc_search::cors::build_cors;
-use doc_search::elastic::ElasticClient;
-use doc_search::embeddings::native::EmbeddingsClient;
-use doc_search::embeddings::EmbeddingsService;
-use doc_search::logger::init_logger;
 use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
 use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
 use doc_search::searcher::{PaginatorService, SearcherService};
 use doc_search::storage::endpoints::build_scope as build_storage_scope;
 use doc_search::storage::{DocumentService, FolderService};
-use doc_search::{config, swagger, Connectable};
+use doc_search::{config, cors, elastic, logger, swagger, Connectable};
 
 #[cfg(feature = "enable-cacher")]
 use doc_search::cacher;
+
+#[cfg(feature = "enable-semantic")]
+use doc_search::embeddings;
 
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -24,33 +22,39 @@ async fn main() -> Result<(), anyhow::Error> {
     let server_config = s_config.server();
     let cors_config = s_config.cors().clone();
     let logger_config = s_config.logger();
-    init_logger(logger_config)?;
+    logger::init_logger(logger_config)?;
 
-    let search_service = ElasticClient::connect(s_config.elastic())?;
-    let embeddings_service = EmbeddingsClient::connect(s_config.embeddings())?;
+    let search_service = elastic::ElasticClient::connect(s_config.elastic())?;
+
+    #[cfg(feature = "enable-semantic")]
+    let embed_service = embeddings::native::EmbeddingsClient::connect(s_config.embeddings())?;
 
     #[cfg(feature = "enable-cacher")]
     let cacher_service = cacher::redis::RedisClient::connect(s_config.cacher())?;
 
     HttpServer::new(move || {
-        let cors = build_cors(&cors_config.clone());
+        let cors = cors::build_cors(&cors_config.clone());
         let logger = Logger::default();
 
         let documents_cxt: Box<dyn DocumentService> = Box::new(search_service.clone());
         let folders_cxt: Box<dyn FolderService> = Box::new(search_service.clone());
         let paginator_cxt: Box<dyn PaginatorService> = Box::new(search_service.clone());
         let searcher_cxt: Box<dyn SearcherService> = Box::new(search_service.clone());
-        let embeddings_cxt: Box<dyn EmbeddingsService> = Box::new(embeddings_service.clone());
 
         let app = App::new()
             .app_data(web::Data::new(documents_cxt))
             .app_data(web::Data::new(folders_cxt))
             .app_data(web::Data::new(paginator_cxt))
-            .app_data(web::Data::new(searcher_cxt))
-            .app_data(web::Data::new(embeddings_cxt));
+            .app_data(web::Data::new(searcher_cxt));
+
+        #[cfg(feature = "enable-semantic")]
+        let embed_cxt: Box<dyn embeddings::EmbeddingsService> = Box::new(embed_service.clone());
+        #[cfg(feature = "enable-semantic")]
+        let app = app.app_data(web::Data::new(embed_cxt));
 
         #[cfg(feature = "enable-cacher")]
-        let cacher_search_cxt: cacher::redis::SearchParamsCached = Box::new(cacher_service.clone());
+        let cacher_search_cxt: cacher::redis::SemanticParamsCached =
+            Box::new(cacher_service.clone());
         #[cfg(feature = "enable-cacher")]
         let cacher_paginate_cxt: cacher::redis::PaginatedCached = Box::new(cacher_service.clone());
         #[cfg(feature = "enable-cacher")]

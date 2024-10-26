@@ -1,7 +1,8 @@
 extern crate doc_search;
 
 use doc_search::elastic::ElasticClient;
-use doc_search::storage::forms::{CreateFolderForm, FolderType};
+use doc_search::storage::forms::CreateFolderForm;
+use doc_search::storage::models::FolderType;
 use doc_search::storage::models::{DEFAULT_FOLDER_ID, INFO_FOLDER_ID};
 use doc_search::storage::FolderService;
 use doc_search::{config, Connectable};
@@ -44,8 +45,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     for folder_form in vec![info_folder_form, common_folder_form, common_vec_folder_form] {
         match es_client.create_folder(&folder_form).await {
-            Ok(resp) => tracing::info!("done: {}", resp.message),
-            Err(err) => tracing::warn!("failed: {:?}", err),
+            Ok(resp) => tracing::info!("done: {resp:?}"),
+            Err(err) => tracing::warn!("failed: {err:#?}"),
         }
     }
 
