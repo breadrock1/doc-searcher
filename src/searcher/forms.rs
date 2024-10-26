@@ -29,16 +29,11 @@ impl DocumentType {
 #[derive(Default, Deserialize, IntoParams, ToSchema)]
 pub struct DocumentTypeQuery {
     document_type: Option<DocumentType>,
-    is_grouped: bool,
 }
 
 impl DocumentTypeQuery {
     pub fn get_type(&self) -> DocumentType {
         self.document_type.clone().unwrap_or(DocumentType::Document)
-    }
-
-    pub fn is_grouped(&self) -> bool {
-        self.is_grouped
     }
 }
 
@@ -110,6 +105,7 @@ pub struct SemanticParams {
     query: String,
 
     #[getset(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     query_tokens: Option<Vec<f64>>,
 
     #[schema(example = "test-folder")]

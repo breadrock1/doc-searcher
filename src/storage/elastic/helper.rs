@@ -150,7 +150,7 @@ pub async fn filter_folders(
     let indexes = &[INFO_FOLDER_ID];
     let results = (params.result_size(), params.result_offset());
     let query = DocumentVectors::build_retrieve_query(&params).await;
-    let response = ElasticClient::search_request(es_cxt, &query, indexes, results).await?;
+    let response = ElasticClient::search_request(es_cxt, &query, None, indexes, results).await?;
 
     let value = response.json::<Value>().await?;
     let Some(founded) = &value[&"hits"][&"hits"].as_array() else {

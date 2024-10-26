@@ -10,7 +10,6 @@ use crate::searcher::errors::{PaginatedResult, SearcherError, SearcherResult};
 use crate::searcher::forms::DocumentType;
 use crate::searcher::forms::{DeletePaginatesForm, ScrollNextForm};
 use crate::searcher::forms::{FulltextParams, SemanticParams};
-use crate::searcher::models::Paginated;
 use crate::searcher::{PaginatorService, SearcherService};
 use crate::storage::models::{Document, DocumentVectors};
 
@@ -30,10 +29,7 @@ impl SearcherService for ElasticClient {
         Ok(converter::to_unified_paginated(founded, return_as))
     }
 
-    async fn search_semantic(
-        &self,
-        params: &SemanticParams,
-    ) -> PaginatedResult<Value> {
+    async fn search_semantic(&self, params: &SemanticParams) -> PaginatedResult<Value> {
         let es = self.es_client();
         let query = DocumentVectors::build_search_query(params).await;
         let founded = DocumentVectors::search(es, &query, params).await?;
@@ -55,6 +51,7 @@ impl PaginatorService for ElasticClient {
             .iter()
             .map(String::as_str)
             .collect::<Vec<&str>>();
+
         let es_client = self.es_client();
         let elastic = es_client.read().await;
         let response = elastic
@@ -85,8 +82,7 @@ impl PaginatorService for ElasticClient {
             .send()
             .await?;
 
-        let paginated = response.json::<Vec<Document>>().await?;
-        let paginated = Paginated::new(paginated);
+        let paginated = search::extract_searcher_result::<Document>(response).await?;
         Ok(converter::to_unified_paginated(paginated, doc_type))
     }
 }

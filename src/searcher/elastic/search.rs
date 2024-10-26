@@ -24,9 +24,11 @@ impl Searcher<Document> for Document {
         query: &Value,
         params: &Self::Params,
     ) -> PaginatedResult<Document> {
+        let scroll = params.scroll_lifetime();
         let results = params.result_size();
         let indexes = params.folder_ids().split(',').collect::<Vec<&str>>();
-        let response = ElasticClient::search_request(es_cxt, query, &indexes, results).await?;
+        let response =
+            ElasticClient::search_request(es_cxt, query, Some(scroll), &indexes, results).await?;
         let documents = extract_searcher_result::<Document>(response).await?;
         Ok(documents)
     }
@@ -41,15 +43,17 @@ impl Searcher<DocumentVectors> for DocumentVectors {
         query: &Value,
         params: &Self::Params,
     ) -> PaginatedResult<DocumentVectors> {
+        let scroll = params.scroll_lifetime();
         let results = params.result_size();
         let indexes = params.folder_ids().split(',').collect::<Vec<&str>>();
-        let response = ElasticClient::search_request(es_cxt, query, &indexes, results).await?;
+        let response =
+            ElasticClient::search_request(es_cxt, query, Some(scroll), &indexes, results).await?;
         let documents = extract_searcher_result::<DocumentVectors>(response).await?;
         Ok(documents)
     }
 }
 
-async fn extract_searcher_result<T>(response: Response) -> PaginatedResult<T>
+pub(super) async fn extract_searcher_result<T>(response: Response) -> PaginatedResult<T>
 where
     T: SearchQueryBuilder<T> + DocumentsTrait + serde::Serialize,
 {

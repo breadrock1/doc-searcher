@@ -12,7 +12,7 @@ allowed = "*"
 max_age = 3600
 
 [elastic]
-address = "localhost:9200"
+address = "158.160.44.99:9200"
 enabled_tls = "true"
 username = "elastic"
 password = "elastic"
@@ -27,3 +27,4 @@ expired = 3600
 address = "localhost:8085"
 is_truncate = "false"
 is_normalize = "false"
+enabled_tls = "false"

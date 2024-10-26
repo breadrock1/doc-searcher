@@ -63,13 +63,9 @@ impl EmbeddingsService for EmbeddingsClient {
                 "normalize": self.is_normalize(),
             }))
             .send()
-            .await
-            .map_err(EmbeddingsError::from)?;
+            .await?;
 
-        let embed_data = response
-            .json::<Vec<Vec<f64>>>()
-            .await
-            .map_err(EmbeddingsError::from)?;
+        let embed_data = response.json::<Vec<Vec<f64>>>().await?;
 
         let Some(tokens) = embed_data.first() else {
             let msg = "loaded empty tokens array";

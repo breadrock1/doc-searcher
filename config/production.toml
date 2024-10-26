@@ -27,3 +27,4 @@ expired = 3600
 address = "embeddings:8085"
 is_truncate = "false"
 is_normalize = "false"
+enabled_tls = "false"

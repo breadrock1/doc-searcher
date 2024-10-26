@@ -1,14 +1,14 @@
 use crate::errors::Successful;
+use crate::searcher::errors::SearcherResult;
 use crate::Connectable;
 
-use crate::searcher::errors::SearcherResult;
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::response::Response;
 use elasticsearch::http::transport::{BuildError, SingleNodeConnectionPool, TransportBuilder};
 use elasticsearch::http::{Method, Url};
-use elasticsearch::{Elasticsearch, SearchParts};
+use elasticsearch::{Elasticsearch, Error, SearchParts};
 use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 use serde_json::Value;
@@ -23,15 +23,14 @@ pub struct ElasticClient {
 }
 
 #[derive(Clone, Deserialize, CopyGetters, Getters)]
+#[getset(get = "pub")]
 pub struct ElasticConfig {
-    #[getset(get = "pub")]
     address: String,
+    username: String,
+    password: String,
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     enabled_tls: bool,
-    #[getset(get = "pub")]
-    username: String,
-    #[getset(get = "pub")]
-    password: String,
 }
 
 impl ElasticClient {
@@ -39,12 +38,12 @@ impl ElasticClient {
         self.es_client.clone()
     }
 
-    pub async fn send_request(
+    pub async fn send_native_request(
         &self,
         method: Method,
         body: Option<&[u8]>,
         target_url: &str,
-    ) -> Result<Response, elasticsearch::Error> {
+    ) -> Result<Response, Error> {
         let es_client = self.es_client();
         let elastic = es_client.write().await;
         elastic
@@ -62,6 +61,7 @@ impl ElasticClient {
     pub async fn search_request(
         es: EsCxt,
         query: &Value,
+        scroll: Option<&str>,
         indexes: &[&str],
         result: (i64, i64),
     ) -> SearcherResult<Response> {
@@ -69,11 +69,12 @@ impl ElasticClient {
         let elastic = es.read().await;
         let response = elastic
             .search(SearchParts::Index(indexes))
+            .allow_no_indices(true)
+            .pretty(true)
             .from(offset)
             .size(size)
             .body(query)
-            .pretty(true)
-            .allow_no_indices(true)
+            .scroll(scroll.unwrap_or("1m"))
             .send()
             .await?;
 
@@ -81,9 +82,7 @@ impl ElasticClient {
         Ok(response)
     }
 
-    pub async fn extract_response_msg(
-        response: Response,
-    ) -> Result<Successful, elasticsearch::Error> {
+    pub async fn extract_response_msg(response: Response) -> Result<Successful, Error> {
         let _ = response.error_for_status_code()?;
         Ok(Successful::new(200, "Done"))
     }

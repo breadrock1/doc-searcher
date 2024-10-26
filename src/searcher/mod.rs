@@ -20,10 +20,7 @@ pub trait SearcherService {
         return_as: &DocumentType,
     ) -> PaginatedResult<Value>;
 
-    async fn search_semantic(
-        &self,
-        params: &SemanticParams,
-    ) -> PaginatedResult<Value>;
+    async fn search_semantic(&self, params: &SemanticParams) -> PaginatedResult<Value>;
 }
 
 #[async_trait::async_trait]

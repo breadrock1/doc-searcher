@@ -10,7 +10,7 @@ use crate::errors::Successful;
 use crate::storage::elastic::retrieve::Retrieve;
 use crate::storage::elastic::store::StoreTrait;
 use crate::storage::elastic::update::UpdateTrait;
-use crate::storage::errors::{StorageError, StorageResult};
+use crate::storage::errors::StorageResult;
 use crate::storage::forms::{CreateFolderForm, RetrieveParams};
 use crate::storage::models::INFO_FOLDER_ID;
 use crate::storage::models::{Document, DocumentVectors, Folder, FolderType, InfoFolder};
@@ -32,7 +32,7 @@ const CAT_INDICES_URL: &str = "/_cat/indices?format=json";
 impl FolderService for ElasticClient {
     async fn get_folders(&self, show_all: bool) -> StorageResult<Vec<Folder>> {
         let response = self
-            .send_request(Method::Get, None, CAT_INDICES_URL)
+            .send_native_request(Method::Get, None, CAT_INDICES_URL)
             .await?;
 
         let folders = response.json::<Vec<Folder>>().await?;
@@ -42,10 +42,9 @@ impl FolderService for ElasticClient {
     async fn get_folder(&self, folder_id: &str) -> StorageResult<Folder> {
         let target_url = format!("/{folder_id}/_stats");
         let response = self
-            .send_request(Method::Get, None, &target_url)
+            .send_native_request(Method::Get, None, &target_url)
             .await?
-            .error_for_status_code()
-            .map_err(StorageError::from)?;
+            .error_for_status_code()?;
 
         let value = response.json::<Value>().await?;
         let mut folder = Folder::from_value(value).await?;
@@ -113,13 +112,15 @@ impl DocumentService for ElasticClient {
         match folder_type {
             FolderType::Vectors => {
                 let query = DocumentVectors::build_retrieve_query(params).await;
-                let response = ElasticClient::search_request(es, &query, &folders, results).await?;
+                let response =
+                    ElasticClient::search_request(es, &query, None, &folders, results).await?;
                 let value = helper::extract_from_response::<DocumentVectors>(response).await?;
                 Ok(value)
             }
             _ => {
                 let query = Document::build_retrieve_query(params).await;
-                let response = ElasticClient::search_request(es, &query, &folders, results).await?;
+                let response =
+                    ElasticClient::search_request(es, &query, None, &folders, results).await?;
                 let value = helper::extract_from_response::<Document>(response).await?;
                 Ok(value)
             }
@@ -134,10 +135,9 @@ impl DocumentService for ElasticClient {
     ) -> StorageResult<Value> {
         let s_doc_path = format!("/{}/_doc/{}", folder_id, doc_id);
         let response = self
-            .send_request(Method::Get, None, &s_doc_path)
+            .send_native_request(Method::Get, None, &s_doc_path)
             .await?
-            .error_for_status_code()
-            .map_err(StorageError::from)?;
+            .error_for_status_code()?;
 
         match folder_type {
             FolderType::Vectors => {

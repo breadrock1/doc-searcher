@@ -2,8 +2,7 @@
 use crate::cacher::CacherService;
 
 use crate::embeddings::EmbeddingsService;
-use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful, WebError};
-use crate::searcher::forms::DocumentType;
+use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
 use crate::searcher::forms::{DeletePaginatesForm, DocumentTypeQuery, ScrollNextForm};
 use crate::searcher::forms::{FulltextParams, SemanticParams};
 use crate::searcher::models::Paginated;
@@ -146,10 +145,7 @@ async fn search_semantic(
     let client = cxt.get_ref();
 
     let mut search_form = form.0;
-    let query_tokens = embed
-        .load_from_text(search_form.query())
-        .await
-        .map_err(WebError::from)?;
+    let query_tokens = embed.load_from_text(search_form.query()).await?;
 
     search_form.set_tokens(query_tokens);
 
@@ -219,7 +215,7 @@ async fn delete_paginate_sessions(
         ),
     ),
     request_body(
-        content = PaginateNextForm,
+        content = ScrollNextForm,
         example = json!(ScrollNextForm::test_example(None))
     ),
     responses(
@@ -248,7 +244,7 @@ async fn paginate_next(
     cxt: PaginateContext,
     #[cfg(feature = "enable-cacher")] cacher: CacherPaginateContext,
     form: Json<ScrollNextForm>,
-    document_type: Query<DocumentType>,
+    document_type: Query<DocumentTypeQuery>,
 ) -> PaginateResponse<Vec<Value>> {
     let client = cxt.get_ref();
     let pag_form = form.0;
@@ -259,7 +255,8 @@ async fn paginate_next(
         return Ok(Json(docs));
     }
 
-    let documents = client.paginate(&pag_form, &document_type).await?;
+    let doc_type = document_type.0.get_type();
+    let documents = client.paginate(&pag_form, &doc_type).await?;
 
     #[cfg(feature = "enable-cacher")]
     cacher.insert(&pag_form, &documents).await;
