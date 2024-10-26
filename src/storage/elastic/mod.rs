@@ -1,6 +1,6 @@
 mod from;
 pub mod helper;
-mod retrieve;
+pub mod retrieve;
 pub mod schema;
 mod store;
 mod update;
