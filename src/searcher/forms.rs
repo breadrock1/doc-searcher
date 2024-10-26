@@ -1,209 +1,213 @@
-use crate::searcher::models::SearchParams;
-use crate::storage::forms::DocumentType;
+use crate::storage::models::DEFAULT_FOLDER_ID;
+use crate::storage::models::{Document, DocumentPreview, DocumentVectors};
 
 use derive_builder::Builder;
+use getset::{CopyGetters, Getters};
 use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema)]
+#[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum DocumentType {
+    #[default]
+    Document,
+    Preview,
+    Vectors,
+}
+
+impl DocumentType {
+    pub fn document_to_value(&self, document: &Document) -> Result<Value, serde_json::Error> {
+        match self {
+            DocumentType::Preview => serde_json::to_value(DocumentPreview::from(document)),
+            DocumentType::Vectors => serde_json::to_value(DocumentVectors::from(document)),
+            DocumentType::Document => serde_json::to_value(document),
+        }
+    }
+}
+
+#[derive(Default, Deserialize, IntoParams, ToSchema)]
+pub struct DocumentTypeQuery {
+    document_type: Option<DocumentType>,
+}
+
+impl DocumentTypeQuery {
+    pub fn get_type(&self) -> DocumentType {
+        self.document_type.clone().unwrap_or(DocumentType::Document)
+    }
+}
+
+#[derive(Builder, Debug, Deserialize, Serialize, Getters, CopyGetters, IntoParams, ToSchema)]
+#[getset(get = "pub")]
 pub struct FulltextParams {
     #[schema(example = "Hello world")]
     query: String,
+
     #[schema(example = "test-folder")]
-    folder_ids: Option<String>,
+    folder_ids: String,
+
     #[schema(example = "document")]
-    document_type: String,
+    document_type: Option<String>,
+
     #[schema(example = "txt")]
-    document_extension: String,
+    document_extension: Option<String>,
+
+    #[getset(skip)]
     #[schema(example = 0)]
-    document_size_to: i64,
+    document_size_to: Option<i64>,
+
+    #[getset(skip)]
     #[schema(example = 0)]
-    document_size_from: i64,
+    document_size_from: Option<i64>,
+
+    #[getset(skip)]
     #[schema(example = "2024-04-26T11:14:55Z")]
-    created_date_to: String,
+    created_date_to: Option<String>,
+
+    #[getset(skip)]
     #[schema(example = "2024-04-02T13:51:32Z")]
-    created_date_from: String,
+    created_date_from: Option<String>,
+
+    #[getset(skip)]
     #[schema(example = 10)]
     result_size: i64,
+
+    #[getset(skip)]
     #[schema(example = 0)]
     result_offset: i64,
+
     #[schema(example = "1m")]
     scroll_lifetime: String,
-}
-
-impl From<FulltextParams> for SearchParams {
-    fn from(value: FulltextParams) -> Self {
-        SearchParams::builder()
-            .query(value.query)
-            .query_tokens(Some(Vec::default()))
-            .folder_ids(value.folder_ids)
-            .document_type(value.document_type)
-            .document_extension(value.document_extension)
-            .document_size_to(value.document_size_to)
-            .document_size_from(value.document_size_from)
-            .created_date_to(value.created_date_to)
-            .created_date_from(value.created_date_from)
-            .result_size(value.result_size)
-            .result_offset(value.result_offset)
-            .scroll_lifetime(value.scroll_lifetime)
-            .knn_amount(None)
-            .knn_candidates(None)
-            .show_all(None)
-            .build()
-            .unwrap()
-    }
 }
 
 impl FulltextParams {
     pub fn builder() -> FulltextParamsBuilder {
         FulltextParamsBuilder::default()
     }
-}
 
-#[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema)]
-pub struct AllRecordsParams {
-    #[schema(example = "Test Folder name or path")]
-    query: String,
-    #[schema(example = "test-folder")]
-    folder_id: Option<String>,
-    #[schema(example = "document")]
-    document_type: String,
-    #[schema(example = "txt")]
-    document_extension: String,
-    #[schema(example = 0)]
-    document_size_to: i64,
-    #[schema(example = 0)]
-    document_size_from: i64,
-    #[schema(example = "2024-04-26T11:14:55Z")]
-    created_date_to: String,
-    #[schema(example = "2024-04-02T13:51:32Z")]
-    created_date_from: String,
-    #[schema(example = 10)]
-    result_size: i64,
-    #[schema(example = "1m")]
-    scroll_lifetime: String,
-}
+    pub fn document_size(&self) -> (Option<i64>, Option<i64>) {
+        (self.document_size_from, self.document_size_to)
+    }
 
-impl From<AllRecordsParams> for SearchParams {
-    fn from(value: AllRecordsParams) -> Self {
-        SearchParams::builder()
-            .query(value.query)
-            .query_tokens(Some(Vec::default()))
-            .folder_ids(value.folder_id)
-            .document_type(value.document_type)
-            .document_extension(value.document_extension)
-            .document_size_to(value.document_size_to)
-            .document_size_from(value.document_size_from)
-            .created_date_to(value.created_date_to)
-            .created_date_from(value.created_date_from)
-            .result_size(value.result_size)
-            .scroll_lifetime(value.scroll_lifetime)
-            .result_offset(0)
-            .knn_amount(None)
-            .knn_candidates(None)
-            .show_all(None)
-            .build()
-            .unwrap()
+    pub fn document_dates(&self) -> (Option<String>, Option<String>) {
+        (self.created_date_from.clone(), self.created_date_to.clone())
+    }
+
+    pub fn result_size(&self) -> (i64, i64) {
+        (self.result_size, self.result_offset)
     }
 }
 
-impl AllRecordsParams {
-    pub fn builder() -> AllRecordsParamsBuilder {
-        AllRecordsParamsBuilder::default()
-    }
-}
-
-#[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema)]
+#[derive(Builder, Debug, Deserialize, Serialize, Getters, CopyGetters, IntoParams, ToSchema)]
+#[getset(get = "pub")]
 pub struct SemanticParams {
-    #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
+    #[schema(example = "Show me something like ...")]
     query: String,
+
+    #[getset(skip)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    query_tokens: Option<Vec<f64>>,
+
     #[schema(example = "test-folder")]
-    folder_ids: Option<String>,
+    folder_ids: String,
+
+    #[getset(skip)]
     #[schema(example = 0)]
     document_size_from: i64,
+
+    #[getset(skip)]
+    #[schema(example = 4096)]
+    document_size_to: i64,
+
+    #[getset(skip)]
     #[schema(example = 5)]
     #[serde(skip_serializing_if = "Option::is_none")]
     knn_amount: Option<u16>,
+
+    #[getset(skip)]
     #[schema(example = 100)]
     #[serde(skip_serializing_if = "Option::is_none")]
     knn_candidates: Option<u32>,
+
+    #[getset(skip)]
+    #[getset(get_copy = "pub")]
+    #[schema(example = 100)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_grouped: Option<bool>,
+
     #[schema(example = "1m")]
     scroll_lifetime: String,
-}
-
-impl From<SemanticParams> for SearchParams {
-    fn from(value: SemanticParams) -> Self {
-        SearchParams::builder()
-            .query(value.query)
-            .query_tokens(Some(Vec::default()))
-            .folder_ids(value.folder_ids)
-            .document_size_from(value.document_size_from)
-            .knn_amount(value.knn_amount)
-            .knn_candidates(value.knn_candidates)
-            .scroll_lifetime(value.scroll_lifetime)
-            .result_size(25)
-            .document_size_to(0)
-            .result_offset(0)
-            .document_type(String::default())
-            .document_extension(String::default())
-            .created_date_to(String::default())
-            .created_date_from(String::default())
-            .build()
-            .unwrap()
-    }
 }
 
 impl SemanticParams {
     pub fn builder() -> SemanticParamsBuilder {
         SemanticParamsBuilder::default()
     }
-}
 
-#[derive(Default, Deserialize, IntoParams, ToSchema)]
-pub struct SearchQuery {
-    document_type: Option<DocumentType>,
-}
+    pub fn candidates(&self) -> u32 {
+        self.knn_candidates.unwrap_or(5)
+    }
 
-impl SearchQuery {
-    pub fn get_type(&self) -> DocumentType {
-        self.document_type.clone().unwrap_or(DocumentType::Document)
+    pub fn knn_amount(&self) -> u16 {
+        self.knn_amount.unwrap_or(100)
+    }
+
+    pub fn query_tokens(&self) -> Vec<f64> {
+        self.query_tokens.clone().unwrap_or_default()
+    }
+
+    pub fn set_tokens(&mut self, tokens: Vec<f64>) {
+        self.query_tokens = Some(tokens);
+    }
+
+    pub fn document_size(&self) -> (i64, i64) {
+        (self.document_size_from, self.document_size_to)
+    }
+
+    pub fn result_size(&self) -> (i64, i64) {
+        (self.document_size_from, 100)
     }
 }
 
-#[derive(Builder, Debug, Deserialize, Serialize, IntoParams, ToSchema)]
-pub struct PaginateNextForm {
+impl Default for SemanticParams {
+    fn default() -> Self {
+        SemanticParams::builder()
+            .query("Show me something like ...".to_string())
+            .query_tokens(Some(Vec::default()))
+            .folder_ids(DEFAULT_FOLDER_ID.to_string())
+            .document_size_from(0)
+            .scroll_lifetime("10m".to_string())
+            .knn_amount(Some(5))
+            .knn_candidates(Some(100))
+            .build()
+            .unwrap()
+    }
+}
+
+#[derive(Builder, Debug, Deserialize, Serialize, Getters, IntoParams, ToSchema)]
+#[getset(get = "pub")]
+pub struct ScrollNextForm {
     #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     scroll_id: String,
     #[schema(example = "1m")]
     lifetime: String,
 }
 
-impl PaginateNextForm {
-    pub fn builder() -> PaginateNextFormBuilder {
-        PaginateNextFormBuilder::default()
-    }
-
-    pub fn get_scroll_id(&self) -> &str {
-        self.scroll_id.as_str()
-    }
-
-    pub fn get_lifetime(&self) -> &str {
-        self.lifetime.as_str()
+impl ScrollNextForm {
+    pub fn builder() -> ScrollNextFormBuilder {
+        ScrollNextFormBuilder::default()
     }
 }
 
-#[derive(Builder, Deserialize, Serialize, IntoParams, ToSchema)]
-pub struct DeletePaginationsForm {
+#[derive(Builder, Deserialize, Serialize, Getters, IntoParams, ToSchema)]
+#[getset(get = "pub")]
+pub struct DeletePaginatesForm {
     #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     sessions: Vec<String>,
 }
 
-impl DeletePaginationsForm {
-    pub fn builder() -> DeletePaginationsFormBuilder {
-        DeletePaginationsFormBuilder::default()
-    }
-
-    pub fn get_sessions(&self) -> Vec<&str> {
-        self.sessions.iter().map(String::as_str).collect()
+impl DeletePaginatesForm {
+    pub fn builder() -> DeletePaginatesFormBuilder {
+        DeletePaginatesFormBuilder::default()
     }
 }

@@ -1,50 +1,41 @@
 version: '3.9'
 
 services:
-
   elasticsearch:
     image: elasticsearch:8.11.2
     restart: on-failure
+    ports:
+      - '9200:9200'
+    volumes:
+      - 'es-vol-1:/usr/share/elasticsearch/data'
     environment:
       discovery.type: 'single-node'
       cluster.name: 'master'
       ES_JAVA_OPTS: '-Xms2g -Xmx2g'
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-    ports:
-      - '9200:9200'
-    networks:
-      - elastic-net
-    volumes:
-      - es-vol-1:/usr/share/elasticsearch/data
 
   cacher:
     image: redis:latest
     restart: on-failure
-    environment:
-      REDIS_PASSWORD: ${REDIS_ROOT_PASSWORD}
-      REDIS_USER: ${REDIS_CLIENT_USERNAME}
-      REDIS_USER_PASSWORD: ${REDIS_CLIENT_PASSWORD}
     ports:
       - '6379:6379'
-    networks:
-      - elastic-net
     volumes:
-      - cacher-vol-1:/data/cacher
+      - 'cacher-vol-1:/data/cacher'
+    environment:
+      REDIS_USER: ${REDIS_CLIENT_USERNAME}
+      REDIS_PASSWORD: ${REDIS_ROOT_PASSWORD}
+      REDIS_USER_PASSWORD: ${REDIS_CLIENT_PASSWORD}
 
   doc-searcher:
-# To build docker image from sources with tag 'doc-searcher:latest'
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#      tags:
-#        - 'doc-searcher:latest'
     image: doc-searcher:latest
     command: /app/doc-searcher-init && /app/doc-searcher-run
-    depends_on:
-      - elasticsearch
+    links:
       - cacher
+      - elasticsearch
+    ports:
+      - '2892:2892'
     volumes:
-      - ./config:/app/config
+      - './config:/app/config'
     environment:
       DOC_SEARCHER_RUN_MODE: ${SERVICE_RUN_MODE}
       DOC_SEARCHER_LOGGER_LEVEL: 'info'
@@ -67,16 +58,9 @@ services:
       DOC_SEARCHER_EMBEDDINGS_IS_TRUNCATE: 'false'
       DOC_SEARCHER_EMBEDDINGS_IS_NORMALIZE: 'false'
       DOC_SEARCHER_EMBEDDINGS_ENABLE_TLS: ${EMBEDDINGS_ENABLE_TLS}
-    ports:
-      - '2892:2892'
-    networks:
-      - elastic-net
 
 volumes:
   es-vol-1:
     driver: local
   cacher-vol-1:
     driver: local
-
-networks:
-  elastic-net:

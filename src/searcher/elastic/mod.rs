@@ -1,13 +1,16 @@
+mod converter;
 pub mod extractor;
-pub mod helper;
+pub(crate) mod search;
 
 use crate::elastic::ElasticClient;
-use crate::errors::{Successful, WebError, WebErrorEntity, WebResult};
-use crate::searcher::elastic::helper as s_helper;
-use crate::searcher::forms::{DeletePaginationsForm, PaginateNextForm};
-use crate::searcher::models::SearchParams;
-use crate::searcher::{PaginatedResult, PaginatorService, SearcherService};
-use crate::storage::forms::DocumentType;
+use crate::errors::Successful;
+use crate::searcher::elastic::extractor::SearchQueryBuilder;
+use crate::searcher::elastic::search::Searcher;
+use crate::searcher::errors::{PaginatedResult, SearcherError, SearcherResult};
+use crate::searcher::forms::DocumentType;
+use crate::searcher::forms::{DeletePaginatesForm, ScrollNextForm};
+use crate::searcher::forms::{FulltextParams, SemanticParams};
+use crate::searcher::{PaginatorService, SearcherService};
 use crate::storage::models::{Document, DocumentVectors};
 
 use elasticsearch::{ClearScrollParts, ScrollParts};
@@ -15,95 +18,71 @@ use serde_json::Value;
 
 #[async_trait::async_trait]
 impl SearcherService for ElasticClient {
-    async fn search_records(
-        &self,
-        s_params: &SearchParams,
-        doc_type: &DocumentType,
-    ) -> PaginatedResult<Value> {
-        let es_client = self.es_client();
-        let elastic = es_client.read().await;
-        let folders = s_params.get_folders(true);
-        let indexes = folders.split(',').collect::<Vec<&str>>();
-        let paginated =
-            s_helper::search_all::<Document>(&elastic, s_params, indexes.as_slice()).await?;
-        Ok(helper::to_unified_pag(paginated, doc_type))
-    }
     async fn search_fulltext(
         &self,
-        s_params: &SearchParams,
-        doc_type: &DocumentType,
+        params: &FulltextParams,
+        return_as: &DocumentType,
     ) -> PaginatedResult<Value> {
-        let es_client = self.es_client();
-        let elastic = es_client.read().await;
-        let folders = s_params.get_folders(true);
-        let indexes = folders.split(',').collect::<Vec<&str>>();
-        let paginated =
-            s_helper::search::<Document>(&elastic, s_params, indexes.as_slice()).await?;
-        Ok(helper::to_unified_pag(paginated, doc_type))
+        let es = self.es_client();
+        let query = Document::build_search_query(params).await;
+        let founded = Document::search(es, &query, params).await?;
+        Ok(converter::to_unified_paginated(founded, return_as))
     }
-    async fn search_semantic(
-        &self,
-        s_params: &SearchParams,
-        doc_type: &DocumentType,
-    ) -> PaginatedResult<Value> {
-        let es_client = self.es_client();
-        let elastic = es_client.read().await;
-        let folders = s_params.get_folders(true);
-        let indexes = folders.split(',').collect::<Vec<&str>>();
-        let paginated =
-            s_helper::search::<DocumentVectors>(&elastic, s_params, indexes.as_slice()).await?;
 
-        match doc_type {
-            DocumentType::GroupedVectors => Ok(helper::vec_to_grouped_value(paginated)),
-            _ => Ok(helper::vec_to_value(paginated)),
+    async fn search_semantic(&self, params: &SemanticParams) -> PaginatedResult<Value> {
+        let es = self.es_client();
+        let query = DocumentVectors::build_search_query(params).await;
+        let founded = DocumentVectors::search(es, &query, params).await?;
+
+        if params.is_grouped().unwrap_or_default() {
+            tracing::info!("grouping semantic searching results");
+            return Ok(converter::vec_to_grouped_value(founded));
         }
+
+        Ok(converter::vec_to_value(founded))
     }
 }
 
 #[async_trait::async_trait]
 impl PaginatorService for ElasticClient {
-    async fn delete_session(&self, form: &DeletePaginationsForm) -> WebResult<Successful> {
+    async fn delete_session(&self, form: &DeletePaginatesForm) -> SearcherResult<Successful> {
+        let ids = form
+            .sessions()
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>();
+
         let es_client = self.es_client();
         let elastic = es_client.read().await;
-        let ids = form.get_sessions();
         let response = elastic
             .clear_scroll(ClearScrollParts::ScrollId(ids.as_slice()))
             .send()
-            .await
-            .map_err(WebError::from)?;
+            .await?;
 
-        helper::parse_elastic_response(response).await
+        let response = ElasticClient::extract_response_msg(response).await?;
+        Ok(response)
     }
 
     async fn paginate(
         &self,
-        scroll_form: &PaginateNextForm,
+        scroll_form: &ScrollNextForm,
         doc_type: &DocumentType,
     ) -> PaginatedResult<Value> {
-        if doc_type.is_vector_type() {
+        if let DocumentType::Vectors = doc_type {
             let msg = "Can't paginate vectors search result";
-            tracing::error!("Failed while paginate: {}", msg);
-            let entity = WebErrorEntity::new(msg.to_string());
-            return Err(WebError::PaginationError(entity));
+            tracing::warn!("Failed while paginate: {msg}");
+            return Err(SearcherError::ServiceError(msg.to_string()));
         }
 
         let es_client = self.es_client();
         let elastic = es_client.read().await;
-        let response_result = elastic
-            .scroll(ScrollParts::ScrollId(scroll_form.get_scroll_id()))
+        let response = elastic
+            .scroll(ScrollParts::ScrollId(scroll_form.scroll_id()))
             .pretty(true)
             .send()
-            .await;
+            .await?;
 
-        if response_result.is_err() {
-            let err = response_result.err().unwrap();
-            tracing::error!("Failed to get next pagination: {}", err.to_string());
-            let entity = WebErrorEntity::new(err.to_string());
-            return Err(WebError::PaginationError(entity));
-        }
-
-        let response = response_result.unwrap();
-        let paginated = helper::extract_elastic_response::<Document>(response).await;
-        Ok(helper::to_unified_pag(paginated, doc_type))
+        let paginated = search::extract_searcher_result::<Document>(response).await?;
+        Ok(converter::to_unified_paginated(paginated, doc_type))
     }
 }

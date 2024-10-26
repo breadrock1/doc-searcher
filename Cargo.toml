@@ -1,6 +1,7 @@
+workspace = { members = ["crates/elschema"] }
 [package]
 name = "doc-search"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 [badges]
@@ -8,6 +9,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 enable-cacher = ["dep:redis"]
+enable-semantic = []
 default = []
 
 [dependencies]
@@ -63,6 +65,9 @@ path = "crates/datetime"
 
 [dependencies.elquery]
 path = "crates/elquery"
+
+[dependencies.elschema]
+path = "crates/elschema"
 
 [[bin]]
 name = "doc-searcher-run"

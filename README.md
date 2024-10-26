@@ -16,11 +16,13 @@ The main goal - implement simple but powerful system of storing and indexing doc
 I decided to use elasticsearch as default searching engine, but you may use own solutions by implementing several async traits
 for Tantivy, QDrant or own solution:
 
- - FolderService    - API (CRUD) of indexed folders to store documents; 
- - DocumentService  - API (CRUD) of documents stored into folders; 
- - WatcherService   - API of doc-notifier service interactions;
- - SearcherService  - API of searcher functionalities (fulltext, vector, similar);
- - PaginatorService - API of searcher results pagination.
+
+ - CacherService      - API of doc-notifier service interactions;
+ - EmbeddingsService  - API of doc-notifier service interactions;
+ - MetricsService     - API of metrics to monitoring;
+ - StorageService     - API (CRUD) of indexed folders and documents;
+ - SearcherService    - API of searcher functionalities (fulltext, vector, similar).
+ 
 
 ## Features
 
@@ -43,6 +45,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 - Rust
 - Docker & docker-compose
+- Cache (Redis)
 - Elasticsearch
 
 ### Installation
@@ -56,9 +59,8 @@ These instructions will get you a copy of the project up and running on your loc
 ### Features of project
 
 Features to parse and store documents localy from current service (Not stable):
-- enable-cacher   : enable cacher service like redis oe other custom implementation;
-
-default = []
+ - enable-cacher    - enable cacher service like redis oe other custom implementation;
+ - enable-semantic  - enable llm service for semantic searching.
 
 [![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 

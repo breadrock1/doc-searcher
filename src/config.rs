@@ -43,7 +43,7 @@ impl ServiceConfig {
         let current_config_file = File::with_name(&run_mode_file_path);
 
         let settings = Config::builder()
-            .add_source(File::with_name("./config/default"))
+            .add_source(File::with_name("./config/development.toml"))
             .add_source(current_config_file.required(false))
             .add_source(Environment::with_prefix("DOC_SEARCHER"))
             .build()?;

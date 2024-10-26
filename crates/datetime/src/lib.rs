@@ -26,14 +26,11 @@ where
     D: Deserializer<'de>,
 {
     String::deserialize(deserializer)
-        .and_then(|value| Ok(format_datetime(value.as_str())))
-        .and_then(|value| Ok(value.ok()))
+        .map(|value| format_datetime(value.as_str()))
+        .map(|value| value.ok())
 }
 
 fn format_datetime(value: &str) -> ParseResult<DateTime<Utc>> {
     #[allow(deprecated)]
-    match Utc.datetime_from_str(value, DATE_TIME_FORMAT) {
-        Ok(datetime) => Ok(datetime),
-        Err(err) => Err(err),
-    }
+    Utc.datetime_from_str(value, DATE_TIME_FORMAT)
 }

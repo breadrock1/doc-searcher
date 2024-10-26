@@ -2,8 +2,8 @@ mod models;
 
 use crate::cacher::config::CacherConfig;
 use crate::cacher::CacherService;
-use crate::searcher::forms::PaginateNextForm;
-use crate::searcher::models::{Paginated, SearchParams};
+use crate::searcher::forms::{FulltextParams, ScrollNextForm, SemanticParams};
+use crate::searcher::models::Paginated;
 use crate::Connectable;
 
 use getset::CopyGetters;
@@ -12,8 +12,9 @@ use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub type SearchParamsCached = Box<dyn CacherService<SearchParams, Paginated<Vec<Value>>>>;
-pub type PaginatedCached = Box<dyn CacherService<PaginateNextForm, Paginated<Vec<Value>>>>;
+pub type FullTextParamsCached = Box<dyn CacherService<FulltextParams, Paginated<Vec<Value>>>>;
+pub type SemanticParamsCached = Box<dyn CacherService<SemanticParams, Paginated<Vec<Value>>>>;
+pub type PaginatedCached = Box<dyn CacherService<ScrollNextForm, Paginated<Vec<Value>>>>;
 
 #[derive(Clone, CopyGetters)]
 pub struct RedisClient {
@@ -69,14 +70,18 @@ where
 {
     async fn insert(&self, key: &K, value: &V) {
         let expired_secs = self.options().expire();
-        let cxt = self.client.read().await;
+        let cxt = self.client.write().await;
         match cxt.get_multiplexed_tokio_connection().await {
             Err(err) => {
-                tracing::warn!("Failed to get redis service connection {err:#?}");
+                tracing::warn!("failed to get redis service connection {err:#?}");
                 return;
             }
             Ok(mut conn) => {
-                let _: RedisResult<redis::Value> = conn.set_ex(key, value, expired_secs).await;
+                let set_result: RedisResult<()> = conn.set_ex(key, value, expired_secs).await;
+                if let Err(err) = set_result {
+                    tracing::error!("failed to insert value to redis: {err:#?}");
+                    return;
+                };
             }
         }
     }
@@ -86,7 +91,7 @@ where
         match cxt.get_multiplexed_tokio_connection().await {
             Ok(mut conn) => conn.get(key).await.ok(),
             Err(err) => {
-                tracing::warn!("Failed to get redis service connection {err:#?}");
+                tracing::warn!("failed to get redis service connection {err:#?}");
                 None
             }
         }

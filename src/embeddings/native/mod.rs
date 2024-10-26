@@ -1,6 +1,6 @@
 use crate::embeddings::config::EmbeddingsConfig;
+use crate::embeddings::errors::{EmbeddingsError, EmbeddingsResult};
 use crate::embeddings::EmbeddingsService;
-use crate::errors::{WebError, WebResult};
 use crate::Connectable;
 
 use getset::{CopyGetters, Getters};
@@ -50,7 +50,7 @@ impl Connectable for EmbeddingsClient {
 
 #[async_trait::async_trait]
 impl EmbeddingsService for EmbeddingsClient {
-    async fn load_from_text(&self, text: &str) -> WebResult<Vec<f64>> {
+    async fn load_from_text(&self, text: &str) -> EmbeddingsResult<Vec<f64>> {
         let client_addr = self.address();
         let target_url = format!("{client_addr}{NATIVE_SERVICE_URL}");
         let response = self
@@ -63,11 +63,15 @@ impl EmbeddingsService for EmbeddingsClient {
                 "normalize": self.is_normalize(),
             }))
             .send()
-            .await
-            .map_err(WebError::from)?;
+            .await?;
 
         let embed_data = response.json::<Vec<Vec<f64>>>().await?;
-        let slice = embed_data.first().unwrap().to_owned();
-        Ok(slice)
+
+        let Some(tokens) = embed_data.first() else {
+            let msg = "loaded empty tokens array";
+            return Err(EmbeddingsError::ServiceError(msg.to_string()));
+        };
+
+        Ok(tokens.to_owned())
     }
 }
