@@ -26,6 +26,22 @@ services:
       REDIS_PASSWORD: ${REDIS_ROOT_PASSWORD}
       REDIS_USER_PASSWORD: ${REDIS_CLIENT_PASSWORD}
 
+  prometheus:
+    image: prom/prometheus:v2.36.2
+    restart: on-failure
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    links:
+      - doc-searcher
+    ports:
+      - '9090:9090'
+    volumes:
+      - './prometheus/:/etc/prometheus/'
+      - 'prom-vol-1:/prometheus'
+
   doc-searcher:
     image: doc-searcher:latest
     command: /app/doc-searcher-init && /app/doc-searcher-run
@@ -63,4 +79,6 @@ volumes:
   es-vol-1:
     driver: local
   cacher-vol-1:
+    driver: local
+  prom-vol-1:
     driver: local
