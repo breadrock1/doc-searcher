@@ -55,20 +55,21 @@ jobs:
     if: github.event_name == 'push'
     strategy:
       matrix:
-        platform:
-          - os-name: Linux-x86_64
-            runs-on: ubuntu-20.04
-            target: x86_64-unknown-linux-gnu
+        features:
+          - name: all
+            options: '--all-features'
+          - name: with cache
+            options: '--features enable-cacher'
+          - name: with semantic
+            options: '--features enable-semantic'
+          - name: with prometheus
+            options: '--features enable-prometheus'
 
-    runs-on: ${{ matrix.platform.runs-on }}
+    runs-on: ubuntu-latest
     permissions: write-all
     needs: [test]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: ${{ matrix.platform.target }}
-      - name: Add rustup target ${{ matrix.platform.target }}
-        run: rustup target add ${{ matrix.platform.target }}
-      - name: Build app for ${{matrix.platform.target }}
-        run: cargo build --release --target ${{ matrix.platform.target }}
+
+      - name: Build with feature ${{ matrix.features.name }}
+        run: cargo build --release --bins ${{ matrix.features.options }}
