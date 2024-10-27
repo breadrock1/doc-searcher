@@ -9,19 +9,14 @@ use derive_builder::Builder;
 use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 
-#[derive(Builder, Clone, Deserialize, CopyGetters, Getters)]
+#[derive(Builder, Clone, Deserialize, Getters)]
+#[getset(get = "pub")]
 pub struct ServiceConfig {
-    #[getset(get = "pub")]
     logger: LoggerConfig,
-    #[getset(get = "pub")]
     server: ServerConfig,
-    #[getset(get = "pub")]
     cors: CorsConfig,
-    #[getset(get = "pub")]
     elastic: ElasticConfig,
-    #[getset(get = "pub")]
     cacher: CacherConfig,
-    #[getset(get = "pub")]
     embeddings: EmbeddingsConfig,
 }
 

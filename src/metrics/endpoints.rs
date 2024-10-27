@@ -1,15 +1,20 @@
 use crate::errors::{ErrorResponse, JsonResponse, Successful};
 
 use actix_web::web::Json;
-use actix_web::{get, web, Scope};
+use actix_web::{get, web, HttpResponse, Scope};
 
 pub fn build_scope() -> Scope {
-    web::scope("/metrics").service(metrics)
+    let scope = web::scope("/metrics").service(hello);
+
+    #[cfg(feature = "enable-prometheus")]
+    let scope = scope.service(metrics);
+
+    scope
 }
 
 #[utoipa::path(
     get,
-    path = "/metrics/",
+    path = "/metrics/hello",
     tag = "Metrics",
     responses(
         (
@@ -26,7 +31,12 @@ pub fn build_scope() -> Scope {
         ),
     ),
 )]
-#[get("/")]
-async fn metrics() -> JsonResponse<Successful> {
+#[get("/hello")]
+async fn hello() -> JsonResponse<Successful> {
     Ok(Json(Successful::new(200, "Ok")))
+}
+
+#[get("/metrics")]
+async fn metrics() -> HttpResponse {
+    HttpResponse::Ok().finish()
 }
