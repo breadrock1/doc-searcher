@@ -19,8 +19,8 @@ password = "elastic"
 
 [cacher]
 address = "localhost:6379"
-username = "cacher"
-password = "cacher"
+username = "redis"
+password = "redis"
 expired = 3600
 
 [embeddings]

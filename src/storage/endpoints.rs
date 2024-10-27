@@ -4,11 +4,11 @@ use crate::cacher::CacherService;
 use crate::errors::JsonResponse;
 use crate::errors::{ErrorResponse, Successful};
 use crate::searcher::models::Paginated;
+use crate::storage::documents::DocumentService;
+use crate::storage::folders::FolderService;
 use crate::storage::forms::FolderTypeQuery;
 use crate::storage::forms::{CreateFolderForm, RetrieveParams, ShowAllFlag};
 use crate::storage::models::{Document, Folder};
-use crate::storage::DocumentService;
-use crate::storage::FolderService;
 use crate::swagger::examples::TestExample;
 
 use actix_web::web::{Data, Json, Path, Query};
@@ -155,6 +155,8 @@ async fn create_folder(
     let client = cxt.get_ref();
     let folder_form = form.0;
     let status = client.create_folder(&folder_form).await?;
+
+    // TODO: Added creating folder into doc-watcher (cloud) service
 
     Ok(Json(status))
 }
@@ -445,14 +447,14 @@ async fn update_document(
         ),
     ),
     request_body(
-        content = AllRecordsParams,
+        content = RetrieveParams,
         example = json!(RetrieveParams::test_example(None)),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = PaginatedResult<Vec<Document>>,
+            body = Paginated::<Vec<Document>>,
             example = json!(Paginated::<Vec<Document>>::test_example(None)),
         ),
         (

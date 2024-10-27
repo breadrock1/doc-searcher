@@ -1,7 +1,29 @@
+use crate::storage::errors::{StorageError, StorageResult};
+use crate::storage::models::FolderType;
+
 use elschema::base::{AsDateField, FieldType, SchemaFieldType, SettingsSchema};
 use elschema::embeddings::EmbeddingsSchema;
 use elschema::ElasticSchema;
 use serde::Serialize;
+use serde_json::Value;
+
+pub fn build_schema_by_folder_type(schema_type: &FolderType) -> StorageResult<Value> {
+    match schema_type {
+        FolderType::InfoFolder => {
+            let schema = InfoFolderSchema::build();
+            serde_json::to_value(schema)
+        }
+        FolderType::Vectors => {
+            let schema = DocumentVectorSchema::build();
+            serde_json::to_value(schema)
+        }
+        _ => {
+            let schema = DocumentSchema::build();
+            serde_json::to_value(schema)
+        }
+    }
+    .map_err(StorageError::from)
+}
 
 #[derive(Serialize)]
 pub struct InfoFolderSchema {

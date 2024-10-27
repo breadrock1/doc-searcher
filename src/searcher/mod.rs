@@ -7,7 +7,7 @@ pub mod models;
 use crate::errors::Successful;
 use crate::searcher::errors::{PaginatedResult, SearcherResult};
 use crate::searcher::forms::DocumentType;
-use crate::searcher::forms::{DeletePaginatesForm, ScrollNextForm};
+use crate::searcher::forms::{DeleteScrollsForm, ScrollNextForm};
 use crate::searcher::forms::{FulltextParams, SemanticParams};
 
 use serde_json::Value;
@@ -25,7 +25,7 @@ pub trait SearcherService {
 
 #[async_trait::async_trait]
 pub trait PaginatorService {
-    async fn delete_session(&self, form: &DeletePaginatesForm) -> SearcherResult<Successful>;
+    async fn delete_session(&self, form: &DeleteScrollsForm) -> SearcherResult<Successful>;
 
     async fn paginate(
         &self,

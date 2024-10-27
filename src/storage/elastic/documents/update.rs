@@ -1,6 +1,7 @@
 use crate::elastic::ElasticClient;
 use crate::errors::Successful;
-use crate::storage::elastic::{helper as d_helper, EsCxt};
+use crate::storage::elastic::documents::helper as d_helper;
+use crate::storage::elastic::EsCxt;
 use crate::storage::errors::StorageResult;
 use crate::storage::models::{Document, DocumentPreview, DocumentVectors, DocumentsTrait};
 

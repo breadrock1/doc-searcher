@@ -8,7 +8,7 @@ use crate::searcher::elastic::extractor::SearchQueryBuilder;
 use crate::searcher::elastic::search::Searcher;
 use crate::searcher::errors::{PaginatedResult, SearcherError, SearcherResult};
 use crate::searcher::forms::DocumentType;
-use crate::searcher::forms::{DeletePaginatesForm, ScrollNextForm};
+use crate::searcher::forms::{DeleteScrollsForm, ScrollNextForm};
 use crate::searcher::forms::{FulltextParams, SemanticParams};
 use crate::searcher::{PaginatorService, SearcherService};
 use crate::storage::models::{Document, DocumentVectors};
@@ -45,7 +45,7 @@ impl SearcherService for ElasticClient {
 
 #[async_trait::async_trait]
 impl PaginatorService for ElasticClient {
-    async fn delete_session(&self, form: &DeletePaginatesForm) -> SearcherResult<Successful> {
+    async fn delete_session(&self, form: &DeleteScrollsForm) -> SearcherResult<Successful> {
         let ids = form
             .sessions()
             .iter()
