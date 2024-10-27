@@ -10,6 +10,7 @@ maintenance = { status = "actively-developed" }
 [features]
 enable-cacher = ["dep:redis"]
 enable-semantic = []
+enable-prometheus = ["dep:actix-web-prom"]
 default = []
 
 [dependencies]
@@ -37,6 +38,11 @@ tracing-actix-web = "^0.7"
 [dependencies.chrono]
 version = "^0.4"
 features = ["rustc-serialize", "serde"]
+
+[dependencies.actix-web-prom]
+optional = true
+version = "^0.9"
+features = ["process"]
 
 [dependencies.redis]
 optional = true
