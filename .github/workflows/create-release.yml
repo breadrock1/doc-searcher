@@ -19,18 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-          architecture: x64
-
       - name: Get project version
         id: version
         run: |
-          apt update && apt install jq
+          sudo apt update && sudo apt install -y jq
           VERSION=$(cargo metadata --format-version=1 | jq '.packages[] | select(.name=="doc-search").version')
-          echo "project_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "project_version=$VERSION" | grep -E '\d\.\d\.\d' >> $GITHUB_OUTPUT
 
       - name: Create github release
         id: release
