@@ -1,6 +1,6 @@
 use doc_search::searcher::elastic::extractor::SearchQueryBuilder;
 use doc_search::searcher::forms::{FulltextParams, SemanticParams};
-use doc_search::storage::elastic::retrieve::Retrieve;
+use doc_search::storage::elastic::documents::retrieve::Retrieve;
 use doc_search::storage::forms::RetrieveParams;
 use doc_search::storage::models::{Document, DocumentVectors, InfoFolder};
 

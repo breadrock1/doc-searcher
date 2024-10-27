@@ -5,8 +5,9 @@ use actix_web::{web, App, HttpServer};
 use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
 use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
 use doc_search::searcher::{PaginatorService, SearcherService};
+use doc_search::storage::documents::DocumentService;
 use doc_search::storage::endpoints::build_scope as build_storage_scope;
-use doc_search::storage::{DocumentService, FolderService};
+use doc_search::storage::folders::FolderService;
 use doc_search::{config, cors, elastic, logger, swagger, Connectable};
 
 #[cfg(feature = "enable-cacher")]
@@ -56,10 +57,14 @@ async fn main() -> Result<(), anyhow::Error> {
         let cacher_search_cxt: cacher::redis::SemanticParamsCached =
             Box::new(cacher_service.clone());
         #[cfg(feature = "enable-cacher")]
+        let cacher_fulltext_cxt: cacher::redis::FullTextParamsCached =
+            Box::new(cacher_service.clone());
+        #[cfg(feature = "enable-cacher")]
         let cacher_paginate_cxt: cacher::redis::PaginatedCached = Box::new(cacher_service.clone());
         #[cfg(feature = "enable-cacher")]
         let app = app
             .app_data(web::Data::new(cacher_search_cxt))
+            .app_data(web::Data::new(cacher_fulltext_cxt))
             .app_data(web::Data::new(cacher_paginate_cxt));
 
         app.wrap(logger)

@@ -1,5 +1,5 @@
 use crate::errors::{ErrorResponse, Successful};
-use crate::searcher::forms::{DeletePaginatesForm, ScrollNextForm};
+use crate::searcher::forms::{DeleteScrollsForm, ScrollNextForm};
 use crate::searcher::forms::{FulltextParams, SemanticParams};
 use crate::searcher::models::Paginated;
 use crate::storage::forms::{CreateFolderForm, RetrieveParams};
@@ -178,9 +178,9 @@ impl TestExample<ScrollNextForm> for ScrollNextForm {
     }
 }
 
-impl TestExample<DeletePaginatesForm> for DeletePaginatesForm {
-    fn test_example(_value: Option<&str>) -> DeletePaginatesForm {
-        DeletePaginatesForm::builder()
+impl TestExample<DeleteScrollsForm> for DeleteScrollsForm {
+    fn test_example(_value: Option<&str>) -> DeleteScrollsForm {
+        DeleteScrollsForm::builder()
             .sessions(vec![PAGINATE_HASH_ID.to_string()])
             .build()
             .unwrap()

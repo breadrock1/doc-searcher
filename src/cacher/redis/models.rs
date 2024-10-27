@@ -1,4 +1,4 @@
-use crate::searcher::forms::{ScrollNextForm, SemanticParams};
+use crate::searcher::forms::{FulltextParams, ScrollNextForm, SemanticParams};
 use crate::searcher::models::Paginated;
 use crate::storage::models::Document;
 
@@ -6,6 +6,20 @@ use redis::{RedisError, RedisResult, RedisWrite, Value};
 use serde::ser::Error;
 
 impl redis::ToRedisArgs for ScrollNextForm {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        match serde_json::to_string(self) {
+            Ok(json_str) => out.write_arg_fmt(json_str),
+            Err(err) => {
+                tracing::error!("cacher: failed to serialize paginate form: {err:#?}");
+            }
+        }
+    }
+}
+
+impl redis::ToRedisArgs for FulltextParams {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,

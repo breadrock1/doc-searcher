@@ -1,10 +1,10 @@
 extern crate doc_search;
 
 use doc_search::elastic::ElasticClient;
+use doc_search::storage::folders::FolderService;
 use doc_search::storage::forms::CreateFolderForm;
 use doc_search::storage::models::FolderType;
 use doc_search::storage::models::{DEFAULT_FOLDER_ID, INFO_FOLDER_ID};
-use doc_search::storage::FolderService;
 use doc_search::{config, Connectable};
 
 #[tokio::main]

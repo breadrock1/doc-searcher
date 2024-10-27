@@ -1,5 +1,6 @@
 use crate::storage::models::Folder;
 
+use serde::de::Error;
 use serde_json::Value;
 
 #[async_trait::async_trait]
@@ -7,19 +8,20 @@ pub trait FromElasticResponse<'de, T>
 where
     T: serde::Deserialize<'de>,
 {
-    async fn from_value(value: Value) -> Result<T, anyhow::Error>;
+    async fn from_value(value: Value) -> Result<T, serde_json::Error>;
 }
 
 #[async_trait::async_trait]
 impl FromElasticResponse<'_, Folder> for Folder {
-    async fn from_value(value: Value) -> Result<Folder, anyhow::Error> {
+    async fn from_value(value: Value) -> Result<Folder, serde_json::Error> {
         let indices = &value[&"indices"];
         let indices_keys = indices.as_object().and_then(|it| it.keys().next());
 
         let Some(folder_id) = indices_keys else {
             let msg = "empty elastic search response";
             tracing::error!("{msg}");
-            return Err(anyhow::Error::msg(msg));
+
+            return Err(serde_json::Error::custom(msg));
         };
 
         let index_value = &indices[folder_id];
@@ -46,6 +48,6 @@ impl FromElasticResponse<'_, Folder> for Folder {
             .pri(None)
             .rep(None)
             .build()
-            .map_err(anyhow::Error::from)
+            .map_err(|err| serde_json::Error::custom(err.to_string()))
     }
 }
