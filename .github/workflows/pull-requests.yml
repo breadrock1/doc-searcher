@@ -60,14 +60,6 @@ jobs:
             runs-on: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
 
-          - os-name: Windows-x86_64
-            runs-on: windows-latest
-            target: x86_64-pc-windows-msvc
-
-          - os-name: macOS-x86_64
-            runs-on: macOS-latest
-            target: x86_64-apple-darwin
-
     runs-on: ${{ matrix.platform.runs-on }}
     permissions: write-all
     needs: [test]

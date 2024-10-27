@@ -201,13 +201,13 @@ impl ScrollNextForm {
 
 #[derive(Builder, Deserialize, Serialize, Getters, IntoParams, ToSchema)]
 #[getset(get = "pub")]
-pub struct DeletePaginatesForm {
+pub struct DeleteScrollsForm {
     #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     sessions: Vec<String>,
 }
 
-impl DeletePaginatesForm {
-    pub fn builder() -> DeletePaginatesFormBuilder {
-        DeletePaginatesFormBuilder::default()
+impl DeleteScrollsForm {
+    pub fn builder() -> DeleteScrollsFormBuilder {
+        DeleteScrollsFormBuilder::default()
     }
 }

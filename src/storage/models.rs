@@ -62,7 +62,6 @@ pub struct Folder {
     #[schema(example = 100)]
     #[getset(skip)]
     #[getset(get_copy = "pub")]
-    // #[getset(set = "pub")]
     #[serde(alias = "docs.count", skip_serializing_if = "Option::is_none")]
     docs_count: Option<i64>,
 
@@ -85,14 +84,6 @@ impl Folder {
     pub fn builder() -> FolderBuilder {
         FolderBuilder::default()
     }
-
-    // pub fn docs_count(&self) -> Option<&String> {
-    //     self.docs_count.as_ref()
-    // }
-    //
-    // pub fn docs_deleted(&self) -> Option<&String> {
-    //     self.docs_deleted.as_ref()
-    // }
 
     pub fn get_pri_store_size(&self) -> Option<&String> {
         self.pri_store_size.as_ref()
@@ -145,42 +136,45 @@ impl From<&CreateFolderForm> for InfoFolder {
 #[derive(
     Builder, Clone, Default, Deserialize, Serialize, Getters, CopyGetters, Setters, ToSchema,
 )]
+#[getset(get = "pub")]
 pub struct Document {
-    #[getset(get = "pub")]
     #[schema(example = "test-folder")]
     folder_id: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "/test-folder")]
     folder_path: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    #[serde(alias = "document_md5")]
     document_id: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     document_ssdeep: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "test_document.txt")]
     document_name: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "/test-folder/test_document.txt")]
     document_path: String,
+
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = 35345)]
     document_size: i32,
-    #[getset(get = "pub")]
+
     #[schema(example = "document")]
     document_type: String,
-    #[getset(get = "pub")]
+
     #[schema(example = ".txt")]
     document_extension: String,
+
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = 777)]
     document_permissions: i32,
-    #[getset(get_copy = "pub")]
+
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -188,7 +182,7 @@ pub struct Document {
     )]
     #[schema(example = "2024-04-03T13:51:32Z")]
     document_created: Option<DateTime<Utc>>,
-    #[getset(get_copy = "pub")]
+
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -196,12 +190,15 @@ pub struct Document {
     )]
     #[schema(example = "2024-04-25T11:14:55Z")]
     document_modified: Option<DateTime<Utc>>,
+
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_recognition: Option<i32>,
+
     #[getset(set = "pub")]
     highlight: Option<HighlightEntity>,
-    #[getset(get = "pub")]
+
     #[serde(skip_serializing_if = "Option::is_none", default = "Option::default")]
     embeddings: Option<Vec<EmbeddingsVector>>,
 }
@@ -232,13 +229,14 @@ pub struct HighlightEntity {
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, Getters, CopyGetters, ToSchema)]
+#[getset(get = "pub")]
 pub struct DocumentPreview {
-    #[getset(get = "pub")]
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     id: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "test_document.txt")]
     name: String,
+
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -246,16 +244,20 @@ pub struct DocumentPreview {
     )]
     #[schema(example = "2024-04-03T13:51:32Z")]
     created_at: Option<DateTime<Utc>>,
+
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     quality_recognition: Option<i32>,
+
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = 35345)]
     file_size: i32,
-    #[getset(get = "pub")]
+
     #[schema(example = "Test Folder")]
     location: String,
-    #[getset(get = "pub")]
+
     #[schema(example = "test-folder")]
     folder_id: String,
 }
@@ -288,7 +290,7 @@ impl From<&Document> for DocumentPreview {
             .folder_id(value.folder_id().to_owned())
             .name(value.document_name().to_owned())
             .location(value.folder_id().to_owned())
-            .created_at(value.document_created())
+            .created_at(value.document_created().to_owned())
             .quality_recognition(value.quality_recognition())
             .file_size(value.document_size())
             .build()
@@ -297,13 +299,17 @@ impl From<&Document> for DocumentPreview {
 }
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, Getters, Setters, ToSchema)]
+#[getset(get = "pub")]
 pub struct DocumentVectors {
     #[schema(example = "test-llama-folder")]
     folder_id: String,
+
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     document_id: String,
+
     #[schema(example = "test-document.docx")]
     document_name: String,
+
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -311,20 +317,24 @@ pub struct DocumentVectors {
     )]
     #[schema(example = "2024-04-25T11:14:55Z")]
     document_modified: Option<DateTime<Utc>>,
+
     #[getset(set = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     match_score: Option<f64>,
-    #[getset(get = "pub", set = "pub")]
+
+    #[getset(set = "pub")]
     embeddings: Vec<EmbeddingsVector>,
 }
 
 #[derive(Clone, Default, Deserialize, Serialize, Getters, ToSchema)]
+#[getset(get = "pub")]
 pub struct EmbeddingsVector {
-    #[getset(get = "pub")]
     #[schema(example = "18070394574500154a8ab333a3362aa8")]
     chunk_id: String,
+
     #[schema(example = "The Ocean Carrier has been signed.")]
     text_chunk: String,
+
     #[schema(example = "[0.0345456, -0.4353242]")]
     vector: Vec<f64>,
 }
@@ -365,7 +375,7 @@ impl From<&Document> for DocumentVectors {
             .folder_id(value.folder_id().to_owned())
             .document_id(value.document_id().to_owned())
             .document_name(value.document_name().to_owned())
-            .document_modified(value.document_modified())
+            .document_modified(value.document_modified().to_owned())
             .embeddings(Vec::default())
             .match_score(None)
             .build()
@@ -386,10 +396,10 @@ impl From<&DocumentVectors> for Vec<DocumentVectors> {
 
         embeds
             .into_iter()
-            .map(|vecs| {
-                let mut doc_vecs = base_doc_vecs.clone();
-                doc_vecs.append_embeddings(vecs);
-                doc_vecs
+            .map(|tokens| {
+                let mut doc_tokens = base_doc_vecs.clone();
+                doc_tokens.append_embeddings(tokens);
+                doc_tokens
             })
             .collect()
     }

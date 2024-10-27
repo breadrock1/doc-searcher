@@ -66,15 +66,16 @@ impl ElasticClient {
         result: (i64, i64),
     ) -> SearcherResult<Response> {
         let (size, offset) = result;
+        let scroll = scroll.unwrap_or("1m");
         let elastic = es.read().await;
         let response = elastic
             .search(SearchParts::Index(indexes))
             .allow_no_indices(true)
             .pretty(true)
+            .scroll(scroll)
             .from(offset)
             .size(size)
             .body(query)
-            .scroll(scroll.unwrap_or("1m"))
             .send()
             .await?;
 

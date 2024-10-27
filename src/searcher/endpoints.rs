@@ -3,7 +3,7 @@ use crate::cacher::CacherService;
 
 use crate::embeddings::EmbeddingsService;
 use crate::errors::{ErrorResponse, JsonResponse, PaginateResponse, Successful};
-use crate::searcher::forms::{DeletePaginatesForm, DocumentTypeQuery, ScrollNextForm};
+use crate::searcher::forms::{DeleteScrollsForm, DocumentTypeQuery, ScrollNextForm};
 use crate::searcher::forms::{FulltextParams, SemanticParams};
 use crate::searcher::models::Paginated;
 use crate::searcher::{PaginatorService, SearcherService};
@@ -28,7 +28,7 @@ type CacherPaginateContext = Data<Box<dyn CacherService<ScrollNextForm, Paginate
 pub fn build_scope() -> Scope {
     let scope = web::scope("/search")
         .service(search_fulltext)
-        .service(delete_paginate_sessions)
+        .service(delete_scrolls)
         .service(paginate_next);
 
     #[cfg(feature = "enable-semantic")]
@@ -168,8 +168,8 @@ async fn search_semantic(
     path = "/search/paginate/sessions",
     tag = "Search",
     request_body(
-        content = DeletePaginationsForm,
-        example = json!(DeletePaginatesForm::test_example(None)),
+        content = DeleteScrollsForm,
+        example = json!(DeleteScrollsForm::test_example(None)),
     ),
     responses(
         (
@@ -193,9 +193,9 @@ async fn search_semantic(
     )
 )]
 #[delete("/paginate/sessions")]
-async fn delete_paginate_sessions(
+async fn delete_scrolls(
     cxt: PaginateContext,
-    form: Json<DeletePaginatesForm>,
+    form: Json<DeleteScrollsForm>,
 ) -> JsonResponse<Successful> {
     let client = cxt.get_ref();
     let pagination_form = form.0;
