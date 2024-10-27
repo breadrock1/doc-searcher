@@ -16,6 +16,9 @@ use doc_search::cacher;
 #[cfg(feature = "enable-semantic")]
 use doc_search::embeddings;
 
+#[cfg(feature = "enable-prometheus")]
+use doc_search::metrics::prometheus;
+
 #[actix_web::main]
 async fn main() -> Result<(), anyhow::Error> {
     let s_config = config::ServiceConfig::new()?;
@@ -25,13 +28,16 @@ async fn main() -> Result<(), anyhow::Error> {
     let logger_config = s_config.logger();
     logger::init_logger(logger_config)?;
 
-    let search_service = elastic::ElasticClient::connect(s_config.elastic())?;
+    #[cfg(feature = "enable-prometheus")]
+    let prometheus = prometheus::init_prometheus()?;
 
     #[cfg(feature = "enable-semantic")]
     let embed_service = embeddings::native::EmbeddingsClient::connect(s_config.embeddings())?;
 
     #[cfg(feature = "enable-cacher")]
     let cacher_service = cacher::redis::RedisClient::connect(s_config.cacher())?;
+
+    let search_service = elastic::ElasticClient::connect(s_config.elastic())?;
 
     HttpServer::new(move || {
         let cors = cors::build_cors(&cors_config.clone());
@@ -56,16 +62,22 @@ async fn main() -> Result<(), anyhow::Error> {
         #[cfg(feature = "enable-cacher")]
         let cacher_search_cxt: cacher::redis::SemanticParamsCached =
             Box::new(cacher_service.clone());
+
         #[cfg(feature = "enable-cacher")]
         let cacher_fulltext_cxt: cacher::redis::FullTextParamsCached =
             Box::new(cacher_service.clone());
+
         #[cfg(feature = "enable-cacher")]
         let cacher_paginate_cxt: cacher::redis::PaginatedCached = Box::new(cacher_service.clone());
+
         #[cfg(feature = "enable-cacher")]
         let app = app
             .app_data(web::Data::new(cacher_search_cxt))
             .app_data(web::Data::new(cacher_fulltext_cxt))
             .app_data(web::Data::new(cacher_paginate_cxt));
+
+        #[cfg(feature = "enable-prometheus")]
+        let app = app.wrap(prometheus.clone());
 
         app.wrap(logger)
             .wrap(cors)

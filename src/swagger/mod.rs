@@ -21,7 +21,7 @@ use utoipa_swagger_ui::SwaggerUi;
         description = "There is API endpoints of DocSearch project based on Rust and Elasticsearch technologies."
     ),
     paths(
-        metrics,
+        hello,
         get_folder,
         get_folders,
         create_folder,
