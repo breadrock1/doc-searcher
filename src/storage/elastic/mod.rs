@@ -1,4 +1,4 @@
-mod documents;
+pub mod documents;
 mod folders;
 
 use elasticsearch::Elasticsearch;
