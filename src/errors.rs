@@ -3,6 +3,7 @@ use crate::searcher::models::Paginated;
 use crate::embeddings::errors::EmbeddingsError;
 use crate::searcher::errors::SearcherError;
 use crate::storage::errors::StorageError;
+
 use actix_web::http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use getset::{CopyGetters, Getters};

@@ -1,7 +1,7 @@
 workspace = { members = ["crates/elschema"] }
 [package]
 name = "doc-search"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 
 [badges]
@@ -35,14 +35,14 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 tracing-actix-web = "^0.7"
 
-[dependencies.chrono]
-version = "^0.4"
-features = ["rustc-serialize", "serde"]
-
 [dependencies.actix-web-prom]
 optional = true
 version = "^0.9"
 features = ["process"]
+
+[dependencies.chrono]
+version = "^0.4"
+features = ["rustc-serialize", "serde"]
 
 [dependencies.redis]
 optional = true
