@@ -3,8 +3,8 @@ use serde_derive::Deserialize;
 use tracing_subscriber::filter::FromEnvError;
 
 #[derive(Clone, Deserialize, Getters)]
+#[getset(get = "pub")]
 pub struct LoggerConfig {
-    #[getset(get = "pub")]
     level: String,
 }
 
