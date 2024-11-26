@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+  elasticsearch:
+    image: elasticsearch:8.11.2
+    restart: on-failure
+    environment:
+      discovery.type: 'single-node'
+      cluster.name: 'master'
+      ES_JAVA_OPTS: '-Xms2g -Xmx2g'
+      ELASTIC_PASSWORD: 'elastic'
+    ports:
+      - '9200:9200'
+    volumes:
+      - 'es-vol-1:/usr/share/elasticsearch/data'
+
+  cacher:
+    image: redis:latest
+    restart: on-failure
+    environment:
+      REDIS_USER: 'redis'
+      REDIS_PASSWORD: 'redis'
+      REDIS_USER_PASSWORD: 'redis'
+    ports:
+      - '6379:6379'
+    volumes:
+      - 'cacher-vol-1:/data/cacher'
+
+volumes:
+  es-vol-1:
+    driver: local
+  cacher-vol-1:
+    driver: local
+
