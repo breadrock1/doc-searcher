@@ -485,7 +485,7 @@ async fn get_documents(
 
     #[cfg(feature = "enable-cacher")]
     if let Some(docs) = cacher.load(&params).await {
-        tracing::info!("loaded from cache by params: {:?}", &params);
+        tracing::info!(params=?params, "results loaded from cache");
         return Ok(Json(docs));
     }
 

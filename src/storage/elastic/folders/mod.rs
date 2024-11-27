@@ -43,7 +43,7 @@ impl FolderService for ElasticClient {
 
     async fn create_folder(&self, folder_form: &CreateFolderForm) -> StorageResult<Successful> {
         if let Err(err) = helper::create_index(self.es_client(), folder_form).await {
-            tracing::error!("failed to create folder: {err:#?}");
+            tracing::error!(err=?err, "failed to create folder");
             return Err(err);
         }
 
@@ -52,10 +52,10 @@ impl FolderService for ElasticClient {
         match InfoFolder::store_all(es, INFO_FOLDER_ID, &info_folder).await {
             Ok(resp) => Ok(resp),
             Err(err) => {
-                tracing::error!("failed to sync {INFO_FOLDER_ID} while creating folder: {err:#?}");
+                tracing::error!(err=?err, folder=INFO_FOLDER_ID, "failed to create folder");
                 let folder_id = info_folder.index();
                 if let Err(err_) = helper::delete_index(self.es_client(), folder_id).await {
-                    tracing::error!("failed to delete created folder {folder_id}: {err_:#?}");
+                    tracing::error!(err=?err_, folder=folder_id, "failed to delete folder");
                 }
                 Err(err)
             }
@@ -64,14 +64,14 @@ impl FolderService for ElasticClient {
 
     async fn delete_folder(&self, folder_id: &str) -> StorageResult<Successful> {
         if let Err(err) = helper::delete_folder_info(self.es_client(), folder_id).await {
-            tracing::error!("failed to delete folder from folder-info: {err:#?}");
+            tracing::error!(err=?err, "failed to delete folder from info-folder");
             return Err(err);
         }
 
         match helper::delete_index(self.es_client(), folder_id).await {
             Ok(resp) => Ok(resp),
             Err(err) => {
-                tracing::error!("failed to delete folder {folder_id}: {err:#?}");
+                tracing::error!(err=?err, folder=folder_id, "failed to delete folder");
                 Err(err)
             }
         }
