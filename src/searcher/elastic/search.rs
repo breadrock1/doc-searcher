@@ -44,10 +44,10 @@ impl Searcher<DocumentVectors> for DocumentVectors {
         params: &Self::Params,
     ) -> PaginatedResult<DocumentVectors> {
         let scroll = params.scroll_lifetime();
-        let results = params.result_size();
+        let size = params.result_size();
         let indexes = params.folder_ids().split(',').collect::<Vec<&str>>();
         let response =
-            ElasticClient::search_request(es_cxt, query, Some(scroll), &indexes, results).await?;
+            ElasticClient::search_knn_request(es_cxt, query, Some(scroll), &indexes, size).await?;
         let documents = extract_searcher_result::<DocumentVectors>(response).await?;
         Ok(documents)
     }
