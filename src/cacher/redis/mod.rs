@@ -73,13 +73,13 @@ where
         let cxt = self.client.write().await;
         match cxt.get_multiplexed_tokio_connection().await {
             Err(err) => {
-                tracing::warn!("failed to get redis service connection {err:#?}");
+                tracing::warn!(err=?err, "failed to get redis service connection");
                 return;
             }
             Ok(mut conn) => {
                 let set_result: RedisResult<()> = conn.set_ex(key, value, expired_secs).await;
                 if let Err(err) = set_result {
-                    tracing::error!("failed to insert value to redis: {err:#?}");
+                    tracing::error!(err=?err, "failed to insert value to redis");
                     return;
                 };
             }
@@ -91,7 +91,7 @@ where
         match cxt.get_multiplexed_tokio_connection().await {
             Ok(mut conn) => conn.get(key).await.ok(),
             Err(err) => {
-                tracing::warn!("failed to get redis service connection {err:#?}");
+                tracing::warn!(err=?err, "failed to get redis service connection");
                 None
             }
         }
