@@ -113,11 +113,7 @@ pub struct SemanticParams {
 
     #[getset(skip)]
     #[schema(example = 0)]
-    document_size_from: i64,
-
-    #[getset(skip)]
-    #[schema(example = 4096)]
-    document_size_to: i64,
+    result_size: i64,
 
     #[getset(skip)]
     #[schema(example = 5)]
@@ -160,12 +156,11 @@ impl SemanticParams {
         self.query_tokens = Some(tokens);
     }
 
-    pub fn document_size(&self) -> (i64, i64) {
-        (self.document_size_from, self.document_size_to)
-    }
-
-    pub fn result_size(&self) -> (i64, i64) {
-        (self.document_size_from, 100)
+    pub fn result_size(&self) -> i64 {
+        match self.result_size {
+            val if val > 0 => val,
+            _ => 10,
+        }
     }
 }
 
@@ -173,9 +168,9 @@ impl Default for SemanticParams {
     fn default() -> Self {
         SemanticParams::builder()
             .query("Show me something like ...".to_string())
-            .query_tokens(Some(Vec::default()))
+            .query_tokens(None)
             .folder_ids(DEFAULT_FOLDER_ID.to_string())
-            .document_size_from(0)
+            .result_size(5)
             .scroll_lifetime("10m".to_string())
             .knn_amount(Some(5))
             .knn_candidates(Some(100))
