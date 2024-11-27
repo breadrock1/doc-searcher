@@ -86,7 +86,7 @@ async fn search_fulltext(
 
     #[cfg(feature = "enable-cacher")]
     if let Some(docs) = cacher.load(&search_form).await {
-        tracing::info!("loaded from cache by params: {:?}", &search_form);
+        tracing::info!(form=?search_form, "results loaded from cache");
         return Ok(Json(docs));
     }
 
@@ -151,7 +151,7 @@ async fn search_semantic(
 
     #[cfg(feature = "enable-cacher")]
     if let Some(docs) = cacher.load(&search_form).await {
-        tracing::info!("loaded from cache by params: {:?}", &search_form);
+        tracing::info!(form=?search_form, "results loaded from cache");
         return Ok(Json(docs));
     }
 
@@ -251,7 +251,7 @@ async fn paginate_next(
 
     #[cfg(feature = "enable-cacher")]
     if let Some(docs) = cacher.load(&pag_form).await {
-        tracing::info!("loaded from cache by paginate form: {:?}", &pag_form);
+        tracing::info!(form=?pag_form, "results loaded from cache");
         return Ok(Json(docs));
     }
 
