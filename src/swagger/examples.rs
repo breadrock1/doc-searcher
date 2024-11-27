@@ -191,10 +191,9 @@ impl TestExample<SemanticParams> for SemanticParams {
     fn test_example(query: Option<&str>) -> SemanticParams {
         SemanticParams::builder()
             .query(query.unwrap().to_string())
-            .query_tokens(Some(Vec::default()))
+            .query_tokens(None)
             .folder_ids(TEST_FOLDER_ID.to_string())
-            .document_size_to(0)
-            .document_size_from(0)
+            .result_size(5)
             .scroll_lifetime(SEARCH_SCROLL_LIFETIME.to_string())
             .knn_amount(Some(5))
             .knn_candidates(Some(100))

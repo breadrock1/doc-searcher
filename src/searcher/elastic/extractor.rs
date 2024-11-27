@@ -78,7 +78,7 @@ impl SearchQueryBuilder<DocumentVectors> for DocumentVectors {
     type Params = SemanticParams;
 
     async fn build_search_query(s_params: &Self::Params) -> Value {
-        let (size, _) = s_params.document_size();
+        let size = s_params.result_size();
         let candidates = s_params.candidates();
         let knn_amount = s_params.knn_amount();
         let query_vector = s_params.query_tokens();

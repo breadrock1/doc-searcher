@@ -35,12 +35,13 @@ impl ServiceConfig {
         let run_mode = std::env::var("DOC_SEARCHER_RUN_MODE").unwrap_or("development".into());
 
         let run_mode_file_path = format!("./config/{}", run_mode);
-        let current_config_file = File::with_name(&run_mode_file_path);
+        let file_config = File::with_name(&run_mode_file_path).required(false);
+
+        let env_config = Environment::with_prefix("DOC_SEARCHER").try_parsing(true);
 
         let settings = Config::builder()
-            .add_source(File::with_name("./config/development.toml"))
-            .add_source(current_config_file.required(false))
-            .add_source(Environment::with_prefix("DOC_SEARCHER"))
+            .add_source(file_config)
+            .add_source(env_config)
             .build()?;
 
         settings.try_deserialize()
