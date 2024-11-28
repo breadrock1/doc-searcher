@@ -31,7 +31,7 @@ where
     let founded_arr = &value[&"hits"][&"hits"].as_array();
     let Some(values) = founded_arr else {
         let msg = "returned empty data to get all documents";
-        tracing::warn!(msg);
+        tracing::warn!(details = msg, "failed to extract documents");
         return Err(StorageError::SerdeError(msg.to_string()));
     };
 
@@ -40,7 +40,7 @@ where
         .filter_map(|val| match T::extract_from_response(val) {
             Ok(doc) => serde_json::to_value(doc).ok(),
             Err(err) => {
-                tracing::error!("failed to extract documents: {err:#?}");
+                tracing::error!(err=?err, "failed to extract documents");
                 None
             }
         })

@@ -13,7 +13,7 @@ impl redis::ToRedisArgs for ScrollNextForm {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
             Err(err) => {
-                tracing::error!("cacher: failed to serialize paginate form: {err:#?}");
+                tracing::error!(err=?err, "cacher: failed to serialize paginate form");
             }
         }
     }
@@ -27,7 +27,7 @@ impl redis::ToRedisArgs for FulltextParams {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
             Err(err) => {
-                tracing::error!("cacher: failed to serialize paginate form: {err:#?}");
+                tracing::error!(err=?err, "cacher: failed to serialize paginate form");
             }
         }
     }
@@ -41,7 +41,7 @@ impl redis::ToRedisArgs for SemanticParams {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
             Err(err) => {
-                tracing::error!("cacher: failed to serialize search parameters: {err:#?}");
+                tracing::error!(err=?err, "cacher: failed to serialize search parameters");
             }
         }
     }
@@ -55,7 +55,7 @@ impl redis::ToRedisArgs for Document {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
             Err(err) => {
-                tracing::error!("cacher: failed to serialize document: {err:#?}");
+                tracing::error!(err=?err, "cacher: failed to serialize document");
             }
         }
     }
@@ -69,7 +69,7 @@ impl redis::ToRedisArgs for Paginated<Vec<serde_json::Value>> {
         match serde_json::to_string(self) {
             Ok(json_str) => out.write_arg_fmt(json_str),
             Err(err) => {
-                tracing::error!("cacher: failed to serialize paginated docs: {err:#?}");
+                tracing::error!(err=?err, "cacher: failed to serialize paginated docs");
             }
         }
     }

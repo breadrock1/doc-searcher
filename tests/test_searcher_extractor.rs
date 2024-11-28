@@ -5,7 +5,7 @@ use doc_search::storage::forms::RetrieveParams;
 use doc_search::storage::models::{Document, DocumentVectors, InfoFolder};
 
 const DOCUMENT_QUERY: &str = "{\"_source\":{\"exclude\":[\"embeddings\"]},\"highlight\":{\"fields\":{\"content\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]}},\"order\":\"\"},\"query\":{\"bool\":{\"filter\":{\"bool\":{\"must\":[{\"range\":{\"document_created\":{\"gte\":\"2025-04-26T11:14:55Z\",\"lte\":\"2024-04-26T11:14:55Z\"}}},{\"range\":{\"document_size\":{\"gte\":4096,\"lte\":0}}},{\"term\":{\"document_extension\":\"txt\"}},{\"term\":{\"document_type\":\"document\"}}]}},\"must\":{\"multi_match\":{\"fields\":[\"content\",\"document_path\"],\"query\":\"Some query\"}}}}}";
-const SEMANTIC_QUERY: &str = "{\"knn\":{\"field\":\"embeddings.vector\",\"k\":5,\"num_candidates\":100,\"query_vector\":[]},\"size\":0}";
+const SEMANTIC_QUERY: &str = "{\"knn\":{\"field\":\"embeddings.vector\",\"k\":5,\"num_candidates\":100,\"query_vector\":[]},\"size\":5}";
 const ALL_RECORDS_QUERY: &str = "{\"query\":{\"bool\":{\"filter\":{\"bool\":{\"must\":[{\"exists\":{\"field\":\"folder_type\"}}]}},\"must\":{\"match_all\":{}}}}}";
 
 #[tokio::test]
@@ -40,8 +40,7 @@ fn build_semantic_params() -> SemanticParams {
         .query("Some query".to_string())
         .query_tokens(None)
         .folder_ids("test-folder-vector".to_string())
-        .document_size_to(37000)
-        .document_size_from(0)
+        .result_size(5)
         .scroll_lifetime("1m".to_string())
         .knn_amount(Some(5))
         .knn_candidates(Some(100))

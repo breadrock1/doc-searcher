@@ -69,8 +69,8 @@ impl PaginatorService for ElasticClient {
         doc_type: &DocumentType,
     ) -> PaginatedResult<Value> {
         if let DocumentType::Vectors = doc_type {
-            let msg = "Can't paginate vectors search result";
-            tracing::warn!("Failed while paginate: {msg}");
+            let msg = "can't paginate vectors search result";
+            tracing::warn!(details = msg, "failed while paginating");
             return Err(SearcherError::ServiceError(msg.to_string()));
         }
 
