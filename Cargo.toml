@@ -11,7 +11,7 @@ maintenance = { status = "actively-developed" }
 enable-cacher = ["dep:redis"]
 enable-semantic = []
 enable-prometheus = ["dep:actix-web-prom"]
-default = []
+default = ["enable-semantic"]
 
 [dependencies]
 actix = "0.13.5"

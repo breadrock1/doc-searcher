@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use datetime::{deserialize_dt, serialize_dt};
 use derive_builder::Builder;
 use getset::{CopyGetters, Getters, Setters};
-use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 use utoipa::ToSchema;
 
@@ -52,25 +52,39 @@ pub struct Folder {
     #[schema(example = 1)]
     #[getset(skip)]
     #[getset(get_copy = "pub")]
-    #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "from_str_to_i64")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "from_str_to_i64"
+    )]
     pri: Option<i64>,
 
     #[schema(example = 1)]
     #[getset(skip)]
     #[getset(get_copy = "pub")]
-    #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "from_str_to_i64")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "from_str_to_i64"
+    )]
     rep: Option<i64>,
 
     #[schema(example = 100)]
     #[getset(skip)]
     #[getset(get_copy = "pub")]
-    #[serde(alias = "docs.count", skip_serializing_if = "Option::is_none", deserialize_with = "from_str_to_i64")]
+    #[serde(
+        alias = "docs.count",
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "from_str_to_i64"
+    )]
     docs_count: Option<i64>,
 
     #[schema(example = 50)]
     #[getset(skip)]
     #[getset(get_copy = "pub")]
-    #[serde(alias = "docs.deleted", skip_serializing_if = "Option::is_none", deserialize_with = "from_str_to_i64")]
+    #[serde(
+        alias = "docs.deleted",
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "from_str_to_i64"
+    )]
     docs_deleted: Option<i64>,
 
     #[schema(example = "890.3kb")]

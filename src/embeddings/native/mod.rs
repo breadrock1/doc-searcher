@@ -66,12 +66,12 @@ impl EmbeddingsService for EmbeddingsClient {
             .await?;
 
         let embed_data = response.json::<Vec<Vec<f64>>>().await?;
-
-        let Some(tokens) = embed_data.first() else {
-            let msg = "loaded empty tokens array";
-            return Err(EmbeddingsError::ServiceError(msg.to_string()));
-        };
-
-        Ok(tokens.to_owned())
+        match embed_data.first() {
+            Some(tokens) => Ok(tokens.to_owned()),
+            None => {
+                let msg = "loaded empty tokens array";
+                Err(EmbeddingsError::ServiceError(msg.to_string()))
+            }
+        }
     }
 }

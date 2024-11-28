@@ -31,7 +31,7 @@ where
     let founded_arr = &value[&"hits"][&"hits"].as_array();
     let Some(values) = founded_arr else {
         let msg = "returned empty data to get all documents";
-        tracing::warn!(details=msg, "failed to extract documents");
+        tracing::warn!(details = msg, "failed to extract documents");
         return Err(StorageError::SerdeError(msg.to_string()));
     };
 
