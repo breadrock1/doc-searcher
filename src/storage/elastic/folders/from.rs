@@ -19,7 +19,7 @@ impl FromElasticResponse<'_, Folder> for Folder {
 
         let Some(folder_id) = indices_keys else {
             let msg = "empty elastic search response";
-            tracing::error!(details=msg, "failed to extract folder data");
+            tracing::error!(details = msg, "failed to extract folder data");
             return Err(serde_json::Error::custom(msg));
         };
 
