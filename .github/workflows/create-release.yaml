@@ -22,8 +22,9 @@ jobs:
       - name: Get project version
         id: version
         run: |
-          VERSION=$(cargo metadata --format-version=1 | jq '.packages[] | select(.name=="doc-search").version')
-          echo "project_version=$VERSION" | grep -E '\d\.\d\.\d' >> $GITHUB_OUTPUT
+          cargo generate-lockfile
+          VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
+          echo "project_version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create github release
         id: release
