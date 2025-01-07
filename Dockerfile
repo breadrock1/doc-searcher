@@ -1,6 +1,6 @@
 ARG FEATURES='--features default'
 
-FROM rust:1.75 AS chef
+FROM rust:1.78 AS chef
 
 WORKDIR /app
 
@@ -33,10 +33,12 @@ RUN cargo install ${FEATURES} --bins --path .
 
 
 # Target layer based on tiny official ubuntu image with neccessary binaries and data to run.
-FROM ubuntu:rolling
+FROM debian:bookworm-slim
 
+RUN apt-get update && apt install -y openssl
 WORKDIR /app
 
+COPY ./config /app/config
 COPY --from=builder /app/target/release/doc-searcher-init .
 COPY --from=builder /app/target/release/doc-searcher-run .
 

@@ -9,6 +9,9 @@ use derive_builder::Builder;
 use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 
+const CONFIG_PREFIX: &str = "DOC_SEARCHER";
+const SERVICE_RUN_MODE: &str = "DOC_SEARCHER_RUN_MODE";
+
 #[derive(Builder, Clone, Deserialize, Getters)]
 #[getset(get = "pub")]
 pub struct ServiceConfig {
@@ -32,16 +35,15 @@ pub struct ServerConfig {
 
 impl ServiceConfig {
     pub fn new() -> Result<Self, ConfigError> {
-        let run_mode = std::env::var("DOC_SEARCHER_RUN_MODE").unwrap_or("development".into());
+        let run_mode = std::env::var(SERVICE_RUN_MODE).unwrap_or("development".into());
 
         let run_mode_file_path = format!("./config/{}", run_mode);
-        let file_config = File::with_name(&run_mode_file_path).required(false);
-
-        let env_config = Environment::with_prefix("DOC_SEARCHER").try_parsing(true);
+        let current_config_file = File::with_name(&run_mode_file_path);
 
         let settings = Config::builder()
-            .add_source(file_config)
-            .add_source(env_config)
+            .add_source(File::with_name("./config/development"))
+            .add_source(current_config_file.required(false))
+            .add_source(Environment::with_prefix(CONFIG_PREFIX))
             .build()?;
 
         settings.try_deserialize()
