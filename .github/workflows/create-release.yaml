@@ -35,21 +35,21 @@ jobs:
           draft: false
           prerelease: false
           body_path: CHANGELOG.md
-          tag_name: doc-searcher-${{ steps.version.outputs.project_version }}
-          release_name: doc-searcher-${{ steps.version.outputs.project_version }}
+          tag_name: ${{ steps.version.outputs.project_version }}
+          release_name: ${{ steps.version.outputs.project_version }}
 
   build:
     name: build project
     strategy:
       matrix:
         features:
-          - name: all
+          - name: all-features
             options: '--all-features'
-          - name: with cache
+          - name: with-cache
             options: '--features enable-cacher'
-          - name: with semantic
+          - name: with-semantic
             options: '--features enable-semantic'
-          - name: with prometheus
+          - name: with-prometheus
             options: '--features enable-prometheus'
 
     runs-on: ubuntu-latest
@@ -66,7 +66,7 @@ jobs:
         uses: vimtor/action-zip@5f1c4aa587ea41db1110df6a99981dbe19cee310
         with:
           files: ./target
-          dest: doc-searcher-${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
+          dest: ${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
           recursive: true
 
       - name: Upload linux artifact
@@ -75,6 +75,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url_output }}
-          asset_name: doc-searcher-${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
-          asset_path: ./doc-searcher-${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
+          asset_name: ${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
+          asset_path: ./${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
           asset_content_type: application/zip
