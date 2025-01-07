@@ -18,6 +18,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          apt-get update 
+          apt-get install jq
+          cargo build --verbose
 
       - name: Get project version
         id: version
