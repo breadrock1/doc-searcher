@@ -22,6 +22,7 @@ jobs:
       - name: Get project version
         id: version
         run: |
+          cargo generate-lockfile
           VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
           echo "project_version=$VERSION" >> $GITHUB_OUTPUT
 
