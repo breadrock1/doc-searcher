@@ -1,6 +1,5 @@
-[![Pull Request Actions](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-requests.yml/badge.svg)](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-requests.yml)
-[![Build](https://img.shields.io/github/actions/workflow/status/breadrock1/doc-searcher/pull-requests.yml?branch=master&event=push)](https://img.shields.io/github/actions/workflow/status/breadrock1/doc-searcher/pull-requests.yml?branch=master&event=push)
-
+[![Pull Request Actions](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-request.yaml/badge.svg)](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-request.yaml)
+[![Build](https://img.shields.io/github/actions/workflow/status/breadrock1/doc-searcher/pull-request.yaml?branch=master&event=push)](https://img.shields.io/github/actions/workflow/status/breadrock1/doc-searcher/pull-request.yaml?branch=master&event=push)
 
 [![Target - Linux](https://img.shields.io/badge/OS-Linux-blue?logo=linux&logoColor=white)](https://www.linux.org/ "Go to Linux homepage")
 [![Target - MacOS](https://img.shields.io/badge/OS-MacOS-blue?logo=linux&logoColor=white)](https://www.apple.com/ "Go to Apple homepage")
@@ -8,18 +7,18 @@
 
 # Doc-Searcher
 
-Doc-Searcher is a simple and flexible document search application, leveraging the capabilities of Rust and Elasticsearch (by default)
+Doc-Searcher is the simple and flexible searching documents application, leveraging the capabilities of Rust and Elasticsearch (by default)
 to provide efficient and effective full-text search in documents. This project aims to offer a straightforward solution for
 indexing and searching through a large corpus of documents with the speed and accuracy provided by Elasticsearch.
 
-The main goal - implement simple but powerful system of storing and indexing documents with searching functionality (full-text, semantic).
+The main goal is implement simple and powerful system of storing and indexing documents with searching functionality (full-text, semantic).
 I decided to use elasticsearch as default searching engine, but you may use own solutions by implementing several async traits
 for Tantivy, QDrant or own solution:
 
 
- - CacherService      - API of doc-notifier service interactions;
- - EmbeddingsService  - API of doc-notifier service interactions;
- - MetricsService     - API of metrics to monitoring;
+ - CacherService      - API of caching service like Redis;
+ - EmbeddingsService  - API of embeddings service;
+ - MetricsService     - API of metrics to monitoring like prometheus;
  - StorageService     - API (CRUD) of indexed folders and documents;
  - SearcherService    - API of searcher functionalities (fulltext, vector, similar).
  
@@ -59,8 +58,9 @@ These instructions will get you a copy of the project up and running on your loc
 ### Features of project
 
 Features to parse and store documents localy from current service (Not stable):
- - enable-cacher    - enable cacher service like redis oe other custom implementation;
- - enable-semantic  - enable llm service for semantic searching.
+ - enable-cacher     - enable cacher service like redis oe other custom implementation;
+ - enable-semantic   - enable llm service for semantic searching;
+ - enable-prometheus - enable metrics prometheus collecting.
 
 [![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 
