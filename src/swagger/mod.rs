@@ -15,10 +15,31 @@ use crate::searcher::models::*;
 pub use utoipa::{openapi, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
+const SWAGGER_TARGET_URL: &str = "/swagger/{_:.*}";
+const SWAGGER_FILE_URL: &str = "/api-docs/openapi.json";
+
 #[derive(OpenApi)]
 #[openapi(
     info(
-        description = "There is API endpoints of DocSearch project based on Rust and Elasticsearch technologies."
+        description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
+    ),
+    tags(
+        (
+            name = "metrics",
+            description = "Metrics API routes (prometheus)",
+        ),
+        (
+            name = "search",
+            description = "Search API routes",
+        ),
+        (
+            name = "folders",
+            description = "APIs to manage buckets of data storage",
+        ),
+        (
+            name = "documents",
+            description = "APIs to manage documents stored into folders",
+        ),
     ),
     paths(
         hello,
@@ -54,18 +75,12 @@ use utoipa_swagger_ui::SwaggerUi;
             Paginated<Vec<Document>>,
             DeleteScrollsForm,
             ScrollNextForm,
-        )
+        ),
     ),
-    tags (
-        (
-            name = "DocSearcher REST API",
-            description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
-        )
-    )
 )]
 pub struct ApiDoc;
 
 pub fn build_swagger_service() -> SwaggerUi {
-    let openapi = ApiDoc::openapi();
-    SwaggerUi::new("/swagger/{_:.*}").url("/api-docs/openapi.json", openapi.clone())
+    let api_doc = ApiDoc::openapi();
+    SwaggerUi::new(SWAGGER_TARGET_URL).url(SWAGGER_FILE_URL, api_doc)
 }

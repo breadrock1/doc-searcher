@@ -15,7 +15,8 @@ pub fn build_scope() -> Scope {
 #[utoipa::path(
     get,
     path = "/metrics/hello",
-    tag = "Metrics",
+    tag = "metrics",
+    description = "Get current service metrics",
     responses(
         (
             status = 200,

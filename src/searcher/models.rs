@@ -1,3 +1,5 @@
+use crate::storage::models::Document;
+
 use derive_builder::Builder;
 use getset::{Getters, MutGetters};
 use serde::{Deserialize, Serialize};

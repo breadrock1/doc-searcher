@@ -7,7 +7,7 @@ use crate::searcher::forms::{DeleteScrollsForm, DocumentTypeQuery, ScrollNextFor
 use crate::searcher::forms::{FulltextParams, SemanticParams};
 use crate::searcher::models::Paginated;
 use crate::searcher::{PaginatorService, SearcherService};
-use crate::storage::models::{Document, DocumentVectors};
+use crate::storage::models::Document;
 use crate::swagger::examples::TestExample;
 
 use actix_web::web::{Data, Json, Query};
@@ -41,7 +41,8 @@ pub fn build_scope() -> Scope {
 #[utoipa::path(
     post,
     path = "/search/fulltext",
-    tag = "Search",
+    tag = "search",
+    description = "Fulltext searching",
     params(
         (
             "document_type", Query,
@@ -51,13 +52,11 @@ pub fn build_scope() -> Scope {
     ),
     request_body(
         content = FulltextParams,
-        example = json!(FulltextParams::test_example(Some("Ocean Carrier"))),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = Paginated<Vec<Document>>,
             example = json!(Paginated::<Vec<Document>>::test_example(None)),
         ),
         (
@@ -102,7 +101,8 @@ async fn search_fulltext(
 #[utoipa::path(
     post,
     path = "/search/semantic",
-    tag = "Search",
+    tag = "search",
+    description = "Semantic search by vector",
     params(
         (
             "document_type", Query,
@@ -112,14 +112,12 @@ async fn search_fulltext(
     ),
     request_body(
         content = SemanticParams,
-        example = json!(SemanticParams::test_example(Some("Ocean Carrier"))),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = [Document],
-            example = json!(Paginated::<Vec<DocumentVectors>>::test_example(None)),
+            body = Vec<Document>,
         ),
         (
             status = 400,
@@ -166,10 +164,10 @@ async fn search_semantic(
 #[utoipa::path(
     delete,
     path = "/search/paginate/sessions",
-    tag = "Search",
+    tag = "search",
+    description = "Delete all existing pagination sessions",
     request_body(
         content = DeleteScrollsForm,
-        example = json!(DeleteScrollsForm::test_example(None)),
     ),
     responses(
         (
@@ -206,7 +204,8 @@ async fn delete_scrolls(
 #[utoipa::path(
     post,
     path = "/search/paginate/next",
-    tag = "Search",
+    description = "Load next chunk of search results",
+    tag = "search",
     params(
         (
             "document_type", Query,
@@ -216,13 +215,11 @@ async fn delete_scrolls(
     ),
     request_body(
         content = ScrollNextForm,
-        example = json!(ScrollNextForm::test_example(None))
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = Paginated::<Vec<Document>>,
             example = json!(Paginated::<Vec<Document>>::test_example(None)),
         ),
         (

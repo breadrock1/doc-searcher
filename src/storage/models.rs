@@ -117,10 +117,15 @@ impl Folder {
 #[derive(Builder, Clone, Default, Deserialize, Serialize, Getters, CopyGetters)]
 #[getset(get = "pub")]
 pub struct InfoFolder {
+    #[schema(example = "test-folder")]
     index: String,
+    #[schema(example = "Test folder")]
     name: String,
+    #[schema(example = "./test-folder")]
     location: String,
+    #[schema(example = "admin")]
     user_id: String,
+    #[schema(example = "test-folder")]
     folder_type: FolderType,
     #[getset(skip)]
     #[getset(get_copy = "pub")]
@@ -164,41 +169,30 @@ impl From<&CreateFolderForm> for InfoFolder {
 pub struct Document {
     #[schema(example = "test-folder")]
     folder_id: String,
-
     #[schema(example = "/test-folder")]
     folder_path: String,
-
     #[schema(example = "The Ocean Carrier has been signed.")]
     content: String,
-
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     document_id: String,
-
     #[schema(example = "12:JOGnP+EfzRR00C+guy:DIFJrukvZRRWWATP+Eo70y")]
     document_ssdeep: String,
-
     #[schema(example = "test_document.txt")]
     document_name: String,
-
     #[schema(example = "/test-folder/test_document.txt")]
     document_path: String,
-
     #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = 35345)]
     document_size: i32,
-
     #[schema(example = "document")]
     document_type: String,
-
     #[schema(example = ".txt")]
     document_extension: String,
-
     #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = 777)]
     document_permissions: i32,
-
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -206,7 +200,6 @@ pub struct Document {
     )]
     #[schema(example = "2024-04-03T13:51:32Z")]
     document_created: Option<DateTime<Utc>>,
-
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -214,15 +207,13 @@ pub struct Document {
     )]
     #[schema(example = "2024-04-25T11:14:55Z")]
     document_modified: Option<DateTime<Utc>>,
-
     #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(example = 100)]
     quality_recognition: Option<i32>,
-
     #[getset(set = "pub")]
     highlight: Option<HighlightEntity>,
-
     #[serde(skip_serializing_if = "Option::is_none", default = "Option::default")]
     embeddings: Option<Vec<EmbeddingsVector>>,
 }
@@ -249,6 +240,7 @@ impl DocumentsTrait for Document {
 
 #[derive(Builder, Clone, Default, Deserialize, Serialize, ToSchema)]
 pub struct HighlightEntity {
+    #[schema(example = "[0.0345456, -0.4353242]")]
     content: Vec<String>,
 }
 
@@ -257,10 +249,8 @@ pub struct HighlightEntity {
 pub struct DocumentPreview {
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     id: String,
-
     #[schema(example = "test_document.txt")]
     name: String,
-
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -268,20 +258,17 @@ pub struct DocumentPreview {
     )]
     #[schema(example = "2024-04-03T13:51:32Z")]
     created_at: Option<DateTime<Utc>>,
-
     #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(example = 100)]
     quality_recognition: Option<i32>,
-
     #[getset(skip)]
     #[getset(get_copy = "pub")]
     #[schema(example = 35345)]
     file_size: i32,
-
     #[schema(example = "Test Folder")]
     location: String,
-
     #[schema(example = "test-folder")]
     folder_id: String,
 }
@@ -327,13 +314,10 @@ impl From<&Document> for DocumentPreview {
 pub struct DocumentVectors {
     #[schema(example = "test-llama-folder")]
     folder_id: String,
-
     #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
     document_id: String,
-
     #[schema(example = "test-document.docx")]
     document_name: String,
-
     #[serde(
         serialize_with = "serialize_dt",
         deserialize_with = "deserialize_dt",
@@ -341,11 +325,10 @@ pub struct DocumentVectors {
     )]
     #[schema(example = "2024-04-25T11:14:55Z")]
     document_modified: Option<DateTime<Utc>>,
-
     #[getset(set = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(example = 0.1)]
     match_score: Option<f64>,
-
     #[getset(set = "pub")]
     embeddings: Vec<EmbeddingsVector>,
 }
@@ -355,10 +338,8 @@ pub struct DocumentVectors {
 pub struct EmbeddingsVector {
     #[schema(example = "18070394574500154a8ab333a3362aa8")]
     chunk_id: String,
-
     #[schema(example = "The Ocean Carrier has been signed.")]
     text_chunk: String,
-
     #[schema(example = "[0.0345456, -0.4353242]")]
     vector: Vec<f64>,
 }

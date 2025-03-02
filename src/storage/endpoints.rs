@@ -3,7 +3,6 @@ use crate::cacher::CacherService;
 
 use crate::errors::JsonResponse;
 use crate::errors::{ErrorResponse, Successful};
-use crate::searcher::models::Paginated;
 use crate::storage::documents::DocumentService;
 use crate::storage::folders::FolderService;
 use crate::storage::forms::FolderTypeQuery;
@@ -37,7 +36,8 @@ pub fn build_scope() -> Scope {
 #[utoipa::path(
     get,
     path = "/storage/folders",
-    tag = "Folders",
+    tag = "folders",
+    description = "Get all existing folders",
     params(
         (
             "show_all", Query,
@@ -49,8 +49,7 @@ pub fn build_scope() -> Scope {
         (
             status = 200,
             description = "Successful",
-            body = [Folder],
-            example = json!(vec![Folder::test_example(None)]),
+            body = Vec<Folder>,
         ),
         (
             status = 400,
@@ -81,7 +80,8 @@ async fn get_folders(
 #[utoipa::path(
     get,
     path = "/storage/folders/{folder_id}",
-    tag = "Folders",
+    tag = "folders",
+    description = "Get folder info by folder id",
     params(
         (
             "folder_id" = &str,
@@ -94,7 +94,6 @@ async fn get_folders(
             status = 200,
             description = "Returned Folder structure",
             body = Folder,
-            example = json!(Folder::test_example(None)),
         ),
         (
             status = 400,
@@ -121,10 +120,10 @@ async fn get_folder(cxt: FolderContext, path: Path<String>) -> JsonResponse<Fold
 #[utoipa::path(
     put,
     path = "/storage/folders/create",
-    tag = "Folders",
+    tag = "folders",
+    description = "Create new folder",
     request_body(
         content = CreateFolderForm,
-        example = json!(CreateFolderForm::test_example(None)),
     ),
     responses(
         (
@@ -164,7 +163,8 @@ async fn create_folder(
 #[utoipa::path(
     delete,
     path = "/storage/folders/{folder_id}",
-    tag = "Folders",
+    tag = "folders",
+    description = "Delete folder by folder id",
     params(
         (
             "folder_id" = &str,
@@ -205,7 +205,8 @@ async fn delete_folder(cxt: FolderContext, path: Path<String>) -> JsonResponse<S
 #[utoipa::path(
     get,
     path = "/storage/folders/{folder_id}/documents/{document_id}",
-    tag = "Documents",
+    tag = "documents",
+    description = "Get document object by folder and document ids",
     params(
         (
             "folder_id" = &str,
@@ -228,7 +229,6 @@ async fn delete_folder(cxt: FolderContext, path: Path<String>) -> JsonResponse<S
             status = 200,
             description = "Returned document by id",
             body = Document,
-            example = json!(Document::test_example(None)),
         ),
         (
             status = 400,
@@ -261,7 +261,8 @@ async fn get_document(
 #[utoipa::path(
     put,
     path = "/storage/folders/{folder_id}/documents/create",
-    tag = "Documents",
+    tag = "documents",
+    description = "Create and store new document",
     params(
         (
             "folder_id" = &str,
@@ -276,7 +277,6 @@ async fn get_document(
     ),
     request_body(
         content = Document,
-        example = json!(Document::test_example(None)),
     ),
     responses(
         (
@@ -321,7 +321,8 @@ async fn create_document(
 #[utoipa::path(
     delete,
     path = "/storage/folders/{folder_id}/documents/{document_id}",
-    tag = "Documents",
+    tag = "documents",
+    description = "Delete document",
     params(
         (
             "folder_id" = &str,
@@ -370,7 +371,8 @@ async fn delete_document(
 #[utoipa::path(
     post,
     path = "/storage/folders/{folder_id}/documents/{document_id}",
-    tag = "Documents",
+    tag = "documents",
+    description = "Updated stored document object",
     params(
         (
             "folder_id" = &str,
@@ -390,7 +392,6 @@ async fn delete_document(
     ),
     request_body(
         content = Document,
-        example = json!(Document::test_example(None)),
     ),
     responses(
         (
@@ -433,7 +434,8 @@ async fn update_document(
 #[utoipa::path(
     post,
     path = "/storage/folders/{folder_id}/documents",
-    tag = "Documents",
+    tag = "documents",
+    description = "Get documents from folder",
     params(
         (
             "folder_id" = &str,
@@ -448,13 +450,11 @@ async fn update_document(
     ),
     request_body(
         content = RetrieveParams,
-        example = json!(RetrieveParams::test_example(None)),
     ),
     responses(
         (
             status = 200,
             description = "Successful",
-            body = Paginated::<Vec<Document>>,
             example = json!(Paginated::<Vec<Document>>::test_example(None)),
         ),
         (
