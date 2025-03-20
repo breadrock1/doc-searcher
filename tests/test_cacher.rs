@@ -6,7 +6,7 @@ mod test_redis_client {
     use doc_search::config::ServiceConfig;
     use doc_search::storage::models::Document;
     use doc_search::swagger::examples::TestExample;
-    use doc_search::Connectable;
+    use doc_search::ServiceConnect;
 
     #[tokio::test]
     async fn test_redis_cacher_client() -> Result<(), anyhow::Error> {

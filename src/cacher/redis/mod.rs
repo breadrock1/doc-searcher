@@ -1,10 +1,11 @@
 mod models;
+mod config;
 
 use crate::cacher::config::CacherConfig;
 use crate::cacher::CacherService;
 use crate::searcher::forms::{FulltextParams, ScrollNextForm, SemanticParams};
 use crate::searcher::models::Paginated;
-use crate::Connectable;
+use crate::ServiceConnect;
 
 use getset::CopyGetters;
 use redis::{AsyncCommands, Client, RedisError, RedisResult};
@@ -18,7 +19,7 @@ pub type PaginatedCached = Box<dyn CacherService<ScrollNextForm, Paginated<Vec<V
 
 #[derive(Clone, CopyGetters)]
 pub struct RedisClient {
-    options: Arc<RedisOptions>,
+    options: Arc<RedisConfig>,
     client: Arc<RwLock<Client>>,
 }
 
@@ -46,7 +47,7 @@ impl From<&CacherConfig> for RedisOptions {
     }
 }
 
-impl Connectable for RedisClient {
+impl ServiceConnect for RedisClient {
     type Config = CacherConfig;
     type Error = RedisError;
     type Service = RedisClient;

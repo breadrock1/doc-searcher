@@ -1,49 +1,50 @@
-use crate::cacher::config::CacherConfig;
-use crate::cors::CorsConfig;
-use crate::elastic::ElasticConfig;
-use crate::embeddings::config::EmbeddingsConfig;
-use crate::logger::LoggerConfig;
-
-use config::{Config, ConfigError, Environment, File};
+use config::{Config, ConfigError, Environment, File, FileFormat};
 use derive_builder::Builder;
-use getset::{CopyGetters, Getters};
+use dotenv::dotenv;
+use getset::Getters;
 use serde_derive::Deserialize;
 
+use crate::cacher::config::CacherConfig;
+use crate::engine::elastic::config::ElasticConfig;
+use crate::tokenizer::config::TokenizerConfig;
+use crate::logger::LoggerConfig;
+use crate::server::config::ServerConfig;
+
 const CONFIG_PREFIX: &str = "DOC_SEARCHER";
-const SERVICE_RUN_MODE: &str = "DOC_SEARCHER_RUN_MODE";
+const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";
+const DEV_FILE_CONFIG_PATH: &str = "./config/development.toml";
 
 #[derive(Builder, Clone, Deserialize, Getters)]
 #[getset(get = "pub")]
 pub struct ServiceConfig {
     logger: LoggerConfig,
     server: ServerConfig,
-    cors: CorsConfig,
     elastic: ElasticConfig,
     cacher: CacherConfig,
-    embeddings: EmbeddingsConfig,
-}
-
-#[derive(Clone, Deserialize, CopyGetters, Getters)]
-pub struct ServerConfig {
-    #[getset(get = "pub")]
-    address: String,
-    #[getset(get_copy = "pub")]
-    port: u16,
-    #[getset(get_copy = "pub")]
-    workers_num: usize,
+    tokenizer: TokenizerConfig,
 }
 
 impl ServiceConfig {
     pub fn new() -> Result<Self, ConfigError> {
-        let run_mode = std::env::var(SERVICE_RUN_MODE).unwrap_or("development".into());
+        dotenv().ok();
 
+        let dev_file_config = File::with_name(DEV_FILE_CONFIG_PATH);
+
+        let run_mode = std::env::var(SERVICE_RUN_MODE).unwrap_or("development".into());
         let run_mode_file_path = format!("./config/{}", run_mode);
-        let current_config_file = File::with_name(&run_mode_file_path);
+        let file_config = File::with_name(&run_mode_file_path)
+            .format(FileFormat::Toml)
+            .required(false);
+
+        let env_config = Environment::with_prefix(CONFIG_PREFIX)
+            .prefix_separator("__")
+            .separator("__")
+            .try_parsing(true);
 
         let settings = Config::builder()
-            .add_source(File::with_name("./config/development"))
-            .add_source(current_config_file.required(false))
-            .add_source(Environment::with_prefix(CONFIG_PREFIX))
+            .add_source(dev_file_config)
+            .add_source(file_config)
+            .add_source(env_config)
             .build()?;
 
         settings.try_deserialize()

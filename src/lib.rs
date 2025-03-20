@@ -1,19 +1,16 @@
 pub mod cacher;
 pub mod config;
-pub mod cors;
-pub mod elastic;
-pub mod embeddings;
+pub mod engine;
 pub mod errors;
 pub mod logger;
-pub mod metrics;
-pub mod searcher;
-pub mod storage;
-pub mod swagger;
+pub mod tokenizer;
+pub mod server;
 
-pub trait Connectable {
+#[async_trait::async_trait]
+pub trait ServiceConnect {
     type Config;
     type Error;
-    type Service;
+    type Client;
 
-    fn connect(config: &Self::Config) -> Result<Self::Service, Self::Error>;
+    async fn connect(config: &Self::Config) -> Result<Self::Client, Self::Error>;
 }

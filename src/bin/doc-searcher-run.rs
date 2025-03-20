@@ -1,95 +1,45 @@
 extern crate doc_search;
 
-use actix_web::middleware::Logger;
-use actix_web::{web, App, HttpServer};
-use doc_search::metrics::endpoints::build_scope as build_metrics_scope;
-use doc_search::searcher::endpoints::build_scope as build_searcher_scope;
-use doc_search::searcher::{PaginatorService, SearcherService};
-use doc_search::storage::documents::DocumentService;
-use doc_search::storage::endpoints::build_scope as build_storage_scope;
-use doc_search::storage::folders::FolderService;
-use doc_search::{config, cors, elastic, logger, swagger, Connectable};
+use doc_search::{logger, server, ServiceConnect};
+use doc_search::config;
+use doc_search::engine::elastic::ElasticClient;
+use doc_search::server::ServerApp;
+use doc_search::tokenizer::baai::BAAIClient;
+use std::sync::Arc;
+use tokio::net::TcpListener;
+use tower_http::{cors, trace};
 
-#[cfg(feature = "enable-cacher")]
-use doc_search::cacher;
-
-#[cfg(feature = "enable-semantic")]
-use doc_search::embeddings;
-
-#[cfg(feature = "enable-prometheus")]
-use doc_search::metrics::prometheus;
-
-#[actix_web::main]
-async fn main() -> Result<(), anyhow::Error> {
+#[tokio::main(worker_threads = 6)]
+async fn main() -> anyhow::Result<()> {
     let s_config = config::ServiceConfig::new()?;
 
-    let server_config = s_config.server();
-    let cors_config = s_config.cors().clone();
     let logger_config = s_config.logger();
     logger::init_logger(logger_config)?;
 
-    #[cfg(feature = "enable-prometheus")]
-    let prometheus = prometheus::init_prometheus()?;
+    let tokenizer = Arc::new(BAAIClient::connect(s_config.tokenizer().baai()).await?);
+    let searcher = Arc::new(ElasticClient::connect(s_config.elastic()).await?);
 
-    #[cfg(feature = "enable-semantic")]
-    let embed_service = embeddings::native::EmbeddingsClient::connect(s_config.embeddings())?;
+    let server_config = s_config.server();
+    let listener = TcpListener::bind(server_config.address()).await?;
+    let server_app = ServerApp::new(
+        searcher.clone(),
+        searcher.clone(),
+        searcher.clone(),
+        searcher.clone(),
+        tokenizer,
+    );
 
-    #[cfg(feature = "enable-cacher")]
-    let cacher_service = cacher::redis::RedisClient::connect(s_config.cacher())?;
+    let trace_layer = trace::TraceLayer::new_for_http()
+        .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
+        .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO));
 
-    let search_service = elastic::ElasticClient::connect(s_config.elastic())?;
+    let cors_layer = cors::CorsLayer::permissive();
 
-    HttpServer::new(move || {
-        let cors = cors::build_cors(&cors_config.clone());
-        let logger = Logger::default();
+    let app = server::init_server(server_app)
+        .layer(trace_layer)
+        .layer(cors_layer);
 
-        let documents_cxt: Box<dyn DocumentService> = Box::new(search_service.clone());
-        let folders_cxt: Box<dyn FolderService> = Box::new(search_service.clone());
-        let paginator_cxt: Box<dyn PaginatorService> = Box::new(search_service.clone());
-        let searcher_cxt: Box<dyn SearcherService> = Box::new(search_service.clone());
-
-        let app = App::new()
-            .app_data(web::Data::new(documents_cxt))
-            .app_data(web::Data::new(folders_cxt))
-            .app_data(web::Data::new(paginator_cxt))
-            .app_data(web::Data::new(searcher_cxt));
-
-        #[cfg(feature = "enable-semantic")]
-        let embed_cxt: Box<dyn embeddings::EmbeddingsService> = Box::new(embed_service.clone());
-        #[cfg(feature = "enable-semantic")]
-        let app = app.app_data(web::Data::new(embed_cxt));
-
-        #[cfg(feature = "enable-cacher")]
-        let cacher_search_cxt: cacher::redis::SemanticParamsCached =
-            Box::new(cacher_service.clone());
-
-        #[cfg(feature = "enable-cacher")]
-        let cacher_fulltext_cxt: cacher::redis::FullTextParamsCached =
-            Box::new(cacher_service.clone());
-
-        #[cfg(feature = "enable-cacher")]
-        let cacher_paginate_cxt: cacher::redis::PaginatedCached = Box::new(cacher_service.clone());
-
-        #[cfg(feature = "enable-cacher")]
-        let app = app
-            .app_data(web::Data::new(cacher_search_cxt))
-            .app_data(web::Data::new(cacher_fulltext_cxt))
-            .app_data(web::Data::new(cacher_paginate_cxt));
-
-        #[cfg(feature = "enable-prometheus")]
-        let app = app.wrap(prometheus.clone());
-
-        app.wrap(logger)
-            .wrap(cors)
-            .service(build_metrics_scope())
-            .service(build_storage_scope())
-            .service(build_searcher_scope())
-            .service(swagger::build_swagger_service())
-    })
-    .bind((server_config.address().to_owned(), server_config.port()))?
-    .workers(server_config.workers_num())
-    .run()
-    .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
