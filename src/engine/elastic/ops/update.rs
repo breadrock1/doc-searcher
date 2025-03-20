@@ -9,7 +9,11 @@ use crate::engine::error::StorageResult;
 use crate::engine::model::{Document, DocumentPreview, DocumentVectors, DocumentsTrait};
 use crate::errors::Successful;
 
-async fn update_object(es_cxt: Arc<RwLock<Elasticsearch>>, form: &str, doc: &Document) -> StorageResult<Successful> {
+async fn update_object(
+    es_cxt: Arc<RwLock<Elasticsearch>>,
+    form: &str,
+    doc: &Document,
+) -> StorageResult<Successful> {
     let doc_id = doc.get_doc_id();
     let elastic = es_cxt.write().await;
     let response = elastic
@@ -27,12 +31,20 @@ pub trait UpdateTrait<T>
 where
     T: DocumentsTrait + serde::Serialize,
 {
-    async fn update(es_cxt: Arc<RwLock<Elasticsearch>>, folder_id: &str, form: &T) -> StorageResult<Successful>;
+    async fn update(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        folder_id: &str,
+        form: &T,
+    ) -> StorageResult<Successful>;
 }
 
 #[async_trait::async_trait]
 impl UpdateTrait<Document> for Document {
-    async fn update(es_cxt: Arc<RwLock<Elasticsearch>>, folder_id: &str, form: &Document) -> StorageResult<Successful> {
+    async fn update(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        folder_id: &str,
+        form: &Document,
+    ) -> StorageResult<Successful> {
         update_object(es_cxt, folder_id, form).await
     }
 }

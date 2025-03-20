@@ -1,12 +1,15 @@
 use elasticsearch::{ClearScrollParts, ScrollParts};
 use serde_json::Value;
 
-use crate::engine::elastic::{converter, search};
+use crate::engine::elastic::helper::converter;
+use crate::engine::elastic::helper::extractor::SearchQueryBuilder;
+use crate::engine::elastic::ops::search;
+use crate::engine::elastic::ops::search::Searcher;
 use crate::engine::elastic::ElasticClient;
-use crate::engine::elastic::extractor::SearchQueryBuilder;
-use crate::engine::elastic::search::Searcher;
 use crate::engine::error::{PaginatedResult, SearcherError, SearcherResult};
-use crate::engine::form::{DeleteScrollsForm, DocumentType, FulltextParams, ScrollNextForm, SemanticParams};
+use crate::engine::form::{
+    DeleteScrollsForm, DocumentType, FulltextParams, ScrollNextForm, SemanticParams,
+};
 use crate::engine::model::{Document, DocumentVectors};
 use crate::engine::{PaginatorService, SearcherService};
 use crate::errors::Successful;

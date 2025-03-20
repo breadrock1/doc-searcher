@@ -5,7 +5,7 @@ use serde::Serialize;
 use thiserror::Error;
 use utoipa::ToSchema;
 
-use crate::engine::error::SearcherError;
+use crate::engine::error::{SearcherError, StorageError};
 use crate::server::swagger::SwaggerExample;
 
 pub type ServerResult<T> = Result<T, ServerError>;
@@ -14,25 +14,19 @@ pub type ServerResult<T> = Result<T, ServerError>;
 pub enum ServerError {
     #[error("not found error: {0}")]
     NotFound(String),
-    #[error("worker {0} is launched")]
-    Launched(String),
     #[error("internal service error: {0}")]
     InternalError(String),
-    #[error("searcher error: {0}")]
-    SearcherError(String),
-    #[error("service unavailable")]
-    ServiceUnavailable,
+    #[error("service unavailable: {0}")]
+    ServiceUnavailable(String),
 }
 
 impl ServerError {
     pub fn status_code(&self) -> (String, StatusCode) {
         match self {
             ServerError::NotFound(msg) => (msg.to_owned(), StatusCode::NOT_FOUND),
-            ServerError::Launched(msg) => (msg.to_owned(), StatusCode::CONFLICT),
             ServerError::InternalError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::SearcherError(err) => (err.to_string(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::ServiceUnavailable => {
-                ("service unavailable".to_owned(), StatusCode::SERVICE_UNAVAILABLE)
+            ServerError::ServiceUnavailable(msg) => {
+                (msg.to_owned(), StatusCode::SERVICE_UNAVAILABLE)
             }
         }
     }
@@ -40,7 +34,32 @@ impl ServerError {
 
 impl From<SearcherError> for ServerError {
     fn from(err: SearcherError) -> Self {
-        ServerError::SearcherError(err.to_string())
+        match err {
+            SearcherError::ServiceUnavailable(err) => {
+                ServerError::ServiceUnavailable(err.to_string())
+            }
+            SearcherError::PaginateError(err) => ServerError::InternalError(err.to_string()),
+            SearcherError::RequestTimeout(err) => ServerError::InternalError(err.to_string()),
+            SearcherError::ServiceError(err) => ServerError::InternalError(err.to_string()),
+            SearcherError::RuntimeError(err) => ServerError::InternalError(err.to_string()),
+            SearcherError::SerdeError(err) => ServerError::InternalError(err.to_string()),
+            SearcherError::NotFound(err) => ServerError::NotFound(err.to_string()),
+        }
+    }
+}
+
+impl From<StorageError> for ServerError {
+    fn from(err: StorageError) -> Self {
+        match err {
+            StorageError::ServiceUnavailable(err) => {
+                ServerError::ServiceUnavailable(err.to_string())
+            }
+            StorageError::RequestTimeout(err) => ServerError::InternalError(err.to_string()),
+            StorageError::ServiceError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::RuntimeError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::SerdeError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::NotFound(err) => ServerError::NotFound(err.to_string()),
+        }
     }
 }
 
@@ -67,7 +86,7 @@ impl SwaggerExample for ServerError {
 
     fn example(value: Option<&str>) -> Self::Example {
         match value {
-            None => ServerError::ServiceUnavailable,
+            None => ServerError::ServiceUnavailable("service unavailable".to_owned()),
             Some(msg) => ServerError::InternalError(msg.to_owned()),
         }
     }

@@ -3,8 +3,8 @@ pub mod config;
 pub mod engine;
 pub mod errors;
 pub mod logger;
-pub mod tokenizer;
 pub mod server;
+pub mod tokenizer;
 
 #[async_trait::async_trait]
 pub trait ServiceConnect {

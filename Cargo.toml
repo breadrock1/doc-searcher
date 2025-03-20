@@ -14,10 +14,9 @@ panic = "abort"
 strip = "debuginfo"
 
 [features]
-enable-cacher = ["dep:redis"]
+enable-cacher-redis = ["dep:redis"]
 enable-semantic = []
-enable-prometheus = []
-default = ["enable-semantic"]
+default = []
 
 [dependencies]
 axum-prometheus = "0.8.0"

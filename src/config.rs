@@ -6,9 +6,9 @@ use serde_derive::Deserialize;
 
 use crate::cacher::config::CacherConfig;
 use crate::engine::elastic::config::ElasticConfig;
-use crate::tokenizer::config::TokenizerConfig;
 use crate::logger::LoggerConfig;
 use crate::server::config::ServerConfig;
+use crate::tokenizer::config::TokenizerConfig;
 
 const CONFIG_PREFIX: &str = "DOC_SEARCHER";
 const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";

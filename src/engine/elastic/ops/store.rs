@@ -13,8 +13,17 @@ use crate::errors::Successful;
 #[async_trait::async_trait]
 pub trait StoreTrait<T: DocumentsTrait + serde::Serialize> {
     async fn create_body(form: &T) -> Vec<JsonBody<Value>>;
-    async fn store(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str, form: &T) -> StorageResult<Successful>;
-    async fn store_all(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str, form: &T) -> StorageResult<Successful>;
+    #[allow(dead_code)]
+    async fn store(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        index: &str,
+        form: &T,
+    ) -> StorageResult<Successful>;
+    async fn store_all(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        index: &str,
+        form: &T,
+    ) -> StorageResult<Successful>;
 }
 
 #[async_trait::async_trait]
@@ -30,7 +39,11 @@ impl StoreTrait<Document> for Document {
         body
     }
 
-    async fn store(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str, form: &Document) -> StorageResult<Successful> {
+    async fn store(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        index: &str,
+        form: &Document,
+    ) -> StorageResult<Successful> {
         let doc_id = form.get_doc_id();
         let elastic = es_cxt.write().await;
         let response = elastic
@@ -45,7 +58,11 @@ impl StoreTrait<Document> for Document {
         Ok(response)
     }
 
-    async fn store_all(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str, form: &Document) -> StorageResult<Successful> {
+    async fn store_all(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        index: &str,
+        form: &Document,
+    ) -> StorageResult<Successful> {
         let body = Document::create_body(form).await;
         let elastic = es_cxt.write().await;
         let response = elastic
@@ -134,7 +151,11 @@ impl StoreTrait<InfoFolder> for InfoFolder {
         body
     }
 
-    async fn store(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str, form: &InfoFolder) -> StorageResult<Successful> {
+    async fn store(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        index: &str,
+        form: &InfoFolder,
+    ) -> StorageResult<Successful> {
         let doc_id = form.get_doc_id();
         let elastic = es_cxt.write().await;
         let response = elastic
@@ -149,7 +170,11 @@ impl StoreTrait<InfoFolder> for InfoFolder {
         Ok(response)
     }
 
-    async fn store_all(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str, form: &InfoFolder) -> StorageResult<Successful> {
+    async fn store_all(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        index: &str,
+        form: &InfoFolder,
+    ) -> StorageResult<Successful> {
         let body = InfoFolder::create_body(form).await;
         let elastic = es_cxt.write().await;
         let response = elastic

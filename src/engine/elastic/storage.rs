@@ -1,12 +1,13 @@
-use elasticsearch::{DeleteParts, GetParts};
 use elasticsearch::http::Method;
 use elasticsearch::params::Refresh;
+use elasticsearch::{DeleteParts, GetParts};
 use serde_json::Value;
 
-use crate::engine::elastic::{helper, ElasticClient};
-use crate::engine::error::StorageResult;
 use crate::engine::elastic::from::FromElasticResponse;
-use crate::engine::elastic::store::StoreTrait;
+use crate::engine::elastic::helper;
+use crate::engine::elastic::ops::store::StoreTrait;
+use crate::engine::elastic::ElasticClient;
+use crate::engine::error::StorageResult;
 use crate::engine::form::{CreateFolderForm, RetrieveParams};
 use crate::engine::model::{Document, Folder, FolderType, InfoFolder, INFO_FOLDER_ID};
 use crate::engine::{DocumentService, FolderService};
@@ -146,4 +147,3 @@ impl DocumentService for ElasticClient {
         Ok(response)
     }
 }
-

@@ -1,21 +1,20 @@
 #[cfg(test)]
-#[cfg(feature = "enable-cacher")]
+#[cfg(feature = "enable-cacher-redis")]
 mod test_redis_client {
     use doc_search::cacher::redis::RedisClient;
     use doc_search::cacher::CacherService;
     use doc_search::config::ServiceConfig;
-    use doc_search::storage::models::Document;
-    use doc_search::swagger::examples::TestExample;
+    use doc_search::engine::model::Document;
     use doc_search::ServiceConnect;
 
     #[tokio::test]
     async fn test_redis_cacher_client() -> Result<(), anyhow::Error> {
         let s_config = ServiceConfig::new()?;
 
-        let cacher_config = s_config.cacher();
-        let cacher = RedisClient::connect(cacher_config)?;
+        let cacher_config = s_config.cacher().redis();
+        let cacher = RedisClient::connect(cacher_config).await?;
 
-        let test_doc = Document::test_example(None);
+        let test_doc = Document::default();
         cacher.insert(test_doc.document_id(), &test_doc).await;
 
         let cached_doc_opt: Option<Document> = cacher.load(test_doc.document_id()).await;

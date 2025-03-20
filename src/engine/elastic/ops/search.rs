@@ -1,11 +1,11 @@
-use elasticsearch::Elasticsearch;
 use elasticsearch::http::response::Response;
+use elasticsearch::Elasticsearch;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use crate::engine::elastic::helper::extractor::SearchQueryBuilder;
 use crate::engine::elastic::ElasticClient;
-use crate::engine::elastic::extractor::SearchQueryBuilder;
 use crate::engine::error::PaginatedResult;
 use crate::engine::form::{FulltextParams, SemanticParams};
 use crate::engine::model::{Document, DocumentVectors, DocumentsTrait, Paginated};
@@ -14,7 +14,11 @@ use crate::engine::model::{Document, DocumentVectors, DocumentsTrait, Paginated}
 pub trait Searcher<T: DocumentsTrait + serde::Serialize> {
     type Params;
 
-    async fn search(es_cxt: Arc<RwLock<Elasticsearch>>, query: &Value, params: &Self::Params) -> PaginatedResult<T>;
+    async fn search(
+        es_cxt: Arc<RwLock<Elasticsearch>>,
+        query: &Value,
+        params: &Self::Params,
+    ) -> PaginatedResult<T>;
 }
 
 #[async_trait::async_trait]
@@ -55,7 +59,7 @@ impl Searcher<DocumentVectors> for DocumentVectors {
     }
 }
 
-pub(super) async fn extract_searcher_result<T>(response: Response) -> PaginatedResult<T>
+pub(crate) async fn extract_searcher_result<T>(response: Response) -> PaginatedResult<T>
 where
     T: SearchQueryBuilder<T> + DocumentsTrait + serde::Serialize,
 {

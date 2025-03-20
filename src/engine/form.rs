@@ -1,9 +1,11 @@
+use crate::engine::model::{
+    Document, DocumentPreview, DocumentVectors, FolderType, DEFAULT_FOLDER_ID,
+};
 use derive_builder::Builder;
 use getset::{CopyGetters, Getters, Setters};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
-use crate::engine::model::{Document, DocumentPreview, DocumentVectors, FolderType, DEFAULT_FOLDER_ID};
 
 #[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]

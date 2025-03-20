@@ -4,7 +4,7 @@ use derive_builder::Builder;
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::engine::form::CreateFolderForm;
 
@@ -137,7 +137,6 @@ where
     D: Deserializer<'de>,
 {
     let s: String = Deserialize::deserialize(deserializer)?;
-    // Ok(i64::from_str(&s).map_err(|err| Error::custom(err)).ok())
     Ok(i64::from_str(&s).ok())
 }
 
@@ -195,7 +194,16 @@ impl From<&CreateFolderForm> for InfoFolder {
 }
 
 #[derive(
-    Builder, Clone, Default, Deserialize, Serialize, Getters, CopyGetters, Setters, ToSchema,
+    Builder,
+    Clone,
+    Default,
+    Deserialize,
+    Serialize,
+    Getters,
+    CopyGetters,
+    Setters,
+    ToSchema,
+    IntoParams,
 )]
 #[getset(get = "pub")]
 pub struct Document {

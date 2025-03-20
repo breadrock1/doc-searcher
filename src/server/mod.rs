@@ -1,15 +1,14 @@
 pub mod config;
 mod errors;
 mod router;
-mod swagger;
-
-use axum::routing::{delete, get, patch, post, put};
-use axum::Router;
-use axum_prometheus::PrometheusMetricLayer;
-use std::sync::Arc;
+pub(crate) mod swagger;
 
 use crate::engine::{DocumentService, FolderService, PaginatorService, SearcherService};
 use crate::tokenizer::TokenizerService;
+use axum::routing::{get, post};
+use axum::Router;
+use axum_prometheus::PrometheusMetricLayer;
+use std::sync::Arc;
 
 pub struct ServerApp<F, D, S, P, T>
 where
@@ -71,7 +70,10 @@ where
                 .delete(router::storage::delete_folder)
                 .put(router::storage::create_folder),
         )
-        .route("/storage/{folder_id}/documents", post(router::storage::get_documents))
+        .route(
+            "/storage/{folder_id}/documents",
+            post(router::storage::get_documents),
+        )
         .route(
             "/storage/{folder_id}/{document_id}",
             post(router::storage::get_document)
@@ -81,8 +83,14 @@ where
         )
         .route("/search/fulltext", post(router::searcher::search_fulltext))
         .route("/search/semantic", post(router::searcher::search_semantic))
-        .route("/search/paginate/next", post(router::searcher::paginate_next))
-        .route("/search/paginate/sessions", post(router::searcher::delete_scrolls))
+        .route(
+            "/search/paginate/next",
+            post(router::searcher::paginate_next),
+        )
+        .route(
+            "/search/paginate/sessions",
+            post(router::searcher::delete_scrolls),
+        )
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .layer(prometheus_layer)
         .with_state(app_arc)

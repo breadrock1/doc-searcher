@@ -1,15 +1,18 @@
+#![allow(clippy::type_complexity)]
+
 use axum::extract::{Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
+use crate::engine::form::{DeleteScrollsForm, DocumentTypeQuery, ScrollNextForm};
+use crate::engine::form::{FulltextParams, SemanticParams};
+use crate::engine::model::Document;
 use crate::engine::{DocumentService, FolderService, PaginatorService, SearcherService};
-use crate::engine::form::{DeleteScrollsForm, DocumentTypeQuery, FulltextParams, ScrollNextForm, SemanticParams};
-use crate::engine::model::{Document, Paginated};
 use crate::errors::{ErrorResponse, Successful};
 use crate::server::errors::{ServerError, ServerResult};
-use crate::server::ServerApp;
 use crate::server::swagger::SwaggerExample;
+use crate::server::ServerApp;
 use crate::tokenizer::TokenizerService;
 
 #[utoipa::path(
@@ -31,7 +34,7 @@ use crate::tokenizer::TokenizerService;
         (
             status = 200,
             description = "Successful",
-            // body = Paginated<Vec<Document>>,
+            body = Vec<Document>,
         ),
         (
             status = 400,
@@ -110,7 +113,10 @@ where
     P: PaginatorService + Send + Sync,
     T: TokenizerService + Send + Sync,
 {
-    let query_tokens = state.tokenizer.compute(form.query()).await
+    let query_tokens = state
+        .tokenizer
+        .compute(form.query())
+        .await
         .map_err(|err| ServerError::InternalError(err.to_string()))?;
 
     form.set_tokens(query_tokens);
@@ -138,7 +144,7 @@ where
         (
             status = 200,
             description = "Successful",
-            // body = Paginated<Vec<Document>>,
+            body = Vec<Document>,
         ),
         (
             status = 400,

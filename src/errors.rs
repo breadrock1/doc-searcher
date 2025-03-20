@@ -1,6 +1,6 @@
 use axum::http::StatusCode;
-use axum::Json;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 use getset::{CopyGetters, Getters};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -40,7 +40,9 @@ impl ServerError {
         match self {
             ServerError::CacherError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
             ServerError::MetricsError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::EmbeddingsError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
+            ServerError::EmbeddingsError(msg) => {
+                (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR)
+            }
             ServerError::StorageError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
             ServerError::SearchingError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
             ServerError::SerdeError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
@@ -76,8 +78,7 @@ impl IntoResponse for ServerError {
         }
 
         let (message, status) = self.status_code();
-        let mut resp = Json(ErrorResponse { message })
-            .into_response();
+        let mut resp = Json(ErrorResponse { message }).into_response();
 
         *resp.status_mut() = status;
         resp

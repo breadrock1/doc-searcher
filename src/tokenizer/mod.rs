@@ -1,5 +1,5 @@
-pub mod config;
 pub mod baai;
+pub mod config;
 pub mod errors;
 
 use errors::TokenizerResult;

@@ -1,23 +1,32 @@
+pub(super) mod converter;
+pub mod extractor;
+
+use elasticsearch::http::response::Response;
 use elasticsearch::indices::IndicesDeleteParts;
 use elasticsearch::params::Refresh;
 use elasticsearch::{DeleteParts, Elasticsearch, GetParts, IndexParts};
+use serde::ser::Error;
+use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
-use elasticsearch::http::response::Response;
-use serde::Deserialize;
 use tokio::sync::RwLock;
 
-use crate::engine::elastic::{helper, schema, ElasticClient};
-use crate::engine::elastic::retrieve::Retrieve;
-use crate::engine::elastic::store::StoreTrait;
-use crate::engine::elastic::update::UpdateTrait;
+use crate::engine::elastic::ops::retrieve::Retrieve;
+use crate::engine::elastic::ops::store::StoreTrait;
+use crate::engine::elastic::ops::update::UpdateTrait;
+use crate::engine::elastic::{schema, ElasticClient};
 use crate::engine::error::{StorageError, StorageResult};
 use crate::engine::form::{CreateFolderForm, RetrieveParams};
-use crate::engine::model::{Document, DocumentVectors, DocumentsTrait, Folder, FolderType, InfoFolder, INFO_FOLDER_ID};
+use crate::engine::model::{
+    Document, DocumentVectors, DocumentsTrait, Folder, FolderType, InfoFolder, INFO_FOLDER_ID,
+};
 use crate::errors::Successful;
 
-pub async fn create_index(es_cxt: Arc<RwLock<Elasticsearch>>, form: &CreateFolderForm) -> StorageResult<Successful> {
+pub async fn create_index(
+    es_cxt: Arc<RwLock<Elasticsearch>>,
+    form: &CreateFolderForm,
+) -> StorageResult<Successful> {
     let folder_id = form.folder_id();
     let folder_schema = schema::build_schema_by_folder_type(form.folder_type())?;
 
@@ -32,7 +41,10 @@ pub async fn create_index(es_cxt: Arc<RwLock<Elasticsearch>>, form: &CreateFolde
     Ok(response)
 }
 
-pub async fn delete_index(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str) -> StorageResult<Successful> {
+pub async fn delete_index(
+    es_cxt: Arc<RwLock<Elasticsearch>>,
+    index: &str,
+) -> StorageResult<Successful> {
     let elastic = es_cxt.write().await;
     let response = elastic
         .indices()
@@ -58,7 +70,7 @@ pub async fn load_folder_info(
         .await?
         .error_for_status_code()?;
 
-    match helper::extract_document::<InfoFolder>(response).await {
+    match extract_document::<InfoFolder>(response).await {
         Err(err) => {
             tracing::warn!("failed to load folder name: {err:#?}");
             Err(err)
@@ -71,7 +83,10 @@ pub async fn load_folder_info(
     }
 }
 
-pub async fn delete_folder_info(es_cxt: Arc<RwLock<Elasticsearch>>, index: &str) -> StorageResult<Successful> {
+pub async fn delete_folder_info(
+    es_cxt: Arc<RwLock<Elasticsearch>>,
+    index: &str,
+) -> StorageResult<Successful> {
     let elastic = es_cxt.write().await;
     let response = elastic
         .delete(DeleteParts::IndexId(INFO_FOLDER_ID, index))
@@ -144,7 +159,6 @@ fn set_folders_name(mut folder: Folder, info_folders: &HashMap<String, InfoFolde
     folder
 }
 
-
 pub async fn extract_document<'de, T>(response: Response) -> StorageResult<T>
 where
     T: DocumentsTrait + serde::Deserialize<'de>,
@@ -164,7 +178,8 @@ where
     let Some(values) = founded_arr else {
         let msg = "returned empty data to get all documents";
         tracing::warn!(details = msg, "failed to extract documents");
-        return Err(StorageError::SerdeError(msg.to_string()));
+        let err = serde_json::Error::custom(msg);
+        return Err(StorageError::SerdeError(err));
     };
 
     let documents = values

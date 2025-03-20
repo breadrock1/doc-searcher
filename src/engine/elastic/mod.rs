@@ -1,15 +1,10 @@
 pub mod config;
-mod helper;
-mod update;
-mod store;
-mod converter;
-mod extractor;
 mod from;
-mod retrieve;
+pub mod helper;
+pub mod ops;
 mod schema;
 mod searcher;
 mod storage;
-mod search;
 
 use elasticsearch::auth::Credentials;
 use elasticsearch::cert::CertificateValidation;
@@ -20,7 +15,7 @@ use elasticsearch::http::transport::SingleNodeConnectionPool;
 use elasticsearch::http::transport::TransportBuilder;
 use elasticsearch::http::{Method, Url};
 use elasticsearch::{Elasticsearch, Error, SearchParts};
-use getset::{CopyGetters};
+use getset::CopyGetters;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -103,12 +98,10 @@ impl ElasticClient {
             .send()
             .await?;
 
-        match response.error_for_status_code() {
-            Ok(resp) => Ok(resp),
-            Err(err) => {
-                Err(SearcherError::from(err))
-            }
-        }
+        let result = response
+            .error_for_status_code()
+            .map_err(SearcherError::from)?;
+        Ok(result)
     }
 
     pub async fn search_knn_request(
@@ -130,13 +123,10 @@ impl ElasticClient {
             .send()
             .await?;
 
-        match response.error_for_status_code() {
-            Ok(resp) => Ok(resp),
-            Err(err) => {
-                tracing::error!(err=?err, "failed knn response from elastic");
-                Err(SearcherError::from(err))
-            }
-        }
+        let result = response
+            .error_for_status_code()
+            .map_err(SearcherError::from)?;
+        Ok(result)
     }
 
     pub async fn extract_response_msg(response: Response) -> Result<Successful, Error> {

@@ -1,12 +1,14 @@
+#![allow(clippy::type_complexity)]
+
 use axum::extract::{Path, Query, State};
-use axum::Json;
 use axum::response::IntoResponse;
+use axum::Json;
 use serde_json::Value;
 use std::sync::Arc;
 
-use crate::engine::{DocumentService, FolderService, PaginatorService, SearcherService};
 use crate::engine::form::{CreateFolderForm, FolderTypeQuery, RetrieveParams, ShowAllFlag};
-use crate::engine::model::{Document, Folder, FolderType, Paginated};
+use crate::engine::model::{Document, Folder, FolderType};
+use crate::engine::{DocumentService, FolderService, PaginatorService, SearcherService};
 use crate::errors::{ErrorResponse, ServerResult, Successful};
 use crate::server::swagger::SwaggerExample;
 use crate::server::ServerApp;
@@ -228,7 +230,7 @@ where
         (
             status = 200,
             description = "Successful",
-            // body = Paginated<Vec<Document>>,
+            body = Vec<Document>,
         ),
         (
             status = 400,
@@ -260,7 +262,10 @@ where
     // let folder_type = folder_type.folder_type();
     let folder_type = FolderType::Document;
     let form = RetrieveParams::default();
-    let documents = state.documents.get_documents(&path, &folder_type, &form).await?;
+    let documents = state
+        .documents
+        .get_documents(&path, &folder_type, &form)
+        .await?;
     Ok(Json(documents))
 }
 
@@ -320,7 +325,10 @@ where
 {
     let (folder_id, doc_id) = path;
     let folder_type = folder_type.folder_type();
-    let document = state.documents.get_document(&folder_id, &doc_id, &folder_type).await?;
+    let document = state
+        .documents
+        .get_document(&folder_id, &doc_id, &folder_type)
+        .await?;
     Ok(Json(document))
 }
 
@@ -384,7 +392,10 @@ where
 {
     let (folder_id, _) = path;
     let folder_type = folder_type.folder_type();
-    let status = state.documents.create_document(&folder_id, &form, &folder_type).await?;
+    let status = state
+        .documents
+        .create_document(&folder_id, &form, &folder_type)
+        .await?;
     Ok(Json(status))
 }
 
@@ -501,6 +512,9 @@ where
 {
     let (folder_id, _) = path;
     let folder_type = folder_type.folder_type();
-    let status = state.documents.update_document(&folder_id, &form, &folder_type).await?;
+    let status = state
+        .documents
+        .update_document(&folder_id, &form, &folder_type)
+        .await?;
     Ok(Json(status))
 }

@@ -60,7 +60,6 @@ const SWAGGER_FILE_URL: &str = "/api-docs/openapi.json";
             FulltextParams,
             SemanticParams,
             RetrieveParams,
-            // Paginated<Vec<Document>>,
             DeleteScrollsForm,
             ScrollNextForm,
         ),
@@ -80,7 +79,7 @@ pub trait SwaggerExample {
 }
 
 impl SwaggerExample for Successful {
-    type Example = Successful;
+    type Example = Self;
 
     fn example(value: Option<&str>) -> Self::Example {
         let msg = value.unwrap_or("Done");
@@ -89,7 +88,7 @@ impl SwaggerExample for Successful {
 }
 
 impl SwaggerExample for ErrorResponse {
-    type Example = ErrorResponse;
+    type Example = Self;
 
     fn example(value: Option<&str>) -> Self::Example {
         let msg = value.unwrap_or("bad client request");

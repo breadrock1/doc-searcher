@@ -1,10 +1,10 @@
 extern crate doc_search;
 
-use doc_search::{logger, server, ServiceConnect};
 use doc_search::config;
 use doc_search::engine::elastic::ElasticClient;
 use doc_search::server::ServerApp;
 use doc_search::tokenizer::baai::BAAIClient;
+use doc_search::{logger, server, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::{cors, trace};
