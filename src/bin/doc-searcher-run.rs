@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::{cors, trace};
 
-#[tokio::main(worker_threads = 6)]
+#[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
     let s_config = config::ServiceConfig::new()?;
 
