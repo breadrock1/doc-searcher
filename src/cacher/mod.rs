@@ -1,6 +1,6 @@
 pub mod config;
 
-#[cfg(feature = "enable-cacher")]
+#[cfg(feature = "enable-cacher-redis")]
 pub mod redis;
 
 #[async_trait::async_trait]
