@@ -58,9 +58,8 @@ These instructions will get you a copy of the project up and running on your loc
 ### Features of project
 
 Features to parse and store documents localy from current service (Not stable):
- - enable-cacher     - enable cacher service like redis oe other custom implementation;
- - enable-semantic   - enable llm service for semantic searching;
- - enable-prometheus - enable metrics prometheus collecting.
+ - enable-cacher-redis    - enable cacher service like redis oe other custom implementation;
+ - enable-semantic        - enable llm service for semantic searching.
 
 [![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 

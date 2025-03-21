@@ -1,16 +1,15 @@
 extern crate doc_search;
 
-use doc_search::elastic::ElasticClient;
-use doc_search::storage::folders::FolderService;
-use doc_search::storage::forms::CreateFolderForm;
-use doc_search::storage::models::FolderType;
-use doc_search::storage::models::{DEFAULT_FOLDER_ID, INFO_FOLDER_ID};
-use doc_search::{config, Connectable};
+use doc_search::engine::elastic::ElasticClient;
+use doc_search::engine::form::CreateFolderForm;
+use doc_search::engine::model::{FolderType, DEFAULT_FOLDER_ID, INFO_FOLDER_ID};
+use doc_search::engine::FolderService;
+use doc_search::{config, ServiceConnect};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let s_config = config::ServiceConfig::new()?;
-    let es_client = ElasticClient::connect(s_config.elastic())?;
+    let es_client = ElasticClient::connect(s_config.elastic()).await?;
 
     let info_folder_form = CreateFolderForm::builder()
         .folder_id(INFO_FOLDER_ID.to_string())

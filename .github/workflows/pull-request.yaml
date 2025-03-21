@@ -58,12 +58,10 @@ jobs:
         features:
           - name: all
             options: '--all-features'
-          - name: with cache
-            options: '--features enable-cacher'
+          - name: with cache redis
+            options: '--features enable-cacher-redis'
           - name: with semantic
             options: '--features enable-semantic'
-          - name: with prometheus
-            options: '--features enable-prometheus'
 
     runs-on: ubuntu-latest
     permissions: write-all
