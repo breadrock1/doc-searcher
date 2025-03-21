@@ -1,13 +1,12 @@
 use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 
+#[cfg(feature = "enable-cacher-redis")]
+use crate::cacher::redis::config::RedisConfig;
+
 #[derive(Clone, Deserialize, CopyGetters, Getters)]
 #[getset(get = "pub")]
 pub struct CacherConfig {
-    address: String,
-    username: String,
-    password: String,
-    #[getset(skip)]
-    #[getset(get_copy = "pub")]
-    expired: u64,
+    #[cfg(feature = "enable-cacher-redis")]
+    redis: RedisConfig,
 }

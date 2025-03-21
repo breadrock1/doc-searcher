@@ -1,8 +1,7 @@
-use doc_search::searcher::elastic::extractor::SearchQueryBuilder;
-use doc_search::searcher::forms::{FulltextParams, SemanticParams};
-use doc_search::storage::elastic::documents::retrieve::Retrieve;
-use doc_search::storage::forms::RetrieveParams;
-use doc_search::storage::models::{Document, DocumentVectors, InfoFolder};
+use doc_search::engine::elastic::helper::extractor::SearchQueryBuilder;
+use doc_search::engine::elastic::ops::retrieve::Retrieve;
+use doc_search::engine::form::{FulltextParams, RetrieveParams, SemanticParams};
+use doc_search::engine::model::{Document, DocumentVectors, InfoFolder};
 
 const DOCUMENT_QUERY: &str = "{\"_source\":{\"exclude\":[\"embeddings\"]},\"highlight\":{\"fields\":{\"content\":{\"post_tags\":[\"\"],\"pre_tags\":[\"\"]}},\"order\":\"\"},\"query\":{\"bool\":{\"filter\":{\"bool\":{\"must\":[{\"range\":{\"document_created\":{\"gte\":\"2025-04-26T11:14:55Z\",\"lte\":\"2024-04-26T11:14:55Z\"}}},{\"range\":{\"document_size\":{\"gte\":4096,\"lte\":0}}},{\"term\":{\"document_extension\":\"txt\"}},{\"term\":{\"document_type\":\"document\"}}]}},\"must\":{\"multi_match\":{\"fields\":[\"content\",\"document_path\"],\"query\":\"Some query\"}}}}}";
 const SEMANTIC_QUERY: &str = "{\"knn\":{\"field\":\"embeddings.vector\",\"k\":5,\"num_candidates\":100,\"query_vector\":[]},\"size\":5}";
