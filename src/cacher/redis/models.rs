@@ -1,9 +1,8 @@
-use crate::searcher::forms::{FulltextParams, ScrollNextForm, SemanticParams};
-use crate::searcher::models::Paginated;
-use crate::storage::models::Document;
-
 use redis::{RedisError, RedisResult, RedisWrite, Value};
 use serde::ser::Error;
+
+use crate::engine::form::{FulltextParams, ScrollNextForm, SemanticParams};
+use crate::engine::model::{Document, Paginated};
 
 impl redis::ToRedisArgs for ScrollNextForm {
     fn write_redis_args<W>(&self, out: &mut W)
