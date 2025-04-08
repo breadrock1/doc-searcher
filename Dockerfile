@@ -1,6 +1,6 @@
 ARG FEATURES='--features default'
 
-FROM rust:1.78 AS chef
+FROM rust:1.85 AS chef
 
 WORKDIR /app
 
