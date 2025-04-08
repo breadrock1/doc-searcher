@@ -9,13 +9,13 @@ address = "http://elasticsearch:9200"
 username = "elastic"
 password = "elastic"
 
-[cacher]
+[cacher.redis]
 address = "redis://redis:6379"
 username = "redis"
 password = "redis"
 expired = 3600
 
-[tokenizer]
+[tokenizer.baai]
 address = "http://tokenizer:8085"
 is_truncate = "false"
 is_normalize = "false"
