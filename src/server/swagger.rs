@@ -6,10 +6,6 @@ use crate::server::router::searcher::*;
 use crate::server::router::storage::*;
 
 pub use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
-
-const SWAGGER_TARGET_URL: &str = "/swagger";
-const SWAGGER_FILE_URL: &str = "/api-docs/openapi.json";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -65,12 +61,7 @@ const SWAGGER_FILE_URL: &str = "/api-docs/openapi.json";
         ),
     ),
 )]
-pub struct ApiDoc;
-
-pub fn init_swagger() -> SwaggerUi {
-    let api_doc = ApiDoc::openapi();
-    SwaggerUi::new(SWAGGER_TARGET_URL).url(SWAGGER_FILE_URL, api_doc)
-}
+pub (super) struct ApiDoc;
 
 pub trait SwaggerExample {
     type Example;

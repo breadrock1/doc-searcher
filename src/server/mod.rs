@@ -3,12 +3,16 @@ mod errors;
 mod router;
 pub(crate) mod swagger;
 
-use crate::engine::{DocumentService, FolderService, PaginatorService, SearcherService};
-use crate::tokenizer::TokenizerService;
 use axum::routing::{get, post};
 use axum::Router;
 use axum_prometheus::PrometheusMetricLayer;
 use std::sync::Arc;
+use utoipa::OpenApi;
+use utoipa_rapidoc::RapiDoc;
+
+use crate::engine::{DocumentService, FolderService, PaginatorService, SearcherService};
+use crate::server::swagger::ApiDoc;
+use crate::tokenizer::TokenizerService;
 
 pub struct ServerApp<F, D, S, P, T>
 where
@@ -62,7 +66,7 @@ where
 
     let app_arc = Arc::new(app);
     Router::new()
-        .merge(swagger::init_swagger())
+        .merge(RapiDoc::with_openapi("/api-docs/openapi.json", ApiDoc::openapi()).path("/rapidoc"))
         .route("/storage/folders", get(router::storage::get_folders))
         .route(
             "/storage/{folder_id}",
