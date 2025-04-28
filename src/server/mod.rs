@@ -80,7 +80,7 @@ where
         )
         .route(
             "/storage/{folder_id}/{document_id}",
-            post(router::storage::get_document)
+            get(router::storage::get_document)
                 .delete(router::storage::delete_document)
                 .patch(router::storage::update_document)
                 .put(router::storage::create_document),
