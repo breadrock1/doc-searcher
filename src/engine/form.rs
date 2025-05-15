@@ -1,11 +1,13 @@
-use crate::engine::model::{
-    Document, DocumentPreview, DocumentVectors, FolderType, DEFAULT_FOLDER_ID,
-};
 use derive_builder::Builder;
 use getset::{CopyGetters, Getters, Setters};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::{IntoParams, ToSchema};
+
+use crate::engine::model::{
+    Document, DocumentPreview, DocumentVectors, FolderType, DEFAULT_FOLDER_ID,
+};
+use crate::server::swagger::SwaggerExample;
 
 #[derive(Clone, Default, Deserialize, Serialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -127,12 +129,30 @@ pub struct SemanticParams {
 
     #[getset(skip)]
     #[getset(get_copy = "pub")]
-    #[schema(example = 100)]
+    #[schema(example = false)]
     #[serde(skip_serializing_if = "Option::is_none")]
     is_grouped: Option<bool>,
 
     #[schema(example = "1m")]
     scroll_lifetime: String,
+}
+
+impl SwaggerExample for SemanticParams {
+    type Example = Self;
+
+    fn example(_value: Option<&str>) -> Self::Example {
+        SemanticParamsBuilder::default()
+            .query("Show me something like ...".to_owned())
+            .query_tokens(None)
+            .folder_ids("test-folder".to_owned())
+            .result_size(10)
+            .knn_amount(Some(5))
+            .knn_candidates(Some(100))
+            .is_grouped(Some(false))
+            .scroll_lifetime("1m".to_owned())
+            .build()
+            .unwrap()
+    }
 }
 
 impl SemanticParams {
