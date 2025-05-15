@@ -81,6 +81,7 @@ where
     ),
     request_body(
         content = SemanticParams,
+        example = json!(SemanticParams::example(None))
     ),
     responses(
         (
