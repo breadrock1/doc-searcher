@@ -1,6 +1,5 @@
-extern crate doc_search;
-
-use doc_search::config;
+use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
+use doc_search::config::ServiceConfig;
 use doc_search::engine::elastic::ElasticClient;
 use doc_search::server::ServerApp;
 use doc_search::tokenizer::baai::BAAIClient;
@@ -11,16 +10,11 @@ use tower_http::{cors, trace};
 
 #[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
-    let s_config = config::ServiceConfig::new()?;
+    let config = ServiceConfig::new()?;
+    logger::init_logger(config.logger())?;
 
-    let logger_config = s_config.logger();
-    logger::init_logger(logger_config)?;
-
-    let tokenizer = Arc::new(BAAIClient::connect(s_config.tokenizer().baai()).await?);
-    let searcher = Arc::new(ElasticClient::connect(s_config.elastic()).await?);
-
-    let server_config = s_config.server();
-    let listener = TcpListener::bind(server_config.address()).await?;
+    let tokenizer = Arc::new(BAAIClient::connect(config.tokenizer().baai()).await?);
+    let searcher = Arc::new(ElasticClient::connect(config.elastic()).await?);
     let server_app = ServerApp::new(
         searcher.clone(),
         searcher.clone(),
@@ -29,17 +23,21 @@ async fn main() -> anyhow::Result<()> {
         tokenizer,
     );
 
+    let cors_layer = cors::CorsLayer::permissive();
     let trace_layer = trace::TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
         .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO));
 
-    let cors_layer = cors::CorsLayer::permissive();
-
     let app = server::init_server(server_app)
         .layer(trace_layer)
-        .layer(cors_layer);
+        .layer(cors_layer)
+        .layer(OtelAxumLayer::default());
 
-    axum::serve(listener, app).await?;
+    let server_config = config.server();
+    let listener = TcpListener::bind(server_config.address()).await?;
+    if let Err(err) = axum::serve(listener, app).await {
+        tracing::error!(err=?err, "failed to stop http server");
+    };
 
     Ok(())
 }

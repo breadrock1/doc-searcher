@@ -49,6 +49,7 @@ impl ServiceConnect for ElasticClient {
             .cert_validation(validation)
             .build()?;
 
+        tracing::info!(address=config.address(), "connected to elasticsearch");
         let elastic_core = Elasticsearch::new(transport);
         Ok(ElasticClient {
             client: Arc::new(RwLock::new(elastic_core)),

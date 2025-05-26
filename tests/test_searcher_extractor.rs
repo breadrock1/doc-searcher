@@ -8,7 +8,7 @@ const SEMANTIC_QUERY: &str = "{\"knn\":{\"field\":\"embeddings.vector\",\"k\":5,
 const ALL_RECORDS_QUERY: &str = "{\"query\":{\"bool\":{\"filter\":{\"bool\":{\"must\":[{\"exists\":{\"field\":\"folder_type\"}}]}},\"must\":{\"match_all\":{}}}}}";
 
 #[tokio::test]
-async fn test_fulltext_build_query() -> Result<(), anyhow::Error> {
+async fn test_fulltext_build_query() -> anyhow::Result<()> {
     let s_params = build_fulltext_params();
     let build_query = Document::build_search_query(&s_params).await;
     let query = serde_json::to_string(&build_query)?;
@@ -17,7 +17,7 @@ async fn test_fulltext_build_query() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_semantic_build_query() -> Result<(), anyhow::Error> {
+async fn test_semantic_build_query() -> anyhow::Result<()> {
     let s_params = build_semantic_params();
     let build_query = DocumentVectors::build_search_query(&s_params).await;
     let query = serde_json::to_string(&build_query)?;
@@ -26,7 +26,7 @@ async fn test_semantic_build_query() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_retrieve_build_query() -> Result<(), anyhow::Error> {
+async fn test_retrieve_build_query() -> anyhow::Result<()> {
     let s_params = build_retrieve_params();
     let build_query = InfoFolder::build_retrieve_query(&s_params).await;
     let query = serde_json::to_string(&build_query)?;

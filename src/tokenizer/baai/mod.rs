@@ -24,6 +24,7 @@ impl ServiceConnect for BAAIClient {
     type Client = Self;
 
     async fn connect(config: &Self::Config) -> Result<Self::Client, Self::Error> {
+        tracing::info!(address=config.address(), "connected to BAAI OCR service");
         Ok(BAAIClient {
             config: config.clone(),
             client: Arc::new(reqwest::Client::new()),

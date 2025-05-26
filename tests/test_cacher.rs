@@ -8,7 +8,7 @@ mod test_redis_client {
     use doc_search::ServiceConnect;
 
     #[tokio::test]
-    async fn test_redis_cacher_client() -> Result<(), anyhow::Error> {
+    async fn test_redis_cacher_client() -> anyhow::Result<()> {
         let s_config = ServiceConfig::new()?;
 
         let cacher_config = s_config.cacher().redis();
