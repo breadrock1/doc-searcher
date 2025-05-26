@@ -2,7 +2,7 @@ workspace = { members = ["crates/elschema"] }
 
 [package]
 name = "doc-search"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 
 [badges]
@@ -19,21 +19,24 @@ enable-semantic = []
 default = []
 
 [dependencies]
-axum-prometheus = "0.8.0"
 anyhow = "1.0.96"
 async-trait = "0.1.86"
+axum-prometheus = "0.8.0"
+axum-tracing-opentelemetry = "0.26.1"
 config = "0.15.8"
 derive_builder = "0.20.2"
 dotenv = "0.15.0"
 elasticsearch = "8.15.0-alpha.1"
 futures = "0.3.31"
 getset = "0.1.4"
+opentelemetry_sdk = "0.28.0"
 metrics-exporter-prometheus = "0.16.2"
 serde = "1.0.218"
 serde_derive = "1.0.218"
 serde_json = "1.0.139"
 thiserror = "2.0.11"
 tracing = "0.1.41"
+tracing-loki = "0.2.6"
 tracing-subscriber = "0.3.19"
 console-subscriber = "0.4.1"
 url-constructor = "0.1.0"
@@ -45,6 +48,11 @@ features = ["tracing", "tower-log"]
 [dependencies.chrono]
 version = "0.4.37"
 features = ["rustc-serialize", "serde"]
+
+[dependencies.redis]
+optional = true
+version = "0.27.6"
+features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
 
 [dependencies.reqwest]
 version = "0.12.12"
@@ -65,13 +73,6 @@ features = ["axum_extras", "chrono"]
 [dependencies.utoipa-rapidoc]
 version = "6.0.0"
 features = ["axum"]
-
-
-[dependencies.redis]
-optional = true
-version = "0.27.6"
-features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
-
 
 # There is local crates that imported from src/crates path.
 [dependencies.datetime]

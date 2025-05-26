@@ -1,5 +1,7 @@
 [logger]
 level = "info"
+use_loki = "false"
+address = "http://loki:3100"
 
 [server]
 address = "0.0.0.0:2892"
