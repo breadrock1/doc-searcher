@@ -7,7 +7,7 @@ use doc_search::engine::FolderService;
 use doc_search::{config, ServiceConnect};
 
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+async fn main() -> anyhow::Result<()> {
     let s_config = config::ServiceConfig::new()?;
     let es_client = ElasticClient::connect(s_config.elastic()).await?;
 

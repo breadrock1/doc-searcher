@@ -1,5 +1,7 @@
 [logger]
 level = "debug"
+use_loki = "false"
+address = "http://localhost:3100"
 
 [server]
 address = "0.0.0.0:2892"
