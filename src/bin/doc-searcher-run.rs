@@ -1,9 +1,11 @@
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
+use doc_search::application::services::server::ServerApp;
+use doc_search::application::services::tokenizer::Tokenizer;
+use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
-use doc_search::engine::elastic::ElasticClient;
-use doc_search::server::ServerApp;
-use doc_search::tokenizer::baai::BAAIClient;
-use doc_search::{logger, server, ServiceConnect};
+use doc_search::infrastructure::osearch::OpenSearchStorage;
+use doc_search::infrastructure::vectorizer::VectorizerClient;
+use doc_search::{logger, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::{cors, trace};
@@ -13,22 +15,28 @@ async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
     logger::init_logger(config.logger())?;
 
-    let tokenizer = Arc::new(BAAIClient::connect(config.tokenizer().baai()).await?);
-    let searcher = Arc::new(ElasticClient::connect(config.elastic()).await?);
-    let server_app = ServerApp::new(
-        searcher.clone(),
-        searcher.clone(),
-        searcher.clone(),
-        searcher.clone(),
-        tokenizer,
-    );
+    let tokenizer: Option<Arc<Box<dyn Tokenizer + Send + Sync>>> = match config.tokenizer() {
+        None => None,
+        Some(tokenizer_config) => {
+            let baii_config = tokenizer_config.baai();
+            let baii_client = VectorizerClient::connect(baii_config).await?;
+            Some(Arc::new(Box::new(baii_client)))
+        }
+    };
+
+    let osearch_config = config.storage().open_search();
+    let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
+
+    let storage_uc = StorageUseCase::new(osearch_client.clone());
+    let searcher_uc = SearcherUseCase::new(osearch_client.clone(), tokenizer);
+    let server_app = ServerApp::new(storage_uc, searcher_uc);
 
     let cors_layer = cors::CorsLayer::permissive();
     let trace_layer = trace::TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
         .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO));
 
-    let app = server::init_server(server_app)
+    let app = doc_search::infrastructure::httpserver::init_server(server_app)
         .layer(trace_layer)
         .layer(cors_layer)
         .layer(OtelAxumLayer::default());

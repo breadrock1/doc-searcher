@@ -1,51 +1,35 @@
-extern crate doc_search;
-
-use doc_search::engine::elastic::ElasticClient;
-use doc_search::engine::form::CreateFolderForm;
-use doc_search::engine::model::{FolderType, DEFAULT_FOLDER_ID, INFO_FOLDER_ID};
-use doc_search::engine::FolderService;
 use doc_search::{config, ServiceConnect};
+use doc_search::application::services::storage::IndexManager;
+use doc_search::application::dto::Index;
+use doc_search::infrastructure::osearch::OpenSearchStorage;
+
+const COMMON_FOLDER_ID: &str = "common-folder";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let s_config = config::ServiceConfig::new()?;
-    let es_client = ElasticClient::connect(s_config.elastic()).await?;
+    let osearch_config = s_config.storage().open_search();
+    let osearch_client = OpenSearchStorage::connect(osearch_config).await?;
 
-    let info_folder_form = CreateFolderForm::builder()
-        .folder_id(INFO_FOLDER_ID.to_string())
-        .folder_name(INFO_FOLDER_ID.to_string())
-        .folder_type(FolderType::InfoFolder)
-        .create_into_watcher(false)
-        .location("/".to_string())
-        .user_id("admin".to_string())
-        .is_system(true)
+    let common_folder_form = Index::builder()
+        .id(COMMON_FOLDER_ID.to_string())
+        .name(COMMON_FOLDER_ID.to_string())
+        .path("./".to_string())
         .build()?;
 
-    let common_folder_form = CreateFolderForm::builder()
-        .folder_id(DEFAULT_FOLDER_ID.to_string())
-        .folder_name(DEFAULT_FOLDER_ID.to_string())
-        .folder_type(FolderType::Document)
-        .create_into_watcher(false)
-        .location("/indexer/watcher".to_string())
-        .user_id("admin".to_string())
-        .is_system(false)
+    let common_vec_folder_id = format!("{COMMON_FOLDER_ID}-vector");
+    let common_vec_folder_form = Index::builder()
+        .id(common_vec_folder_id.clone())
+        .name(common_vec_folder_id)
+        .path("/".to_string())
         .build()?;
 
-    let common_vec_folder_id = format!("{DEFAULT_FOLDER_ID}-vector");
-    let common_vec_folder_form = CreateFolderForm::builder()
-        .folder_id(common_vec_folder_id.clone())
-        .folder_name(common_vec_folder_id)
-        .folder_type(FolderType::Vectors)
-        .create_into_watcher(false)
-        .location("/indexer/watcher".to_string())
-        .user_id("admin".to_string())
-        .is_system(true)
-        .build()?;
-
-    for folder_form in vec![info_folder_form, common_folder_form, common_vec_folder_form] {
-        match es_client.create_folder(&folder_form).await {
-            Ok(resp) => tracing::info!("done: {resp:?}"),
-            Err(err) => tracing::warn!("failed: {err:#?}"),
+    for index in vec![common_folder_form, common_vec_folder_form] {
+        let index_id = index.id().clone();
+        let result = osearch_client.create_index(index).await;
+        match result {
+            Ok(_) => tracing::info!(index=index_id, "index created successful"),
+            Err(err) => tracing::error!(index=index_id, err=?err, "failed ot create index"),
         }
     }
 

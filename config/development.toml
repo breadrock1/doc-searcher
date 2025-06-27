@@ -6,7 +6,7 @@ address = "http://localhost:3100"
 [server]
 address = "0.0.0.0:2892"
 
-[elastic]
+[storage.open_search]
 address = "http://localhost:9200"
 username = "elastic"
 password = "elastic"
