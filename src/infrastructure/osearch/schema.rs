@@ -10,37 +10,37 @@ pub(super) fn create_document_schema() -> Value {
         }
     });
 
-    // let chunks = json!({
-    //     "type": "nested",
-    //     "properties": {
-    //         "chunk_id": {
-    //             "type": "integer"
-    //         },
-    //         "chunked_text": {
-    //             "type": "text",
-    //             "analyzer": "standard"
-    //         }
-    //     }
-    // });
-    //
-    // let tokens = json!({
-    //     "type": "nested",
-    //     "properties": {
-    //         "vector": {
-    //             "type": "knn_vector",
-    //             "dimension": 3, // Adjust to your actual embedding dimension
-    //             "method": {
-    //                 "name": "hnsw",
-    //                 "space_type": "cosinesimil",
-    //                 "engine": "nmslib",
-    //                 "parameters": {
-    //                     "ef_construction": 128,
-    //                     "m": 16
-    //                 }
-    //             }
-    //         }
-    //     }
-    // });
+    let chunks = json!({
+        "type": "nested",
+        "properties": {
+            "chunk_id": {
+                "type": "integer"
+            },
+            "chunked_text": {
+                "type": "text",
+                "analyzer": "standard"
+            }
+        }
+    });
+
+    let tokens = json!({
+        "type": "nested",
+        "properties": {
+            "vector": {
+                "type": "knn_vector",
+                "dimension": 3,
+                "method": {
+                    "name": "hnsw",
+                    "space_type": "cosinesimil",
+                    "engine": "nmslib",
+                    "parameters": {
+                        "ef_construction": 128,
+                        "m": 16
+                    }
+                }
+            }
+        }
+    });
 
     json!({
         "settings": settings,
@@ -77,13 +77,13 @@ pub(super) fn create_document_schema() -> Value {
                     "type": "date",
                     "format": "epoch_second"
                 },
-                // "embeddings": {
-                //     "type": "nested",
-                //     "properties": {
-                //         "chunks": chunks,
-                //         "tokens": tokens,
-                //     }
-                // }
+                "embeddings": {
+                    "type": "nested",
+                    "properties": {
+                        "chunks": chunks,
+                        "tokens": tokens,
+                    }
+                }
            }
        }
     })
