@@ -41,7 +41,7 @@ where
         self.client.get_index(id).await
     }
 
-    pub async fn create_document(&self, index: &str, doc: Document) -> StorageResult<Document> {
+    pub async fn create_document(&self, index: &str, doc: Document) -> StorageResult<()> {
         self.client.create_document(index, doc).await
     }
 

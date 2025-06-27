@@ -1,7 +1,7 @@
 pub use utoipa::OpenApi;
 
 use crate::application::dto::*;
-use crate::application::services::server::error::Success;
+use crate::application::services::server::error::{ServerError, Success};
 use crate::infrastructure::httpserver::router::searcher::*;
 use crate::infrastructure::httpserver::router::storage::*;
 
@@ -16,8 +16,8 @@ use crate::infrastructure::httpserver::router::storage::*;
             description = "Search API routes",
         ),
         (
-            name = "folders",
-            description = "APIs to manage buckets of data storage",
+            name = "index",
+            description = "CRUD operation for Index management",
         ),
         (
             name = "documents",
@@ -25,19 +25,19 @@ use crate::infrastructure::httpserver::router::storage::*;
         ),
     ),
     paths(
-        get_folder,
-        get_folders,
-        create_folder,
-        delete_folder,
+        get_all_indexes,
+        get_index,
+        create_index,
+        delete_index,
         get_document,
         get_documents,
         update_document,
-        create_document,
+        store_document,
         delete_document,
         search_fulltext,
         search_semantic,
-        delete_scrolls,
         paginate_next,
+        delete_scroll_session,
     ),
     components(
         schemas(
@@ -48,6 +48,8 @@ use crate::infrastructure::httpserver::router::storage::*;
             RetrieveDocumentParams,
             SemanticSearchParams,
             PaginateParams,
+            ServerError,
+            Success,
         ),
     ),
 )]
@@ -65,5 +67,16 @@ impl SwaggerExample for Success {
 
     fn example(_: Option<&str>) -> Self::Example {
         Success::default()
+    }
+}
+
+impl SwaggerExample for ServerError {
+    type Example = Self;
+
+    fn example(value: Option<&str>) -> Self::Example {
+        match value {
+            None => ServerError::ServerUnavailable,
+            Some(msg) => ServerError::InternalError(msg.to_owned()),
+        }
     }
 }

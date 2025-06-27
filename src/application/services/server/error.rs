@@ -9,14 +9,14 @@ use crate::application::services::storage::error::StorageError;
 
 pub type ServerResult<T> = Result<T, ServerError>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Serialize, ToSchema)]
 pub enum ServerError {
     #[error("not found error: {0}")]
     NotFound(String),
     #[error("internal service error: {0}")]
     InternalError(String),
-    #[error("service unavailable: {0}")]
-    ServiceUnavailable(String),
+    #[error("server unavailable")]
+    ServerUnavailable,
 }
 
 impl From<StorageError> for ServerError {
@@ -30,8 +30,8 @@ impl ServerError {
         match self {
             ServerError::NotFound(msg) => (msg.to_owned(), StatusCode::NOT_FOUND),
             ServerError::InternalError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::ServiceUnavailable(msg) => {
-                (msg.to_owned(), StatusCode::SERVICE_UNAVAILABLE)
+            ServerError::ServerUnavailable => {
+                ("server unavailable".to_owned(), StatusCode::SERVICE_UNAVAILABLE)
             }
         }
     }
@@ -39,7 +39,9 @@ impl ServerError {
 
 #[derive(Serialize, ToSchema)]
 pub struct Success {
+    #[schema(example = 200)]
     status: u16,
+    #[schema(example = "Ok")]
     message: String,
 }
 

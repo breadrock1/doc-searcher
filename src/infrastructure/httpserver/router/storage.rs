@@ -4,41 +4,41 @@ use axum::Json;
 use std::sync::Arc;
 
 use crate::application::dto::{Document, Index, RetrieveDocumentParams};
-use crate::application::services::server::error::{ServerResult, Success};
+use crate::application::services::server::error::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::infrastructure::httpserver::ServerApp;
+use crate::infrastructure::httpserver::swagger::SwaggerExample;
 
 #[utoipa::path(
     get,
-    path = "/storage/folders",
-    tag = "folders",
-    description = "Get all existing folders",
-    params(
-        (
-            "show_all", Query,
-            description = "Show all folders",
-            example = "true",
-        ),
-    ),
+    path = "/storage/index",
+    tag = "index",
+    description = "Get all existing indexes",
     responses(
         (
             status = 200,
-            description = "Successful",
+            content_type="application/json",
+            description = "List of lll exists indexes ",
             body = Vec<Index>,
         ),
         (
             status = 400,
-            description = "Failed while getting all folders",
+            content_type="application/json",
+            description = "Failed to get all indexes",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to get all indexes"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
-pub async fn get_folders<Storage, Searcher>(
+pub async fn get_all_indexes<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
 ) -> ServerResult<impl IntoResponse>
 where
@@ -52,33 +52,39 @@ where
 
 #[utoipa::path(
     get,
-    path = "/storage/{folder_id}",
-    tag = "folders",
-    description = "Get folder info by folder id",
+    path = "/storage/{index_id}",
+    tag = "index",
+    description = "Get index information by id",
     params(
         (
-            "folder_id" = &str,
-            description = "Passed folder id to get details",
+            "index_id" = &str,
+            description = "Index id to get information",
             example = "test-folder",
         ),
     ),
     responses(
         (
             status = 200,
-            description = "Returned Folder structure",
+            content_type="application/json",
+            description = "Index information",
             body = Index,
         ),
         (
             status = 400,
-            description = "Failed while getting folder by id",
+            content_type="application/json",
+            description = "Failed to get index information",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to get index by id"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
-pub async fn get_folder<Storage, Searcher>(
+pub async fn get_index<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Path(path): Path<String>,
 ) -> ServerResult<impl IntoResponse>
@@ -93,13 +99,13 @@ where
 
 #[utoipa::path(
     put,
-    path = "/storage/{folder_id}",
-    tag = "folders",
-    description = "Create new folder",
+    path = "/storage/{index_id}",
+    tag = "index",
+    description = "Create new index",
     params(
         (
-            "folder_id" = &str,
-            description = "Passed folder id to get details",
+            "index_id" = &str,
+            description = "Index id to create",
             example = "test-folder",
         ),
     ),
@@ -109,19 +115,26 @@ where
     responses(
         (
             status = 200,
-            description = "Successful",
+            content_type="application/json",
+            description = "Index has been created",
+            body = Success,
         ),
         (
             status = 400,
-            description = "Failed while creating new folder",
+            content_type="application/json",
+            description = "Failed to create new index",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to create new index"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
-pub async fn create_folder<Storage, Searcher>(
+pub async fn create_index<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Json(form): Json<Index>,
 ) -> ServerResult<impl IntoResponse>
@@ -136,32 +149,39 @@ where
 
 #[utoipa::path(
     delete,
-    path = "/storage/{folder_id}",
-    tag = "folders",
-    description = "Delete folder by folder id",
+    path = "/storage/{index_id}",
+    tag = "index",
+    description = "Delete existing index by id",
     params(
         (
-            "folder_id" = &str,
-            description = "Passed folder id to get details",
+            "index_id" = &str,
+            description = "Delete existing index by id",
             example = "test-folder",
         ),
     ),
     responses(
         (
             status = 200,
-            description = "Successful",
+            content_type="application/json",
+            description = "Index has been deleted",
+            body = Success
         ),
         (
             status = 400,
-            description = "Failed while deleting folder",
+            content_type="application/json",
+            description = "Failed to delete index",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to delete index"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
-pub async fn delete_folder<Storage, Searcher>(
+pub async fn delete_index<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Path(path): Path<String>,
 ) -> ServerResult<impl IntoResponse>
@@ -177,19 +197,14 @@ where
 
 #[utoipa::path(
     post,
-    path = "/storage/{folder_id}/documents",
-    tag = "documents",
-    description = "Get documents from folder",
+    path = "/storage/{index_id}/documents",
+    tag = "document",
+    description = "Get all documents stored into index",
     params(
         (
-            "folder_id" = &str,
-            description = "Passed folder id to get stored documents",
+            "index_id" = &str,
+            description = "Index id to retrieve documents",
             example = "test-folder",
-        ),
-        (
-            "folder_type", Query,
-            description = "Folder type to retrieve",
-            example = "document",
         ),
     ),
     request_body(
@@ -198,16 +213,22 @@ where
     responses(
         (
             status = 200,
-            description = "Successful",
+            content_type="application/json",
+            description = "List of retrieved documents stored into passed index id",
             body = Vec<Document>,
         ),
         (
             status = 400,
-            description = "Failed while getting all records",
+            content_type="application/json",
+            description = "Failed to retrieve documents stored into index",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to retrieve documents from index"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to delete index"))),
         ),
     )
 )]
@@ -226,39 +247,40 @@ where
 
 #[utoipa::path(
     get,
-    path = "/storage/{folder_id}/{document_id}",
-    tag = "documents",
-    description = "Get document object by folder and document ids",
+    path = "/storage/{index_id}/{document_id}",
+    tag = "document",
+    description = "Load full Document information by id",
     params(
         (
-            "folder_id" = &str,
-            description = "Folder id where document is stored",
+            "index" = &str,
+            description = "Index id where is stored Document",
             example = "test-folder",
         ),
         (
             "document_id" = &str,
-            description = "Document identifier to get",
-            example = "<document-id>",
-        ),
-        (
-            "folder_type", Query,
-            description = "Folder type to get",
-            example = "document",
+            description = "Document id to load information",
+            example = "98ac9896be35f47fb8442580cd9839b4",
         ),
     ),
     responses(
         (
             status = 200,
-            description = "Returned document by id",
+            content_type="application/json",
+            description = "Document object stored into index",
             body = Document,
         ),
         (
             status = 400,
-            description = "Failed while getting document",
+            content_type="application/json",
+            description = "Failed to load Document by passed params",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to load document"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
@@ -278,24 +300,19 @@ where
 
 #[utoipa::path(
     put,
-    path = "/storage/{folder_id}/{document_id}",
-    tag = "documents",
-    description = "Create and store new document",
+    path = "/storage/{index_id}/{document_id}",
+    tag = "document",
+    description = "Store new Document to index",
     params(
         (
-            "folder_id" = &str,
-            description = "Passed folder id to get details",
+            "index_id" = &str,
+            description = "Index id to store Document object",
             example = "test-folder",
         ),
         (
             "document_id" = &str,
-            description = "Document identifier to get",
-            example = "<document-id>",
-        ),
-        (
-            "folder_type", Query,
-            description = "Folder type to create document",
-            example = "document",
+            description = "Document id to store object as unique",
+            example = "98ac9896be35f47fb8442580cd9839b4",
         ),
     ),
     request_body(
@@ -304,19 +321,27 @@ where
     responses(
         (
             status = 200,
-            description = "Created Document",
+            content_type="application/json",
+            description = "Document has been stored successful",
+            body = Success,
         ),
         (
             status = 400,
-            description = "Failed while creating document",
+            content_type="application/json",
+            description = "Failed to store Document object",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to store document"))),
         ),
         (
             status = 503,
+            content_type="application/json",
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
-pub async fn create_document<Storage, Searcher>(
+pub async fn store_document<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Path(path): Path<(String, String)>,
     Json(form): Json<Document>,
@@ -327,39 +352,47 @@ where
 {
     let (folder_id, _) = path;
     let storage = state.get_storage();
-    let document = storage.create_document(&folder_id, form).await?;
-    Ok(Json(document))
+    storage.create_document(&folder_id, form).await?;
+    let status = Success::default();
+    Ok(Json(status))
 }
 
 #[utoipa::path(
     delete,
-    path = "/storage/{folder_id}/{document_id}",
-    tag = "documents",
-    description = "Delete document",
+    path = "/storage/{index_id}/{document_id}",
+    tag = "document",
+    description = "Delete Document object from index",
     params(
         (
-            "folder_id" = &str,
-            description = "Folder id where documents is stored",
+            "index_id" = &str,
+            description = "Index id where is stored Document",
             example = "test-folder",
         ),
         (
             "document_id" = &str,
-            description = "Document identifier to get",
+            description = "Document id to delete it",
             example = "98ac9896be35f47fb8442580cd9839b4",
         ),
     ),
     responses(
         (
             status = 200,
+            content_type="application/json",
             description = "Deleted document by id",
+            body = Success,
         ),
         (
             status = 400,
-            description = "Failed while deleting documents",
+            content_type="application/json",
+            description = "Failed to delete Document object",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to delete document"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
@@ -380,24 +413,19 @@ where
 
 #[utoipa::path(
     patch,
-    path = "/storage/{folder_id}/{document_id}",
-    tag = "documents",
-    description = "Updated stored document object",
+    path = "/storage/{index_id}/{document_id}",
+    tag = "document",
+    description = "Update existing Document object",
     params(
         (
-            "folder_id" = &str,
-            description = "Folder id where document is stored",
+            "index_id" = &str,
+            description = "Index id where is stored Document",
             example = "test-folder",
         ),
         (
             "document_id" = &str,
-            description = "Document identifier to get",
+            description = "Document id to update it",
             example = "98ac9896be35f47fb8442580cd9839b4",
-        ),
-        (
-            "folder_type", Query,
-            description = "Folder type to update document",
-            example = "document",
         ),
     ),
     request_body(
@@ -406,15 +434,22 @@ where
     responses(
         (
             status = 200,
-            description = "Successful",
+            content_type="application/json",
+            description = "Document has been updated successful",
+            body = Success,
         ),
         (
             status = 400,
-            description = "Failed while updating document",
+            content_type="application/json",
+            description = "Failed to update Document object",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to update document"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]

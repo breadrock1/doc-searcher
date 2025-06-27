@@ -3,43 +3,41 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::dto::{
-    Document, FullTextSearchParams, PaginateParams, SemanticSearchParams,
-};
-use crate::application::services::server::error::{ServerResult, Success};
+use crate::application::dto::{Document, FullTextSearchParams, PaginateParams, Paginated, SemanticSearchParams};
+use crate::application::services::server::error::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::infrastructure::httpserver::ServerApp;
+use crate::infrastructure::httpserver::swagger::SwaggerExample;
 
 #[utoipa::path(
     post,
     path = "/search/fulltext",
-    tag = "searcher",
-    description = "Fulltext searching",
-    params(
-        (
-            "document_type", Query,
-            description = "Document type to convert",
-            example = "document",
-        ),
-    ),
+    tag = "search",
+    description = "Search Document objects by fulltext algorithm",
     request_body(
         content = FullTextSearchParams,
     ),
     responses(
         (
             status = 200,
-            description = "Successful",
-            body = Vec<Document>,
+            content_type="application/json",
+            description = "Paginate structure with list of founded Documents",
+            body = Paginated<Document>,
         ),
         (
             status = 400,
+            content_type="application/json",
             description = "Failed while searching documents",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to found documents"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
@@ -59,31 +57,30 @@ where
 #[utoipa::path(
     post,
     path = "/search/semantic",
-    tag = "searcher",
-    description = "Semantic search by vector",
-    params(
-        (
-            "document_type", Query,
-            description = "Document type to convert",
-            example = "document",
-        ),
-    ),
+    tag = "search",
+    description = "Search Document objects by semantic algorithm",
     request_body(
         content = SemanticSearchParams,
     ),
     responses(
         (
             status = 200,
-            description = "Successful",
-            body = Vec<Document>,
+            content_type="application/json",
+            description = "Paginate structure with list of founded Documents",
+            body = Paginated<Document>,
         ),
         (
             status = 400,
-            description = "Failed while searching tokens",
+            content_type="application/json",
+            description = "Failed while searching documents",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to found documents"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
@@ -102,32 +99,31 @@ where
 
 #[utoipa::path(
     post,
-    path = "/search/paginate/next",
-    description = "Load next chunk of search results",
-    tag = "searcher",
-    params(
-        (
-            "document_type", Query,
-            description = "Document type to convert",
-            example = "document",
-        ),
-    ),
+    path = "/search/paginate",
+    tag = "search",
+    description = "Paginate search results by scroll",
     request_body(
         content = PaginateParams,
     ),
     responses(
         (
             status = 200,
-            description = "Successful",
-            body = Vec<Document>,
+            content_type="application/json",
+            description = "Paginate structure with list of founded Documents",
+            body = Paginated<Document>,
         ),
         (
             status = 400,
-            description = "Failed while scrolling",
+            content_type="application/json",
+            description = "Failed while paginate search result",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to paginate search result"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
@@ -147,24 +143,31 @@ where
 #[utoipa::path(
     delete,
     path = "/search/paginate/{session_id}",
-    tag = "searcher",
-    description = "Delete all existing pagination sessions",
+    tag = "search",
+    description = "Delete existing pagination session by id",
     responses(
         (
             status = 200,
+            content_type="application/json",
             description = "Successful",
+            body = Success,
         ),
         (
             status = 400,
-            description = "Failed to delete paginate session",
+            content_type="application/json",
+            description = "Failed to delete scroll session",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to delete scroll session"))),
         ),
         (
             status = 503,
             description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
         ),
     )
 )]
-pub async fn delete_scrolls<Storage, Searcher>(
+pub async fn delete_scroll_session<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Path(session_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>

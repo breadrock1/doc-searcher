@@ -7,14 +7,13 @@ mod dto;
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
-use opensearch::http::request::JsonBody;
 use opensearch::http::transport::SingleNodeConnectionPool;
 use opensearch::http::transport::TransportBuilder;
 use opensearch::http::Url;
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
-use opensearch::OpenSearch;
+use opensearch::{CreateParts, OpenSearch};
 use opensearch::{
-    BulkParts, ClearScrollParts, DeleteParts, GetParts, ScrollParts, SearchParts,
+    ClearScrollParts, DeleteParts, GetParts, ScrollParts, SearchParts,
     UpdateParts,
 };
 use serde_json::{json, Value};
@@ -151,16 +150,12 @@ impl IndexManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
-    async fn create_document(&self, index: &str, doc: Document) -> StorageResult<Document> {
-        let mut body: Vec<JsonBody<Value>> = Vec::with_capacity(2);
-        body.push(json!({"index": { "_id": doc.id() }}).into());
-        body.push(serde_json::to_value(&doc).unwrap().into());
-
+    async fn create_document(&self, index: &str, doc: Document) -> StorageResult<()> {
         let response = self
             .client
-            .bulk(BulkParts::Index(index))
+            .create(CreateParts::IndexId(index, doc.id()))
+            .body(&doc)
             .timeout("1m")
-            .body(body)
             .send()
             .await?;
 
@@ -168,8 +163,7 @@ impl DocumentManager for OpenSearchStorage {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        let document = response.json::<Document>().await?;
-        Ok(document)
+        Ok(())
     }
 
     async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {

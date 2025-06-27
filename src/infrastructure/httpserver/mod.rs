@@ -26,12 +26,12 @@ where
     let app_arc = Arc::new(app);
     Router::new()
         .merge(RapiDoc::with_openapi("/api-docs/openapi.json", ApiDoc::openapi()).path("/rapidoc"))
-        .route("/storage/folders", get(router::storage::get_folders))
+        .route("/storage/folders", get(router::storage::get_all_indexes))
         .route(
             "/storage/{folder_id}",
-            get(router::storage::get_folder)
-                .delete(router::storage::delete_folder)
-                .put(router::storage::create_folder),
+            get(router::storage::get_index)
+                .delete(router::storage::delete_index)
+                .put(router::storage::create_index),
         )
         .route(
             "/storage/{folder_id}/documents",
@@ -42,7 +42,7 @@ where
             get(router::storage::get_document)
                 .delete(router::storage::delete_document)
                 .patch(router::storage::update_document)
-                .put(router::storage::create_document),
+                .put(router::storage::store_document),
         )
         .route("/search/fulltext", post(router::searcher::search_fulltext))
         .route("/search/semantic", post(router::searcher::search_semantic))
@@ -52,7 +52,7 @@ where
         )
         .route(
             "/search/paginate/sessions",
-            post(router::searcher::delete_scrolls),
+            post(router::searcher::delete_scroll_session),
         )
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .layer(prometheus_layer)
