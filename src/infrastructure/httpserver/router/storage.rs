@@ -4,10 +4,10 @@ use axum::Json;
 use std::sync::Arc;
 
 use crate::application::dto::{Document, Index, RetrieveDocumentParams};
+use crate::application::services::server::error::{ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::infrastructure::httpserver::error::{ServerResult, Success};
 use crate::infrastructure::httpserver::ServerApp;
 
 #[utoipa::path(
@@ -170,7 +170,8 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
-    let status = storage.delete_index(&path).await?;
+    storage.delete_index(&path).await?;
+    let status = Success::default();
     Ok(Json(status))
 }
 
@@ -303,7 +304,7 @@ where
     responses(
         (
             status = 200,
-            description = "Successful",
+            description = "Created Document",
         ),
         (
             status = 400,
@@ -326,8 +327,8 @@ where
 {
     let (folder_id, _) = path;
     let storage = state.get_storage();
-    let status = storage.create_document(&folder_id, form).await?;
-    Ok(Json(status))
+    let document = storage.create_document(&folder_id, form).await?;
+    Ok(Json(document))
 }
 
 #[utoipa::path(
@@ -372,7 +373,8 @@ where
 {
     let (folder_id, doc_id) = path;
     let storage = state.get_storage();
-    let status = storage.delete_document(&folder_id, &doc_id).await?;
+    storage.delete_document(&folder_id, &doc_id).await?;
+    let status = Success::default();
     Ok(Json(status))
 }
 
@@ -428,5 +430,6 @@ where
     let (folder_id, _) = path;
     let storage = state.get_storage();
     storage.update_document(&folder_id, form).await?;
-    Ok(Json(Success::default()))
+    let status = Success::default();
+    Ok(Json(status))
 }

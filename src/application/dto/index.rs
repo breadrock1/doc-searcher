@@ -3,7 +3,7 @@ use getset::{CopyGetters, Getters};
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Builder, Getters, CopyGetters, Serialize, Deserialize, ToSchema)]
+#[derive(Builder, Clone, Getters, CopyGetters, Serialize, Deserialize, ToSchema)]
 pub struct Index {
     #[schema(example = "test-folder")]
     #[getset(get = "pub")]

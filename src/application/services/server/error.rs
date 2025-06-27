@@ -5,42 +5,34 @@ use serde_derive::Serialize;
 use thiserror::Error;
 use utoipa::ToSchema;
 
+use crate::application::services::storage::error::StorageError;
+
+pub type ServerResult<T> = Result<T, ServerError>;
+
 #[derive(Debug, Error)]
 pub enum ServerError {
-    #[error("cache component error: {0}")]
-    CacherError(String),
-    #[error("metrics component error: {0}")]
-    MetricsError(String),
-    #[error("embeddings component error: {0}")]
-    EmbeddingsError(String),
-    #[error("storage component error: {0}")]
-    StorageError(String),
-    #[error("failed while searching: {0}")]
-    SearchingError(String),
-    #[error("failed to (de)serialize object: {0}")]
-    SerdeError(String),
-    #[error("continues executing: {0}")]
-    Continues(String),
+    #[error("not found error: {0}")]
+    NotFound(String),
+    #[error("internal service error: {0}")]
+    InternalError(String),
     #[error("service unavailable: {0}")]
-    Unavailable(String),
-    #[error("unexpected runtime error: {0}")]
-    RuntimeError(String),
+    ServiceUnavailable(String),
+}
+
+impl From<StorageError> for ServerError {
+    fn from(err: StorageError) -> Self {
+        ServerError::InternalError(err.to_string())
+    }
 }
 
 impl ServerError {
     pub fn status_code(&self) -> (String, StatusCode) {
         match self {
-            ServerError::CacherError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::MetricsError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::EmbeddingsError(msg) => {
-                (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR)
+            ServerError::NotFound(msg) => (msg.to_owned(), StatusCode::NOT_FOUND),
+            ServerError::InternalError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
+            ServerError::ServiceUnavailable(msg) => {
+                (msg.to_owned(), StatusCode::SERVICE_UNAVAILABLE)
             }
-            ServerError::StorageError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::SearchingError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::SerdeError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::Continues(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::Unavailable(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::RuntimeError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
@@ -56,6 +48,15 @@ impl Default for Success {
         Success {
             status: 200,
             message: "Ok".to_string(),
+        }
+    }
+}
+
+impl Success {
+    fn new(status: u16, message: &str) -> Self {
+        Success {
+            status,
+            message: message.to_owned(),
         }
     }
 }

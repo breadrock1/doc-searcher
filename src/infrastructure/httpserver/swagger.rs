@@ -1,7 +1,7 @@
 pub use utoipa::OpenApi;
 
 use crate::application::dto::*;
-use crate::infrastructure::httpserver::error::Success;
+use crate::application::services::server::error::Success;
 use crate::infrastructure::httpserver::router::searcher::*;
 use crate::infrastructure::httpserver::router::storage::*;
 

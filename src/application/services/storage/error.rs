@@ -20,6 +20,9 @@ pub enum StorageError {
     SerdeError(#[from] serde_json::Error),
     #[error("returned error into response: {0}")]
     RuntimeError(String),
+
     #[error("failed to compute tokens: {0}")]
     ComputeEmbeddings(#[from] TokenizerError),
+    #[error("index has not been founded: {0}")]
+    IndexNotFound(anyhow::Error),
 }

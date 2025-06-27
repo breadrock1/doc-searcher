@@ -19,8 +19,8 @@ pub trait IndexManager {
 #[async_trait::async_trait]
 pub trait DocumentManager {
     async fn create_document(&self, index: &str, doc: Document) -> StorageResult<Document>;
-    async fn delete_document(&self, index: &str, id: &str) -> StorageResult<Document>;
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document>;
+    async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()>;
     async fn update_document(&self, index: &str, doc: Document) -> StorageResult<()>;
 }
 

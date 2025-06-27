@@ -5,42 +5,42 @@ pub(super) fn create_document_schema() -> Value {
         "index": {
             "knn": true,
             "knn.algo_param.ef_search": 100,
-            // "number_of_shards": 1,
-            // "number_of_replicas": 0
+            "number_of_shards": 1,
+            "number_of_replicas": 1,
         }
     });
 
-    let chunks = json!({
-        "type": "nested",
-        "properties": {
-            "chunk_id": {
-                "type": "integer"
-            },
-            "chunked_text": {
-                "type": "text",
-                "analyzer": "standard"
-            }
-        }
-    });
-
-    let tokens = json!({
-        "type": "nested",
-        "properties": {
-            "vector": {
-                "type": "knn_vector",
-                "dimension": 3, // Adjust to your actual embedding dimension
-                "method": {
-                    "name": "hnsw",
-                    "space_type": "cosinesimil",
-                    "engine": "nmslib",
-                    "parameters": {
-                        "ef_construction": 128,
-                        "m": 16
-                    }
-                }
-            }
-        }
-    });
+    // let chunks = json!({
+    //     "type": "nested",
+    //     "properties": {
+    //         "chunk_id": {
+    //             "type": "integer"
+    //         },
+    //         "chunked_text": {
+    //             "type": "text",
+    //             "analyzer": "standard"
+    //         }
+    //     }
+    // });
+    //
+    // let tokens = json!({
+    //     "type": "nested",
+    //     "properties": {
+    //         "vector": {
+    //             "type": "knn_vector",
+    //             "dimension": 3, // Adjust to your actual embedding dimension
+    //             "method": {
+    //                 "name": "hnsw",
+    //                 "space_type": "cosinesimil",
+    //                 "engine": "nmslib",
+    //                 "parameters": {
+    //                     "ef_construction": 128,
+    //                     "m": 16
+    //                 }
+    //             }
+    //         }
+    //     }
+    // });
 
     json!({
         "settings": settings,
@@ -77,13 +77,13 @@ pub(super) fn create_document_schema() -> Value {
                     "type": "date",
                     "format": "epoch_second"
                 },
-                "embeddings": {
-                    "type": "nested",
-                    "properties": {
-                        "chunks": chunks,
-                        "tokens": tokens,
-                    }
-                }
+                // "embeddings": {
+                //     "type": "nested",
+                //     "properties": {
+                //         "chunks": chunks,
+                //         "tokens": tokens,
+                //     }
+                // }
            }
        }
     })

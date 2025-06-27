@@ -6,10 +6,10 @@ use std::sync::Arc;
 use crate::application::dto::{
     Document, FullTextSearchParams, PaginateParams, SemanticSearchParams,
 };
+use crate::application::services::server::error::{ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::infrastructure::httpserver::error::ServerResult;
 use crate::infrastructure::httpserver::ServerApp;
 
 #[utoipa::path(
@@ -173,6 +173,7 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let searcher = state.get_searcher();
-    let status = searcher.delete_session(&session_id).await?;
+    searcher.delete_session(&session_id).await?;
+    let status = Success::default();
     Ok(Json(status))
 }

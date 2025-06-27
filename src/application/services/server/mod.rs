@@ -1,8 +1,6 @@
-mod error;
+pub mod error;
 
-use crate::application::services::storage::{
-    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
-};
+use crate::application::services::storage::{DocumentManager, DocumentSearcher, IndexManager, PaginateManager};
 use crate::application::usecase::{SearcherUseCase, StorageUseCase};
 
 pub struct ServerApp<Storage, Searcher>

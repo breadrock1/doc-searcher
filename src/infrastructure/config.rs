@@ -23,5 +23,5 @@ pub struct TokenizerConfig {
 #[derive(Clone, Deserialize, Getters)]
 #[getset(get = "pub")]
 pub struct StorageConfig {
-    open_search: OSearchConfig,
+    opensearch: OSearchConfig,
 }

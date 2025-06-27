@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let osearch_config = config.storage().open_search();
+    let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
 
     let storage_uc = StorageUseCase::new(osearch_client.clone());

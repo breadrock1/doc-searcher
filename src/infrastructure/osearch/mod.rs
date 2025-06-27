@@ -2,6 +2,7 @@ pub mod config;
 mod error;
 mod query;
 mod schema;
+mod dto;
 
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
@@ -10,22 +11,21 @@ use opensearch::http::request::JsonBody;
 use opensearch::http::transport::SingleNodeConnectionPool;
 use opensearch::http::transport::TransportBuilder;
 use opensearch::http::Url;
-use opensearch::indices::IndicesDeleteParts;
+use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
 use opensearch::OpenSearch;
 use opensearch::{
-    BulkParts, ClearScrollParts, DeleteParts, GetParts, IndexParts, ScrollParts, SearchParts,
+    BulkParts, ClearScrollParts, DeleteParts, GetParts, ScrollParts, SearchParts,
     UpdateParts,
 };
 use serde_json::{json, Value};
 use std::sync::Arc;
-
 use crate::application::dto::Paginated;
 use crate::application::dto::{Document, Index, SemanticSearchWithTokensParams};
 use crate::application::dto::{
     FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
     SemanticSearchParams,
 };
-use crate::application::services::storage::error::{PaginateResult, StorageResult};
+use crate::application::services::storage::error::{PaginateResult, StorageError, StorageResult};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
@@ -69,56 +69,83 @@ impl ServiceConnect for OpenSearchStorage {
 #[async_trait::async_trait]
 impl IndexManager for OpenSearchStorage {
     async fn create_index(&self, index: Index) -> StorageResult<Index> {
-        let folder_schema = schema::create_document_schema();
         let id = index.id();
-        self.client
-            .index(IndexParts::Index(id))
-            .body(&json!({id: folder_schema}))
+        let folder_schema = schema::create_document_schema();
+        let response = self.client
+            .indices()
+            .create(IndicesCreateParts::Index(id))
+            .body(folder_schema)
             .send()
-            .await?
-            .error_for_status_code()?;
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
 
         Ok(index)
     }
 
     async fn delete_index(&self, id: &str) -> StorageResult<()> {
-        self.client
+        let response = self.client
             .indices()
             .delete(IndicesDeleteParts::Index(&[id]))
             .timeout("1m")
             .send()
-            .await?
-            .error_for_status_code()?;
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
 
         Ok(())
     }
 
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
-        let _indexes = self
+        let response = self
             .client
             .cat()
             .indices(CatIndicesParts::None)
+            .format("json")
             .send()
-            .await?
-            .error_for_status_code()?
-            .text()
             .await?;
 
-        Ok(Vec::default())
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        let indexes = response
+            .json::<Vec<dto::OSearchIndex>>()
+            .await?
+            .iter()
+            .map(Index::from)
+            .collect::<Vec<Index>>();
+
+        Ok(indexes)
     }
 
     async fn get_index(&self, id: &str) -> StorageResult<Index> {
-        let index = self
+        let response = self
             .client
             .cat()
             .indices(CatIndicesParts::Index(&[id]))
+            .format("json")
             .send()
             .await?
-            .error_for_status_code()?
-            .json::<Index>()
-            .await?;
+            .error_for_status_code()?;
 
-        Ok(index)
+        let indexes = response
+            .json::<Vec<dto::OSearchIndex>>()
+            .await?
+            .iter()
+            .map(Index::from)
+            .collect::<Vec<Index>>();
+
+        let Some(index) = indexes.first() else {
+            let err = anyhow::Error::msg("there is no index with such name");
+            return Err(StorageError::IndexNotFound(err));
+        };
+
+        Ok(index.to_owned())
     }
 }
 
@@ -129,55 +156,63 @@ impl DocumentManager for OpenSearchStorage {
         body.push(json!({"index": { "_id": doc.id() }}).into());
         body.push(serde_json::to_value(&doc).unwrap().into());
 
-        let document = self
+        let response = self
             .client
             .bulk(BulkParts::Index(index))
             .timeout("1m")
             .body(body)
             .send()
-            .await?
-            .error_for_status_code()?
-            .json::<Document>()
             .await?;
 
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        let document = response.json::<Document>().await?;
         Ok(document)
     }
 
-    async fn delete_document(&self, index: &str, id: &str) -> StorageResult<Document> {
-        let document = self
+    async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {
+        let response = self
             .client
             .delete(DeleteParts::IndexId(index, id))
             .timeout("1m")
             .send()
-            .await?
-            .error_for_status_code()?
-            .json::<Document>()
             .await?;
 
-        Ok(document)
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        Ok(())
     }
 
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
-        let document = self
+        let response = self
             .client
             .get(GetParts::IndexId(index, id))
             .pretty(true)
             .send()
-            .await?
-            .error_for_status_code()?
-            .json::<Document>()
             .await?;
 
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        let document = response.json::<Document>().await?;
         Ok(document)
     }
 
     async fn update_document(&self, index: &str, doc: Document) -> StorageResult<()> {
-        self.client
+        let response = self.client
             .update(UpdateParts::IndexId(index, doc.id()))
             .body(&json!({ "doc": doc }))
             .send()
-            .await?
-            .error_for_status_code()?;
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
 
         Ok(())
     }

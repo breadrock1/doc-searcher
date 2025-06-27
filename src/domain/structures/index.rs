@@ -9,6 +9,4 @@ pub struct Index {
     name: String,
     #[getset(get = "pub")]
     path: String,
-    #[getset(get_copy = "pub")]
-    created_at: i64,
 }

@@ -45,7 +45,7 @@ where
         self.client.create_document(index, doc).await
     }
 
-    pub async fn delete_document(&self, index: &str, id: &str) -> StorageResult<Document> {
+    pub async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {
         self.client.delete_document(index, id).await
     }
 
