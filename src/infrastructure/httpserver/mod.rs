@@ -44,7 +44,10 @@ where
 {
     Router::new()
         .route("/storage/index", get(router::storage::get_all_indexes))
-        .route("/storage/{index_id}/documents", post(router::storage::get_documents))
+        .route(
+            "/storage/{index_id}/documents",
+            post(router::storage::get_documents),
+        )
         .route(
             "/storage/{index_id}",
             get(router::storage::get_index)
@@ -69,5 +72,8 @@ where
         .route("/search/fulltext", post(router::searcher::search_fulltext))
         .route("/search/semantic", post(router::searcher::search_semantic))
         .route("/search/paginate", post(router::searcher::paginate_next))
-        .route("/search/paginate/{session_id}", post(router::searcher::delete_scroll_session))
+        .route(
+            "/search/paginate/{session_id}",
+            post(router::searcher::delete_scroll_session),
+        )
 }

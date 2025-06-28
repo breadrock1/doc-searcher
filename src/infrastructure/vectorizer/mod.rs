@@ -7,11 +7,7 @@ use self::config::VectorizerConfig;
 use self::dto::VectorizerForm;
 
 use crate::application::dto::Tokens;
-use crate::application::services::tokenizer::{
-    TokenizerError,
-    TokenizerResult,
-    Tokenizer,
-};
+use crate::application::services::tokenizer::{Tokenizer, TokenizerError, TokenizerResult};
 use crate::ServiceConnect;
 
 const NATIVE_SERVICE_URL: &str = "/embed";

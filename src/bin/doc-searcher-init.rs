@@ -1,7 +1,7 @@
-use doc_search::{config, ServiceConnect};
-use doc_search::application::services::storage::IndexManager;
 use doc_search::application::dto::Index;
+use doc_search::application::services::storage::IndexManager;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
+use doc_search::{config, ServiceConnect};
 
 const COMMON_FOLDER_ID: &str = "common-folder";
 
@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
         let index_id = index.id().clone();
         let result = osearch_client.create_index(index).await;
         match result {
-            Ok(_) => tracing::info!(index=index_id, "index created successful"),
+            Ok(_) => tracing::info!(index = index_id, "index created successful"),
             Err(err) => tracing::error!(index=index_id, err=?err, "failed ot create index"),
         }
     }

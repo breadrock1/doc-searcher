@@ -2,7 +2,9 @@ mod error;
 
 pub use error::{ServerError, ServerResult, Success};
 
-use crate::application::services::storage::{DocumentManager, DocumentSearcher, IndexManager, PaginateManager};
+use crate::application::services::storage::{
+    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
+};
 use crate::application::usecase::{SearcherUseCase, StorageUseCase};
 
 pub struct ServerApp<Storage, Searcher>

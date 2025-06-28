@@ -1,8 +1,8 @@
 pub mod config;
+mod dto;
 mod error;
 mod query;
 mod schema;
-mod dto;
 
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
@@ -10,31 +10,22 @@ use opensearch::cert::CertificateValidation;
 use opensearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
 use opensearch::http::Url;
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
-use opensearch::{
-    CreateParts,
-    ClearScrollParts,
-    DeleteParts,
-    GetParts,
-    ScrollParts,
-    SearchParts,
-    UpdateParts,
-};
 use opensearch::OpenSearch;
+use opensearch::{
+    ClearScrollParts, CreateParts, DeleteParts, GetParts, ScrollParts, SearchParts, UpdateParts,
+};
 use serde_json::{json, Value};
 use std::sync::Arc;
+
 use crate::application::dto::{Document, Index, Paginated};
 use crate::application::dto::{
-    FullTextSearchParams,
-    PaginateParams,
-    RetrieveDocumentParams,
-    SemanticSearchParams,
-    SemanticSearchWithTokensParams,
-    QueryBuilder,
+    FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams,
 };
-use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
+use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
 use crate::infrastructure::osearch::config::OSearchConfig;
 use crate::ServiceConnect;
 
@@ -74,7 +65,8 @@ impl IndexManager for OpenSearchStorage {
     async fn create_index(&self, index: Index) -> StorageResult<Index> {
         let id = index.id();
         let folder_schema = schema::create_document_schema();
-        let response = self.client
+        let response = self
+            .client
             .indices()
             .create(IndicesCreateParts::Index(id))
             .body(folder_schema)
@@ -89,7 +81,8 @@ impl IndexManager for OpenSearchStorage {
     }
 
     async fn delete_index(&self, id: &str) -> StorageResult<()> {
-        let response = self.client
+        let response = self
+            .client
             .indices()
             .delete(IndicesDeleteParts::Index(&[id]))
             .timeout("1m")
@@ -202,7 +195,8 @@ impl DocumentManager for OpenSearchStorage {
     }
 
     async fn update_document(&self, index: &str, doc: Document) -> StorageResult<()> {
-        let response = self.client
+        let response = self
+            .client
             .update(UpdateParts::IndexId(index, doc.id()))
             .body(&json!({ "doc": doc }))
             .send()

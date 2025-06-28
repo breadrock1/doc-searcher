@@ -8,8 +8,8 @@ use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::infrastructure::httpserver::ServerApp;
 use crate::infrastructure::httpserver::swagger::SwaggerExample;
+use crate::infrastructure::httpserver::ServerApp;
 
 #[utoipa::path(
     get,

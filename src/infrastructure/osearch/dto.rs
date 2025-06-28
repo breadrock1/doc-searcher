@@ -1,5 +1,5 @@
-use serde_derive::Deserialize;
 use crate::application::dto::Index;
+use serde_derive::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct OSearchIndex {

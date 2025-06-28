@@ -3,13 +3,15 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::dto::{Document, FullTextSearchParams, PaginateParams, Paginated, SemanticSearchParams};
+use crate::application::dto::{
+    Document, FullTextSearchParams, PaginateParams, Paginated, SemanticSearchParams,
+};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::infrastructure::httpserver::ServerApp;
 use crate::infrastructure::httpserver::swagger::SwaggerExample;
+use crate::infrastructure::httpserver::ServerApp;
 
 #[utoipa::path(
     post,
