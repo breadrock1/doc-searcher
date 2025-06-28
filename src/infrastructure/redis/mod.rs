@@ -5,7 +5,6 @@ use getset::CopyGetters;
 use redis::{AsyncCommands, Client};
 use redis::{FromRedisValue, ToRedisArgs};
 use redis::{RedisError, RedisResult};
-use serde::{de::DeserializeOwned, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -39,10 +38,14 @@ impl ServiceConnect for RedisClient {
 #[async_trait::async_trait]
 impl<K, V> Cacher<K, V> for RedisClient
 where
-    K: Serialize + ToRedisArgs + Sync,
-    V: Serialize + DeserializeOwned + ToRedisArgs + FromRedisValue + Sync,
+    K: ToRedisArgs + Sync,
+    V: ToRedisArgs + FromRedisValue + Sync,
 {
-    async fn store(&self, key: &K, value: &V) {
+    async fn store(&self, key: &K, value: &V)
+    where
+        K: ToRedisArgs,
+        V: ToRedisArgs + FromRedisValue,
+    {
         let expired_secs = self.options.expired();
         let cxt = self.client.write().await;
         match cxt.get_multiplexed_tokio_connection().await {
@@ -60,7 +63,11 @@ where
         }
     }
 
-    async fn load(&self, key: &K) -> Option<V> {
+    async fn load(&self, key: &K) -> Option<V>
+    where
+        K: ToRedisArgs + Sync,
+        V: ToRedisArgs + FromRedisValue + Sync,
+    {
         let cxt = self.client.read().await;
         match cxt.get_multiplexed_tokio_connection().await {
             Ok(mut conn) => conn.get(key).await.ok(),

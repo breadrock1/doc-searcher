@@ -2,6 +2,7 @@ mod config;
 mod error;
 mod router;
 mod swagger;
+pub mod mw;
 
 pub use config::ServerConfig;
 

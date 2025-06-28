@@ -4,6 +4,7 @@ use doc_search::application::services::tokenizer::Tokenizer;
 use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
+use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::vectorizer::VectorizerClient;
 use doc_search::{logger, ServiceConnect};
 use std::sync::Arc;
@@ -36,10 +37,13 @@ async fn main() -> anyhow::Result<()> {
         .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
         .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO));
 
-    let app = doc_search::infrastructure::httpserver::init_server(server_app)
+    let app = httpserver::init_server(server_app)
         .layer(trace_layer)
         .layer(cors_layer)
         .layer(OtelAxumLayer::default());
+
+    #[cfg(feature = "enable-cache-redis")]
+    let app = httpserver::mw::cache::enable_cache_mw(app, config.cacher().redis()).await?;
 
     let server_config = config.server();
     let listener = TcpListener::bind(server_config.address()).await?;

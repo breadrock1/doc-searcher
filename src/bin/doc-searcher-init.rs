@@ -8,7 +8,7 @@ const COMMON_FOLDER_ID: &str = "common-folder";
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let s_config = config::ServiceConfig::new()?;
-    let osearch_config = s_config.storage().open_search();
+    let osearch_config = s_config.storage().opensearch();
     let osearch_client = OpenSearchStorage::connect(osearch_config).await?;
 
     let common_folder_form = Index::builder()
