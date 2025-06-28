@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 use crate::application::dto::Paginated;
-use crate::application::services::tokenizer::error::TokenizerError;
+use crate::application::services::tokenizer::TokenizerError;
 
 pub type StorageResult<T> = Result<T, StorageError>;
 pub type PaginateResult<T> = StorageResult<Paginated<Vec<T>>>;

@@ -8,7 +8,8 @@ use self::dto::VectorizerForm;
 
 use crate::application::dto::Tokens;
 use crate::application::services::tokenizer::{
-    error::{TokenizerError, TokenizerResult},
+    TokenizerError,
+    TokenizerResult,
     Tokenizer,
 };
 use crate::ServiceConnect;

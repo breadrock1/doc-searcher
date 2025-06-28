@@ -46,10 +46,10 @@ pub struct EmbeddingChunk {
     tokens: Vec<f64>,
 }
 
-impl TryFrom<crate::domain::structures::Document> for Document {
+impl TryFrom<crate::domain::Document> for Document {
     type Error = DocumentBuilderError;
 
-    fn try_from(value: crate::domain::structures::Document) -> Result<Self, Self::Error> {
+    fn try_from(value: crate::domain::Document) -> Result<Self, Self::Error> {
         let embeddings = value
             .embeddings()
             .into_iter()
@@ -81,10 +81,10 @@ impl TryFrom<crate::domain::structures::Document> for Document {
     }
 }
 
-impl TryFrom<&crate::domain::structures::EmbeddingChunk> for EmbeddingChunk {
+impl TryFrom<&crate::domain::EmbeddingChunk> for EmbeddingChunk {
     type Error = EmbeddingChunkBuilderError;
 
-    fn try_from(value: &crate::domain::structures::EmbeddingChunk) -> Result<Self, Self::Error> {
+    fn try_from(value: &crate::domain::EmbeddingChunk) -> Result<Self, Self::Error> {
         let chunk = EmbeddingChunkBuilder::default()
             .chunk_id(value.chunk_id())
             .chunk_text(value.chunk_text().to_owned())

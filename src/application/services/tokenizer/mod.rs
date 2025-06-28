@@ -1,6 +1,6 @@
-pub(crate) mod error;
+mod error;
 
-use self::error::TokenizerResult;
+pub use error::{TokenizerError, TokenizerResult};
 
 use crate::application::dto::Tokens;
 

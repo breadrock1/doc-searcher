@@ -1,9 +1,16 @@
-pub use utoipa::OpenApi;
+use utoipa::OpenApi;
+use utoipa_rapidoc::RapiDoc;
 
 use crate::application::dto::*;
-use crate::application::services::server::error::{ServerError, Success};
+use crate::application::services::server::{ServerError, Success};
 use crate::infrastructure::httpserver::router::searcher::*;
 use crate::infrastructure::httpserver::router::storage::*;
+use crate::infrastructure::httpserver::{swagger, SWAGGER_CONFIG_FILE};
+
+pub fn init_swagger_layer() -> RapiDoc {
+    let swagger_app = swagger::ApiDoc::openapi();
+    RapiDoc::with_openapi(SWAGGER_CONFIG_FILE, swagger_app).path("/rapidoc")
+}
 
 #[derive(OpenApi)]
 #[openapi(
@@ -12,16 +19,16 @@ use crate::infrastructure::httpserver::router::storage::*;
     ),
     tags(
         (
-            name = "searcher",
-            description = "Search API routes",
-        ),
-        (
             name = "index",
             description = "CRUD operation for Index management",
         ),
         (
             name = "documents",
             description = "APIs to manage documents stored into folders",
+        ),
+        (
+            name = "search",
+            description = "APIs to search Document objects",
         ),
     ),
     paths(
@@ -53,7 +60,7 @@ use crate::infrastructure::httpserver::router::storage::*;
         ),
     ),
 )]
-pub(super) struct ApiDoc;
+struct ApiDoc;
 
 #[allow(dead_code)]
 pub trait SwaggerExample {

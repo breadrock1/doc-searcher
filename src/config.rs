@@ -5,7 +5,7 @@ use getset::Getters;
 use serde_derive::Deserialize;
 
 use crate::infrastructure::config::{CacherConfig, StorageConfig, TokenizerConfig};
-use crate::infrastructure::httpserver::config::ServerConfig;
+use crate::infrastructure::httpserver::ServerConfig;
 use crate::logger::LoggerConfig;
 
 const CONFIG_PREFIX: &str = "DOC_SEARCHER";

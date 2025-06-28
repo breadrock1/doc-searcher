@@ -7,32 +7,36 @@ mod dto;
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
-use opensearch::http::transport::SingleNodeConnectionPool;
-use opensearch::http::transport::TransportBuilder;
+use opensearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
 use opensearch::http::Url;
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
-use opensearch::{CreateParts, OpenSearch};
 use opensearch::{
-    ClearScrollParts, DeleteParts, GetParts, ScrollParts, SearchParts,
+    CreateParts,
+    ClearScrollParts,
+    DeleteParts,
+    GetParts,
+    ScrollParts,
+    SearchParts,
     UpdateParts,
 };
+use opensearch::OpenSearch;
 use serde_json::{json, Value};
 use std::sync::Arc;
-use crate::application::dto::Paginated;
-use crate::application::dto::{Document, Index, SemanticSearchWithTokensParams};
+use crate::application::dto::{Document, Index, Paginated};
 use crate::application::dto::{
-    FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
+    FullTextSearchParams,
+    PaginateParams,
+    RetrieveDocumentParams,
     SemanticSearchParams,
+    SemanticSearchWithTokensParams,
+    QueryBuilder,
 };
-use crate::application::services::storage::error::{PaginateResult, StorageError, StorageResult};
+use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::infrastructure::osearch::config::OSearchConfig;
 use crate::ServiceConnect;
-
-const ALL_INDEXES_ALIAS: &str = "*";
-const CAT_INDICES_URL: &str = "/_cat/indices?format=json";
 
 #[derive(Clone)]
 pub struct OpenSearchStorage {

@@ -2,7 +2,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Serialize;
 
-use crate::application::services::server::error::ServerError;
+use crate::application::services::server::ServerError;
 
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {

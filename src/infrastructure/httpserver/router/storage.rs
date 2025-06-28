@@ -4,7 +4,7 @@ use axum::Json;
 use std::sync::Arc;
 
 use crate::application::dto::{Document, Index, RetrieveDocumentParams};
-use crate::application::services::server::error::{ServerError, ServerResult, Success};
+use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };

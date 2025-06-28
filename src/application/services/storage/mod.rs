@@ -1,12 +1,11 @@
 pub mod error;
 
-use self::error::StorageResult;
+pub use error::{PaginateResult, StorageError, StorageResult};
 
 use crate::application::dto::{
     Document, FullTextSearchParams, Index, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams, SemanticSearchWithTokensParams,
 };
-use crate::application::services::storage::error::PaginateResult;
 
 #[async_trait::async_trait]
 pub trait IndexManager {
