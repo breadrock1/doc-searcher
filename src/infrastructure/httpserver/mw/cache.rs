@@ -11,13 +11,29 @@ use crate::infrastructure::redis::config::RedisConfig;
 use crate::infrastructure::redis::RedisClient;
 use crate::ServiceConnect;
 
-pub async fn enable_cache_mw(app: axum::Router, config: &RedisConfig) -> anyhow::Result<axum::Router> {
-    let redis_config = config.cacher().redis();
-    let redis = RedisClient::connect(redis_config).await?;
-    let redis_arc = Arc::new(redis);
+struct CacheState {
+    client: Arc<RedisClient>,
+    filters: Vec<regex::Regex>,
+}
 
-    let ext_layer = AddExtensionLayer::new(redis_arc.clone());
-    let cache_mw = axum::middleware::from_fn_with_state(redis_arc, cache_middleware);
+impl CacheState {
+    fn new(client: Arc<RedisClient>, filters: Vec<regex::Regex>) -> Self {
+        CacheState { client, filters }
+    }
+}
+
+pub async fn enable_caching_mw(app: axum::Router, config: &RedisConfig) -> anyhow::Result<axum::Router> {
+    let filters = ["/search/paginate/*"]
+        .into_iter()
+        .filter_map(|it| regex::Regex::new(it).ok())
+        .collect::<Vec<regex::Regex>>();
+
+    let redis = RedisClient::connect(config).await?;
+    let cache_state = CacheState::new(Arc::new(redis), filters);
+    let state_arc = Arc::new(cache_state);
+
+    let ext_layer = AddExtensionLayer::new(state_arc.clone());
+    let cache_mw = axum::middleware::from_fn_with_state(state_arc, cache);
     let tower_layer = tower::ServiceBuilder::new()
         .layer(ext_layer)
         .layer(cache_mw);
@@ -25,21 +41,21 @@ pub async fn enable_cache_mw(app: axum::Router, config: &RedisConfig) -> anyhow:
     Ok(app.layer(tower_layer))
 }
 
-async fn cache_middleware(State(cache): State<Arc<RedisClient>>, request: Request, next: Next) -> Response {
-    // // Skip caching for non-GET requests
-    // if request.method() != "GET" {
-    //     return next.run(request).await;
-    // }
+async fn cache(State(cache): State<Arc<CacheState>>, request: Request, next: Next) -> Response {
+    let path = request.uri().path();
+    let is_matched_path = cache
+        .filters
+        .iter()
+        .map(|it| it.is_match_at(path, 0))
+        .any(|it| it == true);
 
-    let path = request.uri().path().to_string();
+    if !is_matched_path {
+        return next.run(request).await;
+    }
 
-    // TODO: Filter by request method
-
-    let headers = request.headers();
-    let header_str = headers_to_key(headers);
+    let header_str = headers_to_key(request.headers());
     let cache_key = format!("{path}:{header_str}");
-
-    let cached: Option<Vec<u8>> = cache.load(&cache_key).await;
+    let cached: Option<Vec<u8>> = cache.client.load(&cache_key).await;
     if let Some(value) = cached {
         if !value.is_empty() {
             let data = Bytes::from(value);
@@ -54,23 +70,25 @@ async fn cache_middleware(State(cache): State<Arc<RedisClient>>, request: Reques
             let body = response.into_body();
             let data = axum::body::to_bytes(body, usize::MAX).await.unwrap();
             let data_vec = data.to_vec();
-            cache.store(&cache_key, &data_vec).await;
+            cache.client.store(&cache_key, &data_vec).await;
             Response::new(Body::from(data))
         }
         false => response,
     }
 }
 
+const NULL_HEADER_VALUE: &str = "null";
+const HEADER_FIELDS: [&str; 2] = ["Accept", "Authorization"];
+
 fn headers_to_key(headers: &HeaderMap) -> String {
-    let mut key_parts = Vec::new();
-
-    if let Some(accept) = headers.get("Accept") {
-        key_parts.push(format!("Accept:{}", accept.to_str().unwrap_or("")));
-    }
-
-    if let Some(auth) = headers.get("Authorization") {
-        key_parts.push(format!("Auth:{}", auth.to_str().unwrap_or("")));
-    }
-
-    key_parts.join("|")
+    HEADER_FIELDS
+        .into_iter()
+        .map(|it| {
+            match headers.get(it) {
+                None => NULL_HEADER_VALUE,
+                Some(value) => value.to_str().unwrap_or(NULL_HEADER_VALUE),
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join(":")
 }

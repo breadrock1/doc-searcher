@@ -43,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(OtelAxumLayer::default());
 
     #[cfg(feature = "enable-cache-redis")]
-    let app = httpserver::mw::cache::enable_cache_mw(app, config.cacher().redis()).await?;
+    let app = httpserver::mw::cache::enable_caching_mw(app, config.cacher().redis()).await?;
 
     let server_config = config.server();
     let listener = TcpListener::bind(server_config.address()).await?;
