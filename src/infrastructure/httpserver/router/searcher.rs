@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
@@ -10,6 +10,7 @@ use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
+use crate::infrastructure::httpserver::dto::PaginateQuery;
 use crate::infrastructure::httpserver::swagger::SwaggerExample;
 use crate::infrastructure::httpserver::ServerApp;
 
@@ -100,12 +101,22 @@ where
 }
 
 #[utoipa::path(
-    post,
-    path = "/search/paginate",
+    get,
+    path = "/search/paginate/{session_id}",
     tag = "search",
     description = "Paginate search results by scroll",
-    request_body(
-        content = PaginateParams,
+    params(
+        (
+            "session_id" = &str,
+            description = "Sessions id of scroll to get next paginated result",
+            example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk",
+        ),
+        (
+            "lifetime" = &str,
+            Query,
+            description = "Lifetime of scroll before it will be deleted",
+            example = "5m",
+        ),
     ),
     responses(
         (
@@ -131,14 +142,22 @@ where
 )]
 pub async fn paginate_next<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Json(form): Json<PaginateParams>,
+    Path(path): Path<String>,
+    Query(query): Query<PaginateQuery>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
+    let lifetime = query.lifetime();
+    let params = PaginateParams::builder()
+        .lifetime(lifetime)
+        .scroll_id(path)
+        .build()
+        .unwrap();
+
     let searcher = state.get_searcher();
-    let documents = searcher.paginate(&form).await?;
+    let documents = searcher.paginate(&params).await?;
     Ok(Json(documents))
 }
 
@@ -147,6 +166,13 @@ where
     path = "/search/paginate/{session_id}",
     tag = "search",
     description = "Delete existing pagination session by id",
+    params(
+        (
+            "session_id" = &str,
+            description = "Session id of scroll to delete",
+            example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk",
+        ),
+    ),
     responses(
         (
             status = 200,

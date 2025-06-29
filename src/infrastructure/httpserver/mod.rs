@@ -1,4 +1,5 @@
 mod config;
+mod dto;
 mod error;
 mod router;
 mod swagger;
@@ -75,6 +76,7 @@ where
         .route("/search/paginate", post(router::searcher::paginate_next))
         .route(
             "/search/paginate/{session_id}",
-            post(router::searcher::delete_scroll_session),
+            get(router::searcher::paginate_next)
+                .delete(router::searcher::delete_scroll_session),
         )
 }

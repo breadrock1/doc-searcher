@@ -107,11 +107,17 @@ impl SemanticSearchWithTokensParams {
     }
 }
 
-#[derive(Getters, Deserialize, Serialize, IntoParams, ToSchema)]
+#[derive(Builder, Getters, Deserialize, Serialize, IntoParams, ToSchema)]
 #[getset(get = "pub")]
 pub struct PaginateParams {
     #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     scroll_id: String,
     #[schema(example = "5m")]
     lifetime: String,
+}
+
+impl PaginateParams {
+    pub fn builder() -> PaginateParamsBuilder {
+        PaginateParamsBuilder::default()
+    }
 }
