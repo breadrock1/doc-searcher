@@ -11,9 +11,14 @@ use crate::application::services::storage::{
 use crate::infrastructure::httpserver::swagger::SwaggerExample;
 use crate::infrastructure::httpserver::ServerApp;
 
+pub const STORAGE_ALL_INDEXES_URL: &str = "/storage/indexes";
+pub const STORAGE_INDEX_URL: &str = "/storage/{index_id}";
+pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_id}/documents";
+pub const STORAGE_DOCUMENT_URL: &str = "/storage/{index_id}/{document_id}";
+
 #[utoipa::path(
     get,
-    path = "/storage/index",
+    path = STORAGE_ALL_INDEXES_URL,
     tag = "index",
     description = "Get all existing indexes",
     responses(
@@ -52,7 +57,7 @@ where
 
 #[utoipa::path(
     get,
-    path = "/storage/{index_id}",
+    path = STORAGE_INDEX_URL,
     tag = "index",
     description = "Get index information by id",
     params(
@@ -99,7 +104,7 @@ where
 
 #[utoipa::path(
     put,
-    path = "/storage/{index_id}",
+    path = STORAGE_INDEX_URL,
     tag = "index",
     description = "Create new index",
     params(
@@ -149,7 +154,7 @@ where
 
 #[utoipa::path(
     delete,
-    path = "/storage/{index_id}",
+    path = STORAGE_INDEX_URL,
     tag = "index",
     description = "Delete existing index by id",
     params(
@@ -197,7 +202,7 @@ where
 
 #[utoipa::path(
     post,
-    path = "/storage/{index_id}/documents",
+    path = STORAGE_ALL_DOCUMENTS_URL,
     tag = "document",
     description = "Get all documents stored into index",
     params(
@@ -247,7 +252,7 @@ where
 
 #[utoipa::path(
     get,
-    path = "/storage/{index_id}/{document_id}",
+    path = STORAGE_DOCUMENT_URL,
     tag = "document",
     description = "Load full Document information by id",
     params(
@@ -300,7 +305,7 @@ where
 
 #[utoipa::path(
     put,
-    path = "/storage/{index_id}/{document_id}",
+    path = STORAGE_DOCUMENT_URL,
     tag = "document",
     description = "Store new Document to index",
     params(
@@ -359,7 +364,7 @@ where
 
 #[utoipa::path(
     delete,
-    path = "/storage/{index_id}/{document_id}",
+    path = STORAGE_DOCUMENT_URL,
     tag = "document",
     description = "Delete Document object from index",
     params(
@@ -413,7 +418,7 @@ where
 
 #[utoipa::path(
     patch,
-    path = "/storage/{index_id}/{document_id}",
+    path = STORAGE_DOCUMENT_URL,
     tag = "document",
     description = "Update existing Document object",
     params(

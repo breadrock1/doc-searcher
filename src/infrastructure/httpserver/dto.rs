@@ -2,7 +2,7 @@ use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
 pub struct PaginateQuery {
-    lifetime: Option<String>
+    lifetime: Option<String>,
 }
 
 impl PaginateQuery {

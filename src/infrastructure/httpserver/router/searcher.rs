@@ -14,9 +14,13 @@ use crate::infrastructure::httpserver::dto::PaginateQuery;
 use crate::infrastructure::httpserver::swagger::SwaggerExample;
 use crate::infrastructure::httpserver::ServerApp;
 
+pub const SEARCH_FULLTEXT_URL: &str = "/search/fulltext";
+pub const SEARCH_SEMANTIC_URL: &str = "/search/semantic";
+pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{session_id}";
+
 #[utoipa::path(
     post,
-    path = "/search/fulltext",
+    path = SEARCH_FULLTEXT_URL,
     tag = "search",
     description = "Search Document objects by fulltext algorithm",
     request_body(
@@ -59,7 +63,7 @@ where
 
 #[utoipa::path(
     post,
-    path = "/search/semantic",
+    path = SEARCH_SEMANTIC_URL,
     tag = "search",
     description = "Search Document objects by semantic algorithm",
     request_body(
@@ -102,7 +106,7 @@ where
 
 #[utoipa::path(
     get,
-    path = "/search/paginate/{session_id}",
+    path = SEARCH_PAGINATE_URL,
     tag = "search",
     description = "Paginate search results by scroll",
     params(
@@ -163,7 +167,7 @@ where
 
 #[utoipa::path(
     delete,
-    path = "/search/paginate/{session_id}",
+    path = SEARCH_PAGINATE_URL,
     tag = "search",
     description = "Delete existing pagination session by id",
     params(

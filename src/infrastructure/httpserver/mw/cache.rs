@@ -1,8 +1,8 @@
 use axum::body::{Body, Bytes};
 use axum::extract::{Request, State};
 use axum::http::HeaderMap;
-use axum::response::Response;
 use axum::middleware::Next;
+use axum::response::Response;
 use std::sync::Arc;
 use tower_http::add_extension::AddExtensionLayer;
 
@@ -22,7 +22,10 @@ impl CacheState {
     }
 }
 
-pub async fn enable_caching_mw(app: axum::Router, config: &RedisConfig) -> anyhow::Result<axum::Router> {
+pub async fn enable_caching_mw(
+    app: axum::Router,
+    config: &RedisConfig,
+) -> anyhow::Result<axum::Router> {
     let filters = ["/search/paginate/*"]
         .into_iter()
         .filter_map(|it| regex::Regex::new(it).ok())
@@ -59,7 +62,7 @@ async fn cache(State(cache): State<Arc<CacheState>>, request: Request, next: Nex
     if let Some(value) = cached {
         if !value.is_empty() {
             let data = Bytes::from(value);
-            return Response::new(Body::from(data))
+            return Response::new(Body::from(data));
         }
     }
 
@@ -83,11 +86,9 @@ const HEADER_FIELDS: [&str; 2] = ["Accept", "Authorization"];
 fn headers_to_key(headers: &HeaderMap) -> String {
     HEADER_FIELDS
         .into_iter()
-        .map(|it| {
-            match headers.get(it) {
-                None => NULL_HEADER_VALUE,
-                Some(value) => value.to_str().unwrap_or(NULL_HEADER_VALUE),
-            }
+        .map(|it| match headers.get(it) {
+            None => NULL_HEADER_VALUE,
+            Some(value) => value.to_str().unwrap_or(NULL_HEADER_VALUE),
         })
         .collect::<Vec<&str>>()
         .join(":")

@@ -1,9 +1,9 @@
 mod config;
 mod dto;
 mod error;
+pub mod mw;
 mod router;
 mod swagger;
-pub mod mw;
 
 pub use config::ServerConfig;
 
@@ -45,19 +45,22 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     Router::new()
-        .route("/storage/index", get(router::storage::get_all_indexes))
         .route(
-            "/storage/{index_id}/documents",
+            router::storage::STORAGE_ALL_INDEXES_URL,
+            get(router::storage::get_all_indexes),
+        )
+        .route(
+            router::storage::STORAGE_ALL_DOCUMENTS_URL,
             post(router::storage::get_documents),
         )
         .route(
-            "/storage/{index_id}",
+            router::storage::STORAGE_INDEX_URL,
             get(router::storage::get_index)
                 .delete(router::storage::delete_index)
                 .post(router::storage::create_index),
         )
         .route(
-            "/storage/{index_id}/{document_id}",
+            router::storage::STORAGE_DOCUMENT_URL,
             get(router::storage::get_document)
                 .delete(router::storage::delete_document)
                 .patch(router::storage::update_document)
@@ -71,12 +74,16 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     Router::new()
-        .route("/search/fulltext", post(router::searcher::search_fulltext))
-        .route("/search/semantic", post(router::searcher::search_semantic))
-        .route("/search/paginate", post(router::searcher::paginate_next))
         .route(
-            "/search/paginate/{session_id}",
-            get(router::searcher::paginate_next)
-                .delete(router::searcher::delete_scroll_session),
+            router::searcher::SEARCH_FULLTEXT_URL,
+            post(router::searcher::search_fulltext),
+        )
+        .route(
+            router::searcher::SEARCH_SEMANTIC_URL,
+            post(router::searcher::search_semantic),
+        )
+        .route(
+            router::searcher::SEARCH_PAGINATE_URL,
+            post(router::searcher::paginate_next).delete(router::searcher::delete_scroll_session),
         )
 }
