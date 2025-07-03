@@ -1,49 +1,57 @@
 use serde_json::{json, Value};
 
-pub(super) fn create_document_schema() -> Value {
-    let settings = json!({
-        "index": {
-            "knn": true,
-            "knn.algo_param.ef_search": 100,
-            "number_of_shards": 1,
-            "number_of_replicas": 1,
-        }
-    });
+pub const SEARCH_PIPELINE_NAME: &str = "embeddings-ingest-pipeline";
+pub const KNN_SPACE_TYPE: &str = "cosinesimil";
+pub const KNN_DIMENSION: u32 = 768;
+const TOKEN_LIMIT: u32 = 50;
+const OVERLAP_RATE: f32 = 0.2;
+const NUMBER_OF_SHARDS: u16 = 1;
+const NUMBER_OF_REPLICAS: u16 = 1;
 
-    let chunks = json!({
-        "type": "nested",
-        "properties": {
-            "chunk_id": {
-                "type": "integer"
+pub fn create_ingest_schema() -> Value {
+    let model_id = "qRhky5cBW8Qg3Gf4qJgp";
+    let schema_query = json!({
+        "description": "A text chunking and embedding ingest pipeline",
+        "processors": [
+            {
+                "text_chunking": {
+                "algorithm": {
+                    "fixed_token_length": {
+                        "token_limit": TOKEN_LIMIT,
+                        "overlap_rate": OVERLAP_RATE,
+                        "tokenizer": "standard"
+                    }
+                },
+                    "field_map": {
+                        "content": "chunked_text"
+                    }
+                }
             },
-            "chunked_text": {
-                "type": "text",
-                "analyzer": "standard"
-            }
-        }
-    });
-
-    let tokens = json!({
-        "type": "nested",
-        "properties": {
-            "vector": {
-                "type": "knn_vector",
-                "dimension": 3,
-                "method": {
-                    "name": "hnsw",
-                    "space_type": "cosinesimil",
-                    "engine": "nmslib",
-                    "parameters": {
-                        "ef_construction": 128,
-                        "m": 16
+            {
+                "text_embedding": {
+                    "model_id": model_id,
+                    "field_map": {
+                        "chunked_text": "embeddings"
                     }
                 }
             }
-        }
+        ]
     });
 
-    json!({
-        "settings": settings,
+    schema_query
+}
+
+pub fn create_document_schema() -> Value {
+    let schema_query = json!({
+        "settings": {
+            "index": {
+                "knn": true,
+                "knn.space_type": KNN_SPACE_TYPE,
+                "number_of_shards": NUMBER_OF_SHARDS,
+                "number_of_replicas": NUMBER_OF_REPLICAS,
+                "search.default_pipeline": SEARCH_PIPELINE_NAME,
+            }
+        },
         "mappings": {
             "properties": {
                 "id": {
@@ -80,11 +88,15 @@ pub(super) fn create_document_schema() -> Value {
                 "embeddings": {
                     "type": "nested",
                     "properties": {
-                        "chunks": chunks,
-                        "tokens": tokens,
+                        "knn": {
+                            "type": "knn_vector",
+                            "dimension": KNN_DIMENSION
+                        }
                     }
                 }
-           }
-       }
-    })
+            }
+        }
+    });
+
+    schema_query
 }

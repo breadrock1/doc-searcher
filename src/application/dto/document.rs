@@ -22,74 +22,35 @@ pub struct Document {
     file_size: u32,
     #[schema(example = "There is some content data")]
     #[getset(get = "pub")]
-    content: String,
+    content: Option<String>,
     #[schema(example = 1750957115)]
     #[getset(get = "pub")]
     created_at: i64,
     #[schema(example = 1750957115)]
     #[getset(get = "pub")]
     modified_at: i64,
-    #[getset(get = "pub")]
-    embeddings: Vec<EmbeddingChunk>,
 }
 
-#[derive(Builder, Clone, CopyGetters, Getters, Serialize, Deserialize, ToSchema)]
-pub struct EmbeddingChunk {
-    #[schema(example = 0)]
-    #[getset(get_copy = "pub")]
-    chunk_id: u32,
-    #[schema(example = "There is some")]
-    #[getset(get = "pub")]
-    chunk_text: String,
-    #[schema(example = json!(vec![0.0345456, -0.4353242]))]
-    #[getset(get = "pub")]
-    tokens: Vec<f64>,
+impl Document {
+    pub fn builder() -> DocumentBuilder {
+        DocumentBuilder::default()
+    }
 }
 
 impl TryFrom<crate::domain::Document> for Document {
     type Error = DocumentBuilderError;
 
     fn try_from(value: crate::domain::Document) -> Result<Self, Self::Error> {
-        let embeddings = value
-            .embeddings()
-            .into_iter()
-            .filter_map(|it| match EmbeddingChunk::try_from(it) {
-                Ok(maped) => Some(maped),
-                Err(err) => {
-                    tracing::warn!(
-                        chunk=it.chunk_id(),
-                        err=?err,
-                        "failed to map embeddings to domain object",
-                    );
-                    None
-                }
-            })
-            .collect::<Vec<EmbeddingChunk>>();
-
         let document = DocumentBuilder::default()
-            .id(value.id().to_owned())
-            .file_name(value.file_name().to_owned())
-            .file_path(value.file_path().to_owned())
-            .file_size(value.file_size())
-            .content(value.content().to_owned())
-            .created_at(value.created_at().to_owned())
-            .modified_at(value.modified_at().to_owned())
-            .embeddings(embeddings)
+            .id(value.id)
+            .file_name(value.file_name)
+            .file_path(value.file_path)
+            .file_size(value.file_size)
+            .content(Some(value.content))
+            .created_at(value.created_at)
+            .modified_at(value.modified_at)
             .build()?;
 
         Ok(document)
-    }
-}
-
-impl TryFrom<&crate::domain::EmbeddingChunk> for EmbeddingChunk {
-    type Error = EmbeddingChunkBuilderError;
-
-    fn try_from(value: &crate::domain::EmbeddingChunk) -> Result<Self, Self::Error> {
-        let chunk = EmbeddingChunkBuilder::default()
-            .chunk_id(value.chunk_id())
-            .chunk_text(value.chunk_text().to_owned())
-            .tokens(value.tokens().to_owned())
-            .build()?;
-        Ok(chunk)
     }
 }

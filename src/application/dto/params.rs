@@ -14,20 +14,30 @@ pub trait QueryBuilder {
 #[derive(Getters, Serialize, Deserialize, IntoParams, ToSchema)]
 #[getset(get = "pub")]
 pub struct FilterParams {
-    #[schema(example = json!(vec![0, 1024]))]
-    size_range: Option<[u32; 2]>,
-    #[schema(example = json!(vec![1750957115, 1750957215]))]
-    created_range: Option<[i64; 2]>,
-    #[schema(example = json!(vec![1750957115, 1750957215]))]
-    modified_range: Option<[i64; 2]>,
+    #[schema(example = 0)]
+    size_from: Option<u32>,
+    #[schema(example = 1024)]
+    size_to: Option<u32>,
+    #[schema(example = 1750957115)]
+    created_from: Option<i64>,
+    #[schema(example = 1750957215)]
+    created_to: Option<i64>,
+    #[schema(example = 1750957115)]
+    modified_from: Option<i64>,
+    #[schema(example = 1750957215)]
+    modified_to: Option<i64>,
 }
 
-#[derive(Clone, CopyGetters, Serialize, Deserialize, IntoParams, ToSchema)]
-#[getset(get_copy = "pub")]
+#[derive(Clone, CopyGetters, Getters, Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct ResultParams {
+    #[schema(example = "desc")]
+    #[getset(get = "pub")]
+    order: String,
     #[schema(example = 10)]
+    #[getset(get_copy = "pub")]
     size: i64,
     #[schema(example = 0)]
+    #[getset(get_copy = "pub")]
     offset: i64,
 }
 
@@ -67,9 +77,6 @@ pub struct SemanticSearchParams {
     #[schema(example = 5)]
     #[getset(get_copy = "pub")]
     knn_amount: Option<u16>,
-    #[schema(example = 3)]
-    #[getset(get_copy = "pub")]
-    knn_candidates: Option<u32>,
     #[getset(get = "pub")]
     result: ResultParams,
     #[schema(example = "test-folder-1,test-folder-2")]
@@ -83,8 +90,6 @@ pub struct SemanticSearchWithTokensParams {
     tokens: Vec<f64>,
     #[getset(get_copy = "pub")]
     knn_amount: Option<u16>,
-    #[getset(get_copy = "pub")]
-    knn_candidates: Option<u32>,
     #[getset(get = "pub")]
     result: ResultParams,
     #[getset(get = "pub")]
@@ -98,7 +103,6 @@ impl SemanticSearchWithTokensParams {
     ) -> SemanticSearchWithTokensParams {
         SemanticSearchWithTokensParamsBuilder::default()
             .knn_amount(params.knn_amount())
-            .knn_candidates(params.knn_candidates())
             .result(params.result().to_owned())
             .indexes(params.indexes().to_owned())
             .tokens(tokens.tokens().to_owned())

@@ -2,10 +2,7 @@ pub mod error;
 
 pub use error::{PaginateResult, StorageError, StorageResult};
 
-use crate::application::dto::{
-    Document, FullTextSearchParams, Index, PaginateParams, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams,
-};
+use crate::application::dto::{Document, FoundedDocument, FullTextSearchParams, Index, PaginateParams, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 
 #[async_trait::async_trait]
 pub trait IndexManager {
@@ -25,17 +22,17 @@ pub trait DocumentManager {
 
 #[async_trait::async_trait]
 pub trait DocumentSearcher {
-    async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<Document>;
-    async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<Document>;
-    async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<Document>;
+    async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument>;
+    async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument>;
+    async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument>;
     async fn semantic_with_tokens(
         &self,
         params: &SemanticSearchWithTokensParams,
-    ) -> PaginateResult<Document>;
+    ) -> PaginateResult<FoundedDocument>;
 }
 
 #[async_trait::async_trait]
 pub trait PaginateManager {
     async fn delete_session(&self, session_id: &str) -> StorageResult<()>;
-    async fn paginate(&self, params: &PaginateParams) -> PaginateResult<Document>;
+    async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument>;
 }

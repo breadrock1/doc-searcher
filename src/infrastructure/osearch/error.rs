@@ -31,7 +31,12 @@ impl OpenSearchError {
         match response.json::<OpenSearchError>().await {
             Err(err) => StorageError::RuntimeError(err.to_string()),
             Ok(err) => {
-                let msg = err.error.reason.to_string();
+                let msg = err.error.root_cause
+                    .iter()
+                    .map(|it| it.reason.as_str())
+                    .collect::<Vec<&str>>()
+                    .join(": ");
+
                 StorageError::ServiceError(anyhow::Error::msg(msg))
             }
         }

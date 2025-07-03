@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::application::dto::{
-    Document, FullTextSearchParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams,
-    SemanticSearchWithTokensParams,
-};
+use crate::application::dto::{FoundedDocument, FullTextSearchParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 use crate::application::services::storage::error::{PaginateResult, StorageResult};
 use crate::application::services::storage::{DocumentSearcher, PaginateManager};
 use crate::application::services::tokenizer::Tokenizer;
@@ -33,15 +30,15 @@ impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
 {
-    pub async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<Document> {
+    pub async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
         self.client.retrieve(params).await
     }
 
-    pub async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<Document> {
+    pub async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
         self.client.fulltext(params).await
     }
 
-    pub async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<Document> {
+    pub async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
         if let Some(tokenizer) = self.tokenizer.clone() {
             let tokens = tokenizer.compute(params.query()).await?;
             let params = SemanticSearchWithTokensParams::build_from_semantic_params(params, tokens);
@@ -51,7 +48,7 @@ where
         self.client.semantic(params).await
     }
 
-    pub async fn paginate(&self, params: &PaginateParams) -> PaginateResult<Document> {
+    pub async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {
         self.client.paginate(params).await
     }
 

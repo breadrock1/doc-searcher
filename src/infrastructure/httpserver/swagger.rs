@@ -49,7 +49,6 @@ pub fn init_swagger_layer() -> RapiDoc {
     components(
         schemas(
             Document,
-            EmbeddingChunk,
             Index,
             FullTextSearchParams,
             RetrieveDocumentParams,
