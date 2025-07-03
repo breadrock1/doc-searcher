@@ -1,0 +1,10 @@
+{
+  "query": "Intuition is very important",
+  "indexes": "test-common-folder",
+  "knn_amount": 5,
+  "result": {
+    "order": "desc",
+    "size": 10,
+    "offset": 0
+  }
+}

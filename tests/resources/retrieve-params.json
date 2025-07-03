@@ -1,0 +1,14 @@
+{
+  "query": "./test-folder/test-1.docx",
+  "indexes": "test-common-folder",
+  "filter": {
+    "size_range": [0, 4096],
+    "created_range": [0, 3434345345435],
+    "modified_range": [0, 334345345234]
+  },
+  "result": {
+    "order": "desc",
+    "size": 10,
+    "offset": 0
+  }
+}
