@@ -1,18 +1,40 @@
 version: '3.9'
 
 services:
-  elasticsearch:
-    image: elasticsearch:8.11.2
-    restart: on-failure
-    ports:
-      - '9200:9200'
-    volumes:
-      - 'es-vol-1:/usr/share/elasticsearch/data'
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    env_file:
+      - .env.production
     environment:
-      discovery.type: 'single-node'
-      cluster.name: 'master'
-      ES_JAVA_OPTS: '-Xms2g -Xmx2g'
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      - discovery.type=single-node
+      - OPENSEARCH_URL=https://localhost:9300
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_DEFAULT_INDEX=common-folder
+      - OPENSEARCH_PASSWORD=admin
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=admin
+    ports:
+      - "9300:9300"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - data-net
+
+  dashboards:
+    container_name: opensearch-dashboards
+    image: opensearchproject/opensearch-dashboards:2.18.0
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    expose:
+      - '5601'
+    environment:
+      OPENSEARCH_HOSTS: '["https://localhost:9200"]'
+      OPENSEARCH_USERNAME: 'admin'
+    networks:
+      - data-net
+    depends_on:
+      - opensearch
 
   cacher:
     image: redis:latest
@@ -47,7 +69,7 @@ services:
     command: /app/doc-searcher-init && /app/doc-searcher-run
     links:
       - cacher
-      - elasticsearch
+      - opensearch
     ports:
       - '2892:2892'
     volumes:
