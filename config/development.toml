@@ -10,6 +10,7 @@ address = "0.0.0.0:2892"
 address = "http://localhost:9200"
 username = "elastic"
 password = "elastic"
+model_id = "PRh30JcBW8Qg3Gf4I6Ku"
 
 [cacher.redis]
 address = "redis://localhost:6379"
