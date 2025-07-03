@@ -2,14 +2,14 @@ use serde_json::{json, Value};
 
 pub const SEARCH_PIPELINE_NAME: &str = "embeddings-ingest-pipeline";
 pub const KNN_SPACE_TYPE: &str = "cosinesimil";
-pub const KNN_DIMENSION: u32 = 768;
+pub const KNN_EF_SEARCHER: u32 = 100;
+pub const KNN_DIMENSION: u32 = 384;
 const TOKEN_LIMIT: u32 = 50;
 const OVERLAP_RATE: f32 = 0.2;
 const NUMBER_OF_SHARDS: u16 = 1;
 const NUMBER_OF_REPLICAS: u16 = 1;
 
-pub fn create_ingest_schema() -> Value {
-    let model_id = "qRhky5cBW8Qg3Gf4qJgp";
+pub fn create_ingest_schema(model_id: &str) -> Value {
     let schema_query = json!({
         "description": "A text chunking and embedding ingest pipeline",
         "processors": [
@@ -47,6 +47,7 @@ pub fn create_document_schema() -> Value {
             "index": {
                 "knn": true,
                 "knn.space_type": KNN_SPACE_TYPE,
+                "knn.algo_param.ef_search": KNN_EF_SEARCHER,
                 "number_of_shards": NUMBER_OF_SHARDS,
                 "number_of_replicas": NUMBER_OF_REPLICAS,
                 "search.default_pipeline": SEARCH_PIPELINE_NAME,

@@ -8,7 +8,7 @@ use crate::application::dto::Tokens;
 use serde_json::json;
 
 pub trait QueryBuilder {
-    fn build_query(&self) -> serde_json::Value;
+    fn build_query(&self, extra_field: Option<&str>) -> serde_json::Value;
 }
 
 #[derive(Getters, Serialize, Deserialize, IntoParams, ToSchema)]
@@ -82,6 +82,9 @@ pub struct SemanticSearchParams {
     #[schema(example = "test-folder-1,test-folder-2")]
     #[getset(get = "pub")]
     indexes: String,
+    #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
+    #[getset(get = "pub")]
+    model_id: Option<String>,
 }
 
 #[derive(Builder, Getters, CopyGetters, Serialize)]

@@ -22,6 +22,7 @@ impl From<&OSearchIndex> for Index {
 pub struct SourceDocument {
     _id: String,
     _source: Document,
+    _score: Option<f64>,
     highlight: Option<HighlightContent>,
 }
 
@@ -35,6 +36,7 @@ impl From<SourceDocument> for FoundedDocument {
         FoundedDocument::builder()
             .document(src_doc._source)
             .highlight(highlight)
+            .score(src_doc._score)
             .build()
             .unwrap()
     }

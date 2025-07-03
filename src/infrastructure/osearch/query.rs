@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use crate::application::dto::{FilterParams, FullTextSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 
 impl QueryBuilder for RetrieveDocumentParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, _: Option<&str>) -> Value {
         let must = match self.path() {
             None => json!([{"match_all": {}}]),
             Some(path) => json!([{"term": {"file_path.keyword": path}}]),
@@ -30,7 +30,7 @@ impl QueryBuilder for RetrieveDocumentParams {
 }
 
 impl QueryBuilder for FullTextSearchParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, _: Option<&str>) -> Value {
         let must = match self.query() {
             None => json!([{"match_all": {}}]),
             Some(value) => json!({"match": {"content": value} }),
@@ -57,11 +57,10 @@ impl QueryBuilder for FullTextSearchParams {
 }
 
 impl QueryBuilder for SemanticSearchParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, model_id: Option<&str>) -> Value {
         let query = self.query();
         let size = self.result().size();
         let knn_amount = self.knn_amount();
-        let model_id = "qRhky5cBW8Qg3Gf4qJgp";
 
         json!({
             "_source": {
@@ -71,11 +70,17 @@ impl QueryBuilder for SemanticSearchParams {
             },
             "size": size,
             "query": {
-                "neural": {
-                    "embeddings.knn": {
-                        "query_text": query,
-                        "model_id": model_id,
-                        "k": knn_amount,
+                "nested": {
+                    "score_mode": "max",
+                    "path": "embeddings",
+                    "query": {
+                        "neural": {
+                            "embeddings.knn": {
+                                "query_text": query,
+                                "model_id": model_id,
+                                "k": knn_amount
+                            }
+                        }
                     }
                 }
             },
@@ -85,7 +90,7 @@ impl QueryBuilder for SemanticSearchParams {
 }
 
 impl QueryBuilder for SemanticSearchWithTokensParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, _: Option<&str>) -> Value {
         let size = self.result().size();
         let knn_amount = self.knn_amount();
         let query_vector = self.tokens();
@@ -98,10 +103,16 @@ impl QueryBuilder for SemanticSearchWithTokensParams {
             },
             "size": size,
             "query": {
-                "knn": {
-                    "embeddings.knn": {
-                        "vector": query_vector,
-                        "k": knn_amount,
+                "nested": {
+                    "score_mode": "max",
+			        "path": "embeddings",
+                    "query": {
+                        "knn": {
+                            "embeddings.knn": {
+                                "vector": query_vector,
+                                "k": knn_amount
+                            }
+                        }
                     }
                 }
             },

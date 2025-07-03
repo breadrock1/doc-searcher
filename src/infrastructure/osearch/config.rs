@@ -7,4 +7,5 @@ pub struct OSearchConfig {
     address: String,
     username: String,
     password: String,
+    model_id: String,
 }

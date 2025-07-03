@@ -8,6 +8,7 @@ use crate::application::dto::Document;
 #[getset(get = "pub")]
 pub struct FoundedDocument {
     document: Document,
+    score: Option<f64>,
     highlight: Vec<String>,
 }
 
@@ -24,6 +25,7 @@ impl TryFrom<crate::domain::FoundedDocument> for FoundedDocument {
         let highlight = founded_doc.highlight;
         let document = Document::try_from(founded_doc.document).unwrap();
         let result = FoundedDocument::builder()
+            .score(founded_doc.score)
             .document(document)
             .highlight(highlight)
             .build()?;

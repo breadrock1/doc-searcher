@@ -11,13 +11,14 @@ use opensearch::cert::CertificateValidation;
 use opensearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
 use opensearch::http::Url;
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
+use opensearch::ingest::IngestPutPipelineParts;
 use opensearch::OpenSearch;
 use opensearch::{
     ClearScrollParts, CreateParts, DeleteParts, GetParts, ScrollParts, SearchParts, UpdateParts,
 };
 use serde_json::{json, Value};
 use std::sync::Arc;
-use opensearch::ingest::IngestPutPipelineParts;
+
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::dto::{
     FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
@@ -35,6 +36,7 @@ const SCROLL_LIFETIME: &str = "5m";
 
 #[derive(Clone)]
 pub struct OpenSearchStorage {
+    config: OSearchConfig,
     client: Arc<OpenSearch>,
 }
 
@@ -60,7 +62,7 @@ impl ServiceConnect for OpenSearchStorage {
         tracing::info!(address = config.address(), "connected to elasticsearch");
         let client = OpenSearch::new(transport);
         let arc_client = Arc::new(client);
-        Ok(OpenSearchStorage { client: arc_client })
+        Ok(OpenSearchStorage { config: config.clone(), client: arc_client })
     }
 }
 
@@ -68,8 +70,8 @@ impl ServiceConnect for OpenSearchStorage {
 impl IndexManager for OpenSearchStorage {
     async fn create_index(&self, index: Index) -> StorageResult<Index> {
         let id = index.id();
-
-        let ingest_schema = schema::create_ingest_schema();
+        let model_id = self.config.model_id();
+        let ingest_schema = schema::create_ingest_schema(model_id);
         let response = self
             .client
             .ingest()
@@ -230,7 +232,7 @@ impl DocumentManager for OpenSearchStorage {
 #[async_trait::async_trait]
 impl DocumentSearcher for OpenSearchStorage {
     async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query();
+        let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let response = self
             .client
@@ -253,7 +255,7 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query();
+        let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let response = self
             .client
@@ -276,9 +278,8 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query();
-        let query_str = serde_json::to_string_pretty(&query)?;
-        tracing::info!(query=query_str, "there is fulltext query");
+        let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
+        let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let response = self
             .client
@@ -299,7 +300,7 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn semantic_with_tokens(&self, params: &SemanticSearchWithTokensParams) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query();
+        let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let response = self
             .client
@@ -367,32 +368,34 @@ mod test_osearch {
         let config = config.storage().opensearch();
         let client = Arc::new(OpenSearchStorage::connect(config).await?);
 
-        // let _ = client.delete_index(TEST_FOLDER_ID).await;
-        // let _ = create_test_index(client.clone()).await;
-        //
-        // let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        // for doc in documents.iter() {
-        //     let result = client.create_document(TEST_FOLDER_ID, doc.clone()).await;
-        //     assert!(result.is_ok());
-        // }
+        let _ = client.delete_index(TEST_FOLDER_ID).await;
+        let _ = create_test_index(client.clone()).await;
 
-        // let fulltext_params = serde_json::from_slice::<FullTextSearchParams>(TEST_FULLTEXT_DATA)?;
-        // let result = client.fulltext(&fulltext_params).await;
-        // assert!(result.is_ok());
-        // let result = result?;
-        // assert_eq!(result.founded().len(), 3);
+        let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
+        for doc in documents.iter() {
+            let result = client.create_document(TEST_FOLDER_ID, doc.clone()).await;
+            assert!(result.is_ok());
+        }
 
-        // let retrieve_params = serde_json::from_slice::<RetrieveDocumentParams>(TEST_RETRIEVE_DATA)?;
-        // let result = client.retrieve(&retrieve_params).await;
-        // assert!(result.is_ok());
-        // let result = result?;
-        // assert_eq!(result.founded().len(), 3);
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
+        let retrieve_params = serde_json::from_slice::<RetrieveDocumentParams>(TEST_RETRIEVE_DATA)?;
+        let result = client.retrieve(&retrieve_params).await;
+        assert!(result.is_ok());
+        let result = result?;
+        assert_eq!(result.founded().len(), 3);
+
+        let fulltext_params = serde_json::from_slice::<FullTextSearchParams>(TEST_FULLTEXT_DATA)?;
+        let result = client.fulltext(&fulltext_params).await;
+        assert!(result.is_ok());
+        let result = result?;
+        assert_eq!(result.founded().len(), 3);
 
         let semantic_params = serde_json::from_slice::<SemanticSearchParams>(TEST_SEMANTIC_DATA)?;
         let result = client.semantic(&semantic_params).await;
         assert!(result.is_ok());
         let result = result?;
-        assert_eq!(result.founded().len(), 0);
+        assert_eq!(result.founded().len(), 3);
 
         Ok(())
     }
