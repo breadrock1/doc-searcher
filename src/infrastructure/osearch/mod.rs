@@ -385,7 +385,6 @@ mod test_osearch {
     #[tokio::test]
     async fn test_searcher_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
-        logger::init_logger(config.logger())?;
         let config = config.storage().opensearch();
         let client = Arc::new(OpenSearchStorage::connect(config).await?);
 
@@ -424,7 +423,6 @@ mod test_osearch {
     #[tokio::test]
     async fn test_documents_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
-        logger::init_logger(config.logger())?;
         let config = config.storage().opensearch();
         let client = Arc::new(OpenSearchStorage::connect(config).await?);
 
@@ -459,7 +457,6 @@ mod test_osearch {
     #[tokio::test]
     async fn test_index_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
-        logger::init_logger(config.logger())?;
         let config = config.storage().opensearch();
         let client = Arc::new(OpenSearchStorage::connect(config).await?);
 
