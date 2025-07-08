@@ -370,7 +370,6 @@ impl PaginateManager for OpenSearchStorage {
 mod test_osearch {
     use super::*;
     use crate::config::ServiceConfig;
-    use crate::logger;
 
     const TEST_FOLDER_ID: &str = "test-common-folder";
     const TEST_DOCUMENTS_DATA: &[u8] =
