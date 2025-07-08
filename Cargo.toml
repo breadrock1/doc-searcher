@@ -46,7 +46,7 @@ features = ["tracing", "tower-log"]
 
 [dependencies.chrono]
 version = "0.4.37"
-features = ["rustc-serialize", "serde"]
+features = ["serde"]
 
 [dependencies.redis]
 optional = true
