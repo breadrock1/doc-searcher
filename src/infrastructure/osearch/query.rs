@@ -6,7 +6,7 @@ impl QueryBuilder for RetrieveDocumentParams {
     fn build_query(&self, _: Option<&str>) -> Value {
         let must = match self.path() {
             None => json!([{"match_all": {}}]),
-            Some(path) => json!([{"term": {"file_path.keyword": path}}]),
+            Some(path) => json!([{"match": {"file_path": path}}]),
         };
 
         json!({

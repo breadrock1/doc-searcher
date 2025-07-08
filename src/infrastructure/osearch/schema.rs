@@ -59,15 +59,10 @@ pub fn create_document_schema() -> Value {
                     "type": "keyword"
                 },
                 "file_name": {
-                    "type": "keyword",
-                    "fields": {
-                        "text": {
-                            "type": "text"
-                        }
-                    }
+                    "type": "text"
                 },
                 "file_path": {
-                    "type": "keyword"
+                    "type": "text"
                 },
                 "file_size": {
                     "type": "long"

@@ -50,6 +50,8 @@ pub fn init_swagger_layer() -> RapiDoc {
         schemas(
             Document,
             Index,
+            FilterParams,
+            ResultParams,
             FullTextSearchParams,
             RetrieveDocumentParams,
             SemanticSearchParams,
