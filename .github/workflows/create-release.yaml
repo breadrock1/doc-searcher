@@ -1,75 +1,63 @@
-name: "Create release"
+name: "Create release package"
+
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - master
-      - release/**
+    branches: [ main, master ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/create-package.yaml'
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/doc-searcher
 
 jobs:
-  create-release:
-    name: create release
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-
-    outputs:
-      version_output: ${{ steps.version.outputs.project_version }}
-      upload_url_output: ${{ steps.release.outputs.upload_url }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Get project version
-        id: version
-        run: |
-          VERSION=$(cargo metadata --format-version=1 | jq '.packages[] | select(.name=="doc-search").version')
-          echo "project_version=$VERSION" | grep -E '\d\.\d\.\d' >> $GITHUB_OUTPUT
-
-      - name: Create github release
-        id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          draft: false
-          prerelease: false
-          body_path: CHANGELOG.md
-          tag_name: doc-searcher-${{ steps.version.outputs.project_version }}
-          release_name: doc-searcher-${{ steps.version.outputs.project_version }}
-
-  build:
-    name: build project
+      contents: read
+      packages: write
     strategy:
       matrix:
         features:
           - name: all
             options: '--all-features'
-          - name: with cache
-            options: '--features enable-cache-redis'
-
-    runs-on: ubuntu-latest
-    needs: create-release
-    permissions: write-all
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Build with feature ${{ matrix.features.name }}
-        run: cargo build --release --bins ${{ matrix.features.options }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Create archive
-        uses: vimtor/action-zip@5f1c4aa587ea41db1110df6a99981dbe19cee310
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
         with:
-          files: ./target
-          dest: doc-searcher-${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
-          recursive: true
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload linux artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v4
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url_output }}
-          asset_name: doc-searcher-${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
-          asset_path: ./doc-searcher-${{ matrix.features.name }}-${{ needs.create-release.outputs.version_output }}.zip
-          asset_content_type: application/zip
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
