@@ -84,6 +84,6 @@ where
         )
         .route(
             router::searcher::SEARCH_PAGINATE_URL,
-            post(router::searcher::paginate_next).delete(router::searcher::delete_scroll_session),
+            get(router::searcher::paginate_next).delete(router::searcher::delete_scroll_session),
         )
 }

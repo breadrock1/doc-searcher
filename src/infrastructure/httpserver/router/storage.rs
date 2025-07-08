@@ -257,7 +257,7 @@ where
     description = "Load full Document information by id",
     params(
         (
-            "index" = &str,
+            "index_id" = &str,
             description = "Index id where is stored Document",
             example = "test-folder",
         ),
