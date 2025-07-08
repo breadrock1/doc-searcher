@@ -57,14 +57,14 @@ where
             router::storage::STORAGE_INDEX_URL,
             get(router::storage::get_index)
                 .delete(router::storage::delete_index)
-                .post(router::storage::create_index),
+                .put(router::storage::create_index),
         )
         .route(
             router::storage::STORAGE_DOCUMENT_URL,
             get(router::storage::get_document)
                 .delete(router::storage::delete_document)
                 .patch(router::storage::update_document)
-                .post(router::storage::store_document),
+                .put(router::storage::store_document),
         )
 }
 
