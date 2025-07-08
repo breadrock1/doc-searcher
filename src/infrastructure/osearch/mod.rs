@@ -249,54 +249,59 @@ impl DocumentSearcher for OpenSearchStorage {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        let response = response.json::<Value>().await?;
-        let result = extractor::extract_founded_docs(response).await?;
-        Ok(result)
+        let response_data = response.json::<Value>().await?;
+        let paginated = extractor::extract_founded_docs(response_data).await?;
+        Ok(paginated)
     }
 
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
-        let response = self
+        let request = self
             .client
             .search(SearchParts::Index(&indexes))
-            .pretty(true)
-            .scroll(SCROLL_LIFETIME)
-            .from(params.result().offset())
             .size(params.result().size())
-            .body(query)
-            .send()
-            .await?;
+            .pretty(true)
+            .body(query);
 
+        let request = match params.result().offset() > 0 {
+            true => request.from(params.result().offset()),
+            false => request.scroll(SCROLL_LIFETIME),
+        };
+
+        let response = request.send().await?;
         if !response.status_code().is_success() {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        let response = response.json::<Value>().await?;
-        let result = extractor::extract_founded_docs(response).await?;
-        Ok(result)
+        let response_data = response.json::<Value>().await?;
+        let paginated = extractor::extract_founded_docs(response_data).await?;
+        Ok(paginated)
     }
 
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
         let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
-        let response = self
+        let request = self
             .client
             .search(SearchParts::Index(&indexes))
-            .scroll(SCROLL_LIFETIME)
             .pretty(true)
-            .body(query)
-            .send()
-            .await?;
+            .body(query);
 
+        let request = match params.result().offset() > 0 {
+            true => request.from(params.result().offset()),
+            false => request.scroll(SCROLL_LIFETIME),
+        };
+
+        let response = request.send().await?;
         if !response.status_code().is_success() {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        let response = response.json::<Value>().await?;
-        let result = extractor::extract_founded_docs(response).await?;
-        Ok(result)
+        let response_data = response.json::<Value>().await?;
+        let paginated = extractor::extract_founded_docs(response_data).await?;
+        Ok(paginated)
     }
 
     async fn semantic_with_tokens(&self, params: &SemanticSearchWithTokensParams) -> PaginateResult<FoundedDocument> {
@@ -315,9 +320,9 @@ impl DocumentSearcher for OpenSearchStorage {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        let response = response.json::<Value>().await?;
-        let result = extractor::extract_founded_docs(response).await?;
-        Ok(result)
+        let response_data = response.json::<Value>().await?;
+        let paginated = extractor::extract_founded_docs(response_data).await?;
+        Ok(paginated)
     }
 }
 
@@ -348,8 +353,8 @@ impl PaginateManager for OpenSearchStorage {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        let response = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response).await?;
+        let response_data = response.json::<Value>().await?;
+        let paginated = extractor::extract_founded_docs(response_data).await?;
         Ok(paginated)
     }
 }
