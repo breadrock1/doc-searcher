@@ -1,7 +1,7 @@
 pub mod config;
 mod dto;
-mod extractor;
 mod error;
+mod extractor;
 mod query;
 mod schema;
 
@@ -62,7 +62,10 @@ impl ServiceConnect for OpenSearchStorage {
         tracing::info!(address = config.address(), "connected to elasticsearch");
         let client = OpenSearch::new(transport);
         let arc_client = Arc::new(client);
-        Ok(OpenSearchStorage { config: config.clone(), client: arc_client })
+        Ok(OpenSearchStorage {
+            config: config.clone(),
+            client: arc_client,
+        })
     }
 }
 
@@ -304,7 +307,10 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
-    async fn semantic_with_tokens(&self, params: &SemanticSearchWithTokensParams) -> PaginateResult<FoundedDocument> {
+    async fn semantic_with_tokens(
+        &self,
+        params: &SemanticSearchWithTokensParams,
+    ) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let response = self
@@ -329,7 +335,8 @@ impl DocumentSearcher for OpenSearchStorage {
 #[async_trait::async_trait]
 impl PaginateManager for OpenSearchStorage {
     async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
-        let response = self.client
+        let response = self
+            .client
             .clear_scroll(ClearScrollParts::ScrollId(&[session_id]))
             .send()
             .await?;
@@ -366,10 +373,14 @@ mod test_osearch {
     use crate::logger;
 
     const TEST_FOLDER_ID: &str = "test-common-folder";
-    const TEST_DOCUMENTS_DATA: &[u8] = include_bytes!("../../../tests/resources/test-document.json");
-    const TEST_FULLTEXT_DATA: &[u8] = include_bytes!("../../../tests/resources/fulltext-params.json");
-    const TEST_RETRIEVE_DATA: &[u8] = include_bytes!("../../../tests/resources/retrieve-params.json");
-    const TEST_SEMANTIC_DATA: &[u8] = include_bytes!("../../../tests/resources/semantic-params.json");
+    const TEST_DOCUMENTS_DATA: &[u8] =
+        include_bytes!("../../../tests/resources/test-document.json");
+    const TEST_FULLTEXT_DATA: &[u8] =
+        include_bytes!("../../../tests/resources/fulltext-params.json");
+    const TEST_RETRIEVE_DATA: &[u8] =
+        include_bytes!("../../../tests/resources/retrieve-params.json");
+    const TEST_SEMANTIC_DATA: &[u8] =
+        include_bytes!("../../../tests/resources/semantic-params.json");
 
     #[tokio::test]
     async fn test_searcher_api() -> anyhow::Result<()> {

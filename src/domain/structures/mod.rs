@@ -1,6 +1,6 @@
 mod document;
-mod index;
 mod founded;
+mod index;
 
 pub use document::{Document, EmbeddingChunk};
 pub use founded::FoundedDocument;

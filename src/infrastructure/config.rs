@@ -1,8 +1,8 @@
 use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 
+use crate::infrastructure::baii::config::BAAIConfig;
 use crate::infrastructure::osearch::config::OSearchConfig;
-use crate::infrastructure::vectorizer::config::VectorizerConfig;
 
 #[cfg(feature = "enable-cache-redis")]
 use crate::infrastructure::redis::config::RedisConfig;
@@ -19,7 +19,7 @@ pub struct TokenizerConfig {
     #[getset(get_copy = "pub")]
     enable: bool,
     #[getset(get = "pub")]
-    baai: VectorizerConfig,
+    baai: BAAIConfig,
 }
 
 #[derive(Clone, Deserialize, Getters)]

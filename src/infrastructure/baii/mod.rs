@@ -3,7 +3,7 @@ mod dto;
 
 use std::sync::Arc;
 
-use self::config::VectorizerConfig;
+use self::config::BAAIConfig;
 use self::dto::VectorizerForm;
 
 use crate::application::dto::Tokens;
@@ -14,13 +14,13 @@ const NATIVE_SERVICE_URL: &str = "/embed";
 
 #[derive(Clone)]
 pub struct VectorizerClient {
-    config: VectorizerConfig,
+    config: BAAIConfig,
     client: Arc<reqwest::Client>,
 }
 
 #[async_trait::async_trait]
 impl ServiceConnect for VectorizerClient {
-    type Config = VectorizerConfig;
+    type Config = BAAIConfig;
     type Error = reqwest::Error;
     type Client = Self;
 
@@ -60,7 +60,7 @@ impl Tokenizer for VectorizerClient {
             return Err(TokenizerError::EmptyResponse);
         }
 
-        let Some(embed) = embed_data.get(0).to_owned() else {
+        let Some(embed) = embed_data.first() else {
             return Err(TokenizerError::EmptyResponse);
         };
 

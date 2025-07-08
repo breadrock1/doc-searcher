@@ -1,6 +1,9 @@
 use serde_json::{json, Value};
 
-use crate::application::dto::{FilterParams, FullTextSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
+use crate::application::dto::{
+    FilterParams, FullTextSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams,
+    SemanticSearchWithTokensParams,
+};
 
 impl QueryBuilder for RetrieveDocumentParams {
     fn build_query(&self, _: Option<&str>) -> Value {
@@ -105,7 +108,7 @@ impl QueryBuilder for SemanticSearchWithTokensParams {
             "query": {
                 "nested": {
                     "score_mode": "max",
-			        "path": "embeddings",
+                    "path": "embeddings",
                     "query": {
                         "knn": {
                             "embeddings.knn": {
@@ -122,31 +125,29 @@ impl QueryBuilder for SemanticSearchWithTokensParams {
 }
 
 fn build_filter_query(filter: &Option<FilterParams>) -> Value {
-    let filter = match filter {
+    match filter {
         None => json!([]),
         Some(params) => {
             json!([
-                    {
-                        "range": {
-                            "created_at": {
-                                "gte": params.created_from(),
-                                "lte": params.created_to()
-                            }
-                        }
-                    },
-                    {
-                        "range": {
-                            "file_size": {
-                                "gte": params.size_from(),
-                                "lte": params.size_to()
-                            }
+                {
+                    "range": {
+                        "created_at": {
+                            "gte": params.created_from(),
+                            "lte": params.created_to()
                         }
                     }
-                ])
+                },
+                {
+                    "range": {
+                        "file_size": {
+                            "gte": params.size_from(),
+                            "lte": params.size_to()
+                        }
+                    }
+                }
+            ])
         }
-    };
-
-    filter
+    }
 }
 
 fn build_highlight_query() -> Value {

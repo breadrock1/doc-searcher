@@ -1,6 +1,6 @@
 use serde_derive::Deserialize;
 
-use crate::application::dto::{Document, Index, FoundedDocument};
+use crate::application::dto::{Document, FoundedDocument, Index};
 
 #[derive(Debug, Deserialize)]
 pub struct OSearchIndex {
@@ -28,10 +28,7 @@ pub struct SourceDocument {
 
 impl From<SourceDocument> for FoundedDocument {
     fn from(src_doc: SourceDocument) -> Self {
-        let highlight = src_doc
-            .highlight
-            .map(|it| it.content)
-            .unwrap_or_default();
+        let highlight = src_doc.highlight.map(|it| it.content).unwrap_or_default();
 
         FoundedDocument::builder()
             .document(src_doc._source)

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::application::dto::{Paginated, FoundedDocument};
+use crate::application::dto::{FoundedDocument, Paginated};
 use crate::application::services::storage::{PaginateResult, StorageResult};
 use crate::infrastructure::osearch::dto::SourceDocument;
 
@@ -20,7 +20,7 @@ pub async fn extract_founded_docs(common_object: Value) -> PaginateResult<Founde
     };
 
     let documents = hits
-        .into_iter()
+        .iter()
         .filter_map(|it| extract_founded_document(it).ok())
         .collect::<Vec<FoundedDocument>>();
 

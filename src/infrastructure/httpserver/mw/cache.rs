@@ -46,11 +46,7 @@ pub async fn enable_caching_mw(
 
 async fn cache(State(cache): State<Arc<CacheState>>, request: Request, next: Next) -> Response {
     let path = request.uri().path();
-    let is_matched_path = cache
-        .filters
-        .iter()
-        .map(|it| it.is_match_at(path, 0))
-        .any(|it| it == true);
+    let is_matched_path = cache.filters.iter().any(|it| it.is_match_at(path, 0));
 
     if !is_matched_path {
         return next.run(request).await;

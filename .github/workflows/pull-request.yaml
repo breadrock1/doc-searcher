@@ -58,10 +58,6 @@ jobs:
         features:
           - name: all
             options: '--all-features'
-          - name: with cache redis
-            options: '--features enable-cacher-redis'
-          - name: with semantic
-            options: '--features enable-semantic'
 
     runs-on: ubuntu-latest
     permissions: write-all

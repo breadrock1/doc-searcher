@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::application::dto::{FoundedDocument, FullTextSearchParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
+use crate::application::dto::{
+    FoundedDocument, FullTextSearchParams, PaginateParams, RetrieveDocumentParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams,
+};
 use crate::application::services::storage::error::{PaginateResult, StorageResult};
 use crate::application::services::storage::{DocumentSearcher, PaginateManager};
 use crate::application::services::tokenizer::Tokenizer;
@@ -30,7 +33,10 @@ impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
 {
-    pub async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
+    pub async fn retrieve(
+        &self,
+        params: &RetrieveDocumentParams,
+    ) -> PaginateResult<FoundedDocument> {
         self.client.retrieve(params).await
     }
 

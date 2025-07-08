@@ -3,9 +3,9 @@ use doc_search::application::services::server::ServerApp;
 use doc_search::application::services::tokenizer::Tokenizer;
 use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
+use doc_search::infrastructure::baii::VectorizerClient;
 use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
-use doc_search::infrastructure::vectorizer::VectorizerClient;
 use doc_search::{logger, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -16,12 +16,13 @@ async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
     logger::init_logger(config.logger())?;
 
-    let tokenizer: Option<Arc<Box<dyn Tokenizer + Send + Sync>>> = match config.tokenizer().enable() {
+    let tokenizer: Option<Arc<Box<dyn Tokenizer + Send + Sync>>> = match config.tokenizer().enable()
+    {
         true => {
             let baii_config = config.tokenizer().baai();
             let baii_client = VectorizerClient::connect(baii_config).await?;
             Some(Arc::new(Box::new(baii_client)))
-        },
+        }
         false => None,
     };
 
