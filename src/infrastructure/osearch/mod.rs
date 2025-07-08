@@ -324,11 +324,14 @@ impl DocumentSearcher for OpenSearchStorage {
 #[async_trait::async_trait]
 impl PaginateManager for OpenSearchStorage {
     async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
-        self.client
+        let response = self.client
             .clear_scroll(ClearScrollParts::ScrollId(&[session_id]))
             .send()
-            .await?
-            .error_for_status_code()?;
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
 
         Ok(())
     }
@@ -339,11 +342,13 @@ impl PaginateManager for OpenSearchStorage {
             .scroll(ScrollParts::ScrollId(params.scroll_id()))
             .pretty(true)
             .send()
-            .await?
-            .error_for_status_code()?
-            .json::<Value>()
             .await?;
 
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        let response = response.json::<Value>().await?;
         let paginated = extractor::extract_founded_docs(response).await?;
         Ok(paginated)
     }

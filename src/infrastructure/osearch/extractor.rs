@@ -6,9 +6,6 @@ use crate::application::services::storage::{PaginateResult, StorageResult};
 use crate::infrastructure::osearch::dto::SourceDocument;
 
 pub async fn extract_founded_docs(common_object: Value) -> PaginateResult<FoundedDocument> {
-    let object_str = serde_json::to_string_pretty(&common_object)?;
-    tracing::info!(result=object_str, "there is retrive result");
-
     let scroll_id = common_object[&"_scroll_id"].as_str().map(String::from);
     let founded_hits = common_object[&"hits"][&"hits"].as_array();
     let Some(hits) = founded_hits else {
