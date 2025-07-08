@@ -70,6 +70,26 @@ pub struct FullTextSearchParams {
 }
 
 #[derive(Getters, CopyGetters, Serialize, Deserialize, IntoParams, ToSchema)]
+pub struct HybridSearchParams {
+    #[schema(example = "Hello world")]
+    #[getset(get = "pub")]
+    query: String,
+    #[schema(example = 5)]
+    #[getset(get_copy = "pub")]
+    knn_amount: Option<u16>,
+    #[getset(get = "pub")]
+    filter: Option<FilterParams>,
+    #[getset(get = "pub")]
+    result: ResultParams,
+    #[schema(example = "test-folder-1,test-folder-2")]
+    #[getset(get = "pub")]
+    indexes: String,
+    #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
+    #[getset(get = "pub")]
+    model_id: Option<String>,
+}
+
+#[derive(Getters, CopyGetters, Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct SemanticSearchParams {
     #[schema(example = "Hello world")]
     #[getset(get = "pub")]

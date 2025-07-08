@@ -7,6 +7,8 @@ use utoipa::ToSchema;
 
 use crate::application::services::storage::error::StorageError;
 
+const UNAVAILABLE_SERVER: &str = "server unavailable";
+
 pub type ServerResult<T> = Result<T, ServerError>;
 
 #[derive(Debug, Error, Serialize, ToSchema)]
@@ -26,14 +28,11 @@ impl From<StorageError> for ServerError {
 }
 
 impl ServerError {
-    pub fn status_code(&self) -> (String, StatusCode) {
+    pub fn status_code(&self) -> (StatusCode, String) {
         match self {
-            ServerError::NotFound(msg) => (msg.to_owned(), StatusCode::NOT_FOUND),
-            ServerError::InternalError(msg) => (msg.to_owned(), StatusCode::INTERNAL_SERVER_ERROR),
-            ServerError::ServerUnavailable => (
-                "server unavailable".to_owned(),
-                StatusCode::SERVICE_UNAVAILABLE,
-            ),
+            ServerError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.to_owned()),
+            ServerError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_owned()),
+            ServerError::ServerUnavailable => (StatusCode::SERVICE_UNAVAILABLE, UNAVAILABLE_SERVER.to_owned()),
         }
     }
 }
@@ -56,7 +55,7 @@ impl Default for Success {
 }
 
 impl Success {
-    fn new(status: u16, message: &str) -> Self {
+    pub fn new(status: u16, message: &str) -> Self {
         Success {
             status,
             message: message.to_owned(),

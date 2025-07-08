@@ -2,7 +2,7 @@ use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
-
+use axum::http::StatusCode;
 use crate::application::dto::{Document, Index, RetrieveDocumentParams};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
@@ -15,6 +15,7 @@ pub const STORAGE_ALL_INDEXES_URL: &str = "/storage/indexes";
 pub const STORAGE_INDEX_URL: &str = "/storage/{index_id}";
 pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_id}/documents";
 pub const STORAGE_DOCUMENT_URL: &str = "/storage/{index_id}/{document_id}";
+pub const CREATE_DOCUMENT_URL: &str = "/storage/{index_id}/create";
 
 #[utoipa::path(
     get,
@@ -119,10 +120,10 @@ where
     ),
     responses(
         (
-            status = 200,
+            status = 201,
             content_type="application/json",
             description = "Index has been created",
-            body = Success,
+            body = Index,
         ),
         (
             status = 400,
@@ -148,8 +149,11 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
-    let status = storage.create_index(form).await?;
-    Ok(Json(status))
+    let index = storage.create_index(form).await?;
+
+
+
+    Ok((StatusCode::CREATED, Json(index)))
 }
 
 #[utoipa::path(
@@ -305,7 +309,7 @@ where
 
 #[utoipa::path(
     put,
-    path = STORAGE_DOCUMENT_URL,
+    path = CREATE_DOCUMENT_URL,
     tag = "document",
     description = "Store new Document to index",
     params(
@@ -325,10 +329,11 @@ where
     ),
     responses(
         (
-            status = 200,
+            status = 201,
             content_type="application/json",
             description = "Document has been stored successful",
             body = Success,
+            example = json!(Success::new(201, "98ac9896be35f47fb8442580cd9839b4")),
         ),
         (
             status = 400,
@@ -357,9 +362,10 @@ where
 {
     let (folder_id, _) = path;
     let storage = state.get_storage();
-    storage.create_document(&folder_id, form).await?;
-    let status = Success::default();
-    Ok(Json(status))
+    let id = storage.create_document(&folder_id, form).await?;
+
+    let status = Success::new(201, &id);
+    Ok((StatusCode::CREATED, Json(status)))
 }
 
 #[utoipa::path(
@@ -467,9 +473,9 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let (folder_id, _) = path;
+    let (folder_id, doc_id) = path;
     let storage = state.get_storage();
-    storage.update_document(&folder_id, form).await?;
+    storage.update_document(&folder_id, &doc_id, form).await?;
     let status = Success::default();
     Ok(Json(status))
 }

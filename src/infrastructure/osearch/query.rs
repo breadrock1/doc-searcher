@@ -1,9 +1,6 @@
 use serde_json::{json, Value};
 
-use crate::application::dto::{
-    FilterParams, FullTextSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams,
-    SemanticSearchWithTokensParams,
-};
+use crate::application::dto::{FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 
 impl QueryBuilder for RetrieveDocumentParams {
     fn build_query(&self, _: Option<&str>) -> Value {
@@ -55,6 +52,48 @@ impl QueryBuilder for FullTextSearchParams {
             },
             "highlight": build_highlight_query(),
             "sort": build_sort_query(self.result().order()),
+        })
+    }
+}
+
+impl QueryBuilder for HybridSearchParams {
+    fn build_query(&self, model_id: Option<&str>) -> Value {
+        let query = self.query();
+        let size = self.result().size();
+        let knn_amount = self.knn_amount();
+
+        json!({
+            "_source": {
+                "exclude": [
+                    "chunked_text",
+                    "embeddings",
+                    "content",
+               ]
+            },
+            "size": size,
+            "query": {
+                "hybrid": {
+                    "queries": [
+                        {
+                            "match": {
+                                "passage_text": {
+                                    "query": query,
+                                }
+                            }
+                        },
+                        {
+                            "neural": {
+                                "embeddings.knn": {
+                                    "query_text": query,
+                                    "model_id": model_id,
+                                    "k": knn_amount,
+                                }
+                            }
+                        },
+                    ]
+                }
+            },
+            "highlight": build_highlight_query(),
         })
     }
 }

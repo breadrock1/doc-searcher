@@ -19,7 +19,7 @@ use opensearch::{
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::application::dto::{Document, FoundedDocument, Index};
+use crate::application::dto::{Document, FoundedDocument, HybridSearchParams, Index};
 use crate::application::dto::{
     FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
     SemanticSearchParams, SemanticSearchWithTokensParams,
@@ -170,10 +170,11 @@ impl IndexManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
-    async fn create_document(&self, index: &str, doc: Document) -> StorageResult<()> {
+    async fn create_document(&self, index: &str, doc: Document) -> StorageResult<String> {
+        let id = uuid::Uuid::new_v4().to_string();
         let response = self
             .client
-            .create(CreateParts::IndexId(index, doc.id()))
+            .create(CreateParts::IndexId(index, &id))
             .pipeline(schema::SEARCH_PIPELINE_NAME)
             .body(&doc)
             .send()
@@ -183,7 +184,7 @@ impl DocumentManager for OpenSearchStorage {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        Ok(())
+        Ok(id)
     }
 
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
@@ -216,10 +217,10 @@ impl DocumentManager for OpenSearchStorage {
         Ok(())
     }
 
-    async fn update_document(&self, index: &str, doc: Document) -> StorageResult<()> {
+    async fn update_document(&self, index: &str, id: &str, doc: Document) -> StorageResult<()> {
         let response = self
             .client
-            .update(UpdateParts::IndexId(index, doc.id()))
+            .update(UpdateParts::IndexId(index, id))
             .body(&json!({ "doc": doc }))
             .send()
             .await?;
@@ -264,6 +265,31 @@ impl DocumentSearcher for OpenSearchStorage {
             .client
             .search(SearchParts::Index(&indexes))
             .size(params.result().size())
+            .pretty(true)
+            .body(query);
+
+        let request = match params.result().offset() > 0 {
+            true => request.from(params.result().offset()),
+            false => request.scroll(SCROLL_LIFETIME),
+        };
+
+        let response = request.send().await?;
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        let response_data = response.json::<Value>().await?;
+        let paginated = extractor::extract_founded_docs(response_data).await?;
+        Ok(paginated)
+    }
+
+    async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
+        let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
+        let query = params.build_query(Some(model_id));
+        let indexes = params.indexes().split(',').collect::<Vec<&str>>();
+        let request = self
+            .client
+            .search(SearchParts::Index(&indexes))
             .pretty(true)
             .body(query);
 
@@ -430,21 +456,21 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let result = client.create_document(TEST_FOLDER_ID, doc.clone()).await;
-            if let Err(e) = result {
-                return Err(e.into());
-            }
-            assert!(result.is_ok());
+            let id = match client.create_document(TEST_FOLDER_ID, doc.clone()).await {
+                Ok(id) => id,
+                Err(err) => {
+                    return Err(err.into());
+                }
+            };
 
-            let result = client.get_document(TEST_FOLDER_ID, doc.id()).await;
+            let result = client.get_document(TEST_FOLDER_ID, &id).await;
             assert!(result.is_ok());
 
             let loaded_doc = result?;
-            assert_eq!(doc.id(), loaded_doc.id());
             assert_eq!(doc.content(), loaded_doc.content());
 
-            client.delete_document(TEST_FOLDER_ID, doc.id()).await?;
-            let result = client.get_document(TEST_FOLDER_ID, doc.id()).await;
+            client.delete_document(TEST_FOLDER_ID, &id).await?;
+            let result = client.get_document(TEST_FOLDER_ID, &id).await;
             assert!(result.is_err());
         }
 
@@ -473,7 +499,6 @@ mod test_osearch {
 
     async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<Index> {
         let index = Index::builder()
-            .id(TEST_FOLDER_ID.to_owned())
             .name(TEST_FOLDER_ID.to_owned())
             .path("".to_owned())
             .build()?;

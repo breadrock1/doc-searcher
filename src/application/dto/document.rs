@@ -8,9 +8,6 @@ use serde_json::json;
 
 #[derive(Builder, Clone, Getters, CopyGetters, Serialize, Deserialize, ToSchema)]
 pub struct Document {
-    #[schema(example = "98ac9896be35f47fb8442580cd9839b4")]
-    #[getset(get = "pub")]
-    id: String,
     #[schema(example = "test-document.docx")]
     #[getset(get = "pub")]
     file_name: String,
@@ -42,7 +39,6 @@ impl TryFrom<crate::domain::Document> for Document {
 
     fn try_from(value: crate::domain::Document) -> Result<Self, Self::Error> {
         let document = DocumentBuilder::default()
-            .id(value.id)
             .file_name(value.file_name)
             .file_path(value.file_path)
             .file_size(value.file_size)

@@ -8,11 +8,13 @@ impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
         #[derive(Serialize)]
         struct ErrorResponse {
+            status: u16,
             message: String,
         }
 
-        let (msg, status) = self.status_code();
-        let mut resp = Json(ErrorResponse { message: msg }).into_response();
+        let (status, msg) = self.status_code();
+        let response = ErrorResponse { status: status.as_u16(), message: msg };
+        let mut resp = Json(response).into_response();
         *resp.status_mut() = status;
         resp
     }

@@ -41,7 +41,7 @@ where
         self.client.get_index(id).await
     }
 
-    pub async fn create_document(&self, index: &str, doc: Document) -> StorageResult<()> {
+    pub async fn create_document(&self, index: &str, doc: Document) -> StorageResult<String> {
         self.client.create_document(index, doc).await
     }
 
@@ -53,7 +53,7 @@ where
         self.client.get_document(index, id).await
     }
 
-    pub async fn update_document(&self, index: &str, doc: Document) -> StorageResult<()> {
-        self.client.update_document(index, doc).await
+    pub async fn update_document(&self, index: &str, id: &str, doc: Document) -> StorageResult<()> {
+        self.client.update_document(index, id, doc).await
     }
 }

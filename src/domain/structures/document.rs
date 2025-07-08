@@ -1,5 +1,4 @@
 pub struct Document {
-    pub id: String,
     pub file_name: String,
     pub file_path: String,
     pub file_size: u32,

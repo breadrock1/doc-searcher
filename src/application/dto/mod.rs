@@ -11,6 +11,6 @@ pub use index::Index;
 pub use paginate::Paginated;
 pub use params::{
     FilterParams, FullTextSearchParams, PaginateParams, QueryBuilder, ResultParams,
-    RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams,
+    RetrieveDocumentParams, HybridSearchParams, SemanticSearchParams, SemanticSearchWithTokensParams,
 };
 pub use tokens::Tokens;

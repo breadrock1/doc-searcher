@@ -39,6 +39,7 @@ tower = "0.5.2"
 console-subscriber = "0.4.1"
 hyper = "1.6.0"
 futures-util = "0.3.31"
+uuid = { version = "1.15.0", features = ["v4"] }
 
 [dependencies.axum]
 version = "0.8.1"
