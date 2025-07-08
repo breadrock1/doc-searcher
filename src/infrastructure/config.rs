@@ -1,4 +1,4 @@
-use getset::Getters;
+use getset::{CopyGetters, Getters};
 use serde_derive::Deserialize;
 
 use crate::infrastructure::osearch::config::OSearchConfig;
@@ -14,9 +14,11 @@ pub struct CacherConfig {
     redis: RedisConfig,
 }
 
-#[derive(Clone, Deserialize, Getters)]
-#[getset(get = "pub")]
+#[derive(Clone, Deserialize, Getters, CopyGetters)]
 pub struct TokenizerConfig {
+    #[getset(get_copy = "pub")]
+    enable: bool,
+    #[getset(get = "pub")]
     baai: VectorizerConfig,
 }
 

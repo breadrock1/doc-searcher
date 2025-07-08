@@ -18,6 +18,9 @@ username = "redis"
 password = "redis"
 expired = 3600
 
+[tokenizer]
+enable = "false"
+
 [tokenizer.baai]
 address = "http://localhost:8085"
 is_truncate = "false"

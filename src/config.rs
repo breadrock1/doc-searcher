@@ -19,7 +19,7 @@ pub struct ServiceConfig {
     server: ServerConfig,
     storage: StorageConfig,
     cacher: CacherConfig,
-    tokenizer: Option<TokenizerConfig>,
+    tokenizer: TokenizerConfig,
 }
 
 impl ServiceConfig {

@@ -16,13 +16,13 @@ async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
     logger::init_logger(config.logger())?;
 
-    let tokenizer: Option<Arc<Box<dyn Tokenizer + Send + Sync>>> = match config.tokenizer() {
-        None => None,
-        Some(tokenizer_config) => {
-            let baii_config = tokenizer_config.baai();
+    let tokenizer: Option<Arc<Box<dyn Tokenizer + Send + Sync>>> = match config.tokenizer().enable() {
+        true => {
+            let baii_config = config.tokenizer().baai();
             let baii_client = VectorizerClient::connect(baii_config).await?;
             Some(Arc::new(Box::new(baii_client)))
-        }
+        },
+        false => None,
     };
 
     let osearch_config = config.storage().opensearch();
