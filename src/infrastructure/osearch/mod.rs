@@ -446,7 +446,7 @@ mod test_osearch {
             assert_eq!(doc.id(), loaded_doc.id());
             assert_eq!(doc.content(), loaded_doc.content());
 
-            let _ = client.delete_document(TEST_FOLDER_ID, doc.id()).await?;
+            client.delete_document(TEST_FOLDER_ID, doc.id()).await?;
             let result = client.get_document(TEST_FOLDER_ID, doc.id()).await;
             assert!(result.is_err());
         }
@@ -468,7 +468,7 @@ mod test_osearch {
         let loaded_index = client.get_index(TEST_FOLDER_ID).await?;
         assert_eq!(TEST_FOLDER_ID, loaded_index.id());
 
-        let _ = client.delete_index(TEST_FOLDER_ID).await?;
+        client.delete_index(TEST_FOLDER_ID).await?;
         let result = client.get_index(TEST_FOLDER_ID).await;
         assert!(result.is_err());
 

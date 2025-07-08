@@ -29,7 +29,7 @@ impl ServiceConfig {
         let dev_file_config = File::with_name(DEV_FILE_CONFIG_PATH);
 
         let run_mode = std::env::var(SERVICE_RUN_MODE).unwrap_or("development".into());
-        let run_mode_file_path = format!("./config/{}", run_mode);
+        let run_mode_file_path = format!("./config/{run_mode}");
         let file_config = File::with_name(&run_mode_file_path)
             .format(FileFormat::Toml)
             .required(false);
