@@ -63,7 +63,7 @@ impl QueryBuilder for FullTextSearchParams {
 impl QueryBuilder for SemanticSearchParams {
     fn build_query(&self, model_id: Option<&String>) -> Value {
         let size = self.result().size();
-        let query = build_semantic_query(&self, model_id);
+        let query = build_semantic_query(self, model_id);
 
         json!({
             "_source": {

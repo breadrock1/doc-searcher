@@ -401,7 +401,7 @@ impl OpenSearchStorage {
     fn build_search_parts<'a>(indexes: &'a [&'a str]) -> opensearch::SearchParts<'a> {
         match indexes.first() {
             Some(&"*") => opensearch::SearchParts::None,
-            _ => opensearch::SearchParts::Index(&indexes),
+            _ => opensearch::SearchParts::Index(indexes),
         }
     }
 }
