@@ -1,8 +1,6 @@
-workspace = { members = ["crates/elschema"] }
-
 [package]
 name = "doc-search"
-version = "0.3.1"
+version = "0.3.4"
 edition = "2021"
 
 [badges]
@@ -14,29 +12,34 @@ panic = "abort"
 strip = "debuginfo"
 
 [features]
-enable-cacher-redis = ["dep:redis"]
-enable-semantic = []
+enable-cache-redis = ["dep:redis"]
 default = []
 
 [dependencies]
-axum-prometheus = "0.8.0"
 anyhow = "1.0.96"
 async-trait = "0.1.86"
+axum-prometheus = "0.8.0"
+axum-tracing-opentelemetry = "0.26.1"
 config = "0.15.8"
 derive_builder = "0.20.2"
 dotenv = "0.15.0"
-elasticsearch = "8.15.0-alpha.1"
 futures = "0.3.31"
 getset = "0.1.4"
+opensearch = "2.3.0"
+opentelemetry_sdk = "0.28.0"
 metrics-exporter-prometheus = "0.16.2"
-serde = "1.0.218"
+regex = "1.11.1"
 serde_derive = "1.0.218"
 serde_json = "1.0.139"
 thiserror = "2.0.11"
 tracing = "0.1.41"
+tracing-loki = "0.2.6"
 tracing-subscriber = "0.3.19"
+tower = "0.5.2"
 console-subscriber = "0.4.1"
-url-constructor = "0.1.0"
+hyper = "1.6.0"
+futures-util = "0.3.31"
+uuid = { version = "1.15.0", features = ["v4"] }
 
 [dependencies.axum]
 version = "0.8.1"
@@ -44,11 +47,20 @@ features = ["tracing", "tower-log"]
 
 [dependencies.chrono]
 version = "0.4.37"
-features = ["rustc-serialize", "serde"]
+features = ["serde"]
+
+[dependencies.redis]
+optional = true
+version = "0.27.6"
+features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
 
 [dependencies.reqwest]
 version = "0.12.12"
 features = ["json", "multipart"]
+
+[dependencies.serde]
+version = "1.0.218"
+features = ["derive"]
 
 [dependencies.tokio]
 version = "1.43.0"
@@ -56,46 +68,20 @@ features = ["full"]
 
 [dependencies.tower-http]
 version = "0.6.2"
-features = ["trace", "cors"]
+features = ["trace", "cors", "add-extension"]
 
 [dependencies.utoipa]
 version = "5.3.1"
 features = ["axum_extras", "chrono"]
 
-[dependencies.utoipa-swagger-ui]
-version = "9.0.0"
+[dependencies.utoipa-rapidoc]
+version = "6.0.0"
 features = ["axum"]
 
-
-[dependencies.redis]
-optional = true
-version = "0.27.6"
-features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
-
-
-# There is local crates that imported from src/crates path.
-[dependencies.datetime]
-path = "crates/datetime"
-
-[dependencies.elquery]
-path = "crates/elquery"
-
-[dependencies.elschema]
-path = "crates/elschema"
-
+[[bin]]
+name = "launch"
+path = "src/bin/launch.rs"
 
 [[bin]]
-name = "doc-searcher-run"
-path = "src/bin/doc-searcher-run.rs"
-
-[[bin]]
-name = "doc-searcher-init"
-path = "src/bin/doc-searcher-init.rs"
-
-[[test]]
-name = "datetime_tests"
-path = "crates/datetime/test/test.rs"
-
-[[test]]
-name = "elquery_tests"
-path = "crates/elquery/test/test.rs"
+name = "init-pipelines"
+path = "src/bin/init-pipelines.rs"

@@ -1,6 +1,6 @@
 ARG FEATURES='--features default'
 
-FROM rust:1.78 AS chef
+FROM rust:1.85 AS chef
 
 WORKDIR /app
 
@@ -39,12 +39,11 @@ RUN apt-get update && apt install -y openssl
 WORKDIR /app
 
 COPY ./config /app/config
-COPY --from=builder /app/target/release/doc-searcher-init .
-COPY --from=builder /app/target/release/doc-searcher-run .
+COPY --from=builder /app/target/release/launch .
+COPY --from=builder /app/target/release/init-pipelines .
 
-# Execute to initliaze elasticsearch environment
-CMD ["/app/doc-searcher-init"]
+CMD [ "/app/init-pipelines" ]
 
-ENTRYPOINT ["/app/doc-searcher-run"]
+ENTRYPOINT ["/app/launch"]
 
 EXPOSE 2892
