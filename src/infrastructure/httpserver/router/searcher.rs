@@ -3,9 +3,8 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::dto::{
-    Document, FullTextSearchParams, PaginateParams, Paginated, SemanticSearchParams,
-};
+use crate::application::dto::{Document, Paginated};
+use crate::application::dto::params::{FullTextSearchParams, HybridSearchParams, PaginateParams, SemanticSearchParams};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
@@ -16,6 +15,7 @@ use crate::infrastructure::httpserver::ServerApp;
 
 pub const SEARCH_FULLTEXT_URL: &str = "/search/fulltext";
 pub const SEARCH_SEMANTIC_URL: &str = "/search/semantic";
+pub const SEARCH_HYBRID_URL: &str = "/search/hybrid";
 pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{session_id}";
 
 #[utoipa::path(
@@ -101,6 +101,49 @@ where
 {
     let searcher = state.get_searcher();
     let documents = searcher.semantic(&form).await?;
+    Ok(Json(documents))
+}
+
+#[utoipa::path(
+    post,
+    path = SEARCH_HYBRID_URL,
+    tag = "search",
+    description = "Search Document objects by hybrid algorithm",
+    request_body(
+        content = HybridSearchParams,
+    ),
+    responses(
+        (
+            status = 200,
+            content_type="application/json",
+            description = "Paginate structure with list of founded Documents",
+            body = Paginated<Document>,
+        ),
+        (
+            status = 400,
+            content_type="application/json",
+            description = "Failed while searching documents",
+            body = ServerError,
+            example = json!(ServerError::example(Some("failed to found documents"))),
+        ),
+        (
+            status = 503,
+            description = "Server does not available",
+            body = ServerError,
+            example = json!(ServerError::example(None)),
+        ),
+    )
+)]
+pub async fn search_hybrid<Storage, Searcher>(
+    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+    Json(form): Json<HybridSearchParams>,
+) -> ServerResult<impl IntoResponse>
+where
+    Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
+    Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+{
+    let searcher = state.get_searcher();
+    let documents = searcher.hybrid(&form).await?;
     Ok(Json(documents))
 }
 

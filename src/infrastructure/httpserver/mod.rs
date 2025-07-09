@@ -83,6 +83,10 @@ where
             post(router::searcher::search_semantic),
         )
         .route(
+            router::searcher::SEARCH_HYBRID_URL,
+            post(router::searcher::search_hybrid),
+        )
+        .route(
             router::searcher::SEARCH_PAGINATE_URL,
             get(router::searcher::paginate_next).delete(router::searcher::delete_scroll_session),
         )

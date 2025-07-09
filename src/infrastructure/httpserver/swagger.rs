@@ -2,6 +2,7 @@ use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
 
 use crate::application::dto::*;
+use crate::application::dto::params::*;
 use crate::application::services::server::{ServerError, Success};
 use crate::infrastructure::httpserver::router::searcher::*;
 use crate::infrastructure::httpserver::router::storage::*;
@@ -43,6 +44,7 @@ pub fn init_swagger_layer() -> RapiDoc {
         delete_document,
         search_fulltext,
         search_semantic,
+        search_hybrid,
         paginate_next,
         delete_scroll_session,
     ),
@@ -55,6 +57,7 @@ pub fn init_swagger_layer() -> RapiDoc {
             FullTextSearchParams,
             RetrieveDocumentParams,
             SemanticSearchParams,
+            HybridSearchParams,
             PaginateParams,
             ServerError,
             Success,

@@ -3,7 +3,8 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 use axum::http::StatusCode;
-use crate::application::dto::{Document, Index, RetrieveDocumentParams};
+use crate::application::dto::{Document, Index};
+use crate::application::dto::params::RetrieveDocumentParams;
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
@@ -151,8 +152,6 @@ where
     let storage = state.get_storage();
     let index = storage.create_index(form).await?;
 
-
-
     Ok((StatusCode::CREATED, Json(index)))
 }
 
@@ -211,8 +210,8 @@ where
     description = "Get all documents stored into index",
     params(
         (
-            "index_id" = &str,
-            description = "Index id to retrieve documents",
+            "index_ids" = &str,
+            description = "Index id's to retrieve documents",
             example = "test-folder",
         ),
     ),
@@ -243,6 +242,7 @@ where
 )]
 pub async fn get_documents<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+    Path(index_ids): Path<String>,
     Json(form): Json<RetrieveDocumentParams>,
 ) -> ServerResult<impl IntoResponse>
 where
@@ -250,7 +250,7 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let searcher = state.get_searcher();
-    let documents = searcher.retrieve(&form).await?;
+    let documents = searcher.retrieve(&index_ids, &form).await?;
     Ok(Json(documents))
 }
 
@@ -317,12 +317,7 @@ where
             "index_id" = &str,
             description = "Index id to store Document object",
             example = "test-folder",
-        ),
-        (
-            "document_id" = &str,
-            description = "Document id to store object as unique",
-            example = "98ac9896be35f47fb8442580cd9839b4",
-        ),
+        )
     ),
     request_body(
         content = Document,

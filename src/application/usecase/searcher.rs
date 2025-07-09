@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
-use crate::application::dto::{
-    FoundedDocument, FullTextSearchParams, PaginateParams, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams,
-};
+use crate::application::dto::FoundedDocument;
+use crate::application::dto::params::{FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 use crate::application::services::storage::error::{PaginateResult, StorageResult};
 use crate::application::services::storage::{DocumentSearcher, PaginateManager};
 use crate::application::services::tokenizer::Tokenizer;
@@ -35,9 +33,10 @@ where
 {
     pub async fn retrieve(
         &self,
+        ids: &str,
         params: &RetrieveDocumentParams,
     ) -> PaginateResult<FoundedDocument> {
-        self.client.retrieve(params).await
+        self.client.retrieve(ids, params).await
     }
 
     pub async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
@@ -52,6 +51,10 @@ where
         }
 
         self.client.semantic(params).await
+    }
+
+    pub async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
+        self.client.hybrid(params).await
     }
 
     pub async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {

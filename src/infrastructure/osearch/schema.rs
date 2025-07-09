@@ -1,9 +1,13 @@
 use serde_json::{json, Value};
 
-pub const SEARCH_PIPELINE_NAME: &str = "embeddings-ingest-pipeline";
-pub const KNN_SPACE_TYPE: &str = "cosinesimil";
-pub const KNN_EF_SEARCHER: u32 = 100;
-pub const KNN_DIMENSION: u32 = 384;
+pub const INGEST_PIPELINE_NAME: &str = "embeddings-ingest-pipeline";
+pub const HYBRID_SEARCH_PIPELINE_NAME: &str = "hybrid-search-pipeline";
+const NORMALIZATION_TECHNIQUE: &str = "min_max";
+const COMBINATION_TECHNIQUE: &str = "arithmetic_mean";
+const TOKENIZER_KIND: &str = "standard";
+const KNN_SPACE_TYPE: &str = "cosinesimil";
+const KNN_EF_SEARCHER: u32 = 100;
+const KNN_DIMENSION: u32 = 384;
 const TOKEN_LIMIT: u32 = 50;
 const OVERLAP_RATE: f32 = 0.2;
 const NUMBER_OF_SHARDS: u16 = 1;
@@ -19,7 +23,7 @@ pub fn create_ingest_schema(model_id: &str) -> Value {
                     "fixed_token_length": {
                         "token_limit": TOKEN_LIMIT,
                         "overlap_rate": OVERLAP_RATE,
-                        "tokenizer": "standard"
+                        "tokenizer": TOKENIZER_KIND
                     }
                 },
                     "field_map": {
@@ -41,6 +45,40 @@ pub fn create_ingest_schema(model_id: &str) -> Value {
     schema_query
 }
 
+pub fn create_hybrid_search_schema(model_id: &str) -> Value {
+    let schema_query = json!({
+        "description": "Post processor for hybrid searching",
+        "request_processors": [
+            {
+                "neural_query_enricher" : {
+                    "default_model_id": model_id,
+                }
+            }
+        ],
+
+        "phase_results_processors": [
+            {
+                "normalization-processor": {
+                    "normalization": {
+                        "technique": NORMALIZATION_TECHNIQUE
+                    },
+                    "combination": {
+                        "technique": COMBINATION_TECHNIQUE,
+                        "parameters": {
+                            "weights": [
+                                0.3,
+                                0.7
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    });
+
+    schema_query
+}
+
 pub fn create_document_schema() -> Value {
     let schema_query = json!({
         "settings": {
@@ -50,7 +88,7 @@ pub fn create_document_schema() -> Value {
                 "knn.algo_param.ef_search": KNN_EF_SEARCHER,
                 "number_of_shards": NUMBER_OF_SHARDS,
                 "number_of_replicas": NUMBER_OF_REPLICAS,
-                "search.default_pipeline": SEARCH_PIPELINE_NAME,
+                "search.default_pipeline": INGEST_PIPELINE_NAME,
             }
         },
         "mappings": {

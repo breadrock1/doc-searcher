@@ -8,21 +8,19 @@ mod schema;
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
+use opensearch::http::headers::HeaderMap;
 use opensearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
-use opensearch::http::Url;
+use opensearch::http::{Method, Url};
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
 use opensearch::ingest::IngestPutPipelineParts;
 use opensearch::OpenSearch;
-use opensearch::{
-    ClearScrollParts, CreateParts, DeleteParts, GetParts, ScrollParts, SearchParts, UpdateParts,
-};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::application::dto::{Document, FoundedDocument, HybridSearchParams, Index};
-use crate::application::dto::{
+use crate::application::dto::{Document, FoundedDocument, Index};
+use crate::application::dto::params::{
     FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams, HybridSearchParams,
 };
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
@@ -73,20 +71,6 @@ impl ServiceConnect for OpenSearchStorage {
 impl IndexManager for OpenSearchStorage {
     async fn create_index(&self, index: Index) -> StorageResult<Index> {
         let id = index.id();
-        let model_id = self.config.model_id();
-        let ingest_schema = schema::create_ingest_schema(model_id);
-        let response = self
-            .client
-            .ingest()
-            .put_pipeline(IngestPutPipelineParts::Id(schema::SEARCH_PIPELINE_NAME))
-            .body(ingest_schema)
-            .send()
-            .await?;
-
-        if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
-        }
-
         let folder_schema = schema::create_document_schema();
         let response = self
             .client
@@ -174,8 +158,8 @@ impl DocumentManager for OpenSearchStorage {
         let id = uuid::Uuid::new_v4().to_string();
         let response = self
             .client
-            .create(CreateParts::IndexId(index, &id))
-            .pipeline(schema::SEARCH_PIPELINE_NAME)
+            .create(opensearch::CreateParts::IndexId(index, &id))
+            .pipeline(schema::INGEST_PIPELINE_NAME)
             .body(&doc)
             .send()
             .await?;
@@ -190,7 +174,7 @@ impl DocumentManager for OpenSearchStorage {
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
         let response = self
             .client
-            .get(GetParts::IndexId(index, id))
+            .get(opensearch::GetParts::IndexId(index, id))
             .pretty(true)
             .send()
             .await?;
@@ -206,7 +190,7 @@ impl DocumentManager for OpenSearchStorage {
     async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {
         let response = self
             .client
-            .delete(DeleteParts::IndexId(index, id))
+            .delete(opensearch::DeleteParts::IndexId(index, id))
             .send()
             .await?;
 
@@ -220,7 +204,7 @@ impl DocumentManager for OpenSearchStorage {
     async fn update_document(&self, index: &str, id: &str, doc: Document) -> StorageResult<()> {
         let response = self
             .client
-            .update(UpdateParts::IndexId(index, id))
+            .update(opensearch::UpdateParts::IndexId(index, id))
             .body(&json!({ "doc": doc }))
             .send()
             .await?;
@@ -235,12 +219,12 @@ impl DocumentManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentSearcher for OpenSearchStorage {
-    async fn retrieve(&self, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
+    async fn retrieve(&self, ids: &str, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
-        let indexes = params.indexes().split(',').collect::<Vec<&str>>();
+        let indexes = ids.split(',').collect::<Vec<&str>>();
         let response = self
             .client
-            .search(SearchParts::Index(&indexes))
+            .search(opensearch::SearchParts::Index(&indexes))
             .pretty(true)
             .scroll(SCROLL_LIFETIME)
             .from(params.result().offset())
@@ -263,7 +247,7 @@ impl DocumentSearcher for OpenSearchStorage {
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let request = self
             .client
-            .search(SearchParts::Index(&indexes))
+            .search(opensearch::SearchParts::Index(&indexes))
             .size(params.result().size())
             .pretty(true)
             .body(query);
@@ -289,7 +273,7 @@ impl DocumentSearcher for OpenSearchStorage {
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let request = self
             .client
-            .search(SearchParts::Index(&indexes))
+            .search(opensearch::SearchParts::Index(&indexes))
             .pretty(true)
             .body(query);
 
@@ -314,7 +298,7 @@ impl DocumentSearcher for OpenSearchStorage {
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let request = self
             .client
-            .search(SearchParts::Index(&indexes))
+            .search(opensearch::SearchParts::Index(&indexes))
             .pretty(true)
             .body(query);
 
@@ -341,7 +325,7 @@ impl DocumentSearcher for OpenSearchStorage {
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let response = self
             .client
-            .search(SearchParts::Index(&indexes))
+            .search(opensearch::SearchParts::Index(&indexes))
             .scroll(SCROLL_LIFETIME)
             .pretty(true)
             .body(query)
@@ -363,7 +347,7 @@ impl PaginateManager for OpenSearchStorage {
     async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
         let response = self
             .client
-            .clear_scroll(ClearScrollParts::ScrollId(&[session_id]))
+            .clear_scroll(opensearch::ClearScrollParts::ScrollId(&[session_id]))
             .send()
             .await?;
 
@@ -377,7 +361,7 @@ impl PaginateManager for OpenSearchStorage {
     async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {
         let response = self
             .client
-            .scroll(ScrollParts::ScrollId(params.scroll_id()))
+            .scroll(opensearch::ScrollParts::ScrollId(params.scroll_id()))
             .pretty(true)
             .send()
             .await?;
@@ -389,6 +373,47 @@ impl PaginateManager for OpenSearchStorage {
         let response_data = response.json::<Value>().await?;
         let paginated = extractor::extract_founded_docs(response_data).await?;
         Ok(paginated)
+    }
+}
+
+impl OpenSearchStorage {
+    pub async fn init_pipelines(&self) -> StorageResult<()> {
+        let model_id = self.config.model_id();
+
+        let ingest_schema = schema::create_ingest_schema(model_id);
+        let response = self
+            .client
+            .ingest()
+            .put_pipeline(IngestPutPipelineParts::Id(schema::INGEST_PIPELINE_NAME))
+            .body(ingest_schema)
+            .send()
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        let url = format!("/_search/pipeline/{}", schema::HYBRID_SEARCH_PIPELINE_NAME);
+        let hs_schema = schema::create_hybrid_search_schema(model_id);
+        let schema_bytes = serde_json::to_vec(&hs_schema)?;
+        let response = self
+            .client
+            .transport()
+            .send(
+                Method::Put,
+                &url,
+                HeaderMap::new(),
+                Option::<&Value>::None,
+                Some(&schema_bytes),
+                None,
+            )
+            .await?;
+
+        if !response.status_code().is_success() {
+            return Err(error::OpenSearchError::from_response(response).await);
+        }
+
+        Ok(())
     }
 }
 
@@ -425,7 +450,7 @@ mod test_osearch {
         tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
         let retrieve_params = serde_json::from_slice::<RetrieveDocumentParams>(TEST_RETRIEVE_DATA)?;
-        let result = client.retrieve(&retrieve_params).await;
+        let result = client.retrieve(TEST_FOLDER_ID, &retrieve_params).await;
         assert!(result.is_ok());
         let result = result?;
         assert_eq!(result.founded().len(), 3);

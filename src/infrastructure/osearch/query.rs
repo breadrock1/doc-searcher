@@ -1,6 +1,7 @@
 use serde_json::{json, Value};
 
-use crate::application::dto::{FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
+use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
+use crate::application::dto::params::{FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 
 impl QueryBuilder for RetrieveDocumentParams {
     fn build_query(&self, _: Option<&str>) -> Value {
@@ -76,7 +77,7 @@ impl QueryBuilder for HybridSearchParams {
                     "queries": [
                         {
                             "match": {
-                                "passage_text": {
+                                "content": {
                                     "query": query,
                                 }
                             }
@@ -94,6 +95,7 @@ impl QueryBuilder for HybridSearchParams {
                 }
             },
             "highlight": build_highlight_query(),
+            "search_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
         })
     }
 }
