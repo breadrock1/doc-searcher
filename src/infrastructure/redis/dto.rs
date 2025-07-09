@@ -1,7 +1,8 @@
 use redis::{RedisError, RedisResult, RedisWrite, Value};
 use serde::ser::Error;
 
-use crate::application::dto::{Document, FullTextSearchParams, Paginated, SemanticSearchParams};
+use crate::application::dto::params::{FullTextSearchParams, SemanticSearchParams};
+use crate::application::dto::{Document, Paginated};
 
 impl redis::ToRedisArgs for FullTextSearchParams {
     fn write_redis_args<W>(&self, out: &mut W)
