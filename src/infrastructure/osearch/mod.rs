@@ -17,11 +17,11 @@ use opensearch::OpenSearch;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::dto::params::{
-    FullTextSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams, HybridSearchParams,
+    FullTextSearchParams, HybridSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams,
 };
+use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
@@ -220,7 +220,11 @@ impl DocumentManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentSearcher for OpenSearchStorage {
-    async fn retrieve(&self, ids: &str, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
+    async fn retrieve(
+        &self,
+        ids: &str,
+        params: &RetrieveDocumentParams,
+    ) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
         let indexes = ids.split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
@@ -275,11 +279,7 @@ impl DocumentSearcher for OpenSearchStorage {
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
-        let request = self
-            .client
-            .search(search_parts)
-            .pretty(true)
-            .body(query);
+        let request = self.client.search(search_parts).pretty(true).body(query);
 
         let request = match params.result().offset() > 0 {
             true => request.from(params.result().offset()),
@@ -301,11 +301,7 @@ impl DocumentSearcher for OpenSearchStorage {
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
-        let request = self
-            .client
-            .search(search_parts)
-            .pretty(true)
-            .body(query);
+        let request = self.client.search(search_parts).pretty(true).body(query);
 
         let request = match params.result().offset() > 0 {
             true => request.from(params.result().offset()),
@@ -425,9 +421,7 @@ impl OpenSearchStorage {
     fn build_search_parts<'a>(indexes: &'a [&'a str]) -> opensearch::SearchParts<'a> {
         match indexes.first() {
             Some(&"*") => opensearch::SearchParts::None,
-            _ => {
-                opensearch::SearchParts::Index(&indexes)
-            }
+            _ => opensearch::SearchParts::Index(&indexes),
         }
     }
 }

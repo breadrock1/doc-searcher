@@ -1,7 +1,10 @@
 use serde_json::{json, Value};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
-use crate::application::dto::params::{FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
+use crate::application::dto::params::{
+    FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams,
+};
 
 impl QueryBuilder for RetrieveDocumentParams {
     fn build_query(&self, _: Option<&str>) -> Value {

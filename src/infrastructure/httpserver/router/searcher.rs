@@ -3,8 +3,10 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
+use crate::application::dto::params::{
+    FullTextSearchParams, HybridSearchParams, PaginateParams, SemanticSearchParams,
+};
 use crate::application::dto::{Document, Paginated};
-use crate::application::dto::params::{FullTextSearchParams, HybridSearchParams, PaginateParams, SemanticSearchParams};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,

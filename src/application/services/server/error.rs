@@ -32,7 +32,10 @@ impl ServerError {
         match self {
             ServerError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.to_owned()),
             ServerError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_owned()),
-            ServerError::ServerUnavailable => (StatusCode::SERVICE_UNAVAILABLE, UNAVAILABLE_SERVER.to_owned()),
+            ServerError::ServerUnavailable => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                UNAVAILABLE_SERVER.to_owned(),
+            ),
         }
     }
 }

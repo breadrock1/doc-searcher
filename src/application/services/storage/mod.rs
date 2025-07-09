@@ -2,11 +2,11 @@ pub mod error;
 
 pub use error::{PaginateResult, StorageError, StorageResult};
 
-use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::dto::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams
+    SemanticSearchParams, SemanticSearchWithTokensParams,
 };
+use crate::application::dto::{Document, FoundedDocument, Index};
 
 #[async_trait::async_trait]
 pub trait IndexManager {
@@ -26,7 +26,11 @@ pub trait DocumentManager {
 
 #[async_trait::async_trait]
 pub trait DocumentSearcher {
-    async fn retrieve(&self, ids: &str, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument>;
+    async fn retrieve(
+        &self,
+        ids: &str,
+        params: &RetrieveDocumentParams,
+    ) -> PaginateResult<FoundedDocument>;
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument>;
     async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument>;
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument>;

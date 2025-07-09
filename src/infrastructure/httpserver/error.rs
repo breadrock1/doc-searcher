@@ -13,7 +13,10 @@ impl IntoResponse for ServerError {
         }
 
         let (status, msg) = self.status_code();
-        let response = ErrorResponse { status: status.as_u16(), message: msg };
+        let response = ErrorResponse {
+            status: status.as_u16(),
+            message: msg,
+        };
         let mut resp = Json(response).into_response();
         *resp.status_mut() = status;
         resp

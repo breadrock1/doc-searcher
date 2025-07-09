@@ -1,10 +1,11 @@
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
-use axum::http::StatusCode;
-use crate::application::dto::{Document, Index};
+
 use crate::application::dto::params::RetrieveDocumentParams;
+use crate::application::dto::{Document, Index};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,

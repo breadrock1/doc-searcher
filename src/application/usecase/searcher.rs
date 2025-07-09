@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
+use crate::application::dto::params::{
+    FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams,
+};
 use crate::application::dto::FoundedDocument;
-use crate::application::dto::params::{FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams, SemanticSearchWithTokensParams};
 use crate::application::services::storage::error::{PaginateResult, StorageResult};
 use crate::application::services::storage::{DocumentSearcher, PaginateManager};
 use crate::application::services::tokenizer::Tokenizer;
