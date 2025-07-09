@@ -10,7 +10,7 @@ use crate::infrastructure::httpserver::{swagger, SWAGGER_CONFIG_FILE};
 
 pub fn init_swagger_layer() -> RapiDoc {
     let swagger_app = swagger::ApiDoc::openapi();
-    RapiDoc::with_openapi(SWAGGER_CONFIG_FILE, swagger_app).path("/rapidoc")
+    RapiDoc::with_openapi(SWAGGER_CONFIG_FILE, swagger_app).path("/swagger")
 }
 
 #[derive(OpenApi)]
@@ -24,7 +24,7 @@ pub fn init_swagger_layer() -> RapiDoc {
             description = "CRUD operation for Index management",
         ),
         (
-            name = "documents",
+            name = "document",
             description = "APIs to manage documents stored into folders",
         ),
         (

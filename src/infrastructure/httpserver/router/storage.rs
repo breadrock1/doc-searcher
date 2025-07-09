@@ -14,7 +14,7 @@ use crate::infrastructure::httpserver::ServerApp;
 
 pub const STORAGE_ALL_INDEXES_URL: &str = "/storage/indexes";
 pub const STORAGE_INDEX_URL: &str = "/storage/{index_id}";
-pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_id}/documents";
+pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_ids}/documents";
 pub const STORAGE_DOCUMENT_URL: &str = "/storage/{index_id}/{document_id}";
 pub const CREATE_DOCUMENT_URL: &str = "/storage/{index_id}/create";
 
@@ -93,14 +93,14 @@ where
 )]
 pub async fn get_index<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Path(path): Path<String>,
+    Path(index_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
-    let folder = storage.get_index(path.as_ref()).await?;
+    let folder = storage.get_index(&index_id).await?;
     Ok(Json(folder))
 }
 
@@ -191,14 +191,14 @@ where
 )]
 pub async fn delete_index<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Path(path): Path<String>,
+    Path(index_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
-    storage.delete_index(&path).await?;
+    storage.delete_index(&index_id).await?;
     let status = Success::default();
     Ok(Json(status))
 }
@@ -250,6 +250,7 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let searcher = state.get_searcher();
+    tracing::debug!(index_ids = ?index_ids, "input router path data");
     let documents = searcher.retrieve(&index_ids, &form).await?;
     Ok(Json(documents))
 }
@@ -268,7 +269,7 @@ where
         (
             "document_id" = &str,
             description = "Document id to load information",
-            example = "98ac9896be35f47fb8442580cd9839b4",
+            example = "cd753717-24cf-4e64-9c51-6dbf3bcb0013",
         ),
     ),
     responses(
@@ -328,7 +329,7 @@ where
             content_type="application/json",
             description = "Document has been stored successful",
             body = Success,
-            example = json!(Success::new(201, "98ac9896be35f47fb8442580cd9839b4")),
+            example = json!(Success::new(201, "cd753717-24cf-4e64-9c51-6dbf3bcb0013")),
         ),
         (
             status = 400,
@@ -348,16 +349,15 @@ where
 )]
 pub async fn store_document<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Path(path): Path<(String, String)>,
+    Path(index_id): Path<String>,
     Json(form): Json<Document>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let (folder_id, _) = path;
     let storage = state.get_storage();
-    let id = storage.create_document(&folder_id, form).await?;
+    let id = storage.create_document(&index_id, form).await?;
 
     let status = Success::new(201, &id);
     Ok((StatusCode::CREATED, Json(status)))
@@ -377,7 +377,7 @@ where
         (
             "document_id" = &str,
             description = "Document id to delete it",
-            example = "98ac9896be35f47fb8442580cd9839b4",
+            example = "cd753717-24cf-4e64-9c51-6dbf3bcb0013",
         ),
     ),
     responses(
@@ -431,7 +431,7 @@ where
         (
             "document_id" = &str,
             description = "Document id to update it",
-            example = "98ac9896be35f47fb8442580cd9839b4",
+            example = "cd753717-24cf-4e64-9c51-6dbf3bcb0013",
         ),
     ),
     request_body(

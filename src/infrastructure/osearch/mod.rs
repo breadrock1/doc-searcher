@@ -223,9 +223,10 @@ impl DocumentSearcher for OpenSearchStorage {
     async fn retrieve(&self, ids: &str, params: &RetrieveDocumentParams) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
         let indexes = ids.split(',').collect::<Vec<&str>>();
+        let search_parts = Self::build_search_parts(&indexes);
         let response = self
             .client
-            .search(opensearch::SearchParts::Index(&indexes))
+            .search(search_parts)
             .pretty(true)
             .scroll(SCROLL_LIFETIME)
             .from(params.result().offset())
@@ -246,9 +247,10 @@ impl DocumentSearcher for OpenSearchStorage {
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
+        let search_parts = Self::build_search_parts(&indexes);
         let request = self
             .client
-            .search(opensearch::SearchParts::Index(&indexes))
+            .search(search_parts)
             .size(params.result().size())
             .pretty(true)
             .body(query);
@@ -272,9 +274,10 @@ impl DocumentSearcher for OpenSearchStorage {
         let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
+        let search_parts = Self::build_search_parts(&indexes);
         let request = self
             .client
-            .search(opensearch::SearchParts::Index(&indexes))
+            .search(search_parts)
             .pretty(true)
             .body(query);
 
@@ -297,9 +300,10 @@ impl DocumentSearcher for OpenSearchStorage {
         let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
+        let search_parts = Self::build_search_parts(&indexes);
         let request = self
             .client
-            .search(opensearch::SearchParts::Index(&indexes))
+            .search(search_parts)
             .pretty(true)
             .body(query);
 
@@ -324,9 +328,10 @@ impl DocumentSearcher for OpenSearchStorage {
     ) -> PaginateResult<FoundedDocument> {
         let query = params.build_query(None);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
+        let search_parts = Self::build_search_parts(&indexes);
         let response = self
             .client
-            .search(opensearch::SearchParts::Index(&indexes))
+            .search(search_parts)
             .scroll(SCROLL_LIFETIME)
             .pretty(true)
             .body(query)
@@ -415,6 +420,15 @@ impl OpenSearchStorage {
         }
 
         Ok(())
+    }
+
+    fn build_search_parts<'a>(indexes: &'a [&'a str]) -> opensearch::SearchParts<'a> {
+        match indexes.first() {
+            Some(&"*") => opensearch::SearchParts::None,
+            _ => {
+                opensearch::SearchParts::Index(&indexes)
+            }
+        }
     }
 }
 
