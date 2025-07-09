@@ -39,8 +39,11 @@ RUN apt-get update && apt install -y openssl
 WORKDIR /app
 
 COPY ./config /app/config
-COPY --from=builder /app/target/release/doc-searcher-run .
+COPY --from=builder /app/target/release/launch .
+COPY --from=builder /app/target/release/init-pipelines .
 
-ENTRYPOINT ["/app/doc-searcher-run"]
+CMD [ "/app/init-pipelines" ]
+
+ENTRYPOINT ["/app/launch"]
 
 EXPOSE 2892

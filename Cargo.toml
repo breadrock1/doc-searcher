@@ -79,5 +79,9 @@ version = "6.0.0"
 features = ["axum"]
 
 [[bin]]
-name = "doc-searcher-run"
-path = "src/bin/doc-searcher-run.rs"
+name = "launch"
+path = "src/bin/launch.rs"
+
+[[bin]]
+name = "init-pipelines"
+path = "src/bin/init-pipelines.rs"
