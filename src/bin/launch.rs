@@ -1,9 +1,7 @@
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use doc_search::application::services::server::ServerApp;
-use doc_search::application::services::tokenizer::Tokenizer;
 use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
-use doc_search::infrastructure::baii::VectorizerClient;
 use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::{logger, ServiceConnect};
@@ -16,21 +14,11 @@ async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
     logger::init_logger(config.logger())?;
 
-    let tokenizer: Option<Arc<Box<dyn Tokenizer + Send + Sync>>> = match config.tokenizer().enable()
-    {
-        true => {
-            let baii_config = config.tokenizer().baai();
-            let baii_client = VectorizerClient::connect(baii_config).await?;
-            Some(Arc::new(Box::new(baii_client)))
-        }
-        false => None,
-    };
-
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
 
     let storage_uc = StorageUseCase::new(osearch_client.clone());
-    let searcher_uc = SearcherUseCase::new(osearch_client.clone(), tokenizer);
+    let searcher_uc = SearcherUseCase::new(osearch_client.clone());
     let server_app = ServerApp::new(storage_uc, searcher_uc);
 
     let cors_layer = cors::CorsLayer::permissive();

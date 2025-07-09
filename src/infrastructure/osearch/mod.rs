@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use crate::application::dto::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams, CreateIndexParams, KnnIndexParams
+    SemanticSearchParams, CreateIndexParams, KnnIndexParams
 };
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::services::storage::{
@@ -309,31 +309,6 @@ impl DocumentSearcher for OpenSearchStorage {
         };
 
         let response = request.send().await?;
-        if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
-        }
-
-        let response_data = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response_data).await?;
-        Ok(paginated)
-    }
-
-    async fn semantic_with_tokens(
-        &self,
-        params: &SemanticSearchWithTokensParams,
-    ) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query(None);
-        let indexes = params.indexes().split(',').collect::<Vec<&str>>();
-        let search_parts = Self::build_search_parts(&indexes);
-        let response = self
-            .client
-            .search(search_parts)
-            .scroll(SCROLL_LIFETIME)
-            .pretty(true)
-            .body(query)
-            .send()
-            .await?;
-
         if !response.status_code().is_success() {
             return Err(error::OpenSearchError::from_response(response).await);
         }

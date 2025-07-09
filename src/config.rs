@@ -4,7 +4,7 @@ use dotenv::dotenv;
 use getset::Getters;
 use serde_derive::Deserialize;
 
-use crate::infrastructure::config::{CacherConfig, StorageConfig, TokenizerConfig};
+use crate::infrastructure::config::{CacherConfig, StorageConfig};
 use crate::infrastructure::httpserver::ServerConfig;
 use crate::logger::LoggerConfig;
 
@@ -19,7 +19,6 @@ pub struct ServiceConfig {
     server: ServerConfig,
     storage: StorageConfig,
     cacher: CacherConfig,
-    tokenizer: TokenizerConfig,
 }
 
 impl ServiceConfig {

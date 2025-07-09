@@ -252,7 +252,6 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let searcher = state.get_searcher();
-    tracing::debug!(index_ids = ?index_ids, "input router path data");
     let documents = searcher.retrieve(&index_ids, &form).await?;
     Ok(Json(documents))
 }

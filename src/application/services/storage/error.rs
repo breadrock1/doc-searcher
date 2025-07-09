@@ -1,7 +1,6 @@
 use thiserror::Error;
 
 use crate::application::dto::Paginated;
-use crate::application::services::tokenizer::TokenizerError;
 
 pub type StorageResult<T> = Result<T, StorageError>;
 pub type PaginateResult<T> = StorageResult<Paginated<Vec<T>>>;
@@ -20,9 +19,6 @@ pub enum StorageError {
     SerdeError(#[from] serde_json::Error),
     #[error("returned error into response: {0}")]
     RuntimeError(String),
-
-    #[error("failed to compute tokens: {0}")]
-    ComputeEmbeddings(#[from] TokenizerError),
     #[error("index has not been founded: {0}")]
     IndexNotFound(anyhow::Error),
 }

@@ -10,18 +10,16 @@ address = "0.0.0.0:2892"
 address = "http://elasticsearch:9200"
 username = "elastic"
 password = "elastic"
-model_id = "PRh30JcBW8Qg3Gf4I6Ku"
+
+[storage.opensearch.cluster]
+number_of_shards = 1
+number_of_replicas = 1
+
+[storage.opensearch.semantic]
+model_id = "uPRh30JcBW8Qg3Gf4I6K"
 
 [cacher.redis]
 address = "redis://redis:6379"
 username = "redis"
 password = "redis"
 expired = 3600
-
-[tokenizer]
-enable = "false"
-
-[tokenizer.baai]
-address = "http://tokenizer:8085"
-is_truncate = "false"
-is_normalize = "false"

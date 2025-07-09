@@ -7,7 +7,7 @@ mod swagger;
 
 pub use config::ServerConfig;
 
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use axum::Router;
 use axum_prometheus::PrometheusMetricLayer;
 use std::sync::Arc;
@@ -63,8 +63,11 @@ where
             router::storage::STORAGE_DOCUMENT_URL,
             get(router::storage::get_document)
                 .delete(router::storage::delete_document)
-                .patch(router::storage::update_document)
-                .put(router::storage::store_document),
+                .patch(router::storage::update_document),
+        )
+        .route(
+            router::storage::CREATE_DOCUMENT_URL,
+            put(router::storage::store_document),
         )
 }
 

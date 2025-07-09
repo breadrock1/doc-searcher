@@ -1,4 +1,3 @@
-pub mod baii;
 pub mod config;
 pub mod httpserver;
 pub mod osearch;

@@ -3,11 +3,11 @@ use serde_json::{json, Value};
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
 use crate::application::dto::params::{
     FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams,
+    SemanticSearchParams,
 };
 
 impl QueryBuilder for RetrieveDocumentParams {
-    fn build_query(&self, _: Option<&str>) -> Value {
+    fn build_query(&self, _: Option<&String>) -> Value {
         let must = match self.path() {
             None => json!([{"match_all": {}}]),
             Some(path) => json!([{"match": {"file_path": path}}]),
@@ -34,7 +34,7 @@ impl QueryBuilder for RetrieveDocumentParams {
 }
 
 impl QueryBuilder for FullTextSearchParams {
-    fn build_query(&self, _: Option<&str>) -> Value {
+    fn build_query(&self, _: Option<&String>) -> Value {
         let must = match self.query() {
             None => json!([{"match_all": {}}]),
             Some(value) => json!({"match": {"content": value} }),
@@ -60,8 +60,39 @@ impl QueryBuilder for FullTextSearchParams {
     }
 }
 
+impl QueryBuilder for SemanticSearchParams {
+    fn build_query(&self, model_id: Option<&String>) -> Value {
+        let size = self.result().size();
+        let query = build_semantic_query(&self, model_id);
+
+        json!({
+            "_source": {
+                "exclude": [
+                    "embeddings",
+                ]
+            },
+            "size": size,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "nested": {
+                                "score_mode": "max",
+                                "path": "embeddings",
+                                "query": query,
+                            }
+                        }
+                    ],
+                    "filter": build_filter_query(self.filter()),
+                }
+            },
+            "highlight": build_highlight_query(),
+        })
+    }
+}
+
 impl QueryBuilder for HybridSearchParams {
-    fn build_query(&self, model_id: Option<&str>) -> Value {
+    fn build_query(&self, model_id: Option<&String>) -> Value {
         let query = self.query();
         let size = self.result().size();
         let knn_amount = self.knn_amount();
@@ -103,68 +134,30 @@ impl QueryBuilder for HybridSearchParams {
     }
 }
 
-impl QueryBuilder for SemanticSearchParams {
-    fn build_query(&self, model_id: Option<&str>) -> Value {
-        let query = self.query();
-        let size = self.result().size();
-        let knn_amount = self.knn_amount();
-
-        json!({
-            "_source": {
-                "exclude": [
-                    "embeddings",
-                ]
-            },
-            "size": size,
-            "query": {
-                "nested": {
-                    "score_mode": "max",
-                    "path": "embeddings",
-                    "query": {
-                        "neural": {
-                            "embeddings.knn": {
-                                "query_text": query,
-                                "model_id": model_id,
-                                "k": knn_amount
-                            }
-                        }
+fn build_semantic_query(params: &SemanticSearchParams, model_id: Option<&String>) -> Value {
+    let knn_amount = params.knn_amount();
+    match params.tokens().as_ref() {
+        None => {
+            json!({
+                "neural": {
+                    "embeddings.knn": {
+                        "query_text": params.query(),
+                        "model_id": model_id,
+                        "k": knn_amount
                     }
                 }
-            },
-            "highlight": build_highlight_query(),
-        })
-    }
-}
-
-impl QueryBuilder for SemanticSearchWithTokensParams {
-    fn build_query(&self, _: Option<&str>) -> Value {
-        let size = self.result().size();
-        let knn_amount = self.knn_amount();
-        let query_vector = self.tokens();
-
-        json!({
-            "_source": {
-                "excludes": [
-                    "embeddings",
-                ]
-            },
-            "size": size,
-            "query": {
-                "nested": {
-                    "score_mode": "max",
-                    "path": "embeddings",
-                    "query": {
-                        "knn": {
-                            "embeddings.knn": {
-                                "vector": query_vector,
-                                "k": knn_amount
-                            }
-                        }
+            })
+        }
+        Some(tokens) => {
+            json!({
+                "knn": {
+                    "embeddings.knn": {
+                        "vector": tokens,
+                        "k": knn_amount
                     }
                 }
-            },
-            "highlight": build_highlight_query(),
-        })
+            })
+        }
     }
 }
 

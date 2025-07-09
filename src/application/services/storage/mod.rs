@@ -4,7 +4,7 @@ pub use error::{PaginateResult, StorageError, StorageResult};
 
 use crate::application::dto::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams,
+    SemanticSearchParams,
 };
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::dto::params::CreateIndexParams;
@@ -35,10 +35,6 @@ pub trait DocumentSearcher {
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument>;
     async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument>;
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument>;
-    async fn semantic_with_tokens(
-        &self,
-        params: &SemanticSearchWithTokensParams,
-    ) -> PaginateResult<FoundedDocument>;
 }
 
 #[async_trait::async_trait]
