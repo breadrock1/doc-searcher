@@ -79,7 +79,10 @@ pub fn create_hybrid_search_schema(config: &OSearchKnnConfig) -> Value {
     schema_query
 }
 
-pub fn create_document_schema(config: &OSearchClusterConfig, params: Option<&KnnIndexParams>) -> Value {
+pub fn create_document_schema(
+    config: &OSearchClusterConfig,
+    params: Option<&KnnIndexParams>,
+) -> Value {
     let knn_default_params = KnnIndexParams::default();
     let knn_params = params.unwrap_or(&knn_default_params);
 

@@ -1,7 +1,7 @@
+use doc_search::application::dto::params::KnnIndexParams;
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::{logger, ServiceConnect};
-use doc_search::application::dto::params::KnnIndexParams;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -2,12 +2,12 @@ pub mod error;
 
 pub use error::{PaginateResult, StorageError, StorageResult};
 
+use crate::application::dto::params::CreateIndexParams;
 use crate::application::dto::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
 use crate::application::dto::{Document, FoundedDocument, Index};
-use crate::application::dto::params::CreateIndexParams;
 
 #[async_trait::async_trait]
 pub trait IndexManager {

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use crate::application::dto::{Document, Index};
 use crate::application::dto::params::CreateIndexParams;
+use crate::application::dto::{Document, Index};
 use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager};
 

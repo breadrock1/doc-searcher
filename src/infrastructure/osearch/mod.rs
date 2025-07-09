@@ -18,8 +18,8 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 
 use crate::application::dto::params::{
-    FullTextSearchParams, HybridSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
-    SemanticSearchParams, CreateIndexParams, KnnIndexParams
+    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
+    QueryBuilder, RetrieveDocumentParams, SemanticSearchParams,
 };
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::services::storage::{
@@ -71,7 +71,8 @@ impl ServiceConnect for OpenSearchStorage {
 impl IndexManager for OpenSearchStorage {
     async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
         let id = params.id();
-        let folder_schema = schema::create_document_schema(self.config.cluster(), params.knn().as_ref());
+        let folder_schema =
+            schema::create_document_schema(self.config.cluster(), params.knn().as_ref());
         let response = self
             .client
             .indices()
@@ -275,7 +276,10 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
-        let model_id = params.model_id().as_ref().unwrap_or(self.config.semantic().model_id());
+        let model_id = params
+            .model_id()
+            .as_ref()
+            .unwrap_or(self.config.semantic().model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
@@ -297,7 +301,10 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
-        let model_id = params.model_id().as_ref().unwrap_or(self.config.semantic().model_id());
+        let model_id = params
+            .model_id()
+            .as_ref()
+            .unwrap_or(self.config.semantic().model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
@@ -402,8 +409,8 @@ impl OpenSearchStorage {
 #[cfg(test)]
 mod test_osearch {
     use super::*;
-    use crate::config::ServiceConfig;
     use crate::application::dto::params::KnnIndexParams;
+    use crate::config::ServiceConfig;
 
     const TEST_FOLDER_ID: &str = "test-common-folder";
     const TEST_DOCUMENTS_DATA: &[u8] =
