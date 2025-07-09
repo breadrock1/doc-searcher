@@ -1,0 +1,32 @@
+[
+  {
+    "id": "098f6bcd4621d373cade4e832627b4f6",
+    "file_name": "test-1.docx",
+    "file_path": "./test-folder/test-2.docx",
+    "ssdeep": "96:s4Ud1Lj96tHHlZDrwciQmA+4uy1I0G4HYuL8N3TzS8QsO/wqWX",
+    "content": "Intuition is very important to understanding a concept. An intuitive grasp of a tool or concept means you can zoom out to the level of abstraction where you get the whole picture in view.",
+    "file_size": 1334314,
+    "created_at": 1750731655,
+    "modified_at": 1750731655
+  },
+  {
+    "id": "098f6bcd4621d373cade4e832627b4f7",
+    "file_name": "test-2.docx",
+    "file_path": "./test-folder/test-1.docx",
+    "ssdeep": "96:s4Ud1Lj96tHHlZDrwciQmA+4uy1I0G4HYuL8N3TzS8QsO/wqWX",
+    "content": "I’ve spent the last four years building and deploying machine learning tools at AI startups. In that time, the technology has exploded in popularity, particularly in my area of specialization, natural language processing (NLP). At a startup, I don’t often have the luxury of spending months on research and testing—if I do, it’s a bet that makes or breaks the product. A sharp intuition for how a model will perform—where it will excel and where it will fall down—is essential for thinking through how it can be integrated into a successful product.",
+    "file_size": 1334314,
+    "created_at": 1750731665,
+    "modified_at": 1750731665
+  },
+  {
+    "id": "098f6bcd4621d373cade4e832627b4f8",
+    "file_name": "test-3.docx",
+    "file_path": "./test-folder/test-3.docx",
+    "ssdeep": "96:s4Ud1Lj96tHHlZDrwciQmA+4uy1I0G4HYuL8N3TzS8QsO/wqWX",
+    "content": "A sharp intuition for how a model will perform—where it will excel and where it will fall down—is essential for thinking through how it can be integrated into a successful product. With the right UX around it, even an imperfect model feels magical. Built wrong, the rare miss produced by even the most rock-solid system looks like a disaster.",
+    "file_size": 1334314,
+    "created_at": 1750731675,
+    "modified_at": 1750731675
+  }
+]
