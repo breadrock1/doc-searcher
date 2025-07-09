@@ -120,6 +120,7 @@ impl IndexManager for OpenSearchStorage {
             .json::<Vec<dto::OSearchIndex>>()
             .await?
             .iter()
+            .filter(|it| !it.index().starts_with('.'))
             .map(Index::from)
             .collect::<Vec<Index>>();
 
