@@ -23,7 +23,6 @@ FROM chef AS builder
 WORKDIR /app
 
 COPY --from=planner /app/recipe.json recipe.json
-COPY --from=planner /app/crates/ crates
 
 RUN cargo chef cook --release --recipe-path recipe.json
 
