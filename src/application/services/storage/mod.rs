@@ -7,10 +7,11 @@ use crate::application::dto::params::{
     SemanticSearchParams, SemanticSearchWithTokensParams,
 };
 use crate::application::dto::{Document, FoundedDocument, Index};
+use crate::application::dto::params::CreateIndexParams;
 
 #[async_trait::async_trait]
 pub trait IndexManager {
-    async fn create_index(&self, index: Index) -> StorageResult<Index>;
+    async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<String>;
     async fn delete_index(&self, id: &str) -> StorageResult<()>;
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>>;
     async fn get_index(&self, id: &str) -> StorageResult<Index>;

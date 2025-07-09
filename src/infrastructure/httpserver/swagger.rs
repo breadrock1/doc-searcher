@@ -59,6 +59,8 @@ pub fn init_swagger_layer() -> RapiDoc {
             SemanticSearchParams,
             HybridSearchParams,
             PaginateParams,
+            CreateIndexParams,
+            KnnIndexParams,
             ServerError,
             Success,
         ),

@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use crate::application::dto::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, QueryBuilder, RetrieveDocumentParams,
-    SemanticSearchParams, SemanticSearchWithTokensParams,
+    SemanticSearchParams, SemanticSearchWithTokensParams, CreateIndexParams, KnnIndexParams
 };
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::services::storage::{
@@ -69,9 +69,9 @@ impl ServiceConnect for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl IndexManager for OpenSearchStorage {
-    async fn create_index(&self, index: Index) -> StorageResult<Index> {
-        let id = index.id();
-        let folder_schema = schema::create_document_schema();
+    async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
+        let id = params.id();
+        let folder_schema = schema::create_document_schema(self.config.cluster(), params.knn().as_ref());
         let response = self
             .client
             .indices()
@@ -84,7 +84,7 @@ impl IndexManager for OpenSearchStorage {
             return Err(error::OpenSearchError::from_response(response).await);
         }
 
-        Ok(index)
+        Ok(params.id().to_owned())
     }
 
     async fn delete_index(&self, id: &str) -> StorageResult<()> {
@@ -275,7 +275,7 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
-        let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
+        let model_id = params.model_id().as_ref().unwrap_or(self.config.semantic().model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
@@ -297,7 +297,7 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
-        let model_id = params.model_id().as_ref().unwrap_or(self.config.model_id());
+        let model_id = params.model_id().as_ref().unwrap_or(self.config.semantic().model_id());
         let query = params.build_query(Some(model_id));
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
@@ -379,10 +379,8 @@ impl PaginateManager for OpenSearchStorage {
 }
 
 impl OpenSearchStorage {
-    pub async fn init_pipelines(&self) -> StorageResult<()> {
-        let model_id = self.config.model_id();
-
-        let ingest_schema = schema::create_ingest_schema(model_id);
+    pub async fn init_pipelines(&self, params: &KnnIndexParams) -> StorageResult<()> {
+        let ingest_schema = schema::create_ingest_schema(self.config.semantic(), Some(params));
         let response = self
             .client
             .ingest()
@@ -396,7 +394,7 @@ impl OpenSearchStorage {
         }
 
         let url = format!("/_search/pipeline/{}", schema::HYBRID_SEARCH_PIPELINE_NAME);
-        let hs_schema = schema::create_hybrid_search_schema(model_id);
+        let hs_schema = schema::create_hybrid_search_schema(self.config.semantic());
         let schema_bytes = serde_json::to_vec(&hs_schema)?;
         let response = self
             .client
@@ -430,6 +428,7 @@ impl OpenSearchStorage {
 mod test_osearch {
     use super::*;
     use crate::config::ServiceConfig;
+    use crate::application::dto::params::KnnIndexParams;
 
     const TEST_FOLDER_ID: &str = "test-common-folder";
     const TEST_DOCUMENTS_DATA: &[u8] =
@@ -531,13 +530,16 @@ mod test_osearch {
         Ok(())
     }
 
-    async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<Index> {
-        let index = Index::builder()
+    async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<String> {
+        let create_index = CreateIndexParams::builder()
+            .id(TEST_FOLDER_ID.to_owned())
             .name(TEST_FOLDER_ID.to_owned())
             .path("".to_owned())
-            .build()?;
+            .knn(Some(KnnIndexParams::default()))
+            .build()
+            .unwrap();
 
-        let _ = client.create_index(index.clone()).await?;
-        Ok(index)
+        let id = client.create_index(&create_index).await?;
+        Ok(id)
     }
 }

@@ -7,8 +7,58 @@ use crate::application::dto::Tokens;
 #[allow(unused_imports)]
 use serde_json::json;
 
+const KNN_EF_SEARCHER: u32 = 100;
+const KNN_DIMENSION: u32 = 384;
+const TOKEN_LIMIT: u32 = 50;
+const OVERLAP_RATE: f32 = 0.2;
+
 pub trait QueryBuilder {
     fn build_query(&self, extra_field: Option<&str>) -> serde_json::Value;
+}
+
+#[derive(Clone, Builder, Getters, Serialize, Deserialize, IntoParams, ToSchema)]
+#[getset(get = "pub")]
+pub struct CreateIndexParams {
+    #[schema(example = "test-folder")]
+    id: String,
+    #[schema(example = "Test Folder")]
+    name: String,
+    #[schema(example = "./")]
+    path: String,
+    knn: Option<KnnIndexParams>,
+}
+
+impl CreateIndexParams {
+    pub fn builder() -> CreateIndexParamsBuilder {
+        CreateIndexParamsBuilder::default()
+    }
+}
+
+#[derive(Clone, CopyGetters, Getters, Serialize, Deserialize, IntoParams, ToSchema)]
+pub struct KnnIndexParams {
+    #[schema(example = 100)]
+    #[getset(get_copy = "pub")]
+    knn_ef_searcher: u32,
+    #[schema(example = 384)]
+    #[getset(get_copy = "pub")]
+    knn_dimension: u32,
+    #[schema(example = 50)]
+    #[getset(get_copy = "pub")]
+    token_limit: u32,
+    #[schema(example = 0.2)]
+    #[getset(get_copy = "pub")]
+    overlap_rate: f32,
+}
+
+impl Default for KnnIndexParams {
+    fn default() -> Self {
+        KnnIndexParams {
+            knn_ef_searcher: KNN_EF_SEARCHER,
+            knn_dimension: KNN_DIMENSION,
+            token_limit: TOKEN_LIMIT,
+            overlap_rate: OVERLAP_RATE,
+        }
+    }
 }
 
 #[derive(Getters, Serialize, Deserialize, IntoParams, ToSchema)]

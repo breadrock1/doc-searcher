@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::dto::params::RetrieveDocumentParams;
+use crate::application::dto::params::{CreateIndexParams, RetrieveDocumentParams};
 use crate::application::dto::{Document, Index};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
@@ -118,14 +118,15 @@ where
         ),
     ),
     request_body(
-        content = Index,
+        content = CreateIndexParams,
     ),
     responses(
         (
             status = 201,
             content_type="application/json",
             description = "Index has been created",
-            body = Index,
+            body = String,
+            example = "test-folder"
         ),
         (
             status = 400,
@@ -144,16 +145,16 @@ where
 )]
 pub async fn create_index<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Json(form): Json<Index>,
+    Json(form): Json<CreateIndexParams>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
-    let index = storage.create_index(form).await?;
-
-    Ok((StatusCode::CREATED, Json(index)))
+    let index_id = storage.create_index(&form).await?;
+    let status = Success::new(201, &index_id);
+    Ok((StatusCode::CREATED, Json(status)))
 }
 
 #[utoipa::path(

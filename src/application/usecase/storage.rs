@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::application::dto::{Document, Index};
+use crate::application::dto::params::CreateIndexParams;
 use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager};
 
@@ -25,7 +26,7 @@ impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
-    pub async fn create_index(&self, index: Index) -> StorageResult<Index> {
+    pub async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<String> {
         self.client.create_index(index).await
     }
 
