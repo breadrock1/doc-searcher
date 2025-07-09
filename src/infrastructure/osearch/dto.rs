@@ -31,6 +31,7 @@ impl From<SourceDocument> for FoundedDocument {
         let highlight = src_doc.highlight.map(|it| it.content).unwrap_or_default();
 
         FoundedDocument::builder()
+            .id(src_doc._id)
             .document(src_doc._source)
             .highlight(highlight)
             .score(src_doc._score)

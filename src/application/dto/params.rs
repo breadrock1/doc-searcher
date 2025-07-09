@@ -50,9 +50,6 @@ pub struct RetrieveDocumentParams {
     filter: Option<FilterParams>,
     #[getset(get = "pub")]
     result: ResultParams,
-    #[schema(example = "test-folder-1,test-folder-2")]
-    #[getset(get = "pub")]
-    indexes: String,
 }
 
 #[derive(Getters, Serialize, Deserialize, IntoParams, ToSchema)]
