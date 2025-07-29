@@ -6,6 +6,8 @@ PUT /_plugins/_security/api/roles/user_access
 {
   "cluster_permissions": [
     "cluster:monitor/main",
+    "cluster:monitor/state",
+    "cluster:monitor/health",
     "cluster:admin/opensearch/ml/predict",
     "indices:admin/resolve/index",
     "indices:admin/mappings/fields/get*",
