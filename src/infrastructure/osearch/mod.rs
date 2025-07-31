@@ -105,10 +105,11 @@ impl IndexManager for OpenSearchStorage {
     }
 
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
+        let offset = format!("{}*", self.config.username());
         let response = self
             .client
             .cat()
-            .indices(CatIndicesParts::None)
+            .indices(CatIndicesParts::Index(&[&offset]))
             .format("json")
             .send()
             .await?;
