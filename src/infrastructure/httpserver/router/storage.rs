@@ -28,7 +28,7 @@ pub const CREATE_DOCUMENT_URL: &str = "/storage/{index_id}/create";
         (
             status = 200,
             content_type="application/json",
-            description = "List of lll exists indexes ",
+            description = "List of all exists indexes",
             body = Vec<Index>,
         ),
         (
@@ -270,7 +270,7 @@ where
         (
             "document_id" = &str,
             description = "Document id to load information",
-            example = "cd753717-24cf-4e64-9c51-6dbf3bcb0013",
+            example = "c5cdd3bfad598ec73dc5fe83fecbba3e",
         ),
     ),
     responses(
@@ -330,7 +330,7 @@ where
             content_type="application/json",
             description = "Document has been stored successful",
             body = Success,
-            example = json!(Success::new(201, "cd753717-24cf-4e64-9c51-6dbf3bcb0013")),
+            example = json!(Success::new(201, "c5cdd3bfad598ec73dc5fe83fecbba3e")),
         ),
         (
             status = 400,
@@ -378,7 +378,7 @@ where
         (
             "document_id" = &str,
             description = "Document id to delete it",
-            example = "cd753717-24cf-4e64-9c51-6dbf3bcb0013",
+            example = "c5cdd3bfad598ec73dc5fe83fecbba3e",
         ),
     ),
     responses(
@@ -432,7 +432,7 @@ where
         (
             "document_id" = &str,
             description = "Document id to update it",
-            example = "cd753717-24cf-4e64-9c51-6dbf3bcb0013",
+            example = "c5cdd3bfad598ec73dc5fe83fecbba3e",
         ),
     ),
     request_body(

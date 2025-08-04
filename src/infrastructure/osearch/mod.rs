@@ -158,7 +158,10 @@ impl IndexManager for OpenSearchStorage {
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
     async fn create_document(&self, index: &str, doc: Document) -> StorageResult<String> {
+        #[cfg(not(feature = "enable-unique-doc-id"))]
         let id = uuid::Uuid::new_v4().to_string();
+        #[cfg(feature = "enable-unique-doc-id")]
+        let id = Self::gen_unique_document_id(index, &doc);
         let response = self
             .client
             .create(opensearch::CreateParts::IndexId(index, &id))
@@ -405,6 +408,13 @@ impl OpenSearchStorage {
             _ => opensearch::SearchParts::Index(indexes),
         }
     }
+
+    #[cfg(feature = "enable-unique-doc-id")]
+    fn gen_unique_document_id(index: &str, doc: &Document) -> String {
+        let common_file_path = format!("{index}/{}", doc.file_path());
+        let digest = md5::compute(&common_file_path);
+        format!("{digest:x}")
+    }
 }
 
 #[cfg(test)]
@@ -524,5 +534,16 @@ mod test_osearch {
 
         let id = client.create_index(&create_index).await?;
         Ok(id)
+    }
+
+    #[cfg(feature = "enable-unique-doc-id")]
+    #[test]
+    fn test_gen_unique_document_id() -> anyhow::Result<()> {
+        let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
+        for doc in documents.iter() {
+            let result = OpenSearchStorage::gen_unique_document_id(TEST_FOLDER_ID, doc);
+            println!("doc unique id is: {result}");
+        }
+        Ok(())
     }
 }
