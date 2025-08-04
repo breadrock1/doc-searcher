@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use opensearch::http::response::Response;
+use reqwest::StatusCode;
 use serde_derive::Deserialize;
 
 use crate::application::services::storage::error::StorageError;
@@ -28,6 +29,7 @@ struct ErrorRootCause {
 
 impl OpenSearchError {
     pub async fn from_response(response: Response) -> StorageError {
+        let status = response.status_code();
         match response.json::<OpenSearchError>().await {
             Err(err) => StorageError::RuntimeError(err.to_string()),
             Ok(err) => {
@@ -38,6 +40,12 @@ impl OpenSearchError {
                     .map(|it| it.reason.as_str())
                     .collect::<Vec<&str>>()
                     .join(": ");
+
+                if status.as_u16() == StatusCode::CONFLICT {
+                    let msg = format!("document already exists: {msg}");
+                    let err = anyhow::Error::msg(msg);
+                    return StorageError::AlreadyExists(err);
+                }
 
                 StorageError::ServiceError(anyhow::Error::msg(msg))
             }

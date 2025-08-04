@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
@@ -10,6 +10,7 @@ use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
+use crate::infrastructure::httpserver::dto::CreateDocumentQuery;
 use crate::infrastructure::httpserver::swagger::SwaggerExample;
 use crate::infrastructure::httpserver::ServerApp;
 
@@ -319,7 +320,13 @@ where
             "index_id" = &str,
             description = "Index id to store Document object",
             example = "test-folder",
-        )
+        ),
+        CreateDocumentQuery,
+        // (
+        //     "force" = Option<bool>,
+        //     Query,
+        //     description = "Query updated already exists document",
+        // ),
     ),
     request_body(
         content = Document,
@@ -351,14 +358,17 @@ where
 pub async fn store_document<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Path(index_id): Path<String>,
+    // Query(force): Query<Option<bool>>,
+    Query(query): Query<CreateDocumentQuery>,
     Json(form): Json<Document>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
+    let is_force = query.force().unwrap_or(false);
     let storage = state.get_storage();
-    let id = storage.create_document(&index_id, form).await?;
+    let id = storage.create_document(&index_id, &form, is_force).await?;
 
     let status = Success::new(201, &id);
     Ok((StatusCode::CREATED, Json(status)))
@@ -471,7 +481,7 @@ where
 {
     let (folder_id, doc_id) = path;
     let storage = state.get_storage();
-    storage.update_document(&folder_id, &doc_id, form).await?;
+    storage.update_document(&folder_id, &doc_id, &form).await?;
     let status = Success::default();
     Ok(Json(status))
 }
