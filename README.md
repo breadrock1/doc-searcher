@@ -62,6 +62,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 Features to parse and store documents localy from current service (Not stable):
  - enable-cache-redis    - enable cacher service like redis oe other custom implementation;
+ - enable-unique-doc-id  - enable generating unique document id based on index and file_path string value.
 
 [![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 
