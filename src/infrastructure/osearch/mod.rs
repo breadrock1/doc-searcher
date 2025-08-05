@@ -444,7 +444,7 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let result = client.create_document(TEST_FOLDER_ID, doc.clone()).await;
+            let result = client.create_document(TEST_FOLDER_ID, doc).await;
             assert!(result.is_ok());
         }
 
@@ -482,7 +482,7 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let id = match client.create_document(TEST_FOLDER_ID, doc.clone()).await {
+            let id = match client.create_document(TEST_FOLDER_ID, doc).await {
                 Ok(id) => id,
                 Err(err) => {
                     return Err(err.into());

@@ -358,7 +358,6 @@ where
 pub async fn store_document<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
     Path(index_id): Path<String>,
-    // Query(force): Query<Option<bool>>,
     Query(query): Query<CreateDocumentQuery>,
     Json(form): Json<Document>,
 ) -> ServerResult<impl IntoResponse>

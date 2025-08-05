@@ -4,6 +4,8 @@ use crate::application::dto::params::CreateIndexParams;
 use crate::application::dto::{Document, Index};
 use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager};
+
+#[cfg(feature = "enable-unique-doc-id")]
 use crate::infrastructure::osearch::OpenSearchStorage;
 
 #[derive(Clone)]
@@ -47,11 +49,12 @@ where
         &self,
         index: &str,
         doc: &Document,
-        force: bool,
+        _force: bool,
     ) -> StorageResult<String> {
         match self.client.create_document(index, doc).await {
             Ok(doc_id) => Ok(doc_id),
-            Err(err) if force => {
+            #[cfg(feature = "enable-unique-doc-id")]
+            Err(_err) if _force => {
                 let doc_id = OpenSearchStorage::gen_unique_document_id(index, &doc);
                 tracing::warn!(index = index, id = doc_id, "document already exists");
                 let _ = self.client.update_document(index, &doc_id, doc).await?;
