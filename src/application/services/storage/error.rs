@@ -7,6 +7,8 @@ pub type PaginateResult<T> = StorageResult<Paginated<Vec<T>>>;
 
 #[derive(Debug, Error)]
 pub enum StorageError {
+    #[error("document already exists: {0}")]
+    AlreadyExists(anyhow::Error),
     #[error("service unavailable: {0}")]
     ServiceUnavailable(anyhow::Error),
     #[error("request timeout: {0}")]

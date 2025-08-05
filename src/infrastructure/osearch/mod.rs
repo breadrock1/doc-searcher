@@ -157,11 +157,11 @@ impl IndexManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
-    async fn create_document(&self, index: &str, doc: Document) -> StorageResult<String> {
+    async fn create_document(&self, index: &str, doc: &Document) -> StorageResult<String> {
         #[cfg(not(feature = "enable-unique-doc-id"))]
         let id = uuid::Uuid::new_v4().to_string();
         #[cfg(feature = "enable-unique-doc-id")]
-        let id = Self::gen_unique_document_id(index, &doc);
+        let id = Self::gen_unique_document_id(index, doc);
         let response = self
             .client
             .create(opensearch::CreateParts::IndexId(index, &id))
@@ -207,7 +207,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(())
     }
 
-    async fn update_document(&self, index: &str, id: &str, doc: Document) -> StorageResult<()> {
+    async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
         let response = self
             .client
             .update(opensearch::UpdateParts::IndexId(index, id))
@@ -410,7 +410,7 @@ impl OpenSearchStorage {
     }
 
     #[cfg(feature = "enable-unique-doc-id")]
-    fn gen_unique_document_id(index: &str, doc: &Document) -> String {
+    pub fn gen_unique_document_id(index: &str, doc: &Document) -> String {
         let common_file_path = format!("{index}/{}", doc.file_path());
         let digest = md5::compute(&common_file_path);
         format!("{digest:x}")
@@ -444,7 +444,7 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let result = client.create_document(TEST_FOLDER_ID, doc.clone()).await;
+            let result = client.create_document(TEST_FOLDER_ID, doc).await;
             assert!(result.is_ok());
         }
 
@@ -482,7 +482,7 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let id = match client.create_document(TEST_FOLDER_ID, doc.clone()).await {
+            let id = match client.create_document(TEST_FOLDER_ID, doc).await {
                 Ok(id) => id,
                 Err(err) => {
                     return Err(err.into());

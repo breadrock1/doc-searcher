@@ -13,6 +13,8 @@ pub type ServerResult<T> = Result<T, ServerError>;
 
 #[derive(Debug, Error, Serialize, ToSchema)]
 pub enum ServerError {
+    #[error("resource data conflict: {0}")]
+    Conflict(String),
     #[error("not found error: {0}")]
     NotFound(String),
     #[error("internal service error: {0}")]
@@ -23,7 +25,16 @@ pub enum ServerError {
 
 impl From<StorageError> for ServerError {
     fn from(err: StorageError) -> Self {
-        ServerError::InternalError(err.to_string())
+        match err {
+            StorageError::AlreadyExists(err) => ServerError::Conflict(err.to_string()),
+            StorageError::ServiceUnavailable(_) => ServerError::ServerUnavailable,
+            StorageError::RequestTimeout(err) => ServerError::InternalError(err.to_string()),
+            StorageError::NotFound(err) => ServerError::NotFound(err.to_string()),
+            StorageError::ServiceError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::SerdeError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::RuntimeError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::IndexNotFound(err) => ServerError::InternalError(err.to_string()),
+        }
     }
 }
 
@@ -31,6 +42,7 @@ impl ServerError {
     pub fn status_code(&self) -> (StatusCode, String) {
         match self {
             ServerError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.to_owned()),
+            ServerError::Conflict(msg) => (StatusCode::CONFLICT, msg.to_owned()),
             ServerError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_owned()),
             ServerError::ServerUnavailable => (
                 StatusCode::SERVICE_UNAVAILABLE,
