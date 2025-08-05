@@ -161,7 +161,7 @@ impl DocumentManager for OpenSearchStorage {
         #[cfg(not(feature = "enable-unique-doc-id"))]
         let id = uuid::Uuid::new_v4().to_string();
         #[cfg(feature = "enable-unique-doc-id")]
-        let id = Self::gen_unique_document_id(index, &doc);
+        let id = Self::gen_unique_document_id(index, doc);
         let response = self
             .client
             .create(opensearch::CreateParts::IndexId(index, &id))

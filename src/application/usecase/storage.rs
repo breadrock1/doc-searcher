@@ -55,9 +55,9 @@ where
             Ok(doc_id) => Ok(doc_id),
             #[cfg(feature = "enable-unique-doc-id")]
             Err(_err) if _force => {
-                let doc_id = OpenSearchStorage::gen_unique_document_id(index, &doc);
+                let doc_id = OpenSearchStorage::gen_unique_document_id(index, doc);
                 tracing::warn!(index = index, id = doc_id, "document already exists");
-                let _ = self.client.update_document(index, &doc_id, doc).await?;
+                self.client.update_document(index, &doc_id, doc).await?;
                 Ok(doc_id)
             }
             Err(err) => Err(err),
