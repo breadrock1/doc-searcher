@@ -43,15 +43,20 @@ where
         self.client.get_index(id).await
     }
 
-    pub async fn create_document(&self, index: &str, doc: &Document, force: bool) -> StorageResult<String> {
+    pub async fn create_document(
+        &self,
+        index: &str,
+        doc: &Document,
+        force: bool,
+    ) -> StorageResult<String> {
         match self.client.create_document(index, doc).await {
             Ok(doc_id) => Ok(doc_id),
             Err(err) if force => {
                 let doc_id = OpenSearchStorage::gen_unique_document_id(index, &doc);
-                tracing::warn!(index=index, id=doc_id, "document already exists");
+                tracing::warn!(index = index, id = doc_id, "document already exists");
                 let _ = self.client.update_document(index, &doc_id, doc).await?;
                 Ok(doc_id)
-            },
+            }
             Err(err) => Err(err),
         }
     }
@@ -64,7 +69,12 @@ where
         self.client.get_document(index, id).await
     }
 
-    pub async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
+    pub async fn update_document(
+        &self,
+        index: &str,
+        id: &str,
+        doc: &Document,
+    ) -> StorageResult<()> {
         self.client.update_document(index, id, doc).await
     }
 }
