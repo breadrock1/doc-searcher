@@ -15,7 +15,7 @@ pub struct QueryBuilderParams {
 
 impl QueryBuilderParams {
     pub fn set_model_id_if_none(&mut self, model_id: &str) {
-        if let None = self.model_id {
+        if self.model_id.is_none() {
             self.model_id = Some(model_id.to_string());
         }
     }
