@@ -17,6 +17,7 @@ pub struct Document {
     #[schema(example = 1024)]
     #[getset(get_copy = "pub")]
     file_size: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(example = "There is some content data")]
     #[getset(get = "pub")]
     content: Option<String>,
@@ -26,6 +27,15 @@ pub struct Document {
     #[schema(example = 1750957115)]
     #[getset(get = "pub")]
     modified_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chunked_text: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    embeddings: Option<Vec<Embeddings>>,
+}
+
+#[derive(Clone, Serialize, Deserialize, ToSchema)]
+struct Embeddings {
+    knn: Vec<f64>,
 }
 
 impl Document {

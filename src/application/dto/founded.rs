@@ -10,7 +10,9 @@ pub struct FoundedDocument {
     id: String,
     folder_id: String,
     document: Document,
+    #[serde(skip_serializing_if = "Option::is_none")]
     score: Option<f64>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     highlight: Vec<String>,
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "doc-search"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2021"
 
 [badges]
@@ -14,6 +14,8 @@ strip = "debuginfo"
 [features]
 enable-unique-doc-id = ["dep:md5"]
 enable-cache-redis = ["dep:redis"]
+# temporary feature
+enable-multi-user = []
 default = []
 
 [dependencies]

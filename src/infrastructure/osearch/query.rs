@@ -1,25 +1,82 @@
+use derive_builder::Builder;
 use serde_json::{json, Value};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
 use crate::application::dto::params::{
-    FilterParams, FullTextSearchParams, HybridSearchParams, QueryBuilder, RetrieveDocumentParams,
+    FilterParams, FullTextSearchParams, HybridSearchParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
 
+#[derive(Builder)]
+pub struct QueryBuilderParams {
+    pub model_id: Option<String>,
+    pub include_extra_fields: Option<bool>,
+}
+
+impl QueryBuilderParams {
+    pub fn set_model_id_if_none(&mut self, model_id: &str) {
+        if self.model_id.is_none() {
+            self.model_id = Some(model_id.to_string());
+        }
+    }
+}
+
+pub trait QueryBuilder {
+    fn build_query(&self, params: QueryBuilderParams) -> Value;
+}
+
+impl From<&RetrieveDocumentParams> for QueryBuilderParams {
+    fn from(params: &RetrieveDocumentParams) -> Self {
+        QueryBuilderParamsBuilder::default()
+            .model_id(None)
+            .include_extra_fields(params.result().include_extra_fields())
+            .build()
+            .unwrap()
+    }
+}
+
+impl From<&FullTextSearchParams> for QueryBuilderParams {
+    fn from(params: &FullTextSearchParams) -> Self {
+        QueryBuilderParamsBuilder::default()
+            .model_id(None)
+            .include_extra_fields(params.result().include_extra_fields())
+            .build()
+            .unwrap()
+    }
+}
+
+impl From<&HybridSearchParams> for QueryBuilderParams {
+    fn from(params: &HybridSearchParams) -> Self {
+        QueryBuilderParamsBuilder::default()
+            .model_id(params.model_id().clone())
+            .include_extra_fields(params.result().include_extra_fields())
+            .build()
+            .unwrap()
+    }
+}
+
+impl From<&SemanticSearchParams> for QueryBuilderParams {
+    fn from(params: &SemanticSearchParams) -> Self {
+        QueryBuilderParamsBuilder::default()
+            .model_id(params.model_id().clone())
+            .include_extra_fields(params.result().include_extra_fields())
+            .build()
+            .unwrap()
+    }
+}
+
 impl QueryBuilder for RetrieveDocumentParams {
-    fn build_query(&self, _: Option<&String>) -> Value {
+    fn build_query(&self, params: QueryBuilderParams) -> Value {
         let must = match self.path() {
             None => json!([{"match_all": {}}]),
             Some(path) => json!([{"match": {"file_path": path}}]),
         };
 
+        let exclude = build_exclude_field(&params);
+
         json!({
             "_source": {
-                "exclude": [
-                    "chunked_text",
-                    "embeddings",
-                    "content",
-               ]
+                "exclude": exclude,
             },
             "query": {
                 "bool": {
@@ -34,19 +91,17 @@ impl QueryBuilder for RetrieveDocumentParams {
 }
 
 impl QueryBuilder for FullTextSearchParams {
-    fn build_query(&self, _: Option<&String>) -> Value {
+    fn build_query(&self, params: QueryBuilderParams) -> Value {
         let must = match self.query() {
             None => json!([{"match_all": {}}]),
             Some(value) => json!({"match": {"content": value} }),
         };
 
+        let exclude = build_exclude_field(&params);
+
         json!({
             "_source": {
-                "exclude": [
-                    "chunked_text",
-                    "embeddings",
-                    "content",
-               ]
+                "exclude": exclude,
             },
             "query": {
                 "bool": {
@@ -61,15 +116,21 @@ impl QueryBuilder for FullTextSearchParams {
 }
 
 impl QueryBuilder for SemanticSearchParams {
-    fn build_query(&self, model_id: Option<&String>) -> Value {
+    fn build_query(&self, params: QueryBuilderParams) -> Value {
         let size = self.result().size();
-        let query = build_semantic_query(self, model_id);
+        let query = build_semantic_query(self, params.model_id.as_ref());
+
+        let exclude = params
+            .include_extra_fields
+            .map(|it| match it {
+                false => Some(["content", "chunked_text", "embeddings"].as_slice()),
+                true => Some(["content"].as_slice()),
+            })
+            .unwrap_or_default();
 
         json!({
             "_source": {
-                "exclude": [
-                    "embeddings",
-                ]
+                "exclude": exclude,
             },
             "size": size,
             "query": {
@@ -92,18 +153,23 @@ impl QueryBuilder for SemanticSearchParams {
 }
 
 impl QueryBuilder for HybridSearchParams {
-    fn build_query(&self, model_id: Option<&String>) -> Value {
+    fn build_query(&self, params: QueryBuilderParams) -> Value {
         let query = self.query();
         let size = self.result().size();
         let knn_amount = self.knn_amount();
+        let model_id = params.model_id.as_ref();
+
+        let exclude = params
+            .include_extra_fields
+            .map(|it| match it {
+                false => Some(["content", "chunked_text", "embeddings"].as_slice()),
+                true => Some(["content"].as_slice()),
+            })
+            .unwrap_or_default();
 
         json!({
             "_source": {
-                "exclude": [
-                    "chunked_text",
-                    "embeddings",
-                    "content",
-               ]
+                "exclude": exclude
             },
             "size": size,
             "query": {
@@ -132,6 +198,16 @@ impl QueryBuilder for HybridSearchParams {
             "search_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
         })
     }
+}
+
+fn build_exclude_field(params: &QueryBuilderParams) -> Option<&[&str]> {
+    params
+        .include_extra_fields
+        .map(|it| match it {
+            false => Some(["chunked_text", "embeddings", "content"].as_slice()),
+            true => Some(["chunked_text", "embeddings"].as_slice()),
+        })
+        .unwrap_or_default()
 }
 
 fn build_semantic_query(params: &SemanticSearchParams, model_id: Option<&String>) -> Value {
