@@ -2,9 +2,12 @@ use derive_builder::Builder;
 use serde_json::{json, Value};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
-use crate::application::dto::params::{FilterParams, FullTextSearchParams, HybridSearchParams, RetrieveDocumentParams, SemanticSearchParams};
+use crate::application::dto::params::{
+    FilterParams, FullTextSearchParams, HybridSearchParams, RetrieveDocumentParams,
+    SemanticSearchParams,
+};
 
-#[derive(Builder, )]
+#[derive(Builder)]
 pub struct QueryBuilderParams {
     pub model_id: Option<String>,
     pub include_extra_fields: Option<bool>,
@@ -119,11 +122,9 @@ impl QueryBuilder for SemanticSearchParams {
 
         let exclude = params
             .include_extra_fields
-            .map(|it| {
-                match it {
-                    false => Some(["content", "chunked_text", "embeddings"].as_slice()),
-                    true => Some(["content"].as_slice())
-                }
+            .map(|it| match it {
+                false => Some(["content", "chunked_text", "embeddings"].as_slice()),
+                true => Some(["content"].as_slice()),
             })
             .unwrap_or_default();
 
@@ -160,11 +161,9 @@ impl QueryBuilder for HybridSearchParams {
 
         let exclude = params
             .include_extra_fields
-            .map(|it| {
-                match it {
-                    false => Some(["content", "chunked_text", "embeddings"].as_slice()),
-                    true => Some(["content"].as_slice())
-                }
+            .map(|it| match it {
+                false => Some(["content", "chunked_text", "embeddings"].as_slice()),
+                true => Some(["content"].as_slice()),
             })
             .unwrap_or_default();
 
@@ -204,11 +203,9 @@ impl QueryBuilder for HybridSearchParams {
 fn build_exclude_field(params: &QueryBuilderParams) -> Option<&[&str]> {
     params
         .include_extra_fields
-        .map(|it| {
-            match it {
-                false => Some(["chunked_text", "embeddings", "content"].as_slice()),
-                true => Some(["chunked_text", "embeddings"].as_slice())
-            }
+        .map(|it| match it {
+            false => Some(["chunked_text", "embeddings", "content"].as_slice()),
+            true => Some(["chunked_text", "embeddings"].as_slice()),
         })
         .unwrap_or_default()
 }

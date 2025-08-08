@@ -17,7 +17,10 @@ use opensearch::OpenSearch;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::application::dto::params::{CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams};
+use crate::application::dto::params::{
+    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
+    RetrieveDocumentParams, SemanticSearchParams,
+};
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
