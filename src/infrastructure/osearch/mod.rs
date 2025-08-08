@@ -17,10 +17,7 @@ use opensearch::OpenSearch;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::application::dto::params::{
-    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
-    QueryBuilder, RetrieveDocumentParams, SemanticSearchParams,
-};
+use crate::application::dto::params::{CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams, RetrieveDocumentParams, SemanticSearchParams};
 use crate::application::dto::{Document, FoundedDocument, Index};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
@@ -28,6 +25,7 @@ use crate::application::services::storage::{
 use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
 use crate::infrastructure::osearch::config::OSearchConfig;
 use crate::infrastructure::osearch::dto::SourceDocument;
+use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
 use crate::ServiceConnect;
 
 const SCROLL_LIFETIME: &str = "5m";
@@ -230,7 +228,8 @@ impl DocumentSearcher for OpenSearchStorage {
         ids: &str,
         params: &RetrieveDocumentParams,
     ) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query(None);
+        let query_params = QueryBuilderParams::from(params);
+        let query = params.build_query(query_params);
         let indexes = ids.split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
         let response = self
@@ -254,7 +253,8 @@ impl DocumentSearcher for OpenSearchStorage {
     }
 
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
-        let query = params.build_query(None);
+        let query_params = QueryBuilderParams::from(params);
+        let query = params.build_query(query_params);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
         let request = self
@@ -284,7 +284,10 @@ impl DocumentSearcher for OpenSearchStorage {
             .model_id()
             .as_ref()
             .unwrap_or(self.config.semantic().model_id());
-        let query = params.build_query(Some(model_id));
+
+        let mut query_params = QueryBuilderParams::from(params);
+        query_params.set_model_id_if_none(model_id);
+        let query = params.build_query(query_params);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
         let request = self.client.search(search_parts).pretty(true).body(query);
@@ -309,7 +312,10 @@ impl DocumentSearcher for OpenSearchStorage {
             .model_id()
             .as_ref()
             .unwrap_or(self.config.semantic().model_id());
-        let query = params.build_query(Some(model_id));
+
+        let mut query_params = QueryBuilderParams::from(params);
+        query_params.set_model_id_if_none(model_id);
+        let query = params.build_query(query_params);
         let indexes = params.indexes().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
         let request = self.client.search(search_parts).pretty(true).body(query);

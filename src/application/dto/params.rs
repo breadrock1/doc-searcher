@@ -11,10 +11,6 @@ const KNN_DIMENSION: u32 = 384;
 const TOKEN_LIMIT: u32 = 50;
 const OVERLAP_RATE: f32 = 0.2;
 
-pub trait QueryBuilder {
-    fn build_query(&self, extra_field: Option<&String>) -> serde_json::Value;
-}
-
 #[derive(Clone, Builder, Getters, Serialize, Deserialize, IntoParams, ToSchema)]
 #[getset(get = "pub")]
 pub struct CreateIndexParams {
@@ -88,6 +84,9 @@ pub struct ResultParams {
     #[schema(example = 0)]
     #[getset(get_copy = "pub")]
     offset: i64,
+    #[schema(example = false)]
+    #[getset(get_copy = "pub")]
+    include_extra_fields: Option<bool>,
 }
 
 #[derive(Getters, Serialize, Deserialize, IntoParams, ToSchema)]
