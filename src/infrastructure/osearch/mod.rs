@@ -103,11 +103,23 @@ impl IndexManager for OpenSearchStorage {
     }
 
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
+        #[cfg(feature = "enable-multi-user")]
         let offset = format!("{}*", self.config.username());
+        #[cfg(feature = "enable-multi-user")]
         let response = self
             .client
             .cat()
             .indices(CatIndicesParts::Index(&[&offset]))
+            .format("json")
+            .send()
+            .await?;
+
+        // TODO: Remove this code after full implementation multi-user supporting
+        #[cfg(not(feature = "enable-multi-user"))]
+        let response = self
+            .client
+            .cat()
+            .indices(CatIndicesParts::None)
             .format("json")
             .send()
             .await?;
