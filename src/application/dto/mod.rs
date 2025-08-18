@@ -3,10 +3,8 @@ mod founded;
 mod index;
 mod paginate;
 pub mod params;
-mod tokens;
 
-pub use document::Document;
-pub use founded::FoundedDocument;
-pub use index::Index;
-pub use paginate::Paginated;
-pub use tokens::Tokens;
+pub use document::{Document, DocumentBuilder, Embeddings};
+pub use founded::{FoundedDocument, FoundedDocumentBuilder};
+pub use index::{Index, IndexBuilder};
+pub use paginate::{Paginated, PaginatedBuilder};

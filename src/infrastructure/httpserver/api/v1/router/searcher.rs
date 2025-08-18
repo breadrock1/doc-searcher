@@ -4,21 +4,24 @@ use axum::Json;
 use std::sync::Arc;
 
 use crate::application::dto::params::{
-    FullTextSearchParams, HybridSearchParams, PaginateParams, SemanticSearchParams,
+    FullTextSearchParams, HybridSearchParams, PaginateParamsBuilder, SemanticSearchParams,
 };
-use crate::application::dto::{Document, Paginated};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::infrastructure::httpserver::dto::PaginateQuery;
-use crate::infrastructure::httpserver::swagger::SwaggerExample;
+
+use crate::infrastructure::httpserver::api::v1::models::{
+    DocumentSchema, FullTextSearchForm, HybridSearchForm, PaginateQuery, PaginatedResponse,
+    SemanticSearchForm,
+};
+use crate::infrastructure::httpserver::api::v1::swagger::SwaggerExample;
 use crate::infrastructure::httpserver::ServerApp;
 
-pub const SEARCH_FULLTEXT_URL: &str = "/search/fulltext";
-pub const SEARCH_SEMANTIC_URL: &str = "/search/semantic";
-pub const SEARCH_HYBRID_URL: &str = "/search/hybrid";
-pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{session_id}";
+pub const SEARCH_FULLTEXT_URL: &str = "/api/v1/search/fulltext";
+pub const SEARCH_SEMANTIC_URL: &str = "/api/v1/search/semantic";
+pub const SEARCH_HYBRID_URL: &str = "/api/v1/search/hybrid";
+pub const SEARCH_PAGINATE_URL: &str = "/api/v1/search/paginate/{session_id}";
 
 #[utoipa::path(
     post,
@@ -26,14 +29,14 @@ pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{session_id}";
     tag = "search",
     description = "Search Document objects by fulltext algorithm",
     request_body(
-        content = FullTextSearchParams,
+        content = FullTextSearchForm,
     ),
     responses(
         (
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = Paginated<Document>,
+            body = PaginatedResponse<DocumentSchema>,
         ),
         (
             status = 400,
@@ -52,14 +55,17 @@ pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{session_id}";
 )]
 pub async fn search_fulltext<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Json(form): Json<FullTextSearchParams>,
+    Json(form): Json<FullTextSearchForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
+    let params = FullTextSearchParams::try_from(form)
+        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
+
     let searcher = state.get_searcher();
-    let documents = searcher.fulltext(&form).await?;
+    let documents = searcher.fulltext(&params).await?;
     Ok(Json(documents))
 }
 
@@ -69,14 +75,14 @@ where
     tag = "search",
     description = "Search Document objects by semantic algorithm",
     request_body(
-        content = SemanticSearchParams,
+        content = SemanticSearchForm,
     ),
     responses(
         (
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = Paginated<Document>,
+            body = PaginatedResponse<DocumentSchema>,
         ),
         (
             status = 400,
@@ -95,14 +101,17 @@ where
 )]
 pub async fn search_semantic<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Json(form): Json<SemanticSearchParams>,
+    Json(form): Json<SemanticSearchForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
+    let params = SemanticSearchParams::try_from(form)
+        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
+
     let searcher = state.get_searcher();
-    let documents = searcher.semantic(&form).await?;
+    let documents = searcher.semantic(&params).await?;
     Ok(Json(documents))
 }
 
@@ -112,14 +121,14 @@ where
     tag = "search",
     description = "Search Document objects by hybrid algorithm",
     request_body(
-        content = HybridSearchParams,
+        content = HybridSearchForm,
     ),
     responses(
         (
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = Paginated<Document>,
+            body = PaginatedResponse<DocumentSchema>,
         ),
         (
             status = 400,
@@ -138,14 +147,17 @@ where
 )]
 pub async fn search_hybrid<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Json(form): Json<HybridSearchParams>,
+    Json(form): Json<HybridSearchForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
+    let params = HybridSearchParams::try_from(form)
+        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
+
     let searcher = state.get_searcher();
-    let documents = searcher.hybrid(&form).await?;
+    let documents = searcher.hybrid(&params).await?;
     Ok(Json(documents))
 }
 
@@ -172,7 +184,7 @@ where
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = Paginated<Document>,
+            body = PaginatedResponse<DocumentSchema>,
         ),
         (
             status = 400,
@@ -199,11 +211,11 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let lifetime = query.lifetime();
-    let params = PaginateParams::builder()
+    let params = PaginateParamsBuilder::default()
         .lifetime(lifetime)
         .scroll_id(path)
         .build()
-        .unwrap();
+        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
 
     let searcher = state.get_searcher();
     let documents = searcher.paginate(&params).await?;

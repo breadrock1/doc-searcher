@@ -21,6 +21,8 @@ pub enum ServerError {
     InternalError(String),
     #[error("server unavailable")]
     ServerUnavailable,
+    #[error("incorrect input form: {0}")]
+    IncorrectInputForm(String),
 }
 
 impl From<StorageError> for ServerError {
@@ -44,6 +46,7 @@ impl ServerError {
             ServerError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.to_owned()),
             ServerError::Conflict(msg) => (StatusCode::CONFLICT, msg.to_owned()),
             ServerError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_owned()),
+            ServerError::IncorrectInputForm(msg) => (StatusCode::BAD_REQUEST, msg.to_owned()),
             ServerError::ServerUnavailable => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 UNAVAILABLE_SERVER.to_owned(),

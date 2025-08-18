@@ -441,7 +441,7 @@ impl OpenSearchStorage {
 #[cfg(test)]
 mod test_osearch {
     use super::*;
-    use crate::application::dto::params::KnnIndexParams;
+    use crate::application::dto::params::{CreateIndexParamsBuilder, KnnIndexParams};
     use crate::config::ServiceConfig;
 
     const TEST_FOLDER_ID: &str = "test-common-folder";
@@ -545,7 +545,7 @@ mod test_osearch {
     }
 
     async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<String> {
-        let create_index = CreateIndexParams::builder()
+        let create_index = CreateIndexParamsBuilder::default()
             .id(TEST_FOLDER_ID.to_owned())
             .name(TEST_FOLDER_ID.to_owned())
             .path("".to_owned())

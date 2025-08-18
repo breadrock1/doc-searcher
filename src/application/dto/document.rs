@@ -1,51 +1,31 @@
 use derive_builder::Builder;
 use getset::{CopyGetters, Getters};
 use serde_derive::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
-#[allow(unused_imports)]
-use serde_json::json;
-
-#[derive(Builder, Clone, Getters, CopyGetters, Serialize, Deserialize, ToSchema)]
+#[derive(Builder, Clone, Getters, CopyGetters, Serialize, Deserialize)]
+#[getset(get = "pub")]
 pub struct Document {
-    #[schema(example = "test-document.docx")]
-    #[getset(get = "pub")]
     file_name: String,
-    #[schema(example = "./test-document.docx")]
-    #[getset(get = "pub")]
     file_path: String,
-    #[schema(example = 1024)]
+    #[getset(skip)]
     #[getset(get_copy = "pub")]
     file_size: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(example = "There is some content data")]
-    #[getset(get = "pub")]
-    content: Option<String>,
-    #[schema(example = 1750957115)]
-    #[getset(get = "pub")]
+    #[getset(skip)]
+    #[getset(get_copy = "pub")]
     created_at: i64,
-    #[schema(example = 1750957115)]
-    #[getset(get = "pub")]
+    #[getset(skip)]
+    #[getset(get_copy = "pub")]
     modified_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     chunked_text: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     embeddings: Option<Vec<Embeddings>>,
 }
 
-#[derive(Clone, Serialize, Deserialize, ToSchema)]
-struct Embeddings {
-    knn: Vec<f64>,
-}
-
-impl Document {
-    pub fn builder() -> DocumentBuilder {
-        DocumentBuilder::default()
-    }
-}
-
 impl TryFrom<crate::domain::Document> for Document {
-    type Error = DocumentBuilderError;
+    type Error = anyhow::Error;
 
     fn try_from(value: crate::domain::Document) -> Result<Self, Self::Error> {
         let document = DocumentBuilder::default()
@@ -58,5 +38,16 @@ impl TryFrom<crate::domain::Document> for Document {
             .build()?;
 
         Ok(document)
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Embeddings {
+    pub knn: Vec<f64>,
+}
+
+impl Embeddings {
+    pub fn new(knn: Vec<f64>) -> Self {
+        Self { knn }
     }
 }

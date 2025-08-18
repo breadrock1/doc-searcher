@@ -4,7 +4,7 @@ use serde_derive::Serialize;
 
 use crate::application::dto::Document;
 
-#[derive(Builder, Clone, Getters, Serialize)]
+#[derive(Builder, Getters, Clone, Serialize)]
 #[getset(get = "pub")]
 pub struct FoundedDocument {
     id: String,
@@ -16,19 +16,13 @@ pub struct FoundedDocument {
     highlight: Vec<String>,
 }
 
-impl FoundedDocument {
-    pub fn builder() -> FoundedDocumentBuilder {
-        FoundedDocumentBuilder::default()
-    }
-}
-
 impl TryFrom<crate::domain::FoundedDocument> for FoundedDocument {
-    type Error = FoundedDocumentBuilderError;
+    type Error = anyhow::Error;
 
     fn try_from(founded_doc: crate::domain::FoundedDocument) -> Result<Self, Self::Error> {
         let highlight = founded_doc.highlight;
-        let document = Document::try_from(founded_doc.document).unwrap();
-        let result = FoundedDocument::builder()
+        let document = Document::try_from(founded_doc.document)?;
+        let result = FoundedDocumentBuilder::default()
             .id(founded_doc.id)
             .folder_id(founded_doc.folder_id)
             .score(founded_doc.score)

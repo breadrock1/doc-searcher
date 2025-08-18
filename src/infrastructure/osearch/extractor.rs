@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::application::dto::{FoundedDocument, Paginated};
+use crate::application::dto::{FoundedDocument, PaginatedBuilder};
 use crate::application::services::storage::{PaginateResult, StorageResult};
 use crate::infrastructure::osearch::dto::SourceDocument;
 
@@ -10,7 +10,7 @@ pub async fn extract_founded_docs(common_object: Value) -> PaginateResult<Founde
     let founded_hits = common_object[&"hits"][&"hits"].as_array();
     let Some(hits) = founded_hits else {
         tracing::warn!("returned empty array of founded documents");
-        let paginated_result = Paginated::builder()
+        let paginated_result = PaginatedBuilder::default()
             .founded(Vec::default())
             .scroll_id(scroll_id)
             .build()
@@ -24,7 +24,7 @@ pub async fn extract_founded_docs(common_object: Value) -> PaginateResult<Founde
         .filter_map(|it| extract_founded_document(it).ok())
         .collect::<Vec<FoundedDocument>>();
 
-    let documents = Paginated::builder()
+    let documents = PaginatedBuilder::default()
         .scroll_id(scroll_id)
         .founded(documents)
         .build()
