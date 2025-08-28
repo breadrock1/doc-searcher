@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use anyhow::Error;
 use axum::http::StatusCode;
 use serde_derive::Serialize;
 use thiserror::Error;
@@ -13,43 +14,56 @@ pub type ServerResult<T> = Result<T, ServerError>;
 
 #[derive(Debug, Error, Serialize, ToSchema)]
 pub enum ServerError {
-    #[error("resource data conflict: {0}")]
+    #[error("server: auth failed: {0}")]
+    AuthenticationFailed(String),
+    #[error("server: resource data conflict: {0}")]
     Conflict(String),
-    #[error("not found error: {0}")]
+    #[error("server: not found error: {0}")]
     NotFound(String),
-    #[error("internal service error: {0}")]
+    #[error("server: internal service error: {0}")]
     InternalError(String),
-    #[error("server unavailable")]
-    ServerUnavailable,
-    #[error("incorrect input form: {0}")]
+    #[error("server: bad request: {0}")]
+    BadRequest(String),
+    #[error("server: incorrect input form: {0}")]
     IncorrectInputForm(String),
+    #[error("server: server unavailable")]
+    ServerUnavailable,
 }
 
 impl From<StorageError> for ServerError {
     fn from(err: StorageError) -> Self {
         match err {
-            StorageError::AlreadyExists(err) => ServerError::Conflict(err.to_string()),
-            StorageError::ServiceUnavailable(_) => ServerError::ServerUnavailable,
-            StorageError::RequestTimeout(err) => ServerError::InternalError(err.to_string()),
-            StorageError::NotFound(err) => ServerError::NotFound(err.to_string()),
-            StorageError::ServiceError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::AuthenticationFailed(err) => ServerError::AuthenticationFailed(err.to_string()),
+            StorageError::IndexNotFound(err) => ServerError::NotFound(err.to_string()),
+            StorageError::DocumentAlreadyExists(err) => ServerError::Conflict(err.to_string().to_string()),
+            StorageError::DocumentNotFound(err) => ServerError::NotFound(err.to_string()),
+            StorageError::ServiceError(err) => ServerError::BadRequest(err.to_string()),
+            StorageError::InternalError(err) => ServerError::InternalError(err.to_string()),
+            StorageError::ValidationError(err) => ServerError::IncorrectInputForm(err.to_string()),
             StorageError::SerdeError(err) => ServerError::InternalError(err.to_string()),
-            StorageError::RuntimeError(err) => ServerError::InternalError(err.to_string()),
-            StorageError::IndexNotFound(err) => ServerError::InternalError(err.to_string()),
+            StorageError::HttpRequestError(err) => ServerError::InternalError(err.to_string()),
         }
     }
 }
 
+impl From<anyhow::Error> for ServerError {
+    fn from(err: Error) -> Self {
+        ServerError::IncorrectInputForm(err.to_string())
+    }
+}
+
 impl ServerError {
-    pub fn status_code(&self) -> (StatusCode, String) {
+    pub fn status_code(&self) -> (StatusCode, &str) {
         match self {
-            ServerError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.to_owned()),
-            ServerError::Conflict(msg) => (StatusCode::CONFLICT, msg.to_owned()),
-            ServerError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_owned()),
-            ServerError::IncorrectInputForm(msg) => (StatusCode::BAD_REQUEST, msg.to_owned()),
+            ServerError::AuthenticationFailed(err) => (StatusCode::UNAUTHORIZED, err),
+            ServerError::NotFound(err) => (StatusCode::NOT_FOUND, err),
+            ServerError::Conflict(err) => (StatusCode::CONFLICT, err),
+            ServerError::InternalError(err) => (StatusCode::INTERNAL_SERVER_ERROR, err),
+            ServerError::BadRequest(err) => (StatusCode::BAD_REQUEST, err),
+            ServerError::IncorrectInputForm(err) => (StatusCode::BAD_REQUEST, err),
             ServerError::ServerUnavailable => (
                 StatusCode::SERVICE_UNAVAILABLE,
-                UNAVAILABLE_SERVER.to_owned(),
+                UNAVAILABLE_SERVER,
             ),
         }
     }
@@ -65,18 +79,20 @@ pub struct Success {
 
 impl Default for Success {
     fn default() -> Self {
+        let status_code = StatusCode::OK;
         Success {
-            status: 200,
-            message: "Ok".to_string(),
+            status: status_code.as_u16(),
+            message: status_code.to_string(),
         }
     }
 }
 
 impl Success {
     pub fn new(status: u16, message: &str) -> Self {
+        let message = message.to_string();
         Success {
             status,
-            message: message.to_owned(),
+            message,
         }
     }
 }
