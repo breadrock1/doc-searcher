@@ -3,6 +3,10 @@ level = "info"
 use_loki = "false"
 address = "http://loki:3100"
 
+[tracing]
+use_jaeger = "true"
+address = "http://jaeger:4317"
+
 [server]
 address = "0.0.0.0:2892"
 

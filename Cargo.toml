@@ -21,7 +21,6 @@ default = []
 [dependencies]
 anyhow = "1.0.96"
 async-trait = "0.1.86"
-axum-tracing-opentelemetry = "0.26.1"
 config = "0.15.8"
 console-subscriber = "0.4.1"
 derive_builder = "0.20.2"
@@ -41,31 +40,8 @@ tracing-loki = "0.2.6"
 
 # metrics dependencies
 axum-prometheus = "0.8.0"
+axum-tracing-opentelemetry = "0.26.1"
 metrics-exporter-prometheus = "0.16.2"
-
-
-
-[dependencies.opentelemetry]
-version = "0.28.0"
-
-[dependencies.opentelemetry-stdout]
-version = "0.28.0"
-
-[dependencies.opentelemetry_sdk]
-version = "0.28.0"
-features = ["experimental_async_runtime", "rt-tokio"]
-
-[dependencies.tracing-opentelemetry]
-version = "0.29.0"
-
-[dependencies.opentelemetry-otlp]
-version = "0.28.0"
-features = ["grpc-tonic"]
-
-[dependencies.opentelemetry-zipkin]
-version = "0.28.0"
-
-
 
 [dependencies.axum]
 version = "0.8.1"
@@ -74,6 +50,20 @@ features = ["tracing", "tower-log"]
 [dependencies.chrono]
 version = "0.4.37"
 features = ["serde"]
+
+[dependencies.opentelemetry]
+version = "0.28.0"
+
+[dependencies.opentelemetry-otlp]
+version = "0.28.0"
+features = ["grpc-tonic"]
+
+[dependencies.opentelemetry_sdk]
+version = "0.28.0"
+features = ["rt-tokio-current-thread"]
+
+[dependencies.tracing-opentelemetry]
+version = "0.29.0"
 
 [dependencies.redis]
 optional = true
