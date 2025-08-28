@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use crate::application::dto::params::{
+use crate::application::services::storage::error::{PaginateResult, StorageResult};
+use crate::application::services::storage::{DocumentSearcher, PaginateManager};
+use crate::application::structures::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
-use crate::application::dto::FoundedDocument;
-use crate::application::services::storage::error::{PaginateResult, StorageResult};
-use crate::application::services::storage::{DocumentSearcher, PaginateManager};
+use crate::application::structures::FoundedDocument;
 
 #[derive(Clone)]
 pub struct SearcherUseCase<Searcher>

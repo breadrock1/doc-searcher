@@ -1,4 +1,4 @@
-use doc_search::application::dto::params::KnnIndexParams;
+use doc_search::application::structures::params::KnnIndexParams;
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::{logger, ServiceConnect};
