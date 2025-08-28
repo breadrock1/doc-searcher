@@ -5,10 +5,7 @@ use utoipa::ToSchema;
 #[allow(unused_imports)]
 use serde_json::json;
 
-use crate::application::dto::{
-    Document, DocumentBuilder, Embeddings, FoundedDocument, FoundedDocumentBuilder, Index,
-    IndexBuilder, Paginated,
-};
+use crate::application::structures::{Document, DocumentBuilder, Embeddings, FoundedDocument, FoundedDocumentBuilder, Index, IndexBuilder, Paginated, StoredDocument};
 
 #[derive(Builder, Serialize, Deserialize, ToSchema)]
 pub struct IndexSchema {
@@ -117,7 +114,7 @@ impl From<Document> for DocumentSchema {
 }
 
 #[derive(Builder, Clone, Serialize, Deserialize, ToSchema)]
-struct EmbeddingsSchema {
+pub struct EmbeddingsSchema {
     #[schema(example = json!(vec![1.238473924, -1.0234324]))]
     knn: Vec<f64>,
 }
@@ -138,7 +135,7 @@ impl From<Embeddings> for EmbeddingsSchema {
 }
 
 #[derive(Builder, Serialize, Deserialize, ToSchema)]
-pub struct PaginatedResponse<D>
+pub struct PaginatedSchema<D>
 where
     D: serde::Serialize + Clone,
 {
@@ -149,14 +146,14 @@ where
     scroll_id: Option<String>,
 }
 
-impl<D> TryFrom<Paginated<D>> for PaginatedResponse<D>
+impl<D> TryFrom<Paginated<D>> for PaginatedSchema<D>
 where
     D: serde::Serialize + Clone,
 {
-    type Error = PaginatedResponseBuilderError;
+    type Error = PaginatedSchemaBuilderError;
 
     fn try_from(paginated: Paginated<D>) -> Result<Self, Self::Error> {
-        PaginatedResponseBuilder::default()
+        PaginatedSchemaBuilder::default()
             .founded(paginated.founded().to_owned())
             .scroll_id(paginated.scroll_id().to_owned())
             .build()
@@ -199,6 +196,24 @@ impl From<FoundedDocument> for FoundedDocumentSchema {
             .document(founded.document().to_owned().into())
             .score(founded.score().to_owned())
             .highlight(founded.highlight().to_owned())
+            .build()
+            .unwrap()
+    }
+}
+
+#[derive(Builder, Clone, Serialize, ToSchema)]
+pub struct StoredDocumentSchema {
+    #[schema(example = "dksfsjvJHZVFDskjdbfsdfsdfdsg")]
+    id: String,
+    #[schema(example = "./test-folder/test-document.docx")]
+    file_path: String,
+}
+
+impl From<StoredDocument> for StoredDocumentSchema {
+    fn from(doc: StoredDocument) -> Self {
+        StoredDocumentSchemaBuilder::default()
+            .id(doc.id)
+            .file_path(doc.file_path)
             .build()
             .unwrap()
     }

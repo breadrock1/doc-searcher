@@ -3,16 +3,16 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::dto::params::{
-    FullTextSearchParams, HybridSearchParams, PaginateParamsBuilder, SemanticSearchParams,
-};
 use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
+use crate::application::structures::params::{
+    FullTextSearchParams, HybridSearchParams, PaginateParamsBuilder, SemanticSearchParams,
+};
 
 use crate::infrastructure::httpserver::api::v1::models::{
-    DocumentSchema, FullTextSearchForm, HybridSearchForm, PaginateQuery, PaginatedResponse,
+    DocumentSchema, FullTextSearchForm, HybridSearchForm, PaginateQuery, PaginatedSchema,
     SemanticSearchForm,
 };
 use crate::infrastructure::httpserver::api::v1::swagger::SwaggerExample;
@@ -36,7 +36,7 @@ pub const SEARCH_PAGINATE_URL: &str = "/api/v1/search/paginate/{session_id}";
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = PaginatedResponse<DocumentSchema>,
+            body = PaginatedSchema<DocumentSchema>,
         ),
         (
             status = 400,
@@ -61,9 +61,7 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let params = FullTextSearchParams::try_from(form)
-        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
-
+    let params = FullTextSearchParams::try_from(form)?;
     let searcher = state.get_searcher();
     let documents = searcher.fulltext(&params).await?;
     Ok(Json(documents))
@@ -82,7 +80,7 @@ where
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = PaginatedResponse<DocumentSchema>,
+            body = PaginatedSchema<DocumentSchema>,
         ),
         (
             status = 400,
@@ -107,9 +105,7 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let params = SemanticSearchParams::try_from(form)
-        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
-
+    let params = SemanticSearchParams::try_from(form)?;
     let searcher = state.get_searcher();
     let documents = searcher.semantic(&params).await?;
     Ok(Json(documents))
@@ -128,7 +124,7 @@ where
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = PaginatedResponse<DocumentSchema>,
+            body = PaginatedSchema<DocumentSchema>,
         ),
         (
             status = 400,
@@ -153,9 +149,7 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let params = HybridSearchParams::try_from(form)
-        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
-
+    let params = HybridSearchParams::try_from(form)?;
     let searcher = state.get_searcher();
     let documents = searcher.hybrid(&params).await?;
     Ok(Json(documents))
@@ -184,7 +178,7 @@ where
             status = 200,
             content_type="application/json",
             description = "Paginate structure with list of founded Documents",
-            body = PaginatedResponse<DocumentSchema>,
+            body = PaginatedSchema<DocumentSchema>,
         ),
         (
             status = 400,
@@ -215,7 +209,7 @@ where
         .lifetime(lifetime)
         .scroll_id(path)
         .build()
-        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
+        .map_err(anyhow::Error::from)?;
 
     let searcher = state.get_searcher();
     let documents = searcher.paginate(&params).await?;
