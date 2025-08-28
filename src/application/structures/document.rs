@@ -1,25 +1,26 @@
 use derive_builder::Builder;
-use getset::{CopyGetters, Getters};
+use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Builder, Clone, Getters, CopyGetters, Serialize, Deserialize)]
-#[getset(get = "pub")]
+#[derive(Builder, Clone, Getset, Serialize, Deserialize)]
 pub struct Document {
+    #[getset(get, vis = "pub")]
     file_name: String,
+    #[getset(get, vis = "pub")]
     file_path: String,
-    #[getset(skip)]
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy, vis = "pub")]
     file_size: u32,
-    #[getset(skip)]
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy, vis = "pub")]
     created_at: i64,
-    #[getset(skip)]
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy, vis = "pub")]
     modified_at: i64,
+    #[getset(get, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     content: Option<String>,
+    #[getset(get, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     chunked_text: Option<Vec<String>>,
+    #[getset(get, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     embeddings: Option<Vec<Embeddings>>,
 }
@@ -49,5 +50,16 @@ pub struct Embeddings {
 impl Embeddings {
     pub fn new(knn: Vec<f64>) -> Self {
         Self { knn }
+    }
+}
+
+pub struct StoredDocument {
+    pub id: String,
+    pub file_path: String,
+}
+
+impl StoredDocument {
+    pub fn new(id: String, file_path: String) -> Self {
+        StoredDocument { id, file_path }
     }
 }

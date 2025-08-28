@@ -1,7 +1,6 @@
 pub mod config;
 mod dto;
 
-use getset::CopyGetters;
 use redis::{AsyncCommands, Client};
 use redis::{FromRedisValue, ToRedisArgs};
 use redis::{RedisError, RedisResult};
@@ -13,7 +12,7 @@ use self::config::RedisConfig;
 use crate::application::services::cacher::Cacher;
 use crate::ServiceConnect;
 
-#[derive(Clone, CopyGetters)]
+#[derive(Clone)]
 pub struct RedisClient {
     options: Arc<RedisConfig>,
     client: Arc<RwLock<Client>>,

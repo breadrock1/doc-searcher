@@ -4,7 +4,7 @@ use utoipa::{IntoParams, ToSchema};
 #[allow(unused_imports)]
 use serde_json::json;
 
-use crate::application::dto::params::{
+use crate::application::structures::params::{
     CreateIndexParams, CreateIndexParamsBuilder, FilterParams, FilterParamsBuilder,
     FullTextSearchParams, FullTextSearchParamsBuilder, HybridSearchParams,
     HybridSearchParamsBuilder, KnnIndexParams, KnnIndexParamsBuilder, PaginateParams,
@@ -12,12 +12,13 @@ use crate::application::dto::params::{
     RetrieveDocumentParams, RetrieveDocumentParamsBuilder, SemanticSearchParams,
     SemanticSearchParamsBuilder,
 };
-use crate::application::dto::{Document, DocumentBuilder};
+use crate::application::structures::{Document, DocumentBuilder, Embeddings};
+use crate::infrastructure::httpserver::api::v1::models::response::EmbeddingsSchema;
+
+const EMPTY_INDEX_ID: &str = "";
 
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct CreateIndexForm {
-    #[schema(example = "test-folder")]
-    id: String,
     #[schema(example = "Test Folder")]
     name: String,
     #[schema(example = "./")]
@@ -35,7 +36,7 @@ impl TryFrom<CreateIndexForm> for CreateIndexParams {
         };
 
         let form = CreateIndexParamsBuilder::default()
-            .id(form.id)
+            .id(EMPTY_INDEX_ID.to_string())
             .name(form.name)
             .path(form.path)
             .knn(knn_form)
@@ -74,6 +75,52 @@ impl TryFrom<CreateDocumentForm> for Document {
             .modified_at(form.modified_at)
             .chunked_text(None)
             .embeddings(None)
+            .build()?;
+
+        Ok(form)
+    }
+}
+
+#[derive(Serialize, Deserialize, IntoParams, ToSchema)]
+pub struct UpdateDocumentForm {
+    #[schema(example = "test-document.docx")]
+    file_name: String,
+    #[schema(example = "./test-document.docx")]
+    file_path: String,
+    #[schema(example = 1024)]
+    file_size: u32,
+    #[schema(example = 1750957115)]
+    created_at: i64,
+    #[schema(nullable, example = "There is some content data")]
+    content: Option<String>,
+    #[schema(nullable, example = json!(vec!["There is some content data"]))]
+    chunked_text: Option<Vec<String>>,
+    embeddings: Option<Vec<EmbeddingsSchema>>,
+}
+
+impl TryFrom<UpdateDocumentForm> for Document {
+    type Error = anyhow::Error;
+
+    fn try_from(form: UpdateDocumentForm) -> Result<Self, Self::Error> {
+        let embeddings = form
+            .embeddings
+            .map(|it| {
+                Some(it.into_iter()
+                    .map(|e| e.into())
+                    .collect::<Vec<Embeddings>>())
+            })
+            .unwrap_or_default();
+
+        let modified_dt = chrono::Utc::now().timestamp();
+        let form = DocumentBuilder::default()
+            .file_name(form.file_name)
+            .file_path(form.file_path)
+            .file_size(form.file_size)
+            .content(form.content)
+            .created_at(form.created_at)
+            .modified_at(modified_dt)
+            .chunked_text(form.chunked_text)
+            .embeddings(embeddings)
             .build()?;
 
         Ok(form)
@@ -145,9 +192,9 @@ pub struct ResultForm {
     #[schema(example = "desc")]
     order: String,
     #[schema(example = 10)]
-    size: i64,
+    size: u32,
     #[schema(example = 0)]
-    offset: i64,
+    offset: u32,
     #[schema(example = false)]
     include_extra_fields: Option<bool>,
 }
@@ -156,8 +203,8 @@ impl From<ResultForm> for ResultParams {
     fn from(form: ResultForm) -> ResultParams {
         ResultParamsBuilder::default()
             .order(form.order)
-            .size(form.size)
-            .offset(form.offset)
+            .size(form.size.into())
+            .offset(form.offset.into())
             .include_extra_fields(form.include_extra_fields)
             .build()
             .unwrap()

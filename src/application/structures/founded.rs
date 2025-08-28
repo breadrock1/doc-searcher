@@ -1,17 +1,21 @@
 use derive_builder::Builder;
-use getset::Getters;
+use gset::Getset;
 use serde_derive::Serialize;
 
-use crate::application::dto::Document;
+use crate::application::structures::Document;
 
-#[derive(Builder, Getters, Clone, Serialize)]
-#[getset(get = "pub")]
+#[derive(Builder, Getset, Clone, Serialize)]
 pub struct FoundedDocument {
+    #[getset(get, vis = "pub")]
     id: String,
+    #[getset(get, vis = "pub")]
     folder_id: String,
+    #[getset(get, vis = "pub")]
     document: Document,
+    #[getset(get_copy, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     score: Option<f64>,
+    #[getset(get, vis = "pub")]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     highlight: Vec<String>,
 }

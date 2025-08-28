@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
-use getset::CopyGetters;
+use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 const DEFAULT_LIFETIME: &str = "5m";
 
-#[derive(Deserialize, Serialize, CopyGetters, IntoParams, ToSchema)]
+#[derive(Deserialize, Serialize, Getset, IntoParams, ToSchema)]
 pub struct CreateDocumentQuery {
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy, vis = "pub")]
     #[schema(example = false)]
     force: Option<bool>,
 }

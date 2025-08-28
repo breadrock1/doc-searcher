@@ -1,13 +1,13 @@
-use getset::Getters;
+use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::application::dto::{
+use crate::application::structures::{
     Document, FoundedDocument, FoundedDocumentBuilder, Index, IndexBuilder,
 };
 
-#[derive(Debug, Deserialize, Getters)]
+#[derive(Debug, Deserialize, Getset)]
 pub struct OSearchIndex {
-    #[getset(get = "pub")]
+    #[getset(get, vis = "pub")]
     index: String,
 }
 

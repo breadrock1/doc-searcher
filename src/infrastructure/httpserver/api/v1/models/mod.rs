@@ -5,11 +5,12 @@ mod form;
 pub use form::{
     CreateDocumentForm, CreateIndexForm, FilterForm, FullTextSearchForm, HybridSearchForm,
     KnnIndexForm, PaginateForm, ResultForm, RetrieveDocumentForm, SemanticSearchForm,
+    UpdateDocumentForm,
 };
 
 mod response;
 
-pub use response::{DocumentSchema, IndexSchema, PaginatedResponse};
+pub use response::{DocumentSchema, IndexSchema, PaginatedSchema, StoredDocumentSchema};
 
 mod query;
 

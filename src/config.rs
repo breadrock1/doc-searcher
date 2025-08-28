@@ -1,7 +1,7 @@
 use config::{Config, ConfigError, Environment, File, FileFormat};
 use derive_builder::Builder;
 use dotenv::dotenv;
-use getset::Getters;
+use gset::Getset;
 use serde_derive::Deserialize;
 
 use crate::infrastructure::config::{CacherConfig, StorageConfig};
@@ -12,12 +12,15 @@ const CONFIG_PREFIX: &str = "DOC_SEARCHER";
 const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";
 const DEV_FILE_CONFIG_PATH: &str = "./config/development.toml";
 
-#[derive(Builder, Clone, Getters, Deserialize)]
-#[getset(get = "pub")]
+#[derive(Builder, Clone, Deserialize, Getset)]
 pub struct ServiceConfig {
+    #[getset(get, vis = "pub")]
     logger: LoggerConfig,
+    #[getset(get, vis = "pub")]
     server: ServerConfig,
+    #[getset(get, vis = "pub")]
     storage: StorageConfig,
+    #[getset(get, vis = "pub")]
     cacher: CacherConfig,
 }
 
