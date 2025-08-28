@@ -6,7 +6,7 @@ use serde_derive::Deserialize;
 
 use crate::infrastructure::config::{CacherConfig, StorageConfig};
 use crate::infrastructure::httpserver::ServerConfig;
-use crate::logger::LoggerConfig;
+use crate::tracer::{LoggerConfig, TracingConfig};
 
 const CONFIG_PREFIX: &str = "DOC_SEARCHER";
 const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";
@@ -16,6 +16,8 @@ const DEV_FILE_CONFIG_PATH: &str = "./config/development.toml";
 pub struct ServiceConfig {
     #[getset(get, vis = "pub")]
     logger: LoggerConfig,
+    #[getset(get, vis = "pub")]
+    tracing: TracingConfig,
     #[getset(get, vis = "pub")]
     server: ServerConfig,
     #[getset(get, vis = "pub")]

@@ -71,6 +71,7 @@ impl ServiceConnect for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl IndexManager for OpenSearchStorage {
+    #[tracing::instrument]
     async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
         let id = params.id();
         let knn_params = params.knn().as_ref();
@@ -92,6 +93,7 @@ impl IndexManager for OpenSearchStorage {
         Ok(params.id().to_owned())
     }
 
+    #[tracing::instrument]
     async fn delete_index(&self, id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -148,6 +150,7 @@ impl IndexManager for OpenSearchStorage {
         Ok(indexes)
     }
 
+    #[tracing::instrument]
     async fn get_index(&self, id: &str) -> StorageResult<Index> {
         let response = self
             .client
@@ -180,6 +183,7 @@ impl IndexManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
+    #[tracing::instrument]
     async fn store_document(&self, index: &str, doc: &Document) -> StorageResult<String> {
         #[cfg(not(feature = "enable-unique-doc-id"))]
         let id = uuid::Uuid::new_v4().to_string();
@@ -201,6 +205,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(id)
     }
 
+    #[tracing::instrument]
     async fn store_documents(
         &self,
         index: &str,
@@ -240,6 +245,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(stored_documents)
     }
 
+    #[tracing::instrument]
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
         let response = self
             .client
@@ -257,6 +263,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(document)
     }
 
+    #[tracing::instrument]
     async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -272,6 +279,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(())
     }
 
+    #[tracing::instrument]
     async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
         let doc_object = extractor::build_update_document_object(doc)
             .map_err(|err| StorageError::InternalError(err))?;
@@ -295,6 +303,7 @@ impl DocumentManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentSearcher for OpenSearchStorage {
+    #[tracing::instrument]
     async fn retrieve(
         &self,
         ids: &str,
@@ -326,6 +335,7 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
+    #[tracing::instrument]
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
         let query_params = QueryBuilderParams::from(params);
         let query = params.build_query(query_params);
@@ -354,6 +364,7 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
+    #[tracing::instrument]
     async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
         let model_id = params
             .model_id()
@@ -383,6 +394,7 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
+    #[tracing::instrument]
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
         let model_id = params
             .model_id()
@@ -415,6 +427,7 @@ impl DocumentSearcher for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl PaginateManager for OpenSearchStorage {
+    #[tracing::instrument]
     async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -430,6 +443,7 @@ impl PaginateManager for OpenSearchStorage {
         Ok(())
     }
 
+    #[tracing::instrument]
     async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {
         let response = self
             .client
@@ -450,6 +464,7 @@ impl PaginateManager for OpenSearchStorage {
 }
 
 impl OpenSearchStorage {
+    #[tracing::instrument]
     pub async fn init_pipelines(&self, params: &KnnIndexParams) -> StorageResult<()> {
         let ingest_schema = schema::create_ingest_schema(self.config.semantic(), Some(params));
         let response = self

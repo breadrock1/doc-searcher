@@ -7,7 +7,7 @@ const KNN_DIMENSION: u32 = 384;
 const TOKEN_LIMIT: u32 = 700;
 const OVERLAP_RATE: f32 = 0.2;
 
-#[derive(Builder, Clone, Getset, Serialize, Deserialize)]
+#[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
 pub struct CreateIndexParams {
     #[getset(set, vis = "pub")]
     #[getset(get, vis = "pub")]
@@ -20,7 +20,7 @@ pub struct CreateIndexParams {
     knn: Option<KnnIndexParams>,
 }
 
-#[derive(Builder, Clone, Getset, Serialize, Deserialize)]
+#[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
 pub struct KnnIndexParams {
     #[getset(get_copy, vis = "pub")]
     knn_ef_searcher: u32,

@@ -4,15 +4,16 @@ use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
-use doc_search::{logger, ServiceConnect};
+use doc_search::{tracer, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::{cors, trace};
+use tower_http::trace::TraceLayer;
 
 #[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    logger::init_logger(config.logger())?;
+    let _otlp_guard = tracer::init_otlp_tracing(&config)?;
 
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
@@ -22,9 +23,9 @@ async fn main() -> anyhow::Result<()> {
     let server_app = ServerApp::new(storage_uc, searcher_uc);
 
     let cors_layer = cors::CorsLayer::permissive();
-    let trace_layer = trace::TraceLayer::new_for_http()
+    let trace_layer = TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
-        .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO));
+        .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
 
     let app = httpserver::init_server(server_app)
         .layer(trace_layer)
