@@ -5,10 +5,25 @@ mod extractor;
 mod query;
 mod schema;
 
+use crate::application::services::storage::{
+    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
+};
+use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
+use crate::application::structures::params::{
+    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
+    RetrieveDocumentParams, SemanticSearchParams,
+};
+use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
+use crate::infrastructure::osearch::config::OSearchConfig;
+use crate::infrastructure::osearch::dto::SourceDocument;
+use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
+use crate::ServiceConnect;
+
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
 use opensearch::http::headers::HeaderMap;
+use opensearch::http::request::JsonBody;
 use opensearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
 use opensearch::http::{Method, Url};
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
@@ -17,23 +32,9 @@ use opensearch::OpenSearch;
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-use crate::application::dto::params::{
-    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
-    RetrieveDocumentParams, SemanticSearchParams,
-};
-use crate::application::dto::{Document, FoundedDocument, Index};
-use crate::application::services::storage::{
-    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
-};
-use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
-use crate::infrastructure::osearch::config::OSearchConfig;
-use crate::infrastructure::osearch::dto::SourceDocument;
-use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
-use crate::ServiceConnect;
-
 const SCROLL_LIFETIME: &str = "5m";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OpenSearchStorage {
     config: OSearchConfig,
     client: Arc<OpenSearch>,
@@ -72,8 +73,9 @@ impl ServiceConnect for OpenSearchStorage {
 impl IndexManager for OpenSearchStorage {
     async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
         let id = params.id();
-        let folder_schema =
-            schema::create_document_schema(self.config.cluster(), params.knn().as_ref());
+        let knn_params = params.knn().as_ref();
+        let cluster_config = self.config.cluster();
+        let folder_schema = schema::create_document_schema(cluster_config, knn_params);
         let response = self
             .client
             .indices()
@@ -83,7 +85,8 @@ impl IndexManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(params.id().to_owned())
@@ -99,12 +102,14 @@ impl IndexManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(())
     }
 
+    #[tracing::instrument]
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
         #[cfg(feature = "enable-multi-user")]
         let offset = format!("{}*", self.config.username());
@@ -128,7 +133,8 @@ impl IndexManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let indexes = response
@@ -149,8 +155,12 @@ impl IndexManager for OpenSearchStorage {
             .indices(CatIndicesParts::Index(&[id]))
             .format("json")
             .send()
-            .await?
-            .error_for_status_code()?;
+            .await?;
+
+        if !response.status_code().is_success() {
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
+        }
 
         let indexes = response
             .json::<Vec<dto::OSearchIndex>>()
@@ -170,7 +180,7 @@ impl IndexManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
-    async fn create_document(&self, index: &str, doc: &Document) -> StorageResult<String> {
+    async fn store_document(&self, index: &str, doc: &Document) -> StorageResult<String> {
         #[cfg(not(feature = "enable-unique-doc-id"))]
         let id = uuid::Uuid::new_v4().to_string();
         #[cfg(feature = "enable-unique-doc-id")]
@@ -184,10 +194,50 @@ impl DocumentManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(id)
+    }
+
+    async fn store_documents(
+        &self,
+        index: &str,
+        docs: &[Document],
+    ) -> StorageResult<Vec<StoredDocument>> {
+        let mut operations: Vec<JsonBody<_>> = Vec::with_capacity(docs.len() * 2);
+        let mut stored_documents = Vec::<StoredDocument>::with_capacity(docs.len());
+
+        for doc in docs {
+            #[cfg(not(feature = "enable-unique-doc-id"))]
+            let id = uuid::Uuid::new_v4().to_string();
+            #[cfg(feature = "enable-unique-doc-id")]
+            let id = Self::gen_unique_document_id(index, doc);
+
+            stored_documents.push(StoredDocument::new(id.clone(), doc.file_path().to_owned()));
+
+            let header = json!({"index": {"_id": id}}).into();
+            operations.push(header);
+
+            let body = serde_json::to_value(doc)?.into();
+            operations.push(body);
+        }
+
+        let response = self
+            .client
+            .bulk(opensearch::BulkParts::Index(index))
+            .pipeline(schema::INGEST_PIPELINE_NAME)
+            .body(operations)
+            .send()
+            .await?;
+
+        if !response.status_code().is_success() {
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
+        }
+
+        Ok(stored_documents)
     }
 
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
@@ -199,7 +249,8 @@ impl DocumentManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let document: Document = response.json::<SourceDocument>().await?.into();
@@ -214,22 +265,28 @@ impl DocumentManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(())
     }
 
     async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
+        let doc_object = extractor::build_update_document_object(doc)
+            .map_err(|err| StorageError::InternalError(err))?;
+
+        // TODO: How update chunked_text and embeddings after updating content field automatically?
         let response = self
             .client
             .update(opensearch::UpdateParts::IndexId(index, id))
-            .body(&json!({ "doc": doc }))
+            .body(json!({"doc": doc_object}))
             .send()
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(())
@@ -247,19 +304,21 @@ impl DocumentSearcher for OpenSearchStorage {
         let query = params.build_query(query_params);
         let indexes = ids.split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
-        let response = self
+        let request = self
             .client
             .search(search_parts)
             .pretty(true)
-            .scroll(SCROLL_LIFETIME)
-            .from(params.result().offset())
-            .size(params.result().size())
-            .body(query)
-            .send()
-            .await?;
+            .size(params.result().size());
 
+        let request = match params.result().offset() > 0 {
+            true => request.from(params.result().offset()),
+            false => request.scroll(SCROLL_LIFETIME),
+        };
+
+        let response = request.body(query).send().await?;
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let response_data = response.json::<Value>().await?;
@@ -286,7 +345,8 @@ impl DocumentSearcher for OpenSearchStorage {
 
         let response = request.send().await?;
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let response_data = response.json::<Value>().await?;
@@ -314,7 +374,8 @@ impl DocumentSearcher for OpenSearchStorage {
 
         let response = request.send().await?;
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let response_data = response.json::<Value>().await?;
@@ -342,7 +403,8 @@ impl DocumentSearcher for OpenSearchStorage {
 
         let response = request.send().await?;
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let response_data = response.json::<Value>().await?;
@@ -361,7 +423,8 @@ impl PaginateManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(())
@@ -376,7 +439,8 @@ impl PaginateManager for OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let response_data = response.json::<Value>().await?;
@@ -397,7 +461,8 @@ impl OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         let url = format!("/_search/pipeline/{}", schema::HYBRID_SEARCH_PIPELINE_NAME);
@@ -417,7 +482,8 @@ impl OpenSearchStorage {
             .await?;
 
         if !response.status_code().is_success() {
-            return Err(error::OpenSearchError::from_response(response).await);
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
         }
 
         Ok(())
@@ -441,7 +507,7 @@ impl OpenSearchStorage {
 #[cfg(test)]
 mod test_osearch {
     use super::*;
-    use crate::application::dto::params::{CreateIndexParamsBuilder, KnnIndexParams};
+    use crate::application::structures::params::{CreateIndexParamsBuilder, KnnIndexParams};
     use crate::config::ServiceConfig;
 
     const TEST_FOLDER_ID: &str = "test-common-folder";
@@ -465,7 +531,7 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let result = client.create_document(TEST_FOLDER_ID, doc).await;
+            let result = client.store_document(TEST_FOLDER_ID, doc).await;
             assert!(result.is_ok());
         }
 
@@ -503,7 +569,7 @@ mod test_osearch {
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
-            let id = match client.create_document(TEST_FOLDER_ID, doc).await {
+            let id = match client.store_document(TEST_FOLDER_ID, doc).await {
                 Ok(id) => id,
                 Err(err) => {
                     return Err(err.into());
