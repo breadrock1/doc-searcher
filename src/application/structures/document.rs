@@ -2,7 +2,7 @@ use derive_builder::Builder;
 use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Builder, Clone, Getset, Serialize, Deserialize)]
+#[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
 pub struct Document {
     #[getset(get, vis = "pub")]
     file_name: String,
@@ -42,7 +42,7 @@ impl TryFrom<crate::domain::Document> for Document {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Embeddings {
     pub knn: Vec<f64>,
 }

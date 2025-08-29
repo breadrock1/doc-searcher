@@ -43,7 +43,7 @@ impl Default for KnnIndexParams {
     }
 }
 
-#[derive(Builder, Clone, Getset, Serialize, Deserialize)]
+#[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
 pub struct FilterParams {
     #[getset(get_copy, vis = "pub")]
     size_from: Option<u32>,
@@ -59,7 +59,7 @@ pub struct FilterParams {
     modified_to: Option<i64>,
 }
 
-#[derive(Builder, Clone, Getset, Serialize, Deserialize)]
+#[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
 pub struct ResultParams {
     #[getset(get, vis = "pub")]
     order: String,
@@ -71,7 +71,7 @@ pub struct ResultParams {
     include_extra_fields: Option<bool>,
 }
 
-#[derive(Builder, Getset, Serialize, Deserialize)]
+#[derive(Builder, Debug, Getset, Serialize, Deserialize)]
 pub struct RetrieveDocumentParams {
     #[getset(get, vis = "pub")]
     path: Option<String>,
@@ -81,7 +81,7 @@ pub struct RetrieveDocumentParams {
     result: ResultParams,
 }
 
-#[derive(Builder, Getset, Serialize, Deserialize)]
+#[derive(Builder, Debug, Getset, Serialize, Deserialize)]
 pub struct FullTextSearchParams {
     #[getset(get, vis = "pub")]
     query: Option<String>,
@@ -93,7 +93,7 @@ pub struct FullTextSearchParams {
     result: ResultParams,
 }
 
-#[derive(Builder, Getset, Serialize, Deserialize)]
+#[derive(Builder, Debug, Getset, Serialize, Deserialize)]
 pub struct HybridSearchParams {
     #[getset(get, vis = "pub")]
     query: String,
@@ -107,7 +107,7 @@ pub struct HybridSearchParams {
     result: ResultParams,
 }
 
-#[derive(Builder, Getset, Serialize, Deserialize)]
+#[derive(Builder, Debug, Getset, Serialize, Deserialize)]
 pub struct SemanticSearchParams {
     #[getset(get, vis = "pub")]
     query: String,
@@ -125,7 +125,7 @@ pub struct SemanticSearchParams {
     result: ResultParams,
 }
 
-#[derive(Builder, Getset, Deserialize, Serialize)]
+#[derive(Builder, Debug, Getset, Deserialize, Serialize)]
 pub struct PaginateParams {
     #[getset(get, vis = "pub")]
     scroll_id: String,

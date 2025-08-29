@@ -1,14 +1,8 @@
 use gset::Getset;
-use opentelemetry::global;
-use opentelemetry::trace::TracerProvider;
-use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::propagation::TraceContextPropagator;
-use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::trace::SdkTracerProvider;
 use serde_derive::Deserialize;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 
 use crate::config::ServiceConfig;
 use crate::SERVICE_NAME;
@@ -53,6 +47,7 @@ pub struct TracingConfig {
     address: String,
 }
 
+#[allow(unused_mut)]
 pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
     let mut otlp_guard = OtlpGuard::default();
 
@@ -65,31 +60,47 @@ pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
         .with_span_events(FmtSpan::FULL)
         .pretty();
 
-    global::set_text_map_propagator(TraceContextPropagator::new());
-    let provider = init_jaeger_tracing(config.tracing())?;
-    let tracer = provider.tracer(SERVICE_NAME);
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-
-    let loki_address = config.logger().address().as_str();
-    let loki_url = tracing_loki::url::Url::parse(loki_address)?;
-    let (loki_layer, bg_task) = tracing_loki::builder()
-        .label("service", SERVICE_NAME)?
-        .build_url(loki_url)?;
-    tokio::spawn(bg_task);
-
-    tracing_subscriber::registry()
+    let subscriber = tracing_subscriber::Registry::default()
         .with(env_filter)
-        .with(fmt_layer)
-        .with(loki_layer)
-        .with(telemetry)
-        .init();
+        .with(fmt_layer);
 
-    otlp_guard.set_tracing_provider(Some(provider));
+    #[cfg(feature = "enable-loki-logger")]
+    let logger_layer = init_loki_logger(config.logger())?;
+    #[cfg(feature = "enable-loki-logger")]
+    let subscriber = subscriber.with(logger_layer);
+
+    #[cfg(feature = "enable-jaeger-tracing")]
+    let telemetry = {
+        use opentelemetry::global;
+        use opentelemetry::trace::TracerProvider;
+        use opentelemetry_sdk::propagation::TraceContextPropagator;
+
+        global::set_text_map_propagator(TraceContextPropagator::new());
+
+        let provider = init_jaeger_tracing(config.tracing())?;
+        let tracer = provider.tracer(SERVICE_NAME);
+        let telemetry = tracing_opentelemetry::layer()
+            .with_tracer(tracer)
+            .with_location(true)
+            .with_threads(true)
+            .with_level(true);
+
+        otlp_guard.set_tracing_provider(Some(provider));
+        telemetry
+    };
+    #[cfg(feature = "enable-jaeger-tracing")]
+    let subscriber = subscriber.with(telemetry);
+
+    tracing::subscriber::set_global_default(subscriber)?;
 
     Ok(otlp_guard)
 }
 
+#[cfg(feature = "enable-jaeger-tracing")]
 fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvider> {
+    use opentelemetry_otlp::WithExportConfig;
+    use opentelemetry_sdk::Resource;
+
     let resource = Resource::builder()
         .with_service_name(SERVICE_NAME)
         .build();
@@ -106,6 +117,19 @@ fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvid
         .build();
 
     Ok(provider)
+}
+
+#[cfg(feature = "enable-loki-logger")]
+fn init_loki_logger(config: &LoggerConfig) -> anyhow::Result<tracing_loki::Layer> {
+    let loki_address = config.address().as_str();
+    let loki_url = tracing_loki::url::Url::parse(loki_address)?;
+    let (loki_layer, bg_task) = tracing_loki::builder()
+        .label("service", SERVICE_NAME)?
+        .build_url(loki_url)?;
+
+    tokio::spawn(bg_task);
+
+    Ok(loki_layer)
 }
 
 fn init_rust_log_env(config: &LoggerConfig) {
