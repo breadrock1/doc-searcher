@@ -282,7 +282,7 @@ impl DocumentManager for OpenSearchStorage {
     #[tracing::instrument]
     async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
         let doc_object = extractor::build_update_document_object(doc)
-            .map_err(|err| StorageError::InternalError(err))?;
+            .map_err(StorageError::InternalError)?;
 
         // TODO: How update chunked_text and embeddings after updating content field automatically?
         let response = self

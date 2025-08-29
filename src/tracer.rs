@@ -6,18 +6,10 @@ use tracing_subscriber::layer::SubscriberExt;
 
 use crate::config::ServiceConfig;
 
-#[derive(Getset)]
+#[derive(Getset, Default)]
 pub struct OtlpGuard {
     #[getset(set)]
     tracing_provider: Option<SdkTracerProvider>,
-}
-
-impl Default for OtlpGuard {
-    fn default() -> Self {
-        OtlpGuard {
-            tracing_provider: None,
-        }
-    }
 }
 
 impl Drop for OtlpGuard {
