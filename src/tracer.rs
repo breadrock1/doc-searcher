@@ -57,7 +57,7 @@ pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
         .with_level(true)
         .with_thread_ids(true)
         .with_thread_names(true)
-        .with_span_events(FmtSpan::FULL)
+        .with_span_events(FmtSpan::NEW)
         .pretty();
 
     let subscriber = tracing_subscriber::Registry::default()

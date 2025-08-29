@@ -34,7 +34,7 @@ use std::sync::Arc;
 
 const SCROLL_LIFETIME: &str = "5m";
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct OpenSearchStorage {
     config: OSearchConfig,
     client: Arc<OpenSearch>,
@@ -516,6 +516,12 @@ impl OpenSearchStorage {
         let common_file_path = format!("{index}/{}", doc.file_path());
         let digest = md5::compute(&common_file_path);
         format!("{digest:x}")
+    }
+}
+
+impl std::fmt::Debug for OpenSearchStorage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "client: {:?}", self.client)
     }
 }
 
