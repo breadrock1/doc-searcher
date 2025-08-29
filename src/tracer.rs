@@ -5,7 +5,6 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
 use crate::config::ServiceConfig;
-use crate::SERVICE_NAME;
 
 #[derive(Getset)]
 pub struct OtlpGuard {
@@ -80,7 +79,7 @@ pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
         global::set_text_map_propagator(TraceContextPropagator::new());
 
         let provider = init_jaeger_tracing(config.tracing())?;
-        let tracer = provider.tracer(SERVICE_NAME);
+        let tracer = provider.tracer(crate::SERVICE_NAME);
         let telemetry = tracing_opentelemetry::layer()
             .with_tracer(tracer)
             .with_location(true)
@@ -103,7 +102,7 @@ fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvid
     use opentelemetry_otlp::WithExportConfig;
     use opentelemetry_sdk::Resource;
 
-    let resource = Resource::builder().with_service_name(SERVICE_NAME).build();
+    let resource = Resource::builder().with_service_name(crate::SERVICE_NAME).build();
 
     let jaeger_endpoint = format!("{}/api/traces", config.address());
     let otlp_exporter = opentelemetry_otlp::SpanExporter::builder()
@@ -124,7 +123,7 @@ fn init_loki_logger(config: &LoggerConfig) -> anyhow::Result<tracing_loki::Layer
     let loki_address = config.address().as_str();
     let loki_url = tracing_loki::url::Url::parse(loki_address)?;
     let (loki_layer, bg_task) = tracing_loki::builder()
-        .label("service", SERVICE_NAME)?
+        .label("service", crate::SERVICE_NAME)?
         .build_url(loki_url)?;
 
     tokio::spawn(bg_task);
