@@ -52,6 +52,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Quick Start
 
+0. Check `docs/opensearch` scripts how load ml cluster into single node and setup pipelines. Also you can find how setup multi-user supporting.
 1. Clone the repository
 2. Run `cargo install --path .` to build project
 3. Setting up `.env` file with services creds
