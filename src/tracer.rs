@@ -102,7 +102,9 @@ fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvid
     use opentelemetry_otlp::WithExportConfig;
     use opentelemetry_sdk::Resource;
 
-    let resource = Resource::builder().with_service_name(crate::SERVICE_NAME).build();
+    let resource = Resource::builder()
+        .with_service_name(crate::SERVICE_NAME)
+        .build();
 
     let jaeger_endpoint = format!("{}/api/traces", config.address());
     let otlp_exporter = opentelemetry_otlp::SpanExporter::builder()
