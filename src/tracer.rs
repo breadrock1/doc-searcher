@@ -10,12 +10,14 @@ use crate::SERVICE_NAME;
 #[derive(Getset)]
 pub struct OtlpGuard {
     #[getset(set)]
-    tracing_provider: Option<SdkTracerProvider>
+    tracing_provider: Option<SdkTracerProvider>,
 }
 
 impl Default for OtlpGuard {
     fn default() -> Self {
-        OtlpGuard { tracing_provider: None }
+        OtlpGuard {
+            tracing_provider: None,
+        }
     }
 }
 
@@ -101,9 +103,7 @@ fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvid
     use opentelemetry_otlp::WithExportConfig;
     use opentelemetry_sdk::Resource;
 
-    let resource = Resource::builder()
-        .with_service_name(SERVICE_NAME)
-        .build();
+    let resource = Resource::builder().with_service_name(SERVICE_NAME).build();
 
     let jaeger_endpoint = format!("{}/api/traces", config.address());
     let otlp_exporter = opentelemetry_otlp::SpanExporter::builder()

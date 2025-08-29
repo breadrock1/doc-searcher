@@ -10,7 +10,10 @@ use crate::application::services::storage::{
 };
 use crate::application::structures::params::{CreateIndexParams, RetrieveDocumentParams};
 use crate::application::structures::Document;
-use crate::infrastructure::httpserver::api::v1::models::{CreateDocumentForm, CreateIndexForm, RetrieveDocumentForm, StoredDocumentSchema, UpdateDocumentForm};
+use crate::infrastructure::httpserver::api::v1::models::{
+    CreateDocumentForm, CreateIndexForm, RetrieveDocumentForm, StoredDocumentSchema,
+    UpdateDocumentForm,
+};
 use crate::infrastructure::httpserver::api::v1::models::{
     CreateDocumentQuery, DocumentSchema, IndexSchema,
 };

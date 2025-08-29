@@ -105,9 +105,11 @@ impl TryFrom<UpdateDocumentForm> for Document {
         let embeddings = form
             .embeddings
             .map(|it| {
-                Some(it.into_iter()
-                    .map(|e| e.into())
-                    .collect::<Vec<Embeddings>>())
+                Some(
+                    it.into_iter()
+                        .map(|e| e.into())
+                        .collect::<Vec<Embeddings>>(),
+                )
             })
             .unwrap_or_default();
 

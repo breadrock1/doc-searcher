@@ -39,17 +39,21 @@ impl OSearchError {
             Ok(data) => data,
             Err(err) => {
                 let err = anyhow!(err);
-                return Self::extract_from_http_status(status, err)
+                return Self::extract_from_http_status(status, err);
             }
         };
 
         if let Ok(err) = serde_json::from_str::<ResponseError>(&data) {
-            return Self::extract_error(err)
+            return Self::extract_error(err);
         }
 
         if let Ok(err) = serde_json::from_str::<NotFoundDocument>(&data) {
-            let err= anyhow!("document [{}] not found in index: [{}]", err._id, err._index);
-            return OSearchError::DocumentNotFound(err)
+            let err = anyhow!(
+                "document [{}] not found in index: [{}]",
+                err._id,
+                err._index
+            );
+            return OSearchError::DocumentNotFound(err);
         };
 
         let err = anyhow!("undeclared error: {data}");
@@ -72,22 +76,22 @@ impl OSearchError {
             "index_not_found_exception" => OSearchError::IndexNotFound(_err),
             "document_missing_exception" | "document_not_found" => {
                 OSearchError::DocumentNotFound(_err)
-            },
+            }
             "resource_already_exists_exception" | "version_conflict_engine_exception" => {
                 OSearchError::DocumentAlreadyExists(_err)
-            },
+            }
             "security_exception" | "authentication_exception" => {
                 OSearchError::AuthenticationFailed(_err)
-            },
+            }
             "validation_exception" | "illegal_argument_exception" => {
                 OSearchError::ValidationError(_err)
-            },
+            }
             "search_phase_execution_exception" | "search_context_missing_exception" => {
                 OSearchError::ExecutionError(_err)
-            },
+            }
             _ => {
-                let status_code = StatusCode::from_u16(err.status)
-                    .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+                let status_code =
+                    StatusCode::from_u16(err.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
 
                 Self::extract_from_http_status(status_code, _err)
             }
@@ -100,10 +104,10 @@ impl OSearchError {
             StatusCode::BAD_REQUEST => OSearchError::ValidationError(err),
             StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
                 OSearchError::AuthenticationFailed(err)
-            },
+            }
             StatusCode::REQUEST_TIMEOUT | StatusCode::GATEWAY_TIMEOUT => {
                 OSearchError::ExecutionError(err)
-            },
+            }
             StatusCode::SERVICE_UNAVAILABLE => OSearchError::ConnectionError(err),
             _ => OSearchError::UndeclaredError(err),
         }
@@ -113,30 +117,14 @@ impl OSearchError {
 impl From<OSearchError> for StorageError {
     fn from(err: OSearchError) -> Self {
         match err {
-            OSearchError::AuthenticationFailed(err) => {
-                StorageError::AuthenticationFailed(err)
-            }
-            OSearchError::IndexNotFound(err) => {
-                StorageError::IndexNotFound(err)
-            }
-            OSearchError::DocumentNotFound(err) => {
-                StorageError::DocumentNotFound(err)
-            }
-            OSearchError::DocumentAlreadyExists(err) => {
-                StorageError::DocumentAlreadyExists(err)
-            }
-            OSearchError::ValidationError(err) => {
-                StorageError::ValidationError(err)
-            }
-            OSearchError::ExecutionError(err) => {
-                StorageError::ServiceError(err)
-            }
-            OSearchError::ConnectionError(err) => {
-                StorageError::InternalError(err)
-            }
-            OSearchError::UndeclaredError(err) => {
-                StorageError::InternalError(err)
-            }
+            OSearchError::AuthenticationFailed(err) => StorageError::AuthenticationFailed(err),
+            OSearchError::IndexNotFound(err) => StorageError::IndexNotFound(err),
+            OSearchError::DocumentNotFound(err) => StorageError::DocumentNotFound(err),
+            OSearchError::DocumentAlreadyExists(err) => StorageError::DocumentAlreadyExists(err),
+            OSearchError::ValidationError(err) => StorageError::ValidationError(err),
+            OSearchError::ExecutionError(err) => StorageError::ServiceError(err),
+            OSearchError::ConnectionError(err) => StorageError::InternalError(err),
+            OSearchError::UndeclaredError(err) => StorageError::InternalError(err),
         }
     }
 }

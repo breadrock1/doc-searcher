@@ -7,8 +7,8 @@ use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::{tracer, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tower_http::{cors, trace};
 use tower_http::trace::TraceLayer;
+use tower_http::{cors, trace};
 
 #[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {

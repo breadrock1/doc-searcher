@@ -33,9 +33,13 @@ pub enum ServerError {
 impl From<StorageError> for ServerError {
     fn from(err: StorageError) -> Self {
         match err {
-            StorageError::AuthenticationFailed(err) => ServerError::AuthenticationFailed(err.to_string()),
+            StorageError::AuthenticationFailed(err) => {
+                ServerError::AuthenticationFailed(err.to_string())
+            }
             StorageError::IndexNotFound(err) => ServerError::NotFound(err.to_string()),
-            StorageError::DocumentAlreadyExists(err) => ServerError::Conflict(err.to_string().to_string()),
+            StorageError::DocumentAlreadyExists(err) => {
+                ServerError::Conflict(err.to_string().to_string())
+            }
             StorageError::DocumentNotFound(err) => ServerError::NotFound(err.to_string()),
             StorageError::ServiceError(err) => ServerError::BadRequest(err.to_string()),
             StorageError::InternalError(err) => ServerError::InternalError(err.to_string()),
@@ -61,10 +65,7 @@ impl ServerError {
             ServerError::InternalError(err) => (StatusCode::INTERNAL_SERVER_ERROR, err),
             ServerError::BadRequest(err) => (StatusCode::BAD_REQUEST, err),
             ServerError::IncorrectInputForm(err) => (StatusCode::BAD_REQUEST, err),
-            ServerError::ServerUnavailable => (
-                StatusCode::SERVICE_UNAVAILABLE,
-                UNAVAILABLE_SERVER,
-            ),
+            ServerError::ServerUnavailable => (StatusCode::SERVICE_UNAVAILABLE, UNAVAILABLE_SERVER),
         }
     }
 }
@@ -90,9 +91,6 @@ impl Default for Success {
 impl Success {
     pub fn new(status: u16, message: &str) -> Self {
         let message = message.to_string();
-        Success {
-            status,
-            message,
-        }
+        Success { status, message }
     }
 }

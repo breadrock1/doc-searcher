@@ -5,7 +5,10 @@ use utoipa::ToSchema;
 #[allow(unused_imports)]
 use serde_json::json;
 
-use crate::application::structures::{Document, DocumentBuilder, Embeddings, FoundedDocument, FoundedDocumentBuilder, Index, IndexBuilder, Paginated, StoredDocument};
+use crate::application::structures::{
+    Document, DocumentBuilder, Embeddings, FoundedDocument, FoundedDocumentBuilder, Index,
+    IndexBuilder, Paginated, StoredDocument,
+};
 
 #[derive(Builder, Serialize, Deserialize, ToSchema)]
 pub struct IndexSchema {
