@@ -4,6 +4,8 @@ mod error;
 mod extractor;
 mod query;
 mod schema;
+#[cfg(test)]
+mod tests;
 
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
@@ -114,7 +116,7 @@ impl IndexManager for OpenSearchStorage {
     #[tracing::instrument]
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
         #[cfg(feature = "enable-multi-user")]
-        let offset = format!("{}*", self.config.username());
+        let offset = format!("{}_*", self.config.username());
         #[cfg(feature = "enable-multi-user")]
         let response = self
             .client
