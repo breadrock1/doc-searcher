@@ -52,7 +52,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Quick Start
 
-0. Check `docs/opensearch` scripts how load ml cluster into single node and setup pipelines. Also you can find how setup multi-user supporting.
+0. Check `docs/opensearch` scripts how load ml cluster into single node and setup pipelines. Also you can find how setup multi-user supporting - needs to build with feature `enable-multi-user`
 1. Clone the repository
 2. Run `cargo install --path .` to build project
 3. Setting up `.env` file with services creds
@@ -63,7 +63,11 @@ These instructions will get you a copy of the project up and running on your loc
 
 Features to parse and store documents localy from current service (Not stable):
  - enable-cache-redis    - enable cacher service like redis oe other custom implementation;
- - enable-unique-doc-id  - enable generating unique document id based on index and file_path string value.
+ - enable-unique-doc-id  - enable generating unique document id based on index and file_path string value;
+ - enable-multi-user     - enable user distribution access to common opensearch node;
+ - enable-unique-doc-id  - generate unique index for documents based on md5 of document index and file_path;
+ - enable-loki-logger    - enable sending log messages to loki collector;
+ - enable-jaeger-tracing - enable sending tracing data to jaeger exporter.  
 
 [![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 
