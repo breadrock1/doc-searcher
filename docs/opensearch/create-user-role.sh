@@ -15,7 +15,7 @@ PUT /_plugins/_security/api/roles/user_access
     "indices:data/write/index"
   ],
   "index_permissions": [{
-    "index_patterns": ["${user.name}_*"],
+    "index_patterns": ["${user.name}-*"],
     "allowed_actions": [
       "indices:data/read*",
       "indices:data/write*",
