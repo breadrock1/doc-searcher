@@ -20,6 +20,11 @@ enable-loki-logger = ["dep:tracing-loki"]
 enable-jaeger-tracing = ["dep:opentelemetry", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry"]
 default = []
 
+[dev-dependencies]
+rstest = "0.24.0"
+mockall = "0.13.1"
+#wiremock = "0.6.2"
+
 [dependencies]
 anyhow = "1.0.96"
 async-trait = "0.1.86"
