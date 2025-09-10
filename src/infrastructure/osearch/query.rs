@@ -2,7 +2,7 @@ use derive_builder::Builder;
 use serde_json::{json, Value};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
-use crate::application::dto::params::{
+use crate::application::structures::params::{
     FilterParams, FullTextSearchParams, HybridSearchParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };

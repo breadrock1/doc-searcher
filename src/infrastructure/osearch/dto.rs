@@ -1,17 +1,19 @@
-use getset::Getters;
+use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::application::dto::{Document, FoundedDocument, Index};
+use crate::application::structures::{
+    Document, FoundedDocument, FoundedDocumentBuilder, Index, IndexBuilder,
+};
 
-#[derive(Debug, Deserialize, Getters)]
+#[derive(Debug, Deserialize, Getset)]
 pub struct OSearchIndex {
-    #[getset(get = "pub")]
+    #[getset(get, vis = "pub")]
     index: String,
 }
 
 impl From<&OSearchIndex> for Index {
     fn from(value: &OSearchIndex) -> Self {
-        Index::builder()
+        IndexBuilder::default()
             .id(value.index.to_owned())
             .name(value.index.to_owned())
             .path("./".to_owned())
@@ -33,7 +35,7 @@ impl From<SourceDocument> for FoundedDocument {
     fn from(src_doc: SourceDocument) -> Self {
         let highlight = src_doc.highlight.map(|it| it.content).unwrap_or_default();
 
-        FoundedDocument::builder()
+        FoundedDocumentBuilder::default()
             .id(src_doc._id)
             .folder_id(src_doc._index)
             .document(src_doc._source)

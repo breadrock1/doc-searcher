@@ -1,14 +1,12 @@
 use gset::Getset;
 use serde_derive::Deserialize;
 
-#[derive(Clone, Deserialize, Getset)]
-pub struct RedisConfig {
+#[derive(Clone, Debug, Deserialize, Getset)]
+pub struct QdrantConfig {
     #[getset(get, vis = "pub")]
     address: String,
     #[getset(get, vis = "pub")]
-    username: String,
-    #[getset(get, vis = "pub")]
-    password: String,
+    collection: String,
     #[getset(get_copy, vis = "pub")]
-    expired: u64,
+    dimension: u64,
 }

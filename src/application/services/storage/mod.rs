@@ -2,12 +2,12 @@ pub mod error;
 
 pub use error::{PaginateResult, StorageError, StorageResult};
 
-use crate::application::dto::params::CreateIndexParams;
-use crate::application::dto::params::{
+use crate::application::structures::params::CreateIndexParams;
+use crate::application::structures::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
-use crate::application::dto::{Document, FoundedDocument, Index};
+use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
 
 #[async_trait::async_trait]
 pub trait IndexManager {
@@ -19,7 +19,12 @@ pub trait IndexManager {
 
 #[async_trait::async_trait]
 pub trait DocumentManager {
-    async fn create_document(&self, index: &str, doc: &Document) -> StorageResult<String>;
+    async fn store_document(&self, index: &str, doc: &Document) -> StorageResult<String>;
+    async fn store_documents(
+        &self,
+        index: &str,
+        docs: &[Document],
+    ) -> StorageResult<Vec<StoredDocument>>;
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document>;
     async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()>;
     async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()>;
