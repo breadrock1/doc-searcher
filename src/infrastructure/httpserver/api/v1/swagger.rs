@@ -1,16 +1,18 @@
 use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
 
-use crate::application::dto::params::*;
-use crate::application::dto::*;
-use crate::application::services::server::{ServerError, Success};
-use crate::infrastructure::httpserver::router::searcher::*;
-use crate::infrastructure::httpserver::router::storage::*;
-use crate::infrastructure::httpserver::{swagger, SWAGGER_CONFIG_FILE};
+use super::models::*;
+use super::router::searcher::*;
+use super::router::storage::*;
 
-pub fn init_swagger_layer() -> RapiDoc {
+use crate::application::services::server::{ServerError, Success};
+use crate::infrastructure::httpserver::api::v1::swagger;
+
+pub fn init_swagger_layer(version: &str) -> RapiDoc {
+    let url_path = format!("/api/{version}/swagger");
+    let config_file_path = format!("/api-docs/openapi-{version}.json");
     let swagger_app = swagger::ApiDoc::openapi();
-    RapiDoc::with_openapi(SWAGGER_CONFIG_FILE, swagger_app).path("/swagger")
+    RapiDoc::with_openapi(config_file_path, swagger_app).path(url_path)
 }
 
 #[derive(OpenApi)]
@@ -50,17 +52,17 @@ pub fn init_swagger_layer() -> RapiDoc {
     ),
     components(
         schemas(
-            Document,
-            Index,
-            FilterParams,
-            ResultParams,
-            FullTextSearchParams,
-            RetrieveDocumentParams,
-            SemanticSearchParams,
-            HybridSearchParams,
-            PaginateParams,
-            CreateIndexParams,
-            KnnIndexParams,
+            CreateDocumentForm,
+            CreateIndexForm,
+            DocumentSchema,
+            IndexSchema,
+            FilterForm,
+            ResultForm,
+            FullTextSearchForm,
+            RetrieveDocumentForm,
+            SemanticSearchForm,
+            HybridSearchForm,
+            KnnIndexForm,
             ServerError,
             Success,
         ),

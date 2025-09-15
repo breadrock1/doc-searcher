@@ -1,6 +1,6 @@
 [package]
 name = "doc-search"
-version = "0.3.9"
+version = "0.3.11"
 edition = "2021"
 
 [badges]
@@ -12,37 +12,40 @@ panic = "abort"
 strip = "debuginfo"
 
 [features]
-enable-unique-doc-id = ["dep:md5"]
-enable-cache-redis = ["dep:redis"]
 # temporary feature
 enable-multi-user = []
+enable-unique-doc-id = ["dep:md5"]
+enable-cache-redis = ["dep:redis", "dep:regex"]
+enable-loki-logger = ["dep:tracing-loki"]
+enable-jaeger-tracing = ["dep:opentelemetry", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry"]
 default = []
+
+[dev-dependencies]
+rstest = "0.24.0"
+mockall = "0.13.1"
+#wiremock = "0.6.2"
 
 [dependencies]
 anyhow = "1.0.96"
 async-trait = "0.1.86"
-axum-prometheus = "0.8.0"
-axum-tracing-opentelemetry = "0.26.1"
 config = "0.15.8"
+console-subscriber = "0.4.1"
 derive_builder = "0.20.2"
 dotenv = "0.15.0"
 futures = "0.3.31"
-getset = "0.1.4"
+gset = "1.1.0"
 opensearch = "2.3.0"
-opentelemetry_sdk = "0.28.0"
-metrics-exporter-prometheus = "0.16.2"
-regex = "1.11.1"
 serde_derive = "1.0.218"
 serde_json = "1.0.139"
 thiserror = "2.0.11"
-tracing = "0.1.41"
-tracing-loki = "0.2.6"
-tracing-subscriber = "0.3.19"
 tower = "0.5.2"
-console-subscriber = "0.4.1"
-hyper = "1.6.0"
-futures-util = "0.3.31"
-uuid = { version = "1.15.0", features = ["v4"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+
+# metrics dependencies
+axum-prometheus = "0.8.0"
+axum-tracing-opentelemetry = "0.26.1"
+metrics-exporter-prometheus = "0.16.2"
 
 [dependencies.axum]
 version = "0.8.1"
@@ -52,10 +55,31 @@ features = ["tracing", "tower-log"]
 version = "0.4.37"
 features = ["serde"]
 
+[dependencies.opentelemetry]
+version = "0.28.0"
+optional = true
+
+[dependencies.opentelemetry-otlp]
+optional = true
+version = "0.28.0"
+features = ["grpc-tonic"]
+
+[dependencies.opentelemetry_sdk]
+version = "0.28.0"
+features = ["rt-tokio-current-thread"]
+
+[dependencies.tracing-opentelemetry]
+optional = true
+version = "0.29.0"
+
 [dependencies.redis]
 optional = true
 version = "0.27.6"
 features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
+
+[dependencies.regex]
+optional = true
+version = "1.11.1"
 
 [dependencies.reqwest]
 version = "0.12.12"
@@ -73,6 +97,10 @@ features = ["full"]
 version = "0.6.2"
 features = ["trace", "cors", "add-extension"]
 
+[dependencies.tracing-loki]
+optional = true
+version = "0.2.6"
+
 [dependencies.utoipa]
 version = "5.3.1"
 features = ["axum_extras", "chrono"]
@@ -80,6 +108,10 @@ features = ["axum_extras", "chrono"]
 [dependencies.utoipa-rapidoc]
 version = "6.0.0"
 features = ["axum"]
+
+[dependencies.uuid]
+version = "1.15.0"
+features = ["v4"]
 
 [dependencies.md5]
 optional = true

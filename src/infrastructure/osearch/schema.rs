@@ -1,6 +1,6 @@
 use serde_json::{json, Value};
 
-use crate::application::dto::params::KnnIndexParams;
+use crate::application::structures::params::KnnIndexParams;
 use crate::infrastructure::osearch::config::{OSearchClusterConfig, OSearchKnnConfig};
 
 pub const INGEST_PIPELINE_NAME: &str = "embeddings-ingest-pipeline";
@@ -94,7 +94,7 @@ pub fn create_document_schema(
                 "knn.algo_param.ef_search": knn_params.knn_ef_searcher(),
                 "number_of_shards": config.number_of_shards(),
                 "number_of_replicas": config.number_of_replicas(),
-                "search.default_pipeline": INGEST_PIPELINE_NAME,
+                "search.default_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
             }
         },
         "mappings": {

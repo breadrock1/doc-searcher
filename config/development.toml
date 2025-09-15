@@ -3,6 +3,10 @@ level = "debug"
 use_loki = "false"
 address = "http://localhost:3100"
 
+[tracing]
+use_jaeger = "true"
+address = "http://localhost:4317"
+
 [server]
 address = "0.0.0.0:2892"
 

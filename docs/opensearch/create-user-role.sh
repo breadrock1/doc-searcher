@@ -15,7 +15,7 @@ PUT /_plugins/_security/api/roles/user_access
     "indices:data/write/index"
   ],
   "index_permissions": [{
-    "index_patterns": ["${user.name}_*"],
+    "index_patterns": ["${user.name}-*"],
     "allowed_actions": [
       "indices:data/read*",
       "indices:data/write*",
@@ -41,8 +41,14 @@ PUT /_plugins/_security/api/internalusers/user1
   "backend_roles": ["individual_role"]
 }
 
-# Assign user 'user1' to user_access role
+PUT /_plugins/_security/api/internalusers/user2
+{
+  "password": "SecurePass123!",
+  "backend_roles": ["individual_role"]
+}
+
+# Assign user 'user1' and 'user2' to user_access role
 PUT /_plugins/_security/api/rolesmapping/user_access
 {
-  "users": ["user1"]
+  "users": ["user1", "user2"]
 }

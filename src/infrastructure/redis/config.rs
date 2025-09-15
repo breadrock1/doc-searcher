@@ -1,13 +1,14 @@
-use getset::{CopyGetters, Getters};
+use gset::Getset;
 use serde_derive::Deserialize;
 
-#[derive(Clone, Deserialize, CopyGetters, Getters)]
-#[getset(get = "pub")]
+#[derive(Clone, Deserialize, Getset)]
 pub struct RedisConfig {
+    #[getset(get, vis = "pub")]
     address: String,
+    #[getset(get, vis = "pub")]
     username: String,
+    #[getset(get, vis = "pub")]
     password: String,
-    #[getset(skip)]
-    #[getset(get_copy = "pub")]
+    #[getset(get_copy, vis = "pub")]
     expired: u64,
 }

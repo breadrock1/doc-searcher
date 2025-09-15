@@ -1,5 +1,12 @@
-# Upload all-MiniLM-L6-v2 mode
+# Enable for current single node loading ml model
+PUT _cluster/settings
+{
+  "persistent": {
+    "plugins.ml_commons.only_run_on_ml_node": "false"
+  }
+}
 
+# Upload all-MiniLM-L6-v2 mode
 POST /_plugins/_ml/models/_upload
 {
   "name": "huggingface/sentence-transformers/all-MiniLM-L6-v2",
@@ -8,7 +15,7 @@ POST /_plugins/_ml/models/_upload
 }
 
 # returned task_id value
-GET /_plugins/_ml/tasks/ORh30JcBW8Qg3Gf4IKKG
+GET /_plugins/_ml/tasks/$task_id
 
 # returned new task_id value
 POST /_plugins/_ml/models/$task_id/_load
@@ -23,16 +30,15 @@ GET /_plugins/_ml/tasks/$task_id
 
 
 # Setup Semantic and Hybrid Searching
-
 PUT /_ingest/pipeline/embeddings-ingest-pipeline
 {
-  "description": "Pipeline for generating embeddings",
+  "description": "Pipeline of embeddings generation",
   "processors": [
     {
       "text_chunking": {
         "algorithm": {
           "fixed_token_length": {
-            "token_limit": 50,
+            "token_limit": 500,
             "overlap_rate": 0.2,
             "tokenizer": "standard"
           }
@@ -53,7 +59,7 @@ PUT /_ingest/pipeline/embeddings-ingest-pipeline
   ]
 }
 
-PUT /_search/pipeline/embeddings-post-pipeline
+PUT /_search/pipeline/hybrid-search-pipeline
 {
   "description": "Post processor for hybrid search",
   "request_processors": [
@@ -153,7 +159,7 @@ POST /my-own-index/_search
   }
 }
 
-POST /my-own-index/_search?search_pipeline=embeddings-post-pipeline
+POST /my-own-index/_search?search_pipeline=hybrid-search-pipeline
 {
   "query": {
     "hybrid": {
