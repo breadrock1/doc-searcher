@@ -251,7 +251,6 @@ fn build_simple_hybrid_params() -> HybridSearchParams {
         .indexes(indexes)
         .model_id(None)
         .knn_amount(None)
-        .filter(None)
         .result(result_params)
         .build()
         .unwrap()
@@ -261,14 +260,12 @@ fn build_simple_hybrid_params() -> HybridSearchParams {
 fn build_with_filter_hybrid_params() -> HybridSearchParams {
     let query = DOCUMENT_PATH.to_string();
     let indexes = INDEXES_PARAMETER.to_string();
-    let filter_params = build_filter_params();
     let result_params = build_result_params();
     HybridSearchParamsBuilder::default()
         .query(query)
         .indexes(indexes)
         .model_id(None)
         .knn_amount(None)
-        .filter(Some(filter_params))
         .result(result_params)
         .build()
         .unwrap()
@@ -278,14 +275,12 @@ fn build_with_filter_hybrid_params() -> HybridSearchParams {
 fn build_full_hybrid_params() -> HybridSearchParams {
     let query = DOCUMENT_PATH.to_string();
     let indexes = INDEXES_PARAMETER.to_string();
-    let filter_params = build_filter_params();
     let result_params = build_result_params();
     HybridSearchParamsBuilder::default()
         .query(query)
         .indexes(indexes)
         .model_id(Some(SEARCH_MODEL_ID.to_string()))
         .knn_amount(Some(KNN_AMOUNT))
-        .filter(Some(filter_params))
         .result(result_params)
         .build()
         .unwrap()
