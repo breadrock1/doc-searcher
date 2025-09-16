@@ -1,5 +1,7 @@
+use axum::http::Request;
 use gset::Getset;
 use opentelemetry_sdk::trace::SdkTracerProvider;
+use regex::Regex;
 use serde_derive::Deserialize;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -131,5 +133,48 @@ fn init_rust_log_env(config: &LoggerConfig) {
         unsafe {
             std::env::set_var("RUST_LOG", level);
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct PathFilter {
+    paths: Vec<Regex>,
+}
+
+impl Default for PathFilter {
+    fn default() -> Self {
+        PathFilter {
+            paths: vec![
+                Regex::new("/health").unwrap(),
+                Regex::new("/metrics").unwrap(),
+                Regex::new("/api/.*/swagger").unwrap(),
+            ],
+        }
+    }
+}
+
+impl<B> tower_http::trace::MakeSpan<B> for PathFilter {
+    fn make_span(&mut self, request: &Request<B>) -> tracing::Span {
+        let path = request.uri().path();
+        if self.is_path_ignored(path) {
+            return tracing::span!(tracing::Level::DEBUG, "filtered request");
+        }
+
+        tracing::info_span!(
+            "http_request",
+            method = %request.method(),
+            status_code = tracing::field::Empty,
+            uri = %request.uri(),
+            version = ?request.version(),
+        )
+    }
+}
+
+impl PathFilter {
+    pub fn is_path_ignored(&self, path: &str) -> bool {
+        self
+            .paths
+            .iter()
+            .any(|it| it.is_match_at(path, 0))
     }
 }

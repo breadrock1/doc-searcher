@@ -15,7 +15,7 @@ strip = "debuginfo"
 # temporary feature
 enable-multi-user = []
 enable-unique-doc-id = ["dep:md5"]
-enable-cache-redis = ["dep:redis", "dep:regex"]
+enable-cache-redis = ["dep:redis"]
 enable-loki-logger = ["dep:tracing-loki"]
 enable-jaeger-tracing = ["dep:opentelemetry", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry"]
 default = []
@@ -78,7 +78,6 @@ version = "0.27.6"
 features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
 
 [dependencies.regex]
-optional = true
 version = "1.11.1"
 
 [dependencies.reqwest]

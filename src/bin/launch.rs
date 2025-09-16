@@ -24,8 +24,8 @@ async fn main() -> anyhow::Result<()> {
 
     let cors_layer = cors::CorsLayer::permissive();
     let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
-        .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
+        .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR))
+        .make_span_with(tracer::PathFilter::default());
 
     let app = httpserver::init_server(server_app)
         .layer(trace_layer)
