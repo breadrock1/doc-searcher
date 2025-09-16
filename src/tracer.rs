@@ -172,9 +172,6 @@ impl<B> tower_http::trace::MakeSpan<B> for PathFilter {
 
 impl PathFilter {
     pub fn is_path_ignored(&self, path: &str) -> bool {
-        self
-            .paths
-            .iter()
-            .any(|it| it.is_match_at(path, 0))
+        self.paths.iter().any(|it| it.is_match_at(path, 0))
     }
 }
