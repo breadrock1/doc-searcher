@@ -27,6 +27,7 @@ impl ServiceConnect for RedisClient {
     async fn connect(config: &Self::Config) -> Result<Self::Client, Self::Error> {
         let address = config.address().as_str();
         let client = Client::open(address)?;
+        tracing::debug!(url=address, "connected to redis");
         Ok(RedisClient {
             options: Arc::new(config.to_owned()),
             client: Arc::new(RwLock::new(client)),

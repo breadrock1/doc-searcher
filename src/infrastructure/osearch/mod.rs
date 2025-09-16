@@ -61,7 +61,7 @@ impl ServiceConnect for OpenSearchStorage {
             .cert_validation(validation)
             .build()?;
 
-        tracing::info!(address = config.address(), "connected to elasticsearch");
+        tracing::debug!(address = config.address(), "connected to elasticsearch");
         let client = OpenSearch::new(transport);
         let arc_client = Arc::new(client);
         Ok(OpenSearchStorage {
