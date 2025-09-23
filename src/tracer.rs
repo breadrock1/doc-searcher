@@ -1,9 +1,9 @@
-use axum::http::{HeaderMap, Request};
+use axum::http::Request;
 use gset::Getset;
-use opentelemetry::global;
 use opentelemetry_sdk::trace::SdkTracerProvider;
 use regex::Regex;
 use serde_derive::Deserialize;
+#[cfg(feature = "enable-jaeger-tracing")]
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
@@ -155,8 +155,10 @@ impl Default for PathFilter {
     }
 }
 
-struct HeaderExtractor<'a>(&'a HeaderMap);
+#[cfg(feature = "enable-jaeger-tracing")]
+struct HeaderExtractor<'a>(&'a axum::http::HeaderMap);
 
+#[cfg(feature = "enable-jaeger-tracing")]
 impl<'a> opentelemetry::propagation::Extractor for HeaderExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.0.get(key).and_then(|value| value.to_str().ok())
@@ -182,10 +184,12 @@ impl<B> tower_http::trace::MakeSpan<B> for PathFilter {
             version = ?request.version(),
         );
 
-        let parent_context = global::get_text_map_propagator(|propagator| {
+        #[cfg(feature = "enable-jaeger-tracing")]
+        let parent_context = opentelemetry::global::get_text_map_propagator(|propagator| {
             propagator.extract(&HeaderExtractor(request.headers()))
         });
 
+        #[cfg(feature = "enable-jaeger-tracing")]
         span.set_parent(parent_context);
         span
     }
