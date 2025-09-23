@@ -108,6 +108,10 @@ features = ["axum_extras", "chrono"]
 version = "6.0.0"
 features = ["axum"]
 
+[dependencies.utoipa-swagger-ui]
+version = "9.0.0"
+features = ["axum", "vendored"]
+
 [dependencies.uuid]
 version = "1.15.0"
 features = ["v4"]

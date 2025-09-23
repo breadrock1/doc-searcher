@@ -12,6 +12,7 @@ use crate::application::services::storage::{
 };
 
 const API_VERSION: &str = "v1";
+const API_VERSION_URL: &str = "/api/v1";
 
 pub fn init_v1_routers<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
@@ -19,9 +20,9 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
     let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
-        .merge(swagger::init_swagger_layer(API_VERSION))
-        .merge(init_storage_layer())
-        .merge(init_searcher_layer());
+        .nest(API_VERSION_URL, init_storage_layer())
+        .nest(API_VERSION_URL, init_searcher_layer())
+        .merge(swagger::init_swagger_layer(API_VERSION));
 
     router
 }
