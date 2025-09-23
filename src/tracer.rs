@@ -182,10 +182,9 @@ impl<B> tower_http::trace::MakeSpan<B> for PathFilter {
             version = ?request.version(),
         );
 
-        let parent_context = global::get_text_map_propagator(
-            |propagator| {
-                propagator.extract(&HeaderExtractor(request.headers()))
-            });
+        let parent_context = global::get_text_map_propagator(|propagator| {
+            propagator.extract(&HeaderExtractor(request.headers()))
+        });
 
         span.set_parent(parent_context);
         span
