@@ -1,0 +1,9 @@
+# Doc-Search project
+
+Doc-Searcher is the simple and flexible searching documents application, leveraging the capabilities of Rust and Opensearch
+to provide efficient and effective full-text search in documents. This project aims to offer a straightforward solution for
+indexing and searching through a large corpus of documents with the speed and accuracy provided by Opensearch.
+
+The main goal is implement simple and powerful system of storing and indexing documents with searching functionality
+(full-text, semantic and hybrid). I decided to use opensearch as default searching engine, but you may use own solutions
+by implementing several async traits for Tantivy, QDrant or own solution.
