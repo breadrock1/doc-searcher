@@ -94,7 +94,7 @@ features = ["full"]
 
 [dependencies.tower-http]
 version = "0.6.2"
-features = ["trace", "cors", "add-extension"]
+features = ["trace", "cors", "add-extension", "propagate-header"]
 
 [dependencies.tracing-loki]
 optional = true
