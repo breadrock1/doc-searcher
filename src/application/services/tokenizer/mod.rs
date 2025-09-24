@@ -2,7 +2,7 @@ mod errors;
 
 pub use errors::{TokenizeError, TokenizeResult};
 
-use crate::application::structures::{TokenizedContent, InputContent};
+use crate::application::structures::{InputContent, TokenizedContent};
 
 #[async_trait::async_trait]
 pub trait TokenizeProvider {

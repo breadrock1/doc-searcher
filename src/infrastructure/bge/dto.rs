@@ -32,8 +32,7 @@ pub struct TokensData {
 
 impl ResultForm {
     pub fn get_embeddings(&self) -> Vec<f64> {
-        self
-            .data
+        self.data
             .first()
             .unwrap()
             .clone()

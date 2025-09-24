@@ -24,7 +24,10 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
 {
     pub fn new(searcher: Arc<Searcher>, tokenizer: Arc<TokenizerBoxed>) -> Self {
-        SearcherUseCase { searcher, tokenizer }
+        SearcherUseCase {
+            searcher,
+            tokenizer,
+        }
     }
 }
 
@@ -65,7 +68,7 @@ where
             .await
             .map_err(anyhow::Error::from)
             .map_err(StorageError::InternalError)?;
-        
+
         // TODO: set tokens to params
         self.searcher.hybrid(params).await
     }

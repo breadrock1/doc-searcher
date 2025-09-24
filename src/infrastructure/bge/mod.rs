@@ -25,7 +25,7 @@ impl ServiceConnect for BgeClient {
     type Client = Self;
 
     async fn connect(config: &Self::Config) -> Result<Self::Client, Self::Error> {
-        tracing::debug!(url=config.address(), "connected to embeddings service");
+        tracing::debug!(url = config.address(), "connected to embeddings service");
         Ok(BgeClient {
             config: config.clone(),
             client: Arc::new(reqwest::Client::new()),
@@ -48,10 +48,7 @@ impl TokenizeProvider for BgeClient {
             .await?;
 
         if !response.status().is_success() {
-            let err = response
-                .error_for_status()
-                .err()
-                .unwrap();
+            let err = response.error_for_status().err().unwrap();
             return Err(TokenizeError::ServiceError(err));
         }
 

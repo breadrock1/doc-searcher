@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::application::structures::InputContentBuilderError;
+use thiserror::Error;
 
 pub type TokenizeResult<T> = Result<T, TokenizeError>;
 

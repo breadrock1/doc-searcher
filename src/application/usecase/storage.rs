@@ -4,7 +4,9 @@ use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
 use crate::application::services::tokenizer::{TokenizeError, TokenizeResult};
 use crate::application::structures::params::CreateIndexParams;
-use crate::application::structures::{Document, Index, InputContentBuilder, StoredDocument, TokenizedContent};
+use crate::application::structures::{
+    Document, Index, InputContentBuilder, StoredDocument, TokenizedContent,
+};
 use crate::application::usecase::TokenizerBoxed;
 
 #[cfg(feature = "enable-unique-doc-id")]
@@ -24,7 +26,10 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
     pub fn new(searcher: Arc<Storage>, tokenizer: Arc<TokenizerBoxed>) -> Self {
-        StorageUseCase { searcher, tokenizer }
+        StorageUseCase {
+            searcher,
+            tokenizer,
+        }
     }
 }
 

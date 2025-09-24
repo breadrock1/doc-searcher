@@ -21,10 +21,7 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
-    pub fn new(
-        storage: StorageUseCase<Storage>,
-        searcher: SearcherUseCase<Searcher>,
-    ) -> Self {
+    pub fn new(storage: StorageUseCase<Storage>, searcher: SearcherUseCase<Searcher>) -> Self {
         ServerApp { storage, searcher }
     }
 
