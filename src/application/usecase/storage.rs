@@ -2,37 +2,35 @@ use std::sync::Arc;
 
 use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
-use crate::application::services::tokenizer::{TokenizeError, TokenizeProvider, TokenizeResult};
+use crate::application::services::tokenizer::{TokenizeError, TokenizeResult};
 use crate::application::structures::params::CreateIndexParams;
 use crate::application::structures::{Document, Index, InputContentBuilder, StoredDocument, TokenizedContent};
+use crate::application::usecase::TokenizerBoxed;
 
 #[cfg(feature = "enable-unique-doc-id")]
 use crate::infrastructure::osearch::OpenSearchStorage;
 
 #[derive(Clone)]
-pub struct StorageUseCase<Storage, Tokenizer>
+pub struct StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
     searcher: Arc<Storage>,
-    tokenizer: Arc<Tokenizer>,
+    tokenizer: Arc<TokenizerBoxed>,
 }
 
-impl<Storage, Tokenizer> StorageUseCase<Storage, Tokenizer>
+impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    pub fn new(searcher: Arc<Storage>, tokenizer: Arc<Tokenizer>) -> Self {
+    pub fn new(searcher: Arc<Storage>, tokenizer: Arc<TokenizerBoxed>) -> Self {
         StorageUseCase { searcher, tokenizer }
     }
 }
 
-impl<Storage, Tokenizer> StorageUseCase<Storage, Tokenizer>
+impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<String> {

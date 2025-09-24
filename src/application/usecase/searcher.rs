@@ -2,37 +2,35 @@ use std::sync::Arc;
 
 use crate::application::services::storage::error::{PaginateResult, StorageResult};
 use crate::application::services::storage::{DocumentSearcher, PaginateManager, StorageError};
-use crate::application::services::tokenizer::{TokenizeError, TokenizeProvider, TokenizeResult};
+use crate::application::services::tokenizer::{TokenizeError, TokenizeResult};
 use crate::application::structures::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
 use crate::application::structures::{FoundedDocument, InputContentBuilder, TokenizedContent};
+use crate::application::usecase::TokenizerBoxed;
 
 #[derive(Clone)]
-pub struct SearcherUseCase<Searcher, Tokenizer>
+pub struct SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
     searcher: Arc<Searcher>,
-    tokenizer: Arc<Tokenizer>,
+    tokenizer: Arc<TokenizerBoxed>,
 }
 
-impl<Searcher, Tokenizer> SearcherUseCase<Searcher, Tokenizer>
+impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    pub fn new(searcher: Arc<Searcher>, tokenizer: Arc<Tokenizer>) -> Self {
+    pub fn new(searcher: Arc<Searcher>, tokenizer: Arc<TokenizerBoxed>) -> Self {
         SearcherUseCase { searcher, tokenizer }
     }
 }
 
-impl<Searcher, Tokenizer> SearcherUseCase<Searcher, Tokenizer>
+impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn retrieve(
