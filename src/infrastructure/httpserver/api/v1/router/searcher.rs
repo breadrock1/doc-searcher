@@ -7,6 +7,7 @@ use crate::application::services::server::{ServerError, ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
+use crate::application::services::tokenizer::TokenizeProvider;
 use crate::application::structures::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParamsBuilder, SemanticSearchParams,
 };
@@ -60,13 +61,14 @@ const HYBRID_DESCRIPTION: &str =
         ),
     )
 )]
-pub async fn search_fulltext<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn search_fulltext<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Json(form): Json<FullTextSearchForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let params = FullTextSearchParams::try_from(form)?;
     let searcher = state.get_searcher();
@@ -104,13 +106,14 @@ where
         ),
     )
 )]
-pub async fn search_semantic<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn search_semantic<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Json(form): Json<SemanticSearchForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let params = SemanticSearchParams::try_from(form)?;
     let searcher = state.get_searcher();
@@ -148,13 +151,14 @@ where
         ),
     )
 )]
-pub async fn search_hybrid<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn search_hybrid<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Json(form): Json<HybridSearchForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let params = HybridSearchParams::try_from(form)?;
     let searcher = state.get_searcher();
@@ -202,14 +206,15 @@ where
         ),
     )
 )]
-pub async fn paginate_next<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn paginate_next<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(path): Path<String>,
     Query(query): Query<PaginateQuery>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let lifetime = query.lifetime();
     let params = PaginateParamsBuilder::default()
@@ -257,13 +262,14 @@ where
         ),
     )
 )]
-pub async fn delete_scroll_session<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn delete_scroll_session<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(session_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let searcher = state.get_searcher();
     searcher.delete_session(&session_id).await?;

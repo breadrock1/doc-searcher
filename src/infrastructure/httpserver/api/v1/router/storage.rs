@@ -8,6 +8,7 @@ use crate::application::services::server::{ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
+use crate::application::services::tokenizer::TokenizeProvider;
 use crate::application::structures::params::{CreateIndexParams, RetrieveDocumentParams};
 use crate::application::structures::Document;
 use crate::infrastructure::httpserver::api::v1::models::{
@@ -46,12 +47,13 @@ const CREATE_DOCUMENT_DESCRIPTION: &str =
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn get_all_indexes<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn get_all_indexes<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
     let folders = storage
@@ -90,13 +92,14 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn get_index<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn get_index<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(index_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
     let folder = storage.get_index(&index_id).await?;
@@ -131,14 +134,15 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn create_index<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn create_index<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(index_id): Path<String>,
     Json(form): Json<CreateIndexForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let mut params = CreateIndexParams::try_from(form)?;
     params.set_id(index_id);
@@ -174,13 +178,14 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn delete_index<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn delete_index<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(index_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let storage = state.get_storage();
     storage.delete_index(&index_id).await?;
@@ -218,13 +223,14 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn get_document<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn get_document<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(path): Path<(String, String)>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let (folder_id, doc_id) = path;
     let storage = state.get_storage();
@@ -259,14 +265,15 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn get_documents<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn get_documents<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(index_ids): Path<String>,
     Json(form): Json<RetrieveDocumentForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let params = RetrieveDocumentParams::try_from(form)?;
     let searcher = state.get_searcher();
@@ -295,14 +302,15 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn store_documents<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn store_documents<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(index_id): Path<String>,
     Json(form): Json<Vec<CreateDocumentForm>>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let documents = form
         .into_iter()
@@ -351,8 +359,8 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn store_document<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn store_document<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(index_id): Path<String>,
     Query(query): Query<CreateDocumentQuery>,
     Json(form): Json<DocumentSchema>,
@@ -360,6 +368,7 @@ pub async fn store_document<Storage, Searcher>(
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let is_force = query.force().unwrap_or(false);
     let storage = state.get_storage();
@@ -401,13 +410,14 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn delete_document<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn delete_document<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(path): Path<(String, String)>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let (folder_id, doc_id) = path;
     let storage = state.get_storage();
@@ -448,14 +458,15 @@ where
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
-pub async fn update_document<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+pub async fn update_document<Storage, Searcher, Tokenizer>(
+    State(state): State<Arc<ServerApp<Storage, Searcher, Tokenizer>>>,
     Path(path): Path<(String, String)>,
     Json(form): Json<UpdateDocumentForm>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     let (folder_id, doc_id) = path;
     let storage = state.get_storage();

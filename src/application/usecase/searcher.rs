@@ -1,33 +1,38 @@
 use std::sync::Arc;
 
 use crate::application::services::storage::error::{PaginateResult, StorageResult};
-use crate::application::services::storage::{DocumentSearcher, PaginateManager};
+use crate::application::services::storage::{DocumentSearcher, PaginateManager, StorageError};
+use crate::application::services::tokenizer::{TokenizeError, TokenizeProvider, TokenizeResult};
 use crate::application::structures::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
-use crate::application::structures::FoundedDocument;
+use crate::application::structures::{FoundedDocument, InputContentBuilder, TokenizedContent};
 
 #[derive(Clone)]
-pub struct SearcherUseCase<Searcher>
+pub struct SearcherUseCase<Searcher, Tokenizer>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    client: Arc<Searcher>,
+    searcher: Arc<Searcher>,
+    tokenizer: Arc<Tokenizer>,
 }
 
-impl<Searcher> SearcherUseCase<Searcher>
+impl<Searcher, Tokenizer> SearcherUseCase<Searcher, Tokenizer>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    pub fn new(client: Arc<Searcher>) -> Self {
-        SearcherUseCase { client }
+    pub fn new(searcher: Arc<Searcher>, tokenizer: Arc<Tokenizer>) -> Self {
+        SearcherUseCase { searcher, tokenizer }
     }
 }
 
-impl<Searcher> SearcherUseCase<Searcher>
+impl<Searcher, Tokenizer> SearcherUseCase<Searcher, Tokenizer>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
+    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn retrieve(
@@ -35,31 +40,56 @@ where
         ids: &str,
         params: &RetrieveDocumentParams,
     ) -> PaginateResult<FoundedDocument> {
-        self.client.retrieve(ids, params).await
+        self.searcher.retrieve(ids, params).await
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
-        self.client.fulltext(params).await
+        self.searcher.fulltext(params).await
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
-        self.client.semantic(params).await
+        let _tokens = self
+            .tokenize_query(params.query())
+            .await
+            .map_err(anyhow::Error::from)
+            .map_err(StorageError::InternalError)?;
+
+        // TODO: set tokens to params
+        self.searcher.semantic(params).await
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
-        self.client.hybrid(params).await
+        let _tokens = self
+            .tokenize_query(params.query())
+            .await
+            .map_err(anyhow::Error::from)
+            .map_err(StorageError::InternalError)?;
+        
+        // TODO: set tokens to params
+        self.searcher.hybrid(params).await
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {
-        self.client.paginate(params).await
+        self.searcher.paginate(params).await
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
-        self.client.delete_session(session_id).await
+        self.searcher.delete_session(session_id).await
+    }
+
+    #[tracing::instrument(skip(self), level = "debug")]
+    async fn tokenize_query(&self, query: &str) -> TokenizeResult<TokenizedContent> {
+        let input = InputContentBuilder::default()
+            .content(query.to_string())
+            .build()
+            .map_err(TokenizeError::InputFormValidation)?;
+
+        let tokenized_content = self.tokenizer.compute(&input).await?;
+        Ok(tokenized_content)
     }
 }
