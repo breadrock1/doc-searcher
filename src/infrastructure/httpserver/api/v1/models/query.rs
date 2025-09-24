@@ -6,16 +6,16 @@ use utoipa::{IntoParams, ToSchema};
 
 const DEFAULT_LIFETIME: &str = "5m";
 
-#[derive(Deserialize, Serialize, Getset, IntoParams)]
+#[derive(Deserialize, Serialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct CreateDocumentQuery {
-    #[getset(get_copy, vis = "pub")]
-    force: Option<bool>,
+    pub force: Option<bool>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct PaginateQuery {
-    lifetime: Option<String>,
+    pub lifetime: Option<String>,
 }
 
 impl PaginateQuery {

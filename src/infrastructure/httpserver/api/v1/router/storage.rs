@@ -361,7 +361,7 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let is_force = query.force().unwrap_or(false);
+    let is_force = query.force.unwrap_or(false);
     let storage = state.get_storage();
     let id = storage
         .store_document(&index_id, &form.into(), is_force)

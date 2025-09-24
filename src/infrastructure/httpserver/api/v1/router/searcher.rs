@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::services::server::{ServerError, ServerResult, Success};
+use crate::application::services::server::{ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
@@ -15,7 +15,7 @@ use crate::infrastructure::httpserver::api::v1::models::{
     DocumentSchema, FullTextSearchForm, HybridSearchForm, PaginateQuery, PaginatedSchema,
     SemanticSearchForm,
 };
-use crate::infrastructure::httpserver::api::v1::swagger::SwaggerExample;
+use crate::infrastructure::httpserver::api::v1::swagger::DefaultErrorForm;
 use crate::infrastructure::httpserver::ServerApp;
 
 pub const SEARCH_FULLTEXT_URL: &str = "/search/fulltext";
@@ -32,12 +32,10 @@ const HYBRID_DESCRIPTION: &str =
 
 #[utoipa::path(
     post,
-    path = SEARCH_FULLTEXT_URL,
     tag = "search",
+    path = SEARCH_FULLTEXT_URL,
     description = FULLTEXT_DESCRIPTION,
-    request_body(
-        content = FullTextSearchForm,
-    ),
+    request_body(content = FullTextSearchForm),
     responses(
         (
             status = 200,
@@ -45,19 +43,10 @@ const HYBRID_DESCRIPTION: &str =
             description = "Paginate structure with list of founded Documents",
             body = PaginatedSchema<DocumentSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed while searching documents",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to found documents"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed while fulltext searching"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn search_fulltext<Storage, Searcher>(
@@ -76,12 +65,10 @@ where
 
 #[utoipa::path(
     post,
-    path = SEARCH_SEMANTIC_URL,
     tag = "search",
+    path = SEARCH_SEMANTIC_URL,
     description = SEMANTIC_DESCRIPTION,
-    request_body(
-        content = SemanticSearchForm,
-    ),
+    request_body(content = SemanticSearchForm),
     responses(
         (
             status = 200,
@@ -89,19 +76,10 @@ where
             description = "Paginate structure with list of founded Documents",
             body = PaginatedSchema<DocumentSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed while searching documents",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to found documents"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed while semantic searching"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn search_semantic<Storage, Searcher>(
@@ -120,12 +98,10 @@ where
 
 #[utoipa::path(
     post,
-    path = SEARCH_HYBRID_URL,
     tag = "search",
+    path = SEARCH_HYBRID_URL,
     description = HYBRID_DESCRIPTION,
-    request_body(
-        content = HybridSearchForm,
-    ),
+    request_body(content = HybridSearchForm),
     responses(
         (
             status = 200,
@@ -133,19 +109,10 @@ where
             description = "Paginate structure with list of founded Documents",
             body = PaginatedSchema<DocumentSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed while searching documents",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to found documents"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed while hybrid searching"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn search_hybrid<Storage, Searcher>(
@@ -164,8 +131,8 @@ where
 
 #[utoipa::path(
     get,
-    path = SEARCH_PAGINATE_URL,
     tag = "search",
+    path = SEARCH_PAGINATE_URL,
     description = "Paginate search results by scroll",
     params(
         (
@@ -173,12 +140,7 @@ where
             description = "Sessions id of scroll to get next paginated result",
             example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk",
         ),
-        (
-            "lifetime" = &str,
-            Query,
-            description = "Lifetime of scroll before it will be deleted",
-            example = "5m",
-        ),
+        PaginateQuery,
     ),
     responses(
         (
@@ -187,19 +149,10 @@ where
             description = "Paginate structure with list of founded Documents",
             body = PaginatedSchema<DocumentSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed while paginate search result",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to paginate search result"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed while paginate searching result"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn paginate_next<Storage, Searcher>(
@@ -225,8 +178,8 @@ where
 
 #[utoipa::path(
     delete,
-    path = SEARCH_PAGINATE_URL,
     tag = "search",
+    path = SEARCH_PAGINATE_URL,
     description = "Delete existing pagination session by id",
     params(
         (
@@ -242,19 +195,10 @@ where
             description = "Successful",
             body = Success,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to delete scroll session",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to delete scroll session"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed to delete paginate session"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn delete_scroll_session<Storage, Searcher>(

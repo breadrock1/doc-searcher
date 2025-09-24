@@ -1,6 +1,7 @@
 use gset::Getset;
 use serde_derive::Deserialize;
 
+use crate::infrastructure::bge::BgeConfig;
 use crate::infrastructure::osearch::config::OSearchConfig;
 
 #[cfg(feature = "enable-cache-redis")]
@@ -17,4 +18,10 @@ pub struct CacherConfig {
 pub struct StorageConfig {
     #[getset(get, vis = "pub")]
     opensearch: OSearchConfig,
+}
+
+#[derive(Clone, Getset, Deserialize)]
+pub struct TokenizeConfig {
+    #[getset(get, vis = "pub")]
+    bge: BgeConfig,
 }

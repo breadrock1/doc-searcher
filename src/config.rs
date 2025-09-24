@@ -4,7 +4,7 @@ use dotenv::dotenv;
 use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::infrastructure::config::{CacherConfig, StorageConfig};
+use crate::infrastructure::config::{CacherConfig, StorageConfig, TokenizeConfig};
 use crate::infrastructure::httpserver::ServerConfig;
 use crate::tracer::{LoggerConfig, TracingConfig};
 
@@ -24,6 +24,8 @@ pub struct ServiceConfig {
     storage: StorageConfig,
     #[getset(get, vis = "pub")]
     cacher: CacherConfig,
+    #[getset(get, vis = "pub")]
+    tokenizer: TokenizeConfig,
 }
 
 impl ServiceConfig {

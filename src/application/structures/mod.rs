@@ -1,10 +1,17 @@
 mod document;
+pub use document::{Document, DocumentBuilder, Embeddings, StoredDocument};
+
 mod founded;
+pub use founded::{FoundedDocument, FoundedDocumentBuilder};
+
 mod index;
+pub use index::{Index, IndexBuilder};
+
 mod paginate;
+pub use paginate::{Paginated, PaginatedBuilder};
+
 pub mod params;
 
-pub use document::{Document, DocumentBuilder, Embeddings, StoredDocument};
-pub use founded::{FoundedDocument, FoundedDocumentBuilder};
-pub use index::{Index, IndexBuilder};
-pub use paginate::{Paginated, PaginatedBuilder};
+mod tokenizer;
+pub use tokenizer::{InputContent, InputContentBuilder, InputContentBuilderError};
+pub use tokenizer::{TokenizedContent, TokenizedContentBuilder, TokenizedContentBuilderError};

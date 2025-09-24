@@ -1,7 +1,9 @@
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use doc_search::application::services::server::ServerApp;
+use doc_search::application::services::tokenizer::TokenizeProvider;
 use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
+use doc_search::infrastructure::bge::BgeClient;
 use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::{tracer, ServiceConnect};
@@ -18,8 +20,10 @@ async fn main() -> anyhow::Result<()> {
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
 
-    let storage_uc = StorageUseCase::new(osearch_client.clone());
-    let searcher_uc = SearcherUseCase::new(osearch_client.clone());
+    let tokenizer = BgeClient::connect(config.tokenizer().bge()).await?;
+    let tokenizer_box: Arc<Box<dyn TokenizeProvider + Send + Sync>> = Arc::new(Box::new(tokenizer));
+    let storage_uc = StorageUseCase::new(osearch_client.clone(), tokenizer_box.clone());
+    let searcher_uc = SearcherUseCase::new(osearch_client.clone(), tokenizer_box);
     let server_app = ServerApp::new(storage_uc, searcher_uc);
 
     let cors_layer = cors::CorsLayer::permissive();
