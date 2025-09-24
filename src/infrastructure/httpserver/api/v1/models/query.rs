@@ -6,10 +6,10 @@ use utoipa::{IntoParams, ToSchema};
 
 const DEFAULT_LIFETIME: &str = "5m";
 
-#[derive(Deserialize, Serialize, Getset, IntoParams, ToSchema)]
+#[derive(Deserialize, Serialize, Getset, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct CreateDocumentQuery {
     #[getset(get_copy, vis = "pub")]
-    #[schema(example = false)]
     force: Option<bool>,
 }
 

@@ -4,32 +4,34 @@ use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
 
-use crate::application::services::server::{ServerError, ServerResult, Success};
+use crate::application::services::server::{ServerResult, Success};
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::application::structures::params::{CreateIndexParams, RetrieveDocumentParams};
 use crate::application::structures::Document;
 use crate::infrastructure::httpserver::api::v1::models::{
-    CreateDocumentForm, CreateIndexForm, RetrieveDocumentForm, StoredDocumentSchema,
-    UpdateDocumentForm,
+    CreateDocumentForm, CreateDocumentQuery, CreateIndexForm, DocumentSchema, IndexSchema,
+    RetrieveDocumentForm, StoredDocumentSchema, UpdateDocumentForm,
 };
-use crate::infrastructure::httpserver::api::v1::models::{
-    CreateDocumentQuery, DocumentSchema, IndexSchema,
-};
-use crate::infrastructure::httpserver::api::v1::swagger::SwaggerExample;
+use crate::infrastructure::httpserver::api::v1::swagger::*;
 use crate::infrastructure::httpserver::ServerApp;
 
-pub const STORAGE_ALL_INDEXES_URL: &str = "/api/v1/storage/indexes";
-pub const STORAGE_INDEX_URL: &str = "/api/v1/storage/{index_id}";
-pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/api/v1/storage/{index_ids}/documents";
-pub const STORAGE_DOCUMENT_URL: &str = "/api/v1/storage/{index_id}/{document_id}";
-pub const CREATE_DOCUMENT_URL: &str = "/api/v1/storage/{index_id}/create";
+pub const STORAGE_ALL_INDEXES_URL: &str = "/storage/indexes";
+pub const STORAGE_INDEX_URL: &str = "/storage/{index_id}";
+pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_ids}/documents";
+pub const STORAGE_DOCUMENT_URL: &str = "/storage/{index_id}/{document_id}";
+pub const CREATE_DOCUMENT_URL: &str = "/storage/{index_id}/create";
+
+const RETRIEVE_DESCRIPTION: &str =
+    include_str!("../../../../../../docs/swagger/swagger-ui-retrieve.description");
+const CREATE_DOCUMENT_DESCRIPTION: &str =
+    include_str!("../../../../../../docs/swagger/swagger-ui-create-doc.description");
 
 #[utoipa::path(
     get,
-    path = STORAGE_ALL_INDEXES_URL,
     tag = "index",
+    path = STORAGE_ALL_INDEXES_URL,
     description = "Get all existing indexes",
     responses(
         (
@@ -38,19 +40,10 @@ pub const CREATE_DOCUMENT_URL: &str = "/api/v1/storage/{index_id}/create";
             description = "List of all exists indexes",
             body = Vec<IndexSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to get all indexes",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to get all indexes"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed to get all indexes"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn get_all_indexes<Storage, Searcher>(
@@ -73,8 +66,8 @@ where
 
 #[utoipa::path(
     get,
-    path = STORAGE_INDEX_URL,
     tag = "index",
+    path = STORAGE_INDEX_URL,
     description = "Get index information by id",
     params(
         (
@@ -90,19 +83,11 @@ where
             description = "Index information",
             body = IndexSchema,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to get index information",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to get index by id"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Failed to get index information"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Index not found"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn get_index<Storage, Searcher>(
@@ -120,18 +105,16 @@ where
 
 #[utoipa::path(
     put,
-    path = STORAGE_INDEX_URL,
     tag = "index",
+    path = STORAGE_INDEX_URL,
     description = "Create new index",
+    request_body(content = CreateIndexForm),
     params(
         (
             "index_id" = &str,
             description = "Index id to create",
             example = "test-folder",
         ),
-    ),
-    request_body(
-        content = CreateIndexForm,
     ),
     responses(
         (
@@ -141,19 +124,11 @@ where
             body = String,
             example = "test-folder"
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to create new index",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to create new index"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Validation form error"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 409, description = "Conflict while creating index"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn create_index<Storage, Searcher>(
@@ -176,8 +151,8 @@ where
 
 #[utoipa::path(
     delete,
-    path = STORAGE_INDEX_URL,
     tag = "index",
+    path = STORAGE_INDEX_URL,
     description = "Delete existing index by id",
     params(
         (
@@ -193,19 +168,10 @@ where
             description = "Index has been deleted",
             body = Success
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to delete index",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to delete index"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Not found"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn delete_index<Storage, Searcher>(
@@ -223,19 +189,61 @@ where
 }
 
 #[utoipa::path(
-    post,
-    path = STORAGE_ALL_DOCUMENTS_URL,
+    get,
     tag = "document",
-    description = "Get all documents stored into index",
+    path = STORAGE_DOCUMENT_URL,
+    description = "Load full Document information by id",
+    params(
+        (
+            "index_id" = &str,
+            description = "Index id where is stored Document",
+            example = "test-folder",
+        ),
+        (
+            "document_id" = &str,
+            description = "Document id to load information",
+            example = "c5cdd3bfad598ec73dc5fe83fecbba3e",
+        ),
+    ),
+    responses(
+        (
+            status = 200,
+            content_type="application/json",
+            description = "Document object stored into index",
+            body = DocumentSchema,
+        ),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Not found"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
+    )
+)]
+pub async fn get_document<Storage, Searcher>(
+    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+    Path(path): Path<(String, String)>,
+) -> ServerResult<impl IntoResponse>
+where
+    Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
+    Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
+{
+    let (folder_id, doc_id) = path;
+    let storage = state.get_storage();
+    let document = storage.get_document(&folder_id, &doc_id).await?;
+    Ok(Json(document))
+}
+
+#[utoipa::path(
+    post,
+    tag = "document",
+    path = STORAGE_ALL_DOCUMENTS_URL,
+    description = RETRIEVE_DESCRIPTION,
+    request_body(content = RetrieveDocumentForm),
     params(
         (
             "index_ids" = &str,
             description = "Index id's to retrieve documents",
             example = "test-folder",
         ),
-    ),
-    request_body(
-        content = RetrieveDocumentForm,
     ),
     responses(
         (
@@ -244,19 +252,11 @@ where
             description = "List of retrieved documents stored into passed index id",
             body = Vec<DocumentSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to retrieve documents stored into index",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to retrieve documents from index"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Validation form error"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Not found"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn get_documents<Storage, Searcher>(
@@ -276,12 +276,10 @@ where
 
 #[utoipa::path(
     put,
-    path = STORAGE_ALL_DOCUMENTS_URL,
     tag = "document",
+    path = STORAGE_ALL_DOCUMENTS_URL,
     description = "Store array of documents into index",
-    request_body(
-        content = Vec<CreateDocumentForm>,
-    ),
+    request_body(content = Vec<CreateDocumentForm>),
     responses(
         (
             status = 200,
@@ -289,19 +287,12 @@ where
             description = "List of documents to store into passed index id",
             body = Vec<StoredDocumentSchema>,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to store documents into index",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to store documents to index"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Validation form error"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Index not found"),
+        (status = 409, description = "Store documents conflict"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn store_documents<Storage, Searcher>(
@@ -330,63 +321,11 @@ where
 }
 
 #[utoipa::path(
-    get,
-    path = STORAGE_DOCUMENT_URL,
-    tag = "document",
-    description = "Load full Document information by id",
-    params(
-        (
-            "index_id" = &str,
-            description = "Index id where is stored Document",
-            example = "test-folder",
-        ),
-        (
-            "document_id" = &str,
-            description = "Document id to load information",
-            example = "c5cdd3bfad598ec73dc5fe83fecbba3e",
-        ),
-    ),
-    responses(
-        (
-            status = 200,
-            content_type="application/json",
-            description = "Document object stored into index",
-            body = DocumentSchema,
-        ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to load Document by passed params",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to load document"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
-    )
-)]
-pub async fn get_document<Storage, Searcher>(
-    State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Path(path): Path<(String, String)>,
-) -> ServerResult<impl IntoResponse>
-where
-    Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
-    Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
-{
-    let (folder_id, doc_id) = path;
-    let storage = state.get_storage();
-    let document = storage.get_document(&folder_id, &doc_id).await?;
-    Ok(Json(document))
-}
-
-#[utoipa::path(
     put,
-    path = CREATE_DOCUMENT_URL,
     tag = "document",
-    description = "Store new Document to index",
+    path = CREATE_DOCUMENT_URL,
+    description = CREATE_DOCUMENT_DESCRIPTION,
+    request_body(content = CreateDocumentForm),
     params(
         (
             "index_id" = &str,
@@ -395,9 +334,7 @@ where
         ),
         CreateDocumentQuery,
     ),
-    request_body(
-        content = CreateDocumentForm,
-    ),
+
     responses(
         (
             status = 201,
@@ -406,20 +343,12 @@ where
             body = Success,
             example = json!(Success::new(201, "c5cdd3bfad598ec73dc5fe83fecbba3e")),
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to store Document object",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to store document"))),
-        ),
-        (
-            status = 503,
-            content_type="application/json",
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Validation form error"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Index not found"),
+        (status = 409, description = "Store document conflict"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn store_document<Storage, Searcher>(
@@ -466,19 +395,10 @@ where
             description = "Deleted document by id",
             body = Success,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to delete Document object",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to delete document"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Index or Document not found"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn delete_document<Storage, Searcher>(
@@ -498,9 +418,10 @@ where
 
 #[utoipa::path(
     patch,
-    path = STORAGE_DOCUMENT_URL,
     tag = "document",
+    path = STORAGE_DOCUMENT_URL,
     description = "Update existing Document object",
+    request_body(content = UpdateDocumentForm),
     params(
         (
             "index_id" = &str,
@@ -513,9 +434,6 @@ where
             example = "c5cdd3bfad598ec73dc5fe83fecbba3e",
         ),
     ),
-    request_body(
-        content = UpdateDocumentForm,
-    ),
     responses(
         (
             status = 200,
@@ -523,19 +441,11 @@ where
             description = "Document has been updated successful",
             body = Success,
         ),
-        (
-            status = 400,
-            content_type="application/json",
-            description = "Failed to update Document object",
-            body = ServerError,
-            example = json!(ServerError::example(Some("failed to update document"))),
-        ),
-        (
-            status = 503,
-            description = "Server does not available",
-            body = ServerError,
-            example = json!(ServerError::example(None)),
-        ),
+        (status = 400, description = "Validation form error"),
+        (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Index or Document not found"),
+        (status = 500, description = "Internal error"),
+        (status = 501, description = "Error form", body = DefaultErrorForm),
     )
 )]
 pub async fn update_document<Storage, Searcher>(

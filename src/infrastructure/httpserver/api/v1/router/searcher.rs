@@ -18,16 +18,23 @@ use crate::infrastructure::httpserver::api::v1::models::{
 use crate::infrastructure::httpserver::api::v1::swagger::SwaggerExample;
 use crate::infrastructure::httpserver::ServerApp;
 
-pub const SEARCH_FULLTEXT_URL: &str = "/api/v1/search/fulltext";
-pub const SEARCH_SEMANTIC_URL: &str = "/api/v1/search/semantic";
-pub const SEARCH_HYBRID_URL: &str = "/api/v1/search/hybrid";
-pub const SEARCH_PAGINATE_URL: &str = "/api/v1/search/paginate/{session_id}";
+pub const SEARCH_FULLTEXT_URL: &str = "/search/fulltext";
+pub const SEARCH_SEMANTIC_URL: &str = "/search/semantic";
+pub const SEARCH_HYBRID_URL: &str = "/search/hybrid";
+pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{session_id}";
+
+const FULLTEXT_DESCRIPTION: &str =
+    include_str!("../../../../../../docs/swagger/swagger-ui-fulltext.description");
+const SEMANTIC_DESCRIPTION: &str =
+    include_str!("../../../../../../docs/swagger/swagger-ui-semantic.description");
+const HYBRID_DESCRIPTION: &str =
+    include_str!("../../../../../../docs/swagger/swagger-ui-hybrid.description");
 
 #[utoipa::path(
     post,
     path = SEARCH_FULLTEXT_URL,
     tag = "search",
-    description = "Search Document objects by fulltext algorithm",
+    description = FULLTEXT_DESCRIPTION,
     request_body(
         content = FullTextSearchForm,
     ),
@@ -71,7 +78,7 @@ where
     post,
     path = SEARCH_SEMANTIC_URL,
     tag = "search",
-    description = "Search Document objects by semantic algorithm",
+    description = SEMANTIC_DESCRIPTION,
     request_body(
         content = SemanticSearchForm,
     ),
@@ -115,7 +122,7 @@ where
     post,
     path = SEARCH_HYBRID_URL,
     tag = "search",
-    description = "Search Document objects by hybrid algorithm",
+    description = HYBRID_DESCRIPTION,
     request_body(
         content = HybridSearchForm,
     ),

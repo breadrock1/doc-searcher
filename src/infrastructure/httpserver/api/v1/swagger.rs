@@ -1,5 +1,5 @@
-use utoipa::OpenApi;
-use utoipa_rapidoc::RapiDoc;
+use utoipa::{OpenApi, ToSchema};
+use utoipa_swagger_ui::SwaggerUi;
 
 use super::models::*;
 use super::router::searcher::*;
@@ -8,17 +8,20 @@ use super::router::storage::*;
 use crate::application::services::server::{ServerError, Success};
 use crate::infrastructure::httpserver::api::v1::swagger;
 
-pub fn init_swagger_layer(version: &str) -> RapiDoc {
+pub fn init_swagger_layer(version: &str) -> SwaggerUi {
     let url_path = format!("/api/{version}/swagger");
     let config_file_path = format!("/api-docs/openapi-{version}.json");
     let swagger_app = swagger::ApiDoc::openapi();
-    RapiDoc::with_openapi(config_file_path, swagger_app).path(url_path)
+    SwaggerUi::new(url_path).url(config_file_path, swagger_app)
 }
+
+const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui.description");
 
 #[derive(OpenApi)]
 #[openapi(
     info(
-        description = "There is simple documents searcher project based on Rust and Elasticsearch technologies."
+        title = "Doc-Search",
+        description = DESCRIPTION,
     ),
     tags(
         (
@@ -33,6 +36,9 @@ pub fn init_swagger_layer(version: &str) -> RapiDoc {
             name = "search",
             description = "APIs to search Document objects",
         ),
+    ),
+    servers(
+        (url = "/api/v1", description = "Stable API version"),
     ),
     paths(
         get_all_indexes,
@@ -77,14 +83,6 @@ pub trait SwaggerExample {
     fn example(value: Option<&str>) -> Self::Example;
 }
 
-impl SwaggerExample for Success {
-    type Example = Self;
-
-    fn example(_: Option<&str>) -> Self::Example {
-        Success::default()
-    }
-}
-
 impl SwaggerExample for ServerError {
     type Example = Self;
 
@@ -94,4 +92,14 @@ impl SwaggerExample for ServerError {
             Some(msg) => ServerError::InternalError(msg.to_owned()),
         }
     }
+}
+
+#[allow(dead_code)]
+#[derive(utoipa::ToResponse, ToSchema)]
+#[response(description = "Error form", content_type = "application/json")]
+pub struct DefaultErrorForm {
+    #[schema(example = 501)]
+    status: u16,
+    #[schema(example = "Error form")]
+    message: String,
 }

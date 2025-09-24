@@ -1,0 +1,4 @@
+Store new Document to index
+
+The `force` field is optional. You can see example into `schema`.
+ - This field disable duplication checking while storing document.

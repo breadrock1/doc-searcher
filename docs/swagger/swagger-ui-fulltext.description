@@ -1,0 +1,6 @@
+Search Document objects by fulltext algorithm.
+
+The `filter` field is optional. You can see example into `schema`.
+
+The `include_extra_fields` field returns additional fields into Document:
+ - `content` - common content text data of document.

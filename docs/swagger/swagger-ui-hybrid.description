@@ -1,0 +1,5 @@
+Search Document objects by hybrid algorithm.
+
+The `include_extra_fields` field returns additional fields into Document:
+ - `chunked_text` - all chunks of document content;
+ - `embeddings` - embeddings for each chunk.
