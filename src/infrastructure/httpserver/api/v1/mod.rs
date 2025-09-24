@@ -10,18 +10,16 @@ use crate::application::services::server::ServerApp;
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::application::services::tokenizer::TokenizeProvider;
 
 const API_VERSION: &str = "v1";
 const API_VERSION_URL: &str = "/api/v1";
 
-pub fn init_v1_routers<Storage, Searcher, Tokenizer>() -> Router<Arc<ServerApp<Storage, Searcher, Tokenizer>>>
+pub fn init_v1_routers<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
-    let router: Router<Arc<ServerApp<Storage, Searcher, Tokenizer>>> = Router::new()
+    let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
         .nest(API_VERSION_URL, init_storage_layer())
         .nest(API_VERSION_URL, init_searcher_layer())
         .merge(swagger::init_swagger_layer(API_VERSION));
@@ -29,11 +27,10 @@ where
     router
 }
 
-fn init_storage_layer<Storage, Searcher, Tokenizer>() -> Router<Arc<ServerApp<Storage, Searcher, Tokenizer>>>
+fn init_storage_layer<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     Router::new()
         .route(
@@ -62,11 +59,10 @@ where
         )
 }
 
-fn init_searcher_layer<Storage, Searcher, Tokenizer>() -> Router<Arc<ServerApp<Storage, Searcher, Tokenizer>>>
+fn init_searcher_layer<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone + 'static,
 {
     Router::new()
         .route(
