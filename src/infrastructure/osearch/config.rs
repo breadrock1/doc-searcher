@@ -27,4 +27,12 @@ pub struct OSearchClusterConfig {
 pub struct OSearchKnnConfig {
     #[getset(get, vis = "pub")]
     model_id: String,
+    #[getset(get_copy, vis = "pub")]
+    knn_ef_searcher: Option<u32>,
+    #[getset(get_copy, vis = "pub")]
+    knn_dimension: Option<u32>,
+    #[getset(get_copy, vis = "pub")]
+    token_limit: Option<u32>,
+    #[getset(get_copy, vis = "pub")]
+    overlap_rate: Option<f32>,
 }
