@@ -1,4 +1,3 @@
-pub mod bge;
 pub mod config;
 pub mod httpserver;
 pub mod osearch;

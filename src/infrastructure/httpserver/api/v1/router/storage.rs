@@ -363,11 +363,11 @@ where
 {
     let is_force = query.force.unwrap_or(false);
     let storage = state.get_storage();
-    let id = storage
+    let stored_doc = storage
         .store_document(&index_id, &form.into(), is_force)
         .await?;
 
-    let status = Success::new(201, &id);
+    let status = Success::new(201, &stored_doc.id);
     Ok((StatusCode::CREATED, Json(status)))
 }
 

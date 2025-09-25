@@ -1,137 +1,150 @@
+use anyhow::anyhow;
+use character_text_splitter::CharacterTextSplitter;
 use std::sync::Arc;
 
 use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
-use crate::application::services::tokenizer::{TokenizeError, TokenizeProvider, TokenizeResult};
 use crate::application::structures::params::CreateIndexParams;
-use crate::application::structures::{Document, Index, InputContentBuilder, StoredDocument, TokenizedContent};
+use crate::application::structures::{Document, Index, StoredDocument};
 
 #[cfg(feature = "enable-unique-doc-id")]
 use crate::infrastructure::osearch::OpenSearchStorage;
 
 #[derive(Clone)]
-pub struct StorageUseCase<Storage, Tokenizer>
+pub struct StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    searcher: Arc<Storage>,
-    tokenizer: Arc<Tokenizer>,
+    max_content_size: usize,
+    storage: Arc<Storage>,
 }
 
-impl<Storage, Tokenizer> StorageUseCase<Storage, Tokenizer>
+impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    pub fn new(searcher: Arc<Storage>, tokenizer: Arc<Tokenizer>) -> Self {
-        StorageUseCase { searcher, tokenizer }
+    pub fn new(storage: Arc<Storage>) -> Self {
+        StorageUseCase { storage, max_content_size: 90000 }
     }
 }
 
-impl<Storage, Tokenizer> StorageUseCase<Storage, Tokenizer>
+impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
-    Tokenizer: TokenizeProvider + Send + Sync + Clone,
 {
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<String> {
-        self.searcher.create_index(index).await
+        self.storage.create_index(index).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn delete_index(&self, id: &str) -> StorageResult<()> {
-        self.searcher.delete_index(id).await
+        self.storage.delete_index(id).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
-        self.searcher.get_all_indexes().await
+        self.storage.get_all_indexes().await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn get_index(&self, id: &str) -> StorageResult<Index> {
-        self.searcher.get_index(id).await
+        self.storage.get_index(id).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn store_document(
         &self,
         index: &str,
         doc: &Document,
         _force: bool,
-    ) -> StorageResult<String> {
-        let _ = self.searcher.get_index(index).await?;
-        let _tokens = self
-            .tokenize_content(doc)
-            .await
-            .map_err(anyhow::Error::from)
-            .map_err(StorageError::InternalError)?;
+    ) -> StorageResult<StoredDocument> {
+        let _ = self.storage.get_index(index).await?;
 
-        // TODO: set tokens to params
-        match self.searcher.store_document(index, doc).await {
-            Ok(doc_id) => Ok(doc_id),
+        let Some(content) = doc.content() else {
+            let err = anyhow!("empty document content: {}", doc.file_path());
+            return Err(StorageError::ValidationError(err));
+        };
+
+        let document_parts = match content.len() > self.max_content_size {
+            false => vec![doc.clone()],
+            true => {
+                let doc_parts = self.split_document(doc)?;
+                doc_parts
+            }
+        };
+
+        match self.storage.store_document_parts(index, &document_parts).await {
+            Ok(stored_docs) => {
+                let root_doc = stored_docs.first().unwrap();
+                Ok(root_doc.clone())
+            },
             #[cfg(feature = "enable-unique-doc-id")]
             Err(_err) if _force => {
                 let doc_id = OpenSearchStorage::gen_unique_document_id(index, doc);
                 tracing::warn!(index = index, id = doc_id, "document already exists");
-                self.searcher.update_document(index, &doc_id, doc).await?;
-                Ok(doc_id)
+                self.storage.update_document(index, &doc_id, doc).await?;
+                Ok(StoredDocument::new(doc_id, doc.file_path().clone()))
             }
             Err(err) => Err(err),
         }
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn store_documents(
         &self,
         index: &str,
         docs: &[Document],
     ) -> StorageResult<Vec<StoredDocument>> {
-        let _ = self.searcher.get_index(index).await?;
-        self.searcher.store_documents(index, docs).await
+        let _ = self.storage.get_index(index).await?;
+
+        let mut stored_docs = Vec::with_capacity(docs.len());
+        for doc in docs {
+            let stored_doc = self.store_document(index, doc, true).await?;
+            stored_docs.push(stored_doc);
+        }
+
+        Ok(stored_docs)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {
-        self.searcher.delete_document(index, id).await
+        self.storage.delete_document(index, id).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
-        self.searcher.get_document(index, id).await
+        self.storage.get_document(index, id).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn update_document(
         &self,
         index: &str,
         id: &str,
         doc: &Document,
     ) -> StorageResult<()> {
-        let _ = self.searcher.get_index(index).await?;
-        let _tokens = self
-            .tokenize_content(doc)
-            .await
-            .map_err(anyhow::Error::from)
-            .map_err(StorageError::InternalError)?;
-
-        // TODO: set tokens to params
-        self.searcher.update_document(index, id, doc).await
+        let _ = self.storage.get_index(index).await?;
+        self.storage.update_document(index, id, doc).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
-    async fn tokenize_content(&self, doc: &Document) -> TokenizeResult<TokenizedContent> {
+    fn split_document(&self, doc: &Document) -> StorageResult<Vec<Document>> {
         let Some(content) = doc.content() else {
-            return Err(TokenizeError::EmptyResponse);
+            let err = anyhow!("empty document content: {}", doc.file_path());
+            return Err(StorageError::ValidationError(err));
         };
 
-        let input = InputContentBuilder::default()
-            .content(content.clone())
-            .build()
-            .map_err(TokenizeError::InputFormValidation)?;
+        let doc_parts = CharacterTextSplitter::new()
+            .with_chunk_size(self.max_content_size)
+            .split_text(content)
+            .into_iter()
+            .map(|it| {
+                let mut doc_part = doc.clone();
+                doc_part.set_content(Some(it));
+                doc_part
+            })
+            .collect::<Vec<Document>>();
 
-        let tokenized_content = self.tokenizer.compute(&input).await?;
-        Ok(tokenized_content)
+        Ok(doc_parts)
     }
 }

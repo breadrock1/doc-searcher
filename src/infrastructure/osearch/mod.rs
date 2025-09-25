@@ -61,7 +61,7 @@ impl ServiceConnect for OpenSearchStorage {
             .cert_validation(validation)
             .build()?;
 
-        tracing::debug!(address = config.address(), "connected to elasticsearch");
+        tracing::debug!(address = config.address(), "connected to opensearch");
         let client = OpenSearch::new(transport);
         let arc_client = Arc::new(client);
         Ok(OpenSearchStorage {
@@ -73,7 +73,7 @@ impl ServiceConnect for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl IndexManager for OpenSearchStorage {
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
         let id = params.id();
         let knn_params = params.knn().as_ref();
@@ -95,7 +95,7 @@ impl IndexManager for OpenSearchStorage {
         Ok(params.id().to_owned())
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn delete_index(&self, id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -113,7 +113,7 @@ impl IndexManager for OpenSearchStorage {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
         #[cfg(feature = "enable-multi-user")]
         let offset = format!("{}_*", self.config.username());
@@ -152,7 +152,7 @@ impl IndexManager for OpenSearchStorage {
         Ok(indexes)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn get_index(&self, id: &str) -> StorageResult<Index> {
         let response = self
             .client
@@ -185,30 +185,8 @@ impl IndexManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentManager for OpenSearchStorage {
-    #[tracing::instrument(skip(self), level = "debug")]
-    async fn store_document(&self, index: &str, doc: &Document) -> StorageResult<String> {
-        #[cfg(not(feature = "enable-unique-doc-id"))]
-        let id = uuid::Uuid::new_v4().to_string();
-        #[cfg(feature = "enable-unique-doc-id")]
-        let id = Self::gen_unique_document_id(index, doc);
-        let response = self
-            .client
-            .create(opensearch::CreateParts::IndexId(index, &id))
-            .pipeline(schema::INGEST_PIPELINE_NAME)
-            .body(&doc)
-            .send()
-            .await?;
-
-        if !response.status_code().is_success() {
-            let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
-        }
-
-        Ok(id)
-    }
-
-    #[tracing::instrument(skip(self), level = "debug")]
-    async fn store_documents(
+    #[tracing::instrument(skip(self), level = "info")]
+    async fn store_document_parts(
         &self,
         index: &str,
         docs: &[Document],
@@ -247,7 +225,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(stored_documents)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
         let response = self
             .client
@@ -265,7 +243,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(document)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -281,7 +259,7 @@ impl DocumentManager for OpenSearchStorage {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
         let doc_object =
             extractor::build_update_document_object(doc).map_err(StorageError::InternalError)?;
@@ -305,7 +283,7 @@ impl DocumentManager for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl DocumentSearcher for OpenSearchStorage {
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn retrieve(
         &self,
         ids: &str,
@@ -337,7 +315,7 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
         let query_params = QueryBuilderParams::from(params);
         let query = params.build_query(query_params);
@@ -366,7 +344,7 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
         let model_id = params
             .model_id()
@@ -396,7 +374,7 @@ impl DocumentSearcher for OpenSearchStorage {
         Ok(paginated)
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
         let model_id = params
             .model_id()
@@ -429,7 +407,7 @@ impl DocumentSearcher for OpenSearchStorage {
 
 #[async_trait::async_trait]
 impl PaginateManager for OpenSearchStorage {
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -445,7 +423,7 @@ impl PaginateManager for OpenSearchStorage {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {
         let response = self
             .client
@@ -546,10 +524,8 @@ mod test_osearch {
         let _ = create_test_index(client.clone()).await;
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        for doc in documents.iter() {
-            let result = client.store_document(TEST_FOLDER_ID, doc).await;
-            assert!(result.is_ok());
-        }
+        let result = client.store_document_parts(TEST_FOLDER_ID, &documents).await;
+        assert!(result.is_ok());
 
         tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
@@ -584,22 +560,17 @@ mod test_osearch {
         let _ = create_test_index(client.clone()).await;
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        for doc in documents.iter() {
-            let id = match client.store_document(TEST_FOLDER_ID, doc).await {
-                Ok(id) => id,
-                Err(err) => {
-                    return Err(err.into());
-                }
-            };
+        let result = client.store_document_parts(TEST_FOLDER_ID, &documents).await;
+        assert!(result.is_ok());
 
-            let result = client.get_document(TEST_FOLDER_ID, &id).await;
+        for stored_doc in result?.iter() {
+            let id = &stored_doc.id;
+
+            let result = client.get_document(TEST_FOLDER_ID, id).await;
             assert!(result.is_ok());
 
-            let loaded_doc = result?;
-            assert_eq!(doc.content(), loaded_doc.content());
-
             client.delete_document(TEST_FOLDER_ID, &id).await?;
-            let result = client.get_document(TEST_FOLDER_ID, &id).await;
+            let result = client.get_document(TEST_FOLDER_ID, id).await;
             assert!(result.is_err());
         }
 
