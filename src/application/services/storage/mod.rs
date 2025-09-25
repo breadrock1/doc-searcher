@@ -19,8 +19,7 @@ pub trait IndexManager {
 
 #[async_trait::async_trait]
 pub trait DocumentManager {
-    async fn store_document(&self, index: &str, doc: &Document) -> StorageResult<String>;
-    async fn store_documents(
+    async fn store_document_parts(
         &self,
         index: &str,
         docs: &[Document],

@@ -1,10 +1,11 @@
-[logger]
-level = "info"
-use_loki = "false"
+[otlp]
+enable_remote_otlp = true
+
+[otlp.logger]
+level = "debug"
 address = "http://loki:3100"
 
-[tracing]
-use_jaeger = "true"
+[otlp.tracing]
 address = "http://jaeger:4317"
 
 [server]

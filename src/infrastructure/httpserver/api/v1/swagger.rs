@@ -77,24 +77,6 @@ const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui.d
 struct ApiDoc;
 
 #[allow(dead_code)]
-pub trait SwaggerExample {
-    type Example;
-
-    fn example(value: Option<&str>) -> Self::Example;
-}
-
-impl SwaggerExample for ServerError {
-    type Example = Self;
-
-    fn example(value: Option<&str>) -> Self::Example {
-        match value {
-            None => ServerError::ServerUnavailable,
-            Some(msg) => ServerError::InternalError(msg.to_owned()),
-        }
-    }
-}
-
-#[allow(dead_code)]
 #[derive(utoipa::ToResponse, ToSchema)]
 #[response(description = "Error form", content_type = "application/json")]
 pub struct DefaultErrorForm {

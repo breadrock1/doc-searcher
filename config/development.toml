@@ -1,10 +1,11 @@
-[logger]
+[otlp]
+enable_remote_otlp = false
+
+[otlp.logger]
 level = "debug"
-use_loki = "false"
 address = "http://localhost:3100"
 
-[tracing]
-use_jaeger = "true"
+[otlp.tracing]
 address = "http://localhost:4317"
 
 [server]

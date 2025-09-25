@@ -14,6 +14,7 @@ pub struct Document {
     created_at: i64,
     #[getset(get_copy, vis = "pub")]
     modified_at: i64,
+    #[getset(set, vis = "pub")]
     #[getset(get, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     content: Option<String>,
@@ -53,6 +54,7 @@ impl Embeddings {
     }
 }
 
+#[derive(Clone)]
 pub struct StoredDocument {
     pub id: String,
     pub file_path: String,

@@ -1,12 +1,12 @@
 use doc_search::application::structures::params::KnnIndexParams;
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
-use doc_search::{tracer, ServiceConnect};
+use doc_search::{telemetry, ServiceConnect};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    tracer::init_otlp_tracing(&config)?;
+    telemetry::init_otlp_tracing(config.otlp())?;
 
     let os_config = config.storage().opensearch();
     let os_client = OpenSearchStorage::connect(os_config).await?;

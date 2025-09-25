@@ -13,15 +13,15 @@ pub struct SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
 {
-    client: Arc<Searcher>,
+    searcher: Arc<Searcher>,
 }
 
 impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
 {
-    pub fn new(client: Arc<Searcher>) -> Self {
-        SearcherUseCase { client }
+    pub fn new(searcher: Arc<Searcher>) -> Self {
+        SearcherUseCase { searcher }
     }
 }
 
@@ -29,37 +29,37 @@ impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
 {
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn retrieve(
         &self,
         ids: &str,
         params: &RetrieveDocumentParams,
     ) -> PaginateResult<FoundedDocument> {
-        self.client.retrieve(ids, params).await
+        self.searcher.retrieve(ids, params).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn fulltext(&self, params: &FullTextSearchParams) -> PaginateResult<FoundedDocument> {
-        self.client.fulltext(params).await
+        self.searcher.fulltext(params).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn semantic(&self, params: &SemanticSearchParams) -> PaginateResult<FoundedDocument> {
-        self.client.semantic(params).await
+        self.searcher.semantic(params).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn hybrid(&self, params: &HybridSearchParams) -> PaginateResult<FoundedDocument> {
-        self.client.hybrid(params).await
+        self.searcher.hybrid(params).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn paginate(&self, params: &PaginateParams) -> PaginateResult<FoundedDocument> {
-        self.client.paginate(params).await
+        self.searcher.paginate(params).await
     }
 
-    #[tracing::instrument(skip(self), level = "debug")]
+    #[tracing::instrument(skip(self), level = "info")]
     pub async fn delete_session(&self, session_id: &str) -> StorageResult<()> {
-        self.client.delete_session(session_id).await
+        self.searcher.delete_session(session_id).await
     }
 }
