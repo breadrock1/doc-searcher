@@ -3,12 +3,33 @@ use gset::Getset;
 use opentelemetry_sdk::trace::SdkTracerProvider;
 use regex::Regex;
 use serde_derive::Deserialize;
-#[cfg(feature = "enable-jaeger-tracing")]
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
-use crate::config::ServiceConfig;
+#[derive(Clone, Deserialize, Getset)]
+pub struct OtlpConfig {
+    #[getset(get_copy, vis = "pub")]
+    enable_remote_otlp: bool,
+    #[getset(get, vis = "pub")]
+    logger: LoggerConfig,
+    #[getset(get, vis = "pub")]
+    tracing: TracingConfig,
+}
+
+#[derive(Clone, Deserialize, Getset)]
+pub struct LoggerConfig {
+    #[getset(get, vis = "pub")]
+    level: String,
+    #[getset(get, vis = "pub")]
+    address: String,
+}
+
+#[derive(Clone, Deserialize, Getset)]
+pub struct TracingConfig {
+    #[getset(get, vis = "pub")]
+    address: String,
+}
 
 #[derive(Getset, Default)]
 pub struct OtlpGuard {
@@ -26,26 +47,28 @@ impl Drop for OtlpGuard {
     }
 }
 
-#[derive(Clone, Deserialize, Getset)]
-pub struct LoggerConfig {
-    #[getset(get_copy, vis = "pub")]
-    use_loki: bool,
-    #[getset(get, vis = "pub")]
-    level: String,
-    #[getset(get, vis = "pub")]
-    address: String,
+pub fn init_local_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
+    let otlp_guard = OtlpGuard::default();
+
+    init_rust_log_env(config.logger());
+    let env_filter = tracing_subscriber::EnvFilter::from_default_env();
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_level(true)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .with_span_events(FmtSpan::NEW)
+        .pretty();
+
+    let subscriber = tracing_subscriber::Registry::default()
+        .with(env_filter)
+        .with(fmt_layer);
+
+    tracing::subscriber::set_global_default(subscriber)?;
+
+    Ok(otlp_guard)
 }
 
-#[derive(Clone, Deserialize, Getset)]
-pub struct TracingConfig {
-    #[getset(get_copy, vis = "pub")]
-    use_jaeger: bool,
-    #[getset(get, vis = "pub")]
-    address: String,
-}
-
-#[allow(unused_mut)]
-pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
+pub fn init_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
     let mut otlp_guard = OtlpGuard::default();
 
     init_rust_log_env(config.logger());
@@ -61,12 +84,9 @@ pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
         .with(env_filter)
         .with(fmt_layer);
 
-    #[cfg(feature = "enable-loki-logger")]
     let logger_layer = init_loki_logger(config.logger())?;
-    #[cfg(feature = "enable-loki-logger")]
     let subscriber = subscriber.with(logger_layer);
 
-    #[cfg(feature = "enable-jaeger-tracing")]
     let telemetry = {
         use opentelemetry::global;
         use opentelemetry::trace::TracerProvider;
@@ -85,7 +105,6 @@ pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
         otlp_guard.set_tracing_provider(Some(provider));
         telemetry
     };
-    #[cfg(feature = "enable-jaeger-tracing")]
     let subscriber = subscriber.with(telemetry);
 
     tracing::subscriber::set_global_default(subscriber)?;
@@ -93,7 +112,6 @@ pub fn init_otlp_tracing(config: &ServiceConfig) -> anyhow::Result<OtlpGuard> {
     Ok(otlp_guard)
 }
 
-#[cfg(feature = "enable-jaeger-tracing")]
 fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvider> {
     use opentelemetry_otlp::WithExportConfig;
     use opentelemetry_sdk::Resource;
@@ -116,7 +134,6 @@ fn init_jaeger_tracing(config: &TracingConfig) -> anyhow::Result<SdkTracerProvid
     Ok(provider)
 }
 
-#[cfg(feature = "enable-loki-logger")]
 fn init_loki_logger(config: &LoggerConfig) -> anyhow::Result<tracing_loki::Layer> {
     let loki_address = config.address().as_str();
     let loki_url = tracing_loki::url::Url::parse(loki_address)?;
@@ -155,10 +172,8 @@ impl Default for PathFilter {
     }
 }
 
-#[cfg(feature = "enable-jaeger-tracing")]
 struct HeaderExtractor<'a>(&'a axum::http::HeaderMap);
 
-#[cfg(feature = "enable-jaeger-tracing")]
 impl<'a> opentelemetry::propagation::Extractor for HeaderExtractor<'a> {
     fn get(&self, key: &str) -> Option<&str> {
         self.0.get(key).and_then(|value| value.to_str().ok())
@@ -184,12 +199,10 @@ impl<B> tower_http::trace::MakeSpan<B> for PathFilter {
             version = ?request.version(),
         );
 
-        #[cfg(feature = "enable-jaeger-tracing")]
         let parent_context = opentelemetry::global::get_text_map_propagator(|propagator| {
             propagator.extract(&HeaderExtractor(request.headers()))
         });
 
-        #[cfg(feature = "enable-jaeger-tracing")]
         span.set_parent(parent_context);
         span
     }

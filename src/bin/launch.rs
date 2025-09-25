@@ -4,7 +4,7 @@ use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
-use doc_search::{tracer, ServiceConnect};
+use doc_search::{telemetry, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
@@ -13,7 +13,7 @@ use tower_http::{cors, trace};
 #[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    let _otlp_guard = tracer::init_otlp_tracing(&config)?;
+    let _otlp_guard = telemetry::init_otlp_tracing(config.otlp())?;
 
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cors_layer = cors::CorsLayer::permissive();
     let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(tracer::PathFilter::default())
+        .make_span_with(telemetry::PathFilter::default())
         .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
 
     let app = httpserver::init_server(server_app)

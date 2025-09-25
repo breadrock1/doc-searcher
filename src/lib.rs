@@ -2,7 +2,7 @@ pub mod application;
 pub mod config;
 pub mod domain;
 pub mod infrastructure;
-pub mod tracer;
+pub mod telemetry;
 
 pub const SERVICE_NAME: &str = "doc-searcher";
 
