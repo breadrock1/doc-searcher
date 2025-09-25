@@ -573,7 +573,7 @@ mod test_osearch {
             let result = client.get_document(TEST_FOLDER_ID, id).await;
             assert!(result.is_ok());
 
-            client.delete_document(TEST_FOLDER_ID, &id).await?;
+            client.delete_document(TEST_FOLDER_ID, id).await?;
             let result = client.get_document(TEST_FOLDER_ID, id).await;
             assert!(result.is_err());
         }
