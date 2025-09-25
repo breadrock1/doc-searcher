@@ -1,5 +1,4 @@
 use config::{Config, ConfigError, Environment, File, FileFormat};
-use derive_builder::Builder;
 use dotenv::dotenv;
 use gset::Getset;
 use serde_derive::Deserialize;
@@ -12,8 +11,16 @@ const CONFIG_PREFIX: &str = "DOC_SEARCHER";
 const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";
 const DEV_FILE_CONFIG_PATH: &str = "./config/development.toml";
 
-#[derive(Builder, Clone, Deserialize, Getset)]
+#[derive(Clone, Deserialize, Getset)]
+pub struct SettingsConfig {
+    #[getset(get_copy, vis = "pub")]
+    max_content_size: usize,
+}
+
+#[derive(Clone, Deserialize, Getset)]
 pub struct ServiceConfig {
+    #[getset(get, vis = "pub")]
+    settings: SettingsConfig,
     #[getset(get, vis = "pub")]
     otlp: OtlpConfig,
     #[getset(get, vis = "pub")]

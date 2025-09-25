@@ -6,6 +6,7 @@ use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
 use crate::application::structures::params::CreateIndexParams;
 use crate::application::structures::{Document, Index, StoredDocument};
+use crate::config::SettingsConfig;
 
 #[cfg(feature = "enable-unique-doc-id")]
 use crate::infrastructure::osearch::OpenSearchStorage;
@@ -15,7 +16,7 @@ pub struct StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
-    max_content_size: usize,
+    settings: Arc<SettingsConfig>,
     storage: Arc<Storage>,
 }
 
@@ -23,10 +24,11 @@ impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
-    pub fn new(storage: Arc<Storage>) -> Self {
+    pub fn new(settings: &SettingsConfig, storage: Arc<Storage>) -> Self {
+        let settings = Arc::new(settings.clone());
         StorageUseCase {
             storage,
-            max_content_size: 90000,
+            settings,
         }
     }
 }
@@ -69,7 +71,8 @@ where
             return Err(StorageError::ValidationError(err));
         };
 
-        let document_parts = match content.len() > self.max_content_size {
+        let max_content_size = self.settings.max_content_size();
+        let document_parts = match content.len() > max_content_size {
             false => vec![doc.clone()],
             true => self.split_document(doc)?,
         };
@@ -139,7 +142,7 @@ where
         };
 
         let doc_parts = CharacterTextSplitter::new()
-            .with_chunk_size(self.max_content_size)
+            .with_chunk_size(self.settings.max_content_size())
             .split_text(content)
             .into_iter()
             .map(|it| {

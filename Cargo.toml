@@ -1,6 +1,6 @@
 [package]
 name = "doc-search"
-version = "0.3.14"
+version = "0.3.15"
 edition = "2021"
 
 [badges]
