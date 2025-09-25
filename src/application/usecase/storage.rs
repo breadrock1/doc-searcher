@@ -71,7 +71,7 @@ where
 
         let document_parts = match content.len() > self.max_content_size {
             false => vec![doc.clone()],
-            true => self.split_document(doc)?
+            true => self.split_document(doc)?,
         };
 
         match self
