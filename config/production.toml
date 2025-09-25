@@ -1,3 +1,6 @@
+[settings]
+mac_content_size = 90000
+
 [otlp]
 enable_remote_otlp = true
 
