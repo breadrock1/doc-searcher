@@ -16,8 +16,8 @@ address = "0.0.0.0:2892"
 
 [storage.opensearch]
 address = "http://localhost:9200"
-username = "elastic"
-password = "elastic"
+username = "admin"
+password = "admin"
 
 [storage.opensearch.cluster]
 number_of_shards = 1
@@ -25,6 +25,11 @@ number_of_replicas = 1
 
 [storage.opensearch.semantic]
 model_id = "uPRh30JcBW8Qg3Gf4I6K"
+# Optional parameters
+knn_ef_searcher = 100
+knn_dimension = 384
+token_limit = 700
+overlap_rate = 0.2
 
 [cacher.redis]
 address = "redis://localhost:6379"
