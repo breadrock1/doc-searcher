@@ -47,7 +47,15 @@ impl Drop for OtlpGuard {
     }
 }
 
-pub fn init_local_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
+pub fn init_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
+    if config.enable_remote_otlp() {
+        return init_remote_otlp_tracing(config);
+    }
+
+    init_local_otlp_tracing(config)
+}
+
+fn init_local_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
     let otlp_guard = OtlpGuard::default();
 
     init_rust_log_env(config.logger());
@@ -68,7 +76,7 @@ pub fn init_local_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard>
     Ok(otlp_guard)
 }
 
-pub fn init_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
+fn init_remote_otlp_tracing(config: &OtlpConfig) -> anyhow::Result<OtlpGuard> {
     let mut otlp_guard = OtlpGuard::default();
 
     init_rust_log_env(config.logger());
