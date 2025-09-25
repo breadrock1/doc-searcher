@@ -524,7 +524,9 @@ mod test_osearch {
         let _ = create_test_index(client.clone()).await;
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        let result = client.store_document_parts(TEST_FOLDER_ID, &documents).await;
+        let result = client
+            .store_document_parts(TEST_FOLDER_ID, &documents)
+            .await;
         assert!(result.is_ok());
 
         tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -560,7 +562,9 @@ mod test_osearch {
         let _ = create_test_index(client.clone()).await;
 
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        let result = client.store_document_parts(TEST_FOLDER_ID, &documents).await;
+        let result = client
+            .store_document_parts(TEST_FOLDER_ID, &documents)
+            .await;
         assert!(result.is_ok());
 
         for stored_doc in result?.iter() {

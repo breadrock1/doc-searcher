@@ -24,7 +24,10 @@ where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
     pub fn new(storage: Arc<Storage>) -> Self {
-        StorageUseCase { storage, max_content_size: 90000 }
+        StorageUseCase {
+            storage,
+            max_content_size: 90000,
+        }
     }
 }
 
@@ -74,11 +77,15 @@ where
             }
         };
 
-        match self.storage.store_document_parts(index, &document_parts).await {
+        match self
+            .storage
+            .store_document_parts(index, &document_parts)
+            .await
+        {
             Ok(stored_docs) => {
                 let root_doc = stored_docs.first().unwrap();
                 Ok(root_doc.clone())
-            },
+            }
             #[cfg(feature = "enable-unique-doc-id")]
             Err(_err) if _force => {
                 let doc_id = OpenSearchStorage::gen_unique_document_id(index, doc);
