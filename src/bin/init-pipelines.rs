@@ -22,10 +22,16 @@ fn create_knn_index_params(config: &OSearchConfig) -> anyhow::Result<KnnIndexPar
     let knn_params = KnnIndexParams::default();
 
     let knn_config = config.semantic();
-    let knn_ef_searcher = knn_config.knn_ef_searcher().unwrap_or(knn_params.knn_ef_searcher());
-    let knn_dimension = knn_config.knn_dimension().unwrap_or(knn_params.knn_dimension());
+    let knn_ef_searcher = knn_config
+        .knn_ef_searcher()
+        .unwrap_or(knn_params.knn_ef_searcher());
+    let knn_dimension = knn_config
+        .knn_dimension()
+        .unwrap_or(knn_params.knn_dimension());
     let token_limit = knn_config.token_limit().unwrap_or(knn_params.token_limit());
-    let overlap_rate = knn_config.overlap_rate().unwrap_or(knn_params.overlap_rate());
+    let overlap_rate = knn_config
+        .overlap_rate()
+        .unwrap_or(knn_params.overlap_rate());
 
     let knn_params = KnnIndexParamsBuilder::default()
         .knn_ef_searcher(knn_ef_searcher)
