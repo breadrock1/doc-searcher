@@ -26,10 +26,7 @@ where
 {
     pub fn new(settings: &SettingsConfig, storage: Arc<Storage>) -> Self {
         let settings = Arc::new(settings.clone());
-        StorageUseCase {
-            storage,
-            settings,
-        }
+        StorageUseCase { storage, settings }
     }
 }
 
