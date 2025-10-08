@@ -116,7 +116,7 @@ impl IndexManager for OpenSearchStorage {
     #[tracing::instrument(skip(self), level = "info")]
     async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
         #[cfg(feature = "enable-multi-user")]
-        let offset = format!("{}_*", self.config.username());
+        let offset = format!("{}-*", self.config.username());
         #[cfg(feature = "enable-multi-user")]
         let response = self
             .client
