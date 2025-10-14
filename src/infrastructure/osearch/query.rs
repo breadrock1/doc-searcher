@@ -2,10 +2,11 @@ use derive_builder::Builder;
 use serde_json::{json, Value};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
-use crate::application::structures::params::{
-    FilterParams, FullTextSearchParams, HybridSearchParams, RetrieveDocumentParams,
-    SemanticSearchParams,
-};
+use crate::application::structures::params::{FilterParams, FullTextSearchParams, HybridSearchParams, ResultParams, RetrieveDocumentParams, SemanticSearchParams};
+
+const FRAGMENT_SIZE: u32 = 600;
+const FRAGMENT_COUNT: u32 = 5;
+const MIN_SCORE: f32 = 0.7;
 
 #[derive(Builder)]
 pub struct QueryBuilderParams {
@@ -84,7 +85,7 @@ impl QueryBuilder for RetrieveDocumentParams {
                     "filter": build_filter_query(self.filter()),
                 }
             },
-            "highlight": build_highlight_query(),
+            "highlight": build_highlight_query(self.result()),
             "sort": build_sort_query(self.result().order()),
         })
     }
@@ -109,7 +110,7 @@ impl QueryBuilder for FullTextSearchParams {
                     "filter": build_filter_query(self.filter()),
                 }
             },
-            "highlight": build_highlight_query(),
+            "highlight": build_highlight_query(self.result()),
             "sort": build_sort_query(self.result().order()),
         })
     }
@@ -128,11 +129,13 @@ impl QueryBuilder for SemanticSearchParams {
             })
             .unwrap_or_default();
 
+        let min_score = self.result().min_score().unwrap_or(MIN_SCORE);
         json!({
             "_source": {
                 "exclude": exclude,
             },
             "size": size,
+            "min_score": min_score,
             "query": {
                 "bool": {
                     "must": [
@@ -147,7 +150,7 @@ impl QueryBuilder for SemanticSearchParams {
                     "filter": build_filter_query(self.filter()),
                 }
             },
-            "highlight": build_highlight_query(),
+            "highlight": build_highlight_query(self.result()),
         })
     }
 }
@@ -167,11 +170,14 @@ impl QueryBuilder for HybridSearchParams {
             })
             .unwrap_or_default();
 
+        let min_score = self.result().min_score().unwrap_or(MIN_SCORE);
+
         json!({
             "_source": {
                 "exclude": exclude
             },
             "size": size,
+            "min_score": min_score,
             "query": {
                 "hybrid": {
                     "queries": [
@@ -194,7 +200,7 @@ impl QueryBuilder for HybridSearchParams {
                     ]
                 }
             },
-            "highlight": build_highlight_query(),
+            "highlight": build_highlight_query(self.result()),
             "search_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
         })
     }
@@ -263,13 +269,17 @@ fn build_filter_query(filter: &Option<FilterParams>) -> Value {
     }
 }
 
-fn build_highlight_query() -> Value {
+fn build_highlight_query(params: &ResultParams) -> Value {
+    let fragment_size = params.highlight_item_size().unwrap_or(FRAGMENT_SIZE);
+    let fragment_count = params.highlight_items().unwrap_or(FRAGMENT_COUNT);
     json!({
         "fields": {
             "content": {
                 "type": "plain",
                 "pre_tags": [""],
-                "post_tags": [""]
+                "post_tags": [""],
+                "fragment_size": fragment_size,
+                "number_of_fragments": fragment_count
             }
         }
     })
