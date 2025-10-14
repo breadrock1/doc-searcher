@@ -11,7 +11,7 @@ address = "http://loki:3100"
 [otlp.tracing]
 address = "http://jaeger:4317"
 
-[server]
+[server.http]
 address = "0.0.0.0:2892"
 
 [storage.opensearch]

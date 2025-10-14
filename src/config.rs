@@ -3,8 +3,7 @@ use dotenv::dotenv;
 use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::infrastructure::config::{CacherConfig, StorageConfig};
-use crate::infrastructure::httpserver::ServerConfig;
+use crate::infrastructure::config::{CacherConfig, ServerConfig, StorageConfig};
 use crate::telemetry::OtlpConfig;
 
 const CONFIG_PREFIX: &str = "DOC_SEARCHER";
