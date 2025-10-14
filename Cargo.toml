@@ -70,6 +70,7 @@ features = ["rt-tokio-current-thread"]
 optional = true
 version = "0.27.6"
 features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
+
 [dependencies.reqwest]
 version = "0.12.12"
 features = ["json", "multipart"]
@@ -89,10 +90,6 @@ features = ["trace", "cors", "add-extension", "propagate-header"]
 [dependencies.utoipa]
 version = "5.3.1"
 features = ["axum_extras", "chrono"]
-
-[dependencies.utoipa-rapidoc]
-version = "6.0.0"
-features = ["axum"]
 
 [dependencies.utoipa-swagger-ui]
 version = "9.0.0"
