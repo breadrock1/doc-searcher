@@ -69,6 +69,12 @@ pub struct ResultParams {
     offset: i64,
     #[getset(get_copy, vis = "pub")]
     include_extra_fields: Option<bool>,
+    #[getset(get_copy, vis = "pub")]
+    highlight_items: Option<u32>,
+    #[getset(get_copy, vis = "pub")]
+    highlight_item_size: Option<u32>,
+    #[getset(get_copy, vis = "pub")]
+    min_score: Option<f32>,
 }
 
 #[derive(Builder, Debug, Getset, Serialize, Deserialize)]

@@ -199,6 +199,12 @@ pub struct ResultForm {
     offset: u32,
     #[schema(example = false)]
     include_extra_fields: Option<bool>,
+    #[schema(example = 3)]
+    highlight_items: Option<u32>,
+    #[schema(example = 600)]
+    highlight_item_size: Option<u32>,
+    #[schema(example = 0.7)]
+    min_score: Option<f32>,
 }
 
 impl From<ResultForm> for ResultParams {
@@ -208,6 +214,9 @@ impl From<ResultForm> for ResultParams {
             .size(form.size.into())
             .offset(form.offset.into())
             .include_extra_fields(form.include_extra_fields)
+            .highlight_items(form.highlight_items)
+            .highlight_item_size(form.highlight_item_size)
+            .min_score(form.min_score)
             .build()
             .unwrap()
     }
