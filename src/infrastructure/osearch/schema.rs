@@ -7,7 +7,6 @@ pub const INGEST_PIPELINE_NAME: &str = "embeddings-ingest-pipeline";
 pub const HYBRID_SEARCH_PIPELINE_NAME: &str = "hybrid-search-pipeline";
 const NORMALIZATION_TECHNIQUE: &str = "min_max";
 const COMBINATION_TECHNIQUE: &str = "arithmetic_mean";
-const KNN_SPACE_TYPE: &str = "l2";
 const TOKENIZER_KIND: &str = "standard";
 
 pub fn create_ingest_schema(config: &OSearchKnnConfig, params: Option<&KnnIndexParams>) -> Value {
@@ -93,8 +92,8 @@ pub fn create_document_schema(
                 "knn.algo_param.ef_search": knn_params.knn_ef_searcher(),
                 "number_of_shards": config.number_of_shards(),
                 "number_of_replicas": config.number_of_replicas(),
-                "search.default_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
-            }
+            },
+            "default_pipeline": INGEST_PIPELINE_NAME,
         },
         "mappings": {
             "properties": {
@@ -131,9 +130,8 @@ pub fn create_document_schema(
                             "type": "knn_vector",
                             "dimension": knn_params.knn_dimension(),
                             "method": {
-                                "engine": "lucene",
-                                "space_type": "l2",
-                                "name": "hnsw",
+                              "name": "hnsw",
+                              "engine": "lucene",
                             }
                         }
                     }
