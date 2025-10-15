@@ -2,7 +2,10 @@ use derive_builder::Builder;
 use serde_json::{json, Value};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
-use crate::application::structures::params::{FilterParams, FullTextSearchParams, HybridSearchParams, ResultParams, RetrieveDocumentParams, SemanticSearchParams};
+use crate::application::structures::params::{
+    FilterParams, FullTextSearchParams, HybridSearchParams, ResultParams, RetrieveDocumentParams,
+    SemanticSearchParams,
+};
 
 #[derive(Builder)]
 pub struct QueryBuilderParams {

@@ -1,8 +1,8 @@
 use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::infrastructure::osearch::OSearchConfig;
 use crate::infrastructure::httpserver::HttpServerConfig;
+use crate::infrastructure::osearch::OSearchConfig;
 
 #[cfg(feature = "enable-cache-redis")]
 use crate::infrastructure::redis::config::RedisConfig;
