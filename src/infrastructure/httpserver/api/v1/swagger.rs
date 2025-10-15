@@ -64,6 +64,7 @@ const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui.d
             IndexSchema,
             FilterForm,
             ResultForm,
+            ShortResultForm,
             FullTextSearchForm,
             RetrieveDocumentForm,
             SemanticSearchForm,

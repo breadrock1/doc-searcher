@@ -73,8 +73,6 @@ pub struct ResultParams {
     highlight_items: Option<u32>,
     #[getset(get_copy, vis = "pub")]
     highlight_item_size: Option<u32>,
-    #[getset(get_copy, vis = "pub")]
-    min_score: Option<f32>,
 }
 
 #[derive(Builder, Debug, Getset, Serialize, Deserialize)]
@@ -109,6 +107,10 @@ pub struct HybridSearchParams {
     model_id: Option<String>,
     #[getset(get_copy, vis = "pub")]
     knn_amount: Option<u16>,
+    #[getset(get_copy, vis = "pub")]
+    min_score: Option<f32>,
+    #[getset(get, vis = "pub")]
+    filter: Option<FilterParams>,
     #[getset(get, vis = "pub")]
     result: ResultParams,
 }
@@ -125,6 +127,8 @@ pub struct SemanticSearchParams {
     tokens: Option<Vec<f64>>,
     #[getset(get_copy, vis = "pub")]
     knn_amount: Option<u16>,
+    #[getset(get_copy, vis = "pub")]
+    min_score: Option<f32>,
     #[getset(get, vis = "pub")]
     filter: Option<FilterParams>,
     #[getset(get, vis = "pub")]
