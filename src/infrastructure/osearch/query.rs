@@ -165,8 +165,8 @@ impl QueryBuilder for HybridSearchParams {
         let exclude = params
             .include_extra_fields
             .map(|it| match it {
-                false => Some(["content", "chunked_text", "embeddings"].as_slice()),
-                true => Some(["content"].as_slice()),
+                false => Some(["content"].as_slice()),
+                true => Some(["chunked_text", "embeddings"].as_slice()),
             })
             .unwrap_or_default();
 
