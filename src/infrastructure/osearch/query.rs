@@ -4,10 +4,6 @@ use serde_json::{json, Value};
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
 use crate::application::structures::params::{FilterParams, FullTextSearchParams, HybridSearchParams, ResultParams, RetrieveDocumentParams, SemanticSearchParams};
 
-const FRAGMENT_SIZE: u32 = 600;
-const FRAGMENT_COUNT: u32 = 5;
-const MIN_SCORE: f32 = 0.7;
-
 #[derive(Builder)]
 pub struct QueryBuilderParams {
     pub model_id: Option<String>,
@@ -85,7 +81,6 @@ impl QueryBuilder for RetrieveDocumentParams {
                     "filter": build_filter_query(self.filter()),
                 }
             },
-            "highlight": build_highlight_query(self.result()),
             "sort": build_sort_query(self.result().order()),
         })
     }
@@ -104,22 +99,28 @@ impl QueryBuilder for FullTextSearchParams {
             "_source": {
                 "exclude": exclude,
             },
+            "highlight": build_highlight_query(self.result()),
+            "sort": build_sort_query(self.result().order()),
             "query": {
                 "bool": {
                     "must": must,
                     "filter": build_filter_query(self.filter()),
                 }
-            },
-            "highlight": build_highlight_query(self.result()),
-            "sort": build_sort_query(self.result().order()),
+            }
         })
     }
 }
 
 impl QueryBuilder for SemanticSearchParams {
     fn build_query(&self, params: QueryBuilderParams) -> Value {
+        let query = self.query();
+        let tokens = self.tokens().as_ref();
+        let knn_amount = self.knn_amount();
+        let model_id = params.model_id.as_ref();
+        let neural_query = build_semantic_query(query, tokens, knn_amount, model_id);
+
         let size = self.result().size();
-        let query = build_semantic_query(self, params.model_id.as_ref());
+        let filter = build_filter_query(self.filter());
 
         let exclude = params
             .include_extra_fields
@@ -129,29 +130,33 @@ impl QueryBuilder for SemanticSearchParams {
             })
             .unwrap_or_default();
 
-        let min_score = self.result().min_score().unwrap_or(MIN_SCORE);
-        json!({
+        let mut base_value = json!({
             "_source": {
                 "exclude": exclude,
             },
             "size": size,
-            "min_score": min_score,
+            "highlight": build_highlight_query(self.result()),
             "query": {
                 "bool": {
+                    "filter": filter,
                     "must": [
                         {
                             "nested": {
-                                "score_mode": "max",
                                 "path": "embeddings",
-                                "query": query,
+                                "score_mode": "max",
+                                "query": neural_query
                             }
                         }
-                    ],
-                    "filter": build_filter_query(self.filter()),
+                    ]
                 }
-            },
-            "highlight": build_highlight_query(self.result()),
-        })
+            }
+        });
+
+        if let Some(min_score) = self.min_score() {
+            base_value["min_score"] = json!(min_score);
+        }
+
+        base_value
     }
 }
 
@@ -161,6 +166,7 @@ impl QueryBuilder for HybridSearchParams {
         let size = self.result().size();
         let knn_amount = self.knn_amount();
         let model_id = params.model_id.as_ref();
+        let filter = build_filter_query(self.filter());
 
         let exclude = params
             .include_extra_fields
@@ -170,39 +176,63 @@ impl QueryBuilder for HybridSearchParams {
             })
             .unwrap_or_default();
 
-        let min_score = self.result().min_score().unwrap_or(MIN_SCORE);
+        let multi_match_query = json!({
+            "query": query,
+            "fields": ["content", "chunked_text"],
+            "type": "cross_fields",
+            "operator": "or",
+        });
 
-        json!({
+        let match_phrase_query = json!({
+            "content": {
+                "query": query,
+                "slop": 2,
+                "boost": 3.0
+            }
+        });
+
+        let mut base_value = json!({
             "_source": {
                 "exclude": exclude
             },
             "size": size,
-            "min_score": min_score,
+            "search_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
+            "highlight": build_highlight_query(self.result()),
             "query": {
                 "hybrid": {
                     "queries": [
-                        {
-                            "match": {
-                                "content": {
-                                    "query": query,
-                                }
-                            }
-                        },
                         {
                             "neural": {
                                 "embeddings.knn": {
                                     "query_text": query,
                                     "model_id": model_id,
-                                    "k": knn_amount,
+                                    "k": knn_amount
                                 }
                             }
                         },
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "multi_match": multi_match_query
+                                    },
+                                    {
+                                        "match_phrase": match_phrase_query
+                                    }
+                                ],
+                                "filter": filter,
+                            }
+                        }
                     ]
                 }
             },
-            "highlight": build_highlight_query(self.result()),
-            "search_pipeline": HYBRID_SEARCH_PIPELINE_NAME,
-        })
+        });
+
+        if let Some(min_score) = self.min_score() {
+            base_value["min_score"] = json!(min_score);
+        }
+
+        base_value
     }
 }
 
@@ -216,14 +246,18 @@ fn build_exclude_field(params: &QueryBuilderParams) -> Option<&[&str]> {
         .unwrap_or_default()
 }
 
-fn build_semantic_query(params: &SemanticSearchParams, model_id: Option<&String>) -> Value {
-    let knn_amount = params.knn_amount();
-    match params.tokens().as_ref() {
+fn build_semantic_query(
+    query: &str,
+    tokens: Option<&Vec<f64>>,
+    knn_amount: Option<u16>,
+    model_id: Option<&String>,
+) -> Value {
+    match tokens {
         None => {
             json!({
                 "neural": {
                     "embeddings.knn": {
-                        "query_text": params.query(),
+                        "query_text": query,
                         "model_id": model_id,
                         "k": knn_amount
                     }
@@ -270,19 +304,24 @@ fn build_filter_query(filter: &Option<FilterParams>) -> Value {
 }
 
 fn build_highlight_query(params: &ResultParams) -> Value {
-    let fragment_size = params.highlight_item_size().unwrap_or(FRAGMENT_SIZE);
-    let fragment_count = params.highlight_items().unwrap_or(FRAGMENT_COUNT);
-    json!({
+    let mut base_value = json!({
         "fields": {
             "content": {
-                "type": "plain",
                 "pre_tags": [""],
                 "post_tags": [""],
-                "fragment_size": fragment_size,
-                "number_of_fragments": fragment_count
             }
         }
-    })
+    });
+
+    if let Some(fragment_size) = params.highlight_item_size() {
+        base_value["fields"]["content"]["fragment_size"] = json!(fragment_size);
+    }
+
+    if let Some(fragment_count) = params.highlight_items() {
+        base_value["fields"]["content"]["number_of_fragments"] = json!(fragment_count);
+    }
+
+    base_value
 }
 
 fn build_sort_query(order: &str) -> Value {
