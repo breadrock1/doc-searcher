@@ -1,4 +1,4 @@
-pub mod config;
+mod config;
 mod dto;
 mod error;
 mod extractor;
@@ -6,6 +6,8 @@ mod query;
 mod schema;
 #[cfg(test)]
 mod tests;
+
+pub use config::OSearchConfig;
 
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
@@ -16,7 +18,6 @@ use crate::application::structures::params::{
     RetrieveDocumentParams, SemanticSearchParams,
 };
 use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
-use crate::infrastructure::osearch::config::OSearchConfig;
 use crate::infrastructure::osearch::dto::SourceDocument;
 use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
 use crate::ServiceConnect;

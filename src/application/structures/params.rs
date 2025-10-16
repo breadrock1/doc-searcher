@@ -3,7 +3,7 @@ use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 
 const KNN_EF_SEARCHER: u32 = 100;
-const KNN_DIMENSION: u32 = 384;
+const KNN_DIMENSION: u32 = 768;
 const TOKEN_LIMIT: u32 = 700;
 const OVERLAP_RATE: f32 = 0.2;
 
@@ -69,6 +69,10 @@ pub struct ResultParams {
     offset: i64,
     #[getset(get_copy, vis = "pub")]
     include_extra_fields: Option<bool>,
+    #[getset(get_copy, vis = "pub")]
+    highlight_items: Option<u32>,
+    #[getset(get_copy, vis = "pub")]
+    highlight_item_size: Option<u32>,
 }
 
 #[derive(Builder, Debug, Getset, Serialize, Deserialize)]
@@ -103,6 +107,10 @@ pub struct HybridSearchParams {
     model_id: Option<String>,
     #[getset(get_copy, vis = "pub")]
     knn_amount: Option<u16>,
+    #[getset(get_copy, vis = "pub")]
+    min_score: Option<f32>,
+    #[getset(get, vis = "pub")]
+    filter: Option<FilterParams>,
     #[getset(get, vis = "pub")]
     result: ResultParams,
 }
@@ -119,6 +127,8 @@ pub struct SemanticSearchParams {
     tokens: Option<Vec<f64>>,
     #[getset(get_copy, vis = "pub")]
     knn_amount: Option<u16>,
+    #[getset(get_copy, vis = "pub")]
+    min_score: Option<f32>,
     #[getset(get, vis = "pub")]
     filter: Option<FilterParams>,
     #[getset(get, vis = "pub")]

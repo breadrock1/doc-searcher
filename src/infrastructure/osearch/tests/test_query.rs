@@ -18,6 +18,8 @@ fn build_result_params() -> ResultParams {
         .size(10)
         .offset(0)
         .include_extra_fields(Some(true))
+        .highlight_items(None)
+        .highlight_item_size(None)
         .build()
         .unwrap()
 }
@@ -42,32 +44,17 @@ fn build_comparable_query() -> Value {
                 "embeddings"
             ],
         },
-        "highlight": {
-            "fields": {
-                "content": {
-                    "type": "plain",
-                    "pre_tags": [""],
-                    "post_tags": [""]
-                }
-            }
-        },
         "query": {
             "bool": {
                 "filter": [],
-                "must": [
-                    {
-                        "match_all": {}
-                    }
-                ],
+                "must": [{ "match_all": {} }],
             }
         },
         "sort": [
             {
-                "created_at": {
-                    "order": "desc"
-                }
+                "created_at": { "order": "desc" }
             }
-        ],
+        ]
     })
 }
 
@@ -308,18 +295,16 @@ fn test_build_with_path_query_from_retrieve_params(
 
     let mut compare_query = build_comparable_query();
     compare_query["query"] = json!({
-        "query": {
-            "bool": {
-                "filter": [],
-                "must": [
-                    {
-                        "match": {
-                            "file_path": DOCUMENT_PATH,
-                        }
+        "bool": {
+            "filter": [],
+            "must": [
+                {
+                    "match": {
+                        "file_path": DOCUMENT_PATH,
                     }
-                ],
-            }
-        },
+                }
+            ],
+        }
     });
 
     assert_eq!(query, compare_query);
@@ -366,7 +351,15 @@ fn test_build_simple_fulltext_search_params(
     let query_params = QueryBuilderParams::from(&params);
     let query = params.build_query(query_params);
 
-    let compare_query = build_comparable_query();
+    let mut compare_query = build_comparable_query();
+    compare_query["highlight"] = json!({
+        "fields": {
+            "content": {
+                "post_tags": [""],
+                "pre_tags": [""],
+            }
+        }
+    });
     assert_eq!(query, compare_query);
 
     Ok(())

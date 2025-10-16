@@ -3,7 +3,7 @@ mod config;
 mod error;
 pub mod mw;
 
-pub use config::ServerConfig;
+pub use config::HttpServerConfig;
 
 use axum::routing::get;
 use axum::Router;

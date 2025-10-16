@@ -36,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
     let app = httpserver::mw::cache::enable_caching_mw(app, config.cacher().redis()).await?;
 
     let server_config = config.server();
-    let listener = TcpListener::bind(server_config.address()).await?;
+    let listener = TcpListener::bind(server_config.http().address()).await?;
     if let Err(err) = axum::serve(listener, app).await {
         tracing::error!(err=?err, "failed to stop http server");
     };

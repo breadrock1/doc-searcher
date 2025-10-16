@@ -1,6 +1,6 @@
 use doc_search::application::structures::params::{KnnIndexParams, KnnIndexParamsBuilder};
 use doc_search::config::ServiceConfig;
-use doc_search::infrastructure::osearch::config::OSearchConfig;
+use doc_search::infrastructure::osearch::OSearchConfig;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::{telemetry, ServiceConnect};
 
