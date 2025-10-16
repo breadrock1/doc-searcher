@@ -5,6 +5,7 @@ pub mod mw;
 
 pub use config::HttpServerConfig;
 
+use axum::extract::DefaultBodyLimit;
 use axum::routing::get;
 use axum::Router;
 use axum_prometheus::PrometheusMetricLayer;
@@ -14,6 +15,9 @@ use crate::application::services::{
     server::ServerApp,
     storage::{DocumentManager, DocumentSearcher, IndexManager, PaginateManager},
 };
+
+const FILE_BODY_LIMIT_MB: usize = 50;
+const BYTE_SIZE: usize = 1024;
 
 pub fn init_server<Storage, Searcher>(app: ServerApp<Storage, Searcher>) -> Router
 where
@@ -26,5 +30,7 @@ where
         .merge(api::init_v1_routers())
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .layer(prometheus_layer)
+        .layer(DefaultBodyLimit::disable())
+        .layer(DefaultBodyLimit::max(BYTE_SIZE * FILE_BODY_LIMIT_MB))
         .with_state(app_arc)
 }
