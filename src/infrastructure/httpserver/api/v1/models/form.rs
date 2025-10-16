@@ -133,7 +133,7 @@ impl TryFrom<UpdateDocumentForm> for Document {
 pub struct KnnIndexForm {
     #[schema(example = 100)]
     knn_ef_searcher: u32,
-    #[schema(example = 384)]
+    #[schema(example = 768)]
     knn_dimension: u32,
     #[schema(example = 50)]
     token_limit: u32,
@@ -199,6 +199,10 @@ pub struct ResultForm {
     offset: u32,
     #[schema(example = false)]
     include_extra_fields: Option<bool>,
+    #[schema(example = 3)]
+    highlight_items: Option<u32>,
+    #[schema(example = 600)]
+    highlight_item_size: Option<u32>,
 }
 
 impl From<ResultForm> for ResultParams {
@@ -208,6 +212,34 @@ impl From<ResultForm> for ResultParams {
             .size(form.size.into())
             .offset(form.offset.into())
             .include_extra_fields(form.include_extra_fields)
+            .highlight_items(form.highlight_items)
+            .highlight_item_size(form.highlight_item_size)
+            .build()
+            .unwrap()
+    }
+}
+
+#[derive(Serialize, Deserialize, IntoParams, ToSchema)]
+pub struct ShortResultForm {
+    #[schema(example = "desc")]
+    order: String,
+    #[schema(example = 10)]
+    size: u32,
+    #[schema(example = 0)]
+    offset: u32,
+    #[schema(example = false)]
+    include_extra_fields: Option<bool>,
+}
+
+impl From<ShortResultForm> for ResultParams {
+    fn from(form: ShortResultForm) -> ResultParams {
+        ResultParamsBuilder::default()
+            .order(form.order)
+            .size(form.size.into())
+            .offset(form.offset.into())
+            .include_extra_fields(form.include_extra_fields)
+            .highlight_items(None)
+            .highlight_item_size(None)
             .build()
             .unwrap()
     }
@@ -218,7 +250,7 @@ pub struct RetrieveDocumentForm {
     #[schema(example = "./test-document.docx")]
     path: Option<String>,
     filter: Option<FilterForm>,
-    result: ResultForm,
+    result: ShortResultForm,
 }
 
 impl TryFrom<RetrieveDocumentForm> for RetrieveDocumentParams {
@@ -276,23 +308,33 @@ pub struct HybridSearchForm {
     query: String,
     #[schema(example = 5)]
     knn_amount: Option<u16>,
-    result: ResultForm,
     #[schema(example = "test-folder-1,test-folder-2")]
     indexes: String,
     #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
     model_id: Option<String>,
+    #[schema(example = 0.7)]
+    min_score: Option<f32>,
+    result: ResultForm,
+    filter: Option<FilterForm>,
 }
 
 impl TryFrom<HybridSearchForm> for HybridSearchParams {
     type Error = anyhow::Error;
 
     fn try_from(form: HybridSearchForm) -> Result<Self, Self::Error> {
+        let filter = match form.filter {
+            None => None,
+            Some(params) => Some(params.try_into()?),
+        };
+
         let params = HybridSearchParamsBuilder::default()
             .query(form.query)
             .knn_amount(form.knn_amount)
             .result(form.result.into())
             .indexes(form.indexes)
             .model_id(form.model_id)
+            .filter(filter)
+            .min_score(form.min_score)
             .build()?;
 
         Ok(params)
@@ -303,14 +345,17 @@ impl TryFrom<HybridSearchForm> for HybridSearchParams {
 pub struct SemanticSearchForm {
     #[schema(example = "Hello world")]
     query: String,
-    tokens: Option<Vec<f64>>,
+    #[schema(example = 100)]
     knn_amount: Option<u16>,
-    filter: Option<FilterForm>,
-    result: ResultForm,
     #[schema(example = "test-folder-1,test-folder-2")]
     indexes: String,
     #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
     model_id: Option<String>,
+    #[schema(example = 0.7)]
+    min_score: Option<f32>,
+    tokens: Option<Vec<f64>>,
+    result: ShortResultForm,
+    filter: Option<FilterForm>,
 }
 
 impl TryFrom<SemanticSearchForm> for SemanticSearchParams {
@@ -330,6 +375,7 @@ impl TryFrom<SemanticSearchForm> for SemanticSearchParams {
             .result(form.result.into())
             .indexes(form.indexes)
             .model_id(form.model_id)
+            .min_score(form.min_score)
             .build()?;
 
         Ok(params)

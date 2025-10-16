@@ -5,7 +5,7 @@ mod form;
 pub use form::{
     CreateDocumentForm, CreateIndexForm, FilterForm, FullTextSearchForm, HybridSearchForm,
     KnnIndexForm, PaginateForm, ResultForm, RetrieveDocumentForm, SemanticSearchForm,
-    UpdateDocumentForm,
+    ShortResultForm, UpdateDocumentForm,
 };
 
 mod response;
