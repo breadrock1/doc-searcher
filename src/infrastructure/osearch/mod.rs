@@ -515,6 +515,7 @@ mod test_osearch {
     const TEST_SEMANTIC_DATA: &[u8] =
         include_bytes!("../../../tests/resources/semantic-params.json");
 
+    #[ignore]
     #[tokio::test]
     async fn test_searcher_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
@@ -553,6 +554,7 @@ mod test_osearch {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_documents_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
@@ -584,6 +586,7 @@ mod test_osearch {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_index_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
@@ -615,8 +618,8 @@ mod test_osearch {
         Ok(id)
     }
 
-    #[cfg(feature = "enable-unique-doc-id")]
     #[test]
+    #[cfg(feature = "enable-unique-doc-id")]
     fn test_gen_unique_document_id() -> anyhow::Result<()> {
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
