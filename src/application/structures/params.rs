@@ -3,7 +3,7 @@ use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 
 const KNN_EF_SEARCHER: u32 = 100;
-const KNN_DIMENSION: u32 = 384;
+const KNN_DIMENSION: u32 = 768;
 const TOKEN_LIMIT: u32 = 700;
 const OVERLAP_RATE: f32 = 0.2;
 

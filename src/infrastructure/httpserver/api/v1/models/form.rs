@@ -133,7 +133,7 @@ impl TryFrom<UpdateDocumentForm> for Document {
 pub struct KnnIndexForm {
     #[schema(example = 100)]
     knn_ef_searcher: u32,
-    #[schema(example = 384)]
+    #[schema(example = 768)]
     knn_dimension: u32,
     #[schema(example = 50)]
     token_limit: u32,
