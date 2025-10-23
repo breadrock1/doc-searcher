@@ -14,6 +14,7 @@ strip = "debuginfo"
 [features]
 # temporary feature
 enable-multi-user = []
+enable-user-manager = []
 enable-unique-doc-id = ["dep:md5"]
 enable-cache-redis = ["dep:redis"]
 default = []
