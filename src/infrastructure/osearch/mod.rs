@@ -9,19 +9,7 @@ mod tests;
 
 pub use config::OSearchConfig;
 
-use crate::application::services::storage::{
-    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
-};
-use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
-use crate::application::structures::params::{
-    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
-    RetrieveDocumentParams, SemanticSearchParams,
-};
-use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
-use crate::infrastructure::osearch::dto::SourceDocument;
-use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
-use crate::ServiceConnect;
-
+use anyhow::anyhow;
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
@@ -32,8 +20,23 @@ use opensearch::http::{Method, Url};
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
 use opensearch::ingest::IngestPutPipelineParts;
 use opensearch::OpenSearch;
+use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::sync::Arc;
+
+use crate::application::services::storage::{
+    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
+};
+use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
+use crate::application::structures::params::{
+    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
+    RetrieveDocumentParams, SemanticSearchParams,
+};
+use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
+use crate::infrastructure::osearch::dto::SourceDocument;
+use crate::infrastructure::osearch::config::OSearchKnnConfig;
+use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
+use crate::ServiceConnect;
 
 const SCROLL_LIFETIME: &str = "5m";
 

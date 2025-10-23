@@ -1,9 +1,11 @@
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use doc_search::application::services::server::ServerApp;
+use doc_search::application::services::usermanager::UserManager;
 use doc_search::application::{SearcherUseCase, StorageUseCase};
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::httpserver;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
+use doc_search::infrastructure::usermanager::UserManagerClient;
 use doc_search::{telemetry, ServiceConnect};
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -18,7 +20,10 @@ async fn main() -> anyhow::Result<()> {
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
 
-    let storage_uc = StorageUseCase::new(config.settings(), osearch_client.clone());
+    let um_config = config.server().usermanager();
+    let um: Arc<Box<dyn UserManager  + Send + Sync + 'static>> = Arc::new(Box::new(UserManagerClient::connect(um_config).await?));
+
+    let storage_uc = StorageUseCase::new(config.settings(), osearch_client.clone(), um.clone());
     let searcher_uc = SearcherUseCase::new(osearch_client.clone());
     let server_app = ServerApp::new(storage_uc, searcher_uc);
 
@@ -31,6 +36,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(trace_layer)
         .layer(cors_layer)
         .layer(OtelAxumLayer::default());
+
+    let app = httpserver::mw::header::enable_header_extractor_mw(app).await?;
 
     #[cfg(feature = "enable-cache-redis")]
     let app = httpserver::mw::cache::enable_caching_mw(app, config.cacher().redis()).await?;

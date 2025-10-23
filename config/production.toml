@@ -14,6 +14,9 @@ address = "http://jaeger:4317"
 [server.http]
 address = "0.0.0.0:2892"
 
+[server.usermanager]
+address = "http://usermanager:2899/api/v1"
+
 [storage.opensearch]
 address = "http://opensearch:9200"
 username = "admin"

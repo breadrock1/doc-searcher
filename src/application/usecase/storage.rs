@@ -4,8 +4,9 @@ use std::sync::Arc;
 
 use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
+use crate::application::services::usermanager::UserManager;
 use crate::application::structures::params::CreateIndexParams;
-use crate::application::structures::{Document, Index, StoredDocument};
+use crate::application::structures::{Document, Index, StoredDocument, UserInfo};
 use crate::config::SettingsConfig;
 
 #[cfg(feature = "enable-unique-doc-id")]
@@ -18,15 +19,20 @@ where
 {
     settings: Arc<SettingsConfig>,
     storage: Arc<Storage>,
+    user_manager: Arc<Box<dyn UserManager + Send + Sync + 'static>>,
 }
 
 impl<Storage> StorageUseCase<Storage>
 where
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
-    pub fn new(settings: &SettingsConfig, storage: Arc<Storage>) -> Self {
+    pub fn new(
+        settings: &SettingsConfig,
+        storage: Arc<Storage>,
+        user_manager: Arc<Box<dyn UserManager + Send + Sync + 'static>>,
+    ) -> Self {
         let settings = Arc::new(settings.clone());
-        StorageUseCase { storage, settings }
+        StorageUseCase { storage, settings, user_manager }
     }
 }
 
@@ -45,7 +51,25 @@ where
     }
 
     #[tracing::instrument(skip(self), level = "info")]
-    pub async fn get_all_indexes(&self) -> StorageResult<Vec<Index>> {
+    pub async fn get_all_indexes(&self, user_info: Option<&UserInfo>) -> StorageResult<Vec<Index>> {
+        if let Some(user_info) = user_info {
+            let resources = self
+                .user_manager
+                .get_user_resource(user_info.user_id())
+                .await
+                .map_err(anyhow::Error::from)
+                .map_err(StorageError::AuthenticationFailed)?;
+
+            let indexes = resources
+                .into_iter()
+                .map(|it| it.into())
+                .collect::<Vec<Index>>();
+
+            return Ok(indexes);
+        }
+
+        // TODO: Will be removed into further releases
+        tracing::warn!("unauthorized access");
         self.storage.get_all_indexes().await
     }
 
