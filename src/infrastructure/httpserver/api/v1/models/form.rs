@@ -159,6 +159,8 @@ impl TryFrom<KnnIndexForm> for KnnIndexParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct FilterForm {
     #[schema(example = 0)]
+    doc_part_id: Option<usize>,
+    #[schema(example = 0)]
     size_from: Option<u32>,
     #[schema(example = 1024)]
     size_to: Option<u32>,
@@ -177,6 +179,7 @@ impl TryFrom<FilterForm> for FilterParams {
 
     fn try_from(form: FilterForm) -> Result<Self, Self::Error> {
         let form = FilterParamsBuilder::default()
+            .doc_part_id(form.doc_part_id)
             .size_from(form.size_from)
             .size_to(form.size_to)
             .created_from(form.created_from)

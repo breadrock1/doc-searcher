@@ -11,3 +11,9 @@ mod paginate;
 pub use paginate::{Paginated, PaginatedBuilder};
 
 pub mod params;
+
+mod resource;
+pub use resource::{Resource, ResourceBuilder, ResourceBuilderError};
+
+mod user;
+pub use user::{UserInfo, UserInfoBuilder, UserInfoBuilderError};
