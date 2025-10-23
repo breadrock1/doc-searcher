@@ -166,8 +166,10 @@ where
             .with_chunk_size(self.settings.max_content_size())
             .split_text(content)
             .into_iter()
-            .map(|it| {
+            .enumerate()
+            .map(|(part_id, it)| {
                 let mut doc_part = doc.clone();
+                doc_part.set_doc_part_id(part_id);
                 doc_part.set_content(Some(it));
                 doc_part
             })

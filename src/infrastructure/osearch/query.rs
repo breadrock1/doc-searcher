@@ -284,24 +284,62 @@ fn build_filter_query(filter: &Option<FilterParams>) -> Value {
     match filter {
         None => json!([]),
         Some(params) => {
-            json!([
-                {
-                    "range": {
-                        "created_at": {
-                            "gte": params.created_from(),
-                            "lte": params.created_to()
+            let array_json_value = json!([]);
+            if let Value::Array(mut filter_params) = array_json_value {
+                if let Some(doc_part_id) = params.doc_part_id() {
+                    filter_params.push(json!({
+                        "term": {
+                            "doc_part_id": doc_part_id,
                         }
-                    }
-                },
-                {
-                    "range": {
-                        "file_size": {
-                            "gte": params.size_from(),
-                            "lte": params.size_to()
-                        }
+                    }));
+                }
+
+                if let Some(created_from) = params.created_from() {
+                    if let Some(created_to) = params.created_to() {
+                        filter_params.push(json!({
+                            "range": {
+                                "created_at": {
+                                    "gte": created_from,
+                                    "lte": created_to,
+                                }
+                            }
+                        }))
+                    } else {
+                        filter_params.push(json!({
+                            "range": {
+                                "created_at": {
+                                    "gte": created_from,
+                                }
+                            }
+                        }))
                     }
                 }
-            ])
+
+                if let Some(file_size_from) = params.size_from() {
+                    if let Some(file_size_to) = params.size_to() {
+                        filter_params.push(json!({
+                            "range": {
+                                "file_size": {
+                                    "gte": file_size_from,
+                                    "lte": file_size_to,
+                                }
+                            }
+                        }))
+                    } else {
+                        filter_params.push(json!({
+                            "range": {
+                                "file_size": {
+                                    "gte": params.size_from(),
+                                }
+                            }
+                        }))
+                    }
+                }
+
+                return Value::from(filter_params);
+            }
+
+            array_json_value
         }
     }
 }

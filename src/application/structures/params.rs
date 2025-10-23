@@ -46,6 +46,8 @@ impl Default for KnnIndexParams {
 #[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
 pub struct FilterParams {
     #[getset(get_copy, vis = "pub")]
+    doc_part_id: Option<usize>,
+    #[getset(get_copy, vis = "pub")]
     size_from: Option<u32>,
     #[getset(get_copy, vis = "pub")]
     size_to: Option<u32>,
