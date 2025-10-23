@@ -56,7 +56,7 @@ where
 
     #[tracing::instrument(skip(self), level = "info")]
     pub async fn get_all_indexes(&self, user_info: Option<&UserInfo>) -> StorageResult<Vec<Index>> {
-        if cfg!(feature = "enable-multi-user") {
+        if cfg!(feature = "enable-user-manager") {
             let user_info = user_info.ok_or({
                 let err = anyhow!("empty user info");
                 StorageError::AuthenticationFailed(err)
