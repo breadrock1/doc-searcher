@@ -52,7 +52,13 @@ where
 
     #[tracing::instrument(skip(self), level = "info")]
     pub async fn get_all_indexes(&self, user_info: Option<&UserInfo>) -> StorageResult<Vec<Index>> {
-        if let Some(user_info) = user_info {
+        if cfg!(feature = "enable-multi-user") {
+            let user_info = user_info
+                .ok_or({
+                    let err = anyhow!("empty user info");
+                    StorageError::AuthenticationFailed(err)
+                })?;
+
             let resources = self
                 .user_manager
                 .get_user_resource(user_info.user_id())
@@ -65,11 +71,10 @@ where
                 .map(|it| it.into())
                 .collect::<Vec<Index>>();
 
-            return Ok(indexes);
+            return Ok(indexes)
         }
 
         // TODO: Will be removed into further releases
-        tracing::warn!("unauthorized access");
         self.storage.get_all_indexes().await
     }
 
