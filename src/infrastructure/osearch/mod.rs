@@ -33,8 +33,8 @@ use crate::application::structures::params::{
     RetrieveDocumentParams, SemanticSearchParams,
 };
 use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
-use crate::infrastructure::osearch::dto::SourceDocument;
 use crate::infrastructure::osearch::config::OSearchKnnConfig;
+use crate::infrastructure::osearch::dto::SourceDocument;
 use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
 use crate::ServiceConnect;
 
@@ -487,6 +487,7 @@ impl OpenSearchStorage {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn load_ml_model(&self, config: &OSearchKnnConfig) -> StorageResult<()> {
         #[derive(Debug, Deserialize)]
         struct DeployModelTaskResponse {
@@ -507,15 +508,17 @@ impl OpenSearchStorage {
         });
 
         let target_url = format!("/_plugins/_ml/models/{}/_load", config.model_id());
-        let response = self.client.send(
-            Method::Post,
-            target_url.as_str(),
-            HeaderMap::new(),
-            None::<&String>,
-            Some(schema_query.to_string()),
-            None,
-        )
-        .await?;
+        let response = self
+            .client
+            .send(
+                Method::Post,
+                target_url.as_str(),
+                HeaderMap::new(),
+                None::<&String>,
+                Some(schema_query.to_string()),
+                None,
+            )
+            .await?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -528,15 +531,17 @@ impl OpenSearchStorage {
         let mut await_task_completed = true;
         let target_url = format!("/_plugins/_ml/tasks/{}", deploy_task.task_id);
         while await_task_completed {
-            let response = self.client.send(
-                Method::Get,
-                target_url.as_str(),
-                HeaderMap::new(),
-                None::<&String>,
-                Some(schema_query.to_string()),
-                None,
-            )
-            .await?;
+            let response = self
+                .client
+                .send(
+                    Method::Get,
+                    target_url.as_str(),
+                    HeaderMap::new(),
+                    None::<&String>,
+                    Some(schema_query.to_string()),
+                    None,
+                )
+                .await?;
 
             if !response.status_code().is_success() {
                 let err = error::OSearchError::from_response(response).await;
@@ -550,10 +555,10 @@ impl OpenSearchStorage {
             await_task_completed = match fetch_response.state.as_str() {
                 "FAILED" => {
                     let msg = "failed to deploy model";
-                    return Err(StorageError::ServiceError(anyhow!(msg)))
+                    return Err(StorageError::ServiceError(anyhow!(msg)));
                 }
                 "COMPLETED" => false,
-                _ => true
+                _ => true,
             };
         }
 

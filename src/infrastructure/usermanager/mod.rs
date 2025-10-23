@@ -6,8 +6,7 @@ mod dto;
 use anyhow::anyhow;
 use std::sync::Arc;
 
-
-use crate::application::services::usermanager::{UserManager, UserManagerResult, UserManagerError};
+use crate::application::services::usermanager::{UserManager, UserManagerError, UserManagerResult};
 use crate::application::structures::Resource;
 use crate::infrastructure::usermanager::dto::{GetUserResourcesForm, ResourceSchema};
 use crate::ServiceConnect;

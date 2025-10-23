@@ -32,7 +32,11 @@ where
         user_manager: Arc<Box<dyn UserManager + Send + Sync + 'static>>,
     ) -> Self {
         let settings = Arc::new(settings.clone());
-        StorageUseCase { storage, settings, user_manager }
+        StorageUseCase {
+            storage,
+            settings,
+            user_manager,
+        }
     }
 }
 
@@ -53,11 +57,10 @@ where
     #[tracing::instrument(skip(self), level = "info")]
     pub async fn get_all_indexes(&self, user_info: Option<&UserInfo>) -> StorageResult<Vec<Index>> {
         if cfg!(feature = "enable-multi-user") {
-            let user_info = user_info
-                .ok_or({
-                    let err = anyhow!("empty user info");
-                    StorageError::AuthenticationFailed(err)
-                })?;
+            let user_info = user_info.ok_or({
+                let err = anyhow!("empty user info");
+                StorageError::AuthenticationFailed(err)
+            })?;
 
             let resources = self
                 .user_manager
@@ -71,7 +74,7 @@ where
                 .map(|it| it.into())
                 .collect::<Vec<Index>>();
 
-            return Ok(indexes)
+            return Ok(indexes);
         }
 
         // TODO: Will be removed into further releases

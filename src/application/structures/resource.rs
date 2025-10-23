@@ -1,6 +1,6 @@
+use crate::application::structures::{Index, IndexBuilder};
 use derive_builder::Builder;
 use gset::Getset;
-use crate::application::structures::{Index, IndexBuilder};
 
 #[derive(Builder, Getset)]
 pub struct Resource {

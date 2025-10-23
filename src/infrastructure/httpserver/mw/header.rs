@@ -8,7 +8,6 @@ use tower_http::add_extension::AddExtensionLayer;
 
 use crate::application::structures::{UserInfo, UserInfoBuilder};
 
-const NULL_HEADER_VALUE: &str = "null";
 const HEADER_FIELDS: [&str; 1] = ["X-Sova-User-Id"];
 
 pub struct HeadersExtractor;
@@ -28,10 +27,8 @@ impl From<&UserInfoHeader> for UserInfo {
     }
 }
 
-pub async fn enable_header_extractor_mw(
-    app: axum::Router,
-) -> anyhow::Result<axum::Router> {
-    let extractor_state = HeadersExtractor{};
+pub async fn enable_header_extractor_mw(app: axum::Router) -> anyhow::Result<axum::Router> {
+    let extractor_state = HeadersExtractor {};
     let state_arc = Arc::new(extractor_state);
 
     let ext_layer = AddExtensionLayer::new(state_arc.clone());
@@ -57,10 +54,10 @@ fn headers_to_key(headers: &HeaderMap) -> Option<UserInfoHeader> {
     match headers.get(HEADER_FIELDS[0]) {
         None => None,
         Some(value) => {
-            match value.to_str().ok() {
-                None => None,
-                Some(data) => Some(UserInfoHeader{user_id: data.to_string()})
-            }
-        },
+            let value_str = value.to_str().ok();
+            value_str.map(|it| UserInfoHeader {
+                user_id: it.to_string(),
+            })
+        }
     }
 }

@@ -55,14 +55,9 @@ where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
-    let user_info = user
-        .as_ref()
-        .map(|it| UserInfo::from(it));
-
+    let user_info = user.as_ref().map(UserInfo::from);
     let storage = state.get_storage();
-    let indexes = storage
-        .get_all_indexes(user_info.as_ref())
-        .await?;
+    let indexes = storage.get_all_indexes(user_info.as_ref()).await?;
 
     let indexes_schema = indexes
         .into_iter()

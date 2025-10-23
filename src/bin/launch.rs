@@ -21,7 +21,8 @@ async fn main() -> anyhow::Result<()> {
     let osearch_client = Arc::new(OpenSearchStorage::connect(osearch_config).await?);
 
     let um_config = config.server().usermanager();
-    let um: Arc<Box<dyn UserManager  + Send + Sync + 'static>> = Arc::new(Box::new(UserManagerClient::connect(um_config).await?));
+    let um: Arc<Box<dyn UserManager + Send + Sync + 'static>> =
+        Arc::new(Box::new(UserManagerClient::connect(um_config).await?));
 
     let storage_uc = StorageUseCase::new(config.settings(), osearch_client.clone(), um.clone());
     let searcher_uc = SearcherUseCase::new(osearch_client.clone());
