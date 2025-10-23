@@ -6,6 +6,7 @@ pub struct Document {
     pub created_at: i64,
     pub modified_at: i64,
     pub embeddings: Vec<EmbeddingChunk>,
+    pub doc_part_id: usize,
 }
 
 pub struct EmbeddingChunk {

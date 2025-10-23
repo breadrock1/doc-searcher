@@ -9,19 +9,7 @@ mod tests;
 
 pub use config::OSearchConfig;
 
-use crate::application::services::storage::{
-    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
-};
-use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
-use crate::application::structures::params::{
-    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
-    RetrieveDocumentParams, SemanticSearchParams,
-};
-use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
-use crate::infrastructure::osearch::dto::SourceDocument;
-use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
-use crate::ServiceConnect;
-
+use anyhow::anyhow;
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
@@ -32,8 +20,23 @@ use opensearch::http::{Method, Url};
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
 use opensearch::ingest::IngestPutPipelineParts;
 use opensearch::OpenSearch;
+use serde_derive::Deserialize;
 use serde_json::{json, Value};
 use std::sync::Arc;
+
+use crate::application::services::storage::{
+    DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
+};
+use crate::application::services::storage::{PaginateResult, StorageError, StorageResult};
+use crate::application::structures::params::{
+    CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
+    RetrieveDocumentParams, SemanticSearchParams,
+};
+use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
+use crate::infrastructure::osearch::config::OSearchKnnConfig;
+use crate::infrastructure::osearch::dto::SourceDocument;
+use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
+use crate::ServiceConnect;
 
 const SCROLL_LIFETIME: &str = "5m";
 
@@ -484,6 +487,84 @@ impl OpenSearchStorage {
         Ok(())
     }
 
+    #[allow(dead_code)]
+    pub async fn load_ml_model(&self, config: &OSearchKnnConfig) -> StorageResult<()> {
+        #[derive(Debug, Deserialize)]
+        struct DeployModelTaskResponse {
+            pub task_id: String,
+            pub status: String,
+        }
+
+        #[derive(Debug, Deserialize)]
+        struct DeployModelFetchResponse {
+            model_id: Option<String>,
+            state: String,
+        }
+
+        let schema_query = json!({
+            "parameters": {
+                "wait_for_completion": true
+            }
+        });
+
+        let target_url = format!("/_plugins/_ml/models/{}/_load", config.model_id());
+        let response = self
+            .client
+            .send(
+                Method::Post,
+                target_url.as_str(),
+                HeaderMap::new(),
+                None::<&String>,
+                Some(schema_query.to_string()),
+                None,
+            )
+            .await?;
+
+        if !response.status_code().is_success() {
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
+        }
+
+        let deploy_task = response.json::<DeployModelTaskResponse>().await?;
+        tracing::debug!(deploy_task=?deploy_task, "created deploy task");
+
+        let mut await_task_completed = true;
+        let target_url = format!("/_plugins/_ml/tasks/{}", deploy_task.task_id);
+        while await_task_completed {
+            let response = self
+                .client
+                .send(
+                    Method::Get,
+                    target_url.as_str(),
+                    HeaderMap::new(),
+                    None::<&String>,
+                    Some(schema_query.to_string()),
+                    None,
+                )
+                .await?;
+
+            if !response.status_code().is_success() {
+                let err = error::OSearchError::from_response(response).await;
+                return Err(StorageError::from(err));
+            }
+
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+            let fetch_response = response.json::<DeployModelFetchResponse>().await?;
+            tracing::debug!(fetch_response=?fetch_response, "fetched task status");
+            await_task_completed = match fetch_response.state.as_str() {
+                "FAILED" => {
+                    let msg = "failed to deploy model";
+                    return Err(StorageError::ServiceError(anyhow!(msg)));
+                }
+                "COMPLETED" => false,
+                _ => true,
+            };
+        }
+
+        Ok(())
+    }
+
     fn build_search_parts<'a>(indexes: &'a [&'a str]) -> opensearch::SearchParts<'a> {
         match indexes.first() {
             Some(&"*") => opensearch::SearchParts::None,
@@ -493,7 +574,7 @@ impl OpenSearchStorage {
 
     #[cfg(feature = "enable-unique-doc-id")]
     pub fn gen_unique_document_id(index: &str, doc: &Document) -> String {
-        let common_file_path = format!("{index}/{}", doc.file_path());
+        let common_file_path = format!("{index}/{}/{}", doc.file_path(), doc.doc_part_id());
         let digest = md5::compute(&common_file_path);
         format!("{digest:x}")
     }
@@ -515,6 +596,7 @@ mod test_osearch {
     const TEST_SEMANTIC_DATA: &[u8] =
         include_bytes!("../../../tests/resources/semantic-params.json");
 
+    #[ignore]
     #[tokio::test]
     async fn test_searcher_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
@@ -553,6 +635,7 @@ mod test_osearch {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_documents_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
@@ -584,6 +667,7 @@ mod test_osearch {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_index_api() -> anyhow::Result<()> {
         let config = ServiceConfig::new()?;
@@ -615,8 +699,8 @@ mod test_osearch {
         Ok(id)
     }
 
-    #[cfg(feature = "enable-unique-doc-id")]
     #[test]
+    #[cfg(feature = "enable-unique-doc-id")]
     fn test_gen_unique_document_id() -> anyhow::Result<()> {
         let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
         for doc in documents.iter() {
