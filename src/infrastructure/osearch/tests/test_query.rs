@@ -26,6 +26,7 @@ fn build_result_params() -> ResultParams {
 
 fn build_filter_params() -> FilterParams {
     FilterParamsBuilder::default()
+        .doc_part_id(None)
         .size_from(Some(0))
         .size_to(Some(4096))
         .created_from(Some(CURRENT_TIMESTAMP))

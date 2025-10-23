@@ -24,6 +24,9 @@ pub struct Document {
     #[getset(get, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     embeddings: Option<Vec<Embeddings>>,
+    #[getset(set, vis = "pub")]
+    #[getset(get_copy, vis = "pub")]
+    doc_part_id: usize,
 }
 
 impl TryFrom<crate::domain::Document> for Document {
@@ -37,6 +40,7 @@ impl TryFrom<crate::domain::Document> for Document {
             .content(Some(value.content))
             .created_at(value.created_at)
             .modified_at(value.modified_at)
+            .doc_part_id(value.doc_part_id)
             .build()?;
 
         Ok(document)

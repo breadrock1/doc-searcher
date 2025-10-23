@@ -1,7 +1,7 @@
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
+use axum::{Extension, Json};
 use std::sync::Arc;
 
 use crate::application::services::server::{ServerResult, Success};
@@ -9,12 +9,13 @@ use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::application::structures::params::{CreateIndexParams, RetrieveDocumentParams};
-use crate::application::structures::Document;
+use crate::application::structures::{Document, UserInfo};
 use crate::infrastructure::httpserver::api::v1::models::{
     CreateDocumentForm, CreateDocumentQuery, CreateIndexForm, DocumentSchema, IndexSchema,
     RetrieveDocumentForm, StoredDocumentSchema, UpdateDocumentForm,
 };
 use crate::infrastructure::httpserver::api::v1::swagger::*;
+use crate::infrastructure::httpserver::mw::header::UserInfoHeader;
 use crate::infrastructure::httpserver::ServerApp;
 
 pub const STORAGE_ALL_INDEXES_URL: &str = "/storage/indexes";
@@ -48,20 +49,22 @@ const CREATE_DOCUMENT_DESCRIPTION: &str =
 )]
 pub async fn get_all_indexes<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
+    Extension(user): Extension<Option<UserInfoHeader>>,
 ) -> ServerResult<impl IntoResponse>
 where
     Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone + 'static,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone + 'static,
 {
+    let user_info = user.as_ref().map(UserInfo::from);
     let storage = state.get_storage();
-    let folders = storage
-        .get_all_indexes()
-        .await?
+    let indexes = storage.get_all_indexes(user_info.as_ref()).await?;
+
+    let indexes_schema = indexes
         .into_iter()
         .map(|it| it.into())
         .collect::<Vec<IndexSchema>>();
 
-    Ok(Json(folders))
+    Ok(Json(indexes_schema))
 }
 
 #[utoipa::path(

@@ -63,6 +63,9 @@ pub struct DocumentSchema {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(nullable)]
     embeddings: Option<Vec<EmbeddingsSchema>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable)]
+    doc_part_id: Option<usize>,
 }
 
 impl From<DocumentSchema> for Document {
@@ -76,6 +79,7 @@ impl From<DocumentSchema> for Document {
             })
             .unwrap_or_default();
 
+        let doc_part = form.doc_part_id.unwrap_or(0);
         DocumentBuilder::default()
             .file_name(form.file_name)
             .file_path(form.file_path)
@@ -85,6 +89,7 @@ impl From<DocumentSchema> for Document {
             .modified_at(form.modified_at)
             .chunked_text(form.chunked_text)
             .embeddings(Some(embeddings))
+            .doc_part_id(doc_part)
             .build()
             .unwrap()
     }

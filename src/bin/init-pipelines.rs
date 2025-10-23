@@ -14,6 +14,7 @@ async fn main() -> anyhow::Result<()> {
 
     let knn_params = create_knn_index_params(os_config)?;
     os_client.init_pipelines(&knn_params).await?;
+    os_client.load_ml_model(os_config.semantic()).await?;
 
     Ok(())
 }
