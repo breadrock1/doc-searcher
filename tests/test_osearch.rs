@@ -10,10 +10,10 @@ use doc_search::ServiceConnect;
 use std::sync::Arc;
 
 const TEST_FOLDER_ID: &str = "test-common-folder";
-const TEST_DOCUMENTS_DATA: &[u8] = include_bytes!("resources/test-document.json");
-const TEST_FULLTEXT_DATA: &[u8] = include_bytes!("resources/fulltext-params.json");
-const TEST_RETRIEVE_DATA: &[u8] = include_bytes!("tests/resources/retrieve-params.json");
-const TEST_SEMANTIC_DATA: &[u8] = include_bytes!("tests/resources/semantic-params.json");
+const TEST_DOCUMENTS_DATA: &[u8] = include_bytes!("tests/resources/test-document.json");
+const TEST_FULLTEXT_DATA: &[u8] = include_bytes!("tests/resources/fulltext-params.json");
+const TEST_RETRIEVE_DATA: &[u8] = include_bytes!("tests/tests/resources/retrieve-params.json");
+const TEST_SEMANTIC_DATA: &[u8] = include_bytes!("tests/tests/resources/semantic-params.json");
 
 #[ignore]
 #[tokio::test]
