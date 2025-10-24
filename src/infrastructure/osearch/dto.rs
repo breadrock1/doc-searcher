@@ -2,7 +2,7 @@ use gset::Getset;
 use serde_derive::Deserialize;
 
 use crate::application::structures::{
-    Document, FoundedDocument, FoundedDocumentBuilder, Index, IndexBuilder,
+    DocumentPart, FoundedDocument, FoundedDocumentBuilder, Index, IndexBuilder,
 };
 
 #[derive(Debug, Deserialize, Getset)]
@@ -26,7 +26,7 @@ impl From<&OSearchIndex> for Index {
 pub struct SourceDocument {
     _id: String,
     _index: String,
-    _source: Document,
+    _source: DocumentPart,
     _score: Option<f64>,
     highlight: Option<HighlightContent>,
 }
@@ -46,7 +46,7 @@ impl From<SourceDocument> for FoundedDocument {
     }
 }
 
-impl From<SourceDocument> for Document {
+impl From<SourceDocument> for DocumentPart {
     fn from(src_doc: SourceDocument) -> Self {
         src_doc._source
     }

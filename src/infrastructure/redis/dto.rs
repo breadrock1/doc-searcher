@@ -2,7 +2,7 @@ use redis::{RedisError, RedisResult, RedisWrite, Value};
 use serde::ser::Error;
 
 use crate::application::structures::params::{FullTextSearchParams, SemanticSearchParams};
-use crate::application::structures::{Document, Paginated};
+use crate::application::structures::{DocumentPart, Paginated};
 
 impl redis::ToRedisArgs for FullTextSearchParams {
     fn write_redis_args<W>(&self, out: &mut W)
@@ -32,7 +32,7 @@ impl redis::ToRedisArgs for SemanticSearchParams {
     }
 }
 
-impl redis::ToRedisArgs for Paginated<Vec<Document>> {
+impl redis::ToRedisArgs for Paginated<Vec<DocumentPart>> {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,
@@ -46,12 +46,11 @@ impl redis::ToRedisArgs for Paginated<Vec<Document>> {
     }
 }
 
-impl redis::FromRedisValue for Paginated<Vec<Document>> {
+impl redis::FromRedisValue for Paginated<Vec<DocumentPart>> {
     fn from_redis_value(value: &Value) -> RedisResult<Self> {
         match value {
-            Value::BulkString(data) => {
-                serde_json::from_slice::<Paginated<Vec<Document>>>(data).map_err(RedisError::from)
-            }
+            Value::BulkString(data) => serde_json::from_slice::<Paginated<Vec<DocumentPart>>>(data)
+                .map_err(RedisError::from),
             _ => {
                 let err = serde_json::Error::custom("failed to extract redis value type");
                 Err(RedisError::from(err))

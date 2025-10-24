@@ -1,3 +1,3 @@
 mod structures;
 
-pub use structures::{Document, EmbeddingChunk, FoundedDocument, Index};
+pub use structures::{DocumentPart, EmbeddingChunk, FoundedDocument, Index};

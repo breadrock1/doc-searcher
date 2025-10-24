@@ -7,7 +7,7 @@ use crate::application::structures::params::{
     FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
     SemanticSearchParams,
 };
-use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
+use crate::application::structures::{DocumentPart, FoundedDocument, Index, StoredDocumentPart};
 
 #[async_trait::async_trait]
 pub trait IndexManager {
@@ -22,11 +22,12 @@ pub trait DocumentManager {
     async fn store_document_parts(
         &self,
         index: &str,
-        docs: &[Document],
-    ) -> StorageResult<Vec<StoredDocument>>;
-    async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document>;
+        docs: &[DocumentPart],
+    ) -> StorageResult<Vec<StoredDocumentPart>>;
+    async fn get_document(&self, index: &str, id: &str) -> StorageResult<DocumentPart>;
     async fn delete_document(&self, index: &str, id: &str) -> StorageResult<()>;
-    async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()>;
+    async fn update_document(&self, index: &str, id: &str, doc: &DocumentPart)
+        -> StorageResult<()>;
 }
 
 #[async_trait::async_trait]

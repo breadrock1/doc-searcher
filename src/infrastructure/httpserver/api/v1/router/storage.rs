@@ -9,7 +9,7 @@ use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::application::structures::params::{CreateIndexParams, RetrieveDocumentParams};
-use crate::application::structures::{Document, UserInfo};
+use crate::application::structures::{DocumentPart, UserInfo};
 use crate::infrastructure::httpserver::api::v1::models::{
     CreateDocumentForm, CreateDocumentQuery, CreateIndexForm, DocumentSchema, IndexSchema,
     RetrieveDocumentForm, StoredDocumentSchema, UpdateDocumentForm,
@@ -310,7 +310,7 @@ where
     let documents = form
         .into_iter()
         .filter_map(|it| it.try_into().ok())
-        .collect::<Vec<Document>>();
+        .collect::<Vec<DocumentPart>>();
 
     let storage = state.get_storage();
     let documents = storage

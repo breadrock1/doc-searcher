@@ -3,7 +3,7 @@ use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Builder, Clone, Debug, Getset, Serialize, Deserialize)]
-pub struct Document {
+pub struct DocumentPart {
     #[getset(get, vis = "pub")]
     file_name: String,
     #[getset(get, vis = "pub")]
@@ -29,11 +29,11 @@ pub struct Document {
     doc_part_id: usize,
 }
 
-impl TryFrom<crate::domain::Document> for Document {
+impl TryFrom<crate::domain::DocumentPart> for DocumentPart {
     type Error = anyhow::Error;
 
-    fn try_from(value: crate::domain::Document) -> Result<Self, Self::Error> {
-        let document = DocumentBuilder::default()
+    fn try_from(value: crate::domain::DocumentPart) -> Result<Self, Self::Error> {
+        let document = DocumentPartBuilder::default()
             .file_name(value.file_name)
             .file_path(value.file_path)
             .file_size(value.file_size)
@@ -59,13 +59,13 @@ impl Embeddings {
 }
 
 #[derive(Clone)]
-pub struct StoredDocument {
+pub struct StoredDocumentPart {
     pub id: String,
     pub file_path: String,
 }
 
-impl StoredDocument {
+impl StoredDocumentPart {
     pub fn new(id: String, file_path: String) -> Self {
-        StoredDocument { id, file_path }
+        StoredDocumentPart { id, file_path }
     }
 }

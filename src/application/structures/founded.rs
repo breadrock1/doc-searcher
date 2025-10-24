@@ -2,7 +2,7 @@ use derive_builder::Builder;
 use gset::Getset;
 use serde_derive::Serialize;
 
-use crate::application::structures::Document;
+use crate::application::structures::DocumentPart;
 
 #[derive(Builder, Getset, Clone, Serialize)]
 pub struct FoundedDocument {
@@ -11,7 +11,7 @@ pub struct FoundedDocument {
     #[getset(get, vis = "pub")]
     folder_id: String,
     #[getset(get, vis = "pub")]
-    document: Document,
+    document: DocumentPart,
     #[getset(get_copy, vis = "pub")]
     #[serde(skip_serializing_if = "Option::is_none")]
     score: Option<f64>,
@@ -25,7 +25,7 @@ impl TryFrom<crate::domain::FoundedDocument> for FoundedDocument {
 
     fn try_from(founded_doc: crate::domain::FoundedDocument) -> Result<Self, Self::Error> {
         let highlight = founded_doc.highlight;
-        let document = Document::try_from(founded_doc.document)?;
+        let document = DocumentPart::try_from(founded_doc.document)?;
         let result = FoundedDocumentBuilder::default()
             .id(founded_doc.id)
             .folder_id(founded_doc.folder_id)

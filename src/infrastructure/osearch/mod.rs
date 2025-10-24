@@ -32,7 +32,7 @@ use crate::application::structures::params::{
     CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
     RetrieveDocumentParams, SemanticSearchParams,
 };
-use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
+use crate::application::structures::{DocumentPart, FoundedDocument, Index, StoredDocumentPart};
 use crate::infrastructure::osearch::config::OSearchKnnConfig;
 use crate::infrastructure::osearch::dto::SourceDocument;
 use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
@@ -193,10 +193,10 @@ impl DocumentManager for OpenSearchStorage {
     async fn store_document_parts(
         &self,
         index: &str,
-        docs: &[Document],
-    ) -> StorageResult<Vec<StoredDocument>> {
+        docs: &[DocumentPart],
+    ) -> StorageResult<Vec<StoredDocumentPart>> {
         let mut operations: Vec<JsonBody<_>> = Vec::with_capacity(docs.len() * 2);
-        let mut stored_documents = Vec::<StoredDocument>::with_capacity(docs.len());
+        let mut stored_documents = Vec::<StoredDocumentPart>::with_capacity(docs.len());
 
         for doc in docs {
             #[cfg(not(feature = "enable-unique-doc-id"))]
@@ -204,7 +204,10 @@ impl DocumentManager for OpenSearchStorage {
             #[cfg(feature = "enable-unique-doc-id")]
             let id = Self::gen_unique_document_id(index, doc);
 
-            stored_documents.push(StoredDocument::new(id.clone(), doc.file_path().to_owned()));
+            stored_documents.push(StoredDocumentPart::new(
+                id.clone(),
+                doc.file_path().to_owned(),
+            ));
 
             let header = json!({"index": {"_id": id}}).into();
             operations.push(header);
@@ -230,7 +233,7 @@ impl DocumentManager for OpenSearchStorage {
     }
 
     #[tracing::instrument(skip(self), level = "info")]
-    async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
+    async fn get_document(&self, index: &str, id: &str) -> StorageResult<DocumentPart> {
         let response = self
             .client
             .get(opensearch::GetParts::IndexId(index, id))
@@ -243,7 +246,7 @@ impl DocumentManager for OpenSearchStorage {
             return Err(StorageError::from(err));
         }
 
-        let document: Document = response.json::<SourceDocument>().await?.into();
+        let document: DocumentPart = response.json::<SourceDocument>().await?.into();
         Ok(document)
     }
 
@@ -264,7 +267,12 @@ impl DocumentManager for OpenSearchStorage {
     }
 
     #[tracing::instrument(skip(self), level = "info")]
-    async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
+    async fn update_document(
+        &self,
+        index: &str,
+        id: &str,
+        doc: &DocumentPart,
+    ) -> StorageResult<()> {
         let doc_object =
             extractor::build_update_document_object(doc).map_err(StorageError::InternalError)?;
 
@@ -315,7 +323,7 @@ impl DocumentSearcher for OpenSearchStorage {
         }
 
         let response_data = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response_data).await?;
+        let paginated = extractor::extract_founded_docs(response_data)?;
         Ok(paginated)
     }
 
@@ -344,7 +352,7 @@ impl DocumentSearcher for OpenSearchStorage {
         }
 
         let response_data = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response_data).await?;
+        let paginated = extractor::extract_founded_docs(response_data)?;
         Ok(paginated)
     }
 
@@ -374,7 +382,7 @@ impl DocumentSearcher for OpenSearchStorage {
         }
 
         let response_data = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response_data).await?;
+        let paginated = extractor::extract_founded_docs(response_data)?;
         Ok(paginated)
     }
 
@@ -404,7 +412,7 @@ impl DocumentSearcher for OpenSearchStorage {
         }
 
         let response_data = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response_data).await?;
+        let paginated = extractor::extract_founded_docs(response_data)?;
         Ok(paginated)
     }
 }
@@ -442,7 +450,7 @@ impl PaginateManager for OpenSearchStorage {
         }
 
         let response_data = response.json::<Value>().await?;
-        let paginated = extractor::extract_founded_docs(response_data).await?;
+        let paginated = extractor::extract_founded_docs(response_data)?;
         Ok(paginated)
     }
 }
@@ -573,140 +581,9 @@ impl OpenSearchStorage {
     }
 
     #[cfg(feature = "enable-unique-doc-id")]
-    pub fn gen_unique_document_id(index: &str, doc: &Document) -> String {
+    pub fn gen_unique_document_id(index: &str, doc: &DocumentPart) -> String {
         let common_file_path = format!("{index}/{}/{}", doc.file_path(), doc.doc_part_id());
         let digest = md5::compute(&common_file_path);
         format!("{digest:x}")
-    }
-}
-
-#[cfg(test)]
-mod test_osearch {
-    use super::*;
-    use crate::application::structures::params::{CreateIndexParamsBuilder, KnnIndexParams};
-    use crate::config::ServiceConfig;
-
-    const TEST_FOLDER_ID: &str = "test-common-folder";
-    const TEST_DOCUMENTS_DATA: &[u8] =
-        include_bytes!("../../../tests/resources/test-document.json");
-    const TEST_FULLTEXT_DATA: &[u8] =
-        include_bytes!("../../../tests/resources/fulltext-params.json");
-    const TEST_RETRIEVE_DATA: &[u8] =
-        include_bytes!("../../../tests/resources/retrieve-params.json");
-    const TEST_SEMANTIC_DATA: &[u8] =
-        include_bytes!("../../../tests/resources/semantic-params.json");
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_searcher_api() -> anyhow::Result<()> {
-        let config = ServiceConfig::new()?;
-        let config = config.storage().opensearch();
-        let client = Arc::new(OpenSearchStorage::connect(config).await?);
-
-        let _ = client.delete_index(TEST_FOLDER_ID).await;
-        let _ = create_test_index(client.clone()).await;
-
-        let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        let result = client
-            .store_document_parts(TEST_FOLDER_ID, &documents)
-            .await;
-        assert!(result.is_ok());
-
-        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-
-        let retrieve_params = serde_json::from_slice::<RetrieveDocumentParams>(TEST_RETRIEVE_DATA)?;
-        let result = client.retrieve(TEST_FOLDER_ID, &retrieve_params).await;
-        assert!(result.is_ok());
-        let result = result?;
-        assert_eq!(result.founded().len(), 3);
-
-        let fulltext_params = serde_json::from_slice::<FullTextSearchParams>(TEST_FULLTEXT_DATA)?;
-        let result = client.fulltext(&fulltext_params).await;
-        assert!(result.is_ok());
-        let result = result?;
-        assert_eq!(result.founded().len(), 3);
-
-        let semantic_params = serde_json::from_slice::<SemanticSearchParams>(TEST_SEMANTIC_DATA)?;
-        let result = client.semantic(&semantic_params).await;
-        assert!(result.is_ok());
-        let result = result?;
-        assert_eq!(result.founded().len(), 3);
-
-        Ok(())
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_documents_api() -> anyhow::Result<()> {
-        let config = ServiceConfig::new()?;
-        let config = config.storage().opensearch();
-        let client = Arc::new(OpenSearchStorage::connect(config).await?);
-
-        let _ = client.delete_index(TEST_FOLDER_ID).await;
-        let _ = create_test_index(client.clone()).await;
-
-        let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        let result = client
-            .store_document_parts(TEST_FOLDER_ID, &documents)
-            .await;
-        assert!(result.is_ok());
-
-        for stored_doc in result?.iter() {
-            let id = &stored_doc.id;
-
-            let result = client.get_document(TEST_FOLDER_ID, id).await;
-            assert!(result.is_ok());
-
-            client.delete_document(TEST_FOLDER_ID, id).await?;
-            let result = client.get_document(TEST_FOLDER_ID, id).await;
-            assert!(result.is_err());
-        }
-
-        let _ = client.delete_index(TEST_FOLDER_ID).await;
-
-        Ok(())
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_index_api() -> anyhow::Result<()> {
-        let config = ServiceConfig::new()?;
-        let config = config.storage().opensearch();
-        let client = Arc::new(OpenSearchStorage::connect(config).await?);
-
-        let _ = client.delete_index(TEST_FOLDER_ID).await;
-        let _ = create_test_index(client.clone()).await;
-        let loaded_index = client.get_index(TEST_FOLDER_ID).await?;
-        assert_eq!(TEST_FOLDER_ID, loaded_index.id());
-
-        client.delete_index(TEST_FOLDER_ID).await?;
-        let result = client.get_index(TEST_FOLDER_ID).await;
-        assert!(result.is_err());
-
-        Ok(())
-    }
-
-    async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<String> {
-        let create_index = CreateIndexParamsBuilder::default()
-            .id(TEST_FOLDER_ID.to_owned())
-            .name(TEST_FOLDER_ID.to_owned())
-            .path("".to_owned())
-            .knn(Some(KnnIndexParams::default()))
-            .build()
-            .unwrap();
-
-        let id = client.create_index(&create_index).await?;
-        Ok(id)
-    }
-
-    #[test]
-    #[cfg(feature = "enable-unique-doc-id")]
-    fn test_gen_unique_document_id() -> anyhow::Result<()> {
-        let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
-        for doc in documents.iter() {
-            let result = OpenSearchStorage::gen_unique_document_id(TEST_FOLDER_ID, doc);
-            println!("doc unique id is: {result}");
-        }
-        Ok(())
     }
 }

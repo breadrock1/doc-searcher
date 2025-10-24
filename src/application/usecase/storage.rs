@@ -6,7 +6,7 @@ use crate::application::services::storage::error::StorageResult;
 use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
 use crate::application::services::usermanager::UserManager;
 use crate::application::structures::params::CreateIndexParams;
-use crate::application::structures::{Document, Index, StoredDocument, UserInfo};
+use crate::application::structures::{DocumentPart, Index, StoredDocumentPart, UserInfo};
 use crate::config::SettingsConfig;
 
 #[cfg(feature = "enable-unique-doc-id")]
@@ -15,7 +15,7 @@ use crate::infrastructure::osearch::OpenSearchStorage;
 #[derive(Clone)]
 pub struct StorageUseCase<Storage>
 where
-    Storage: IndexManager + DocumentManager + Send + Sync + Clone,
+    Storage: IndexManager + DocumentManager + Send + Sync,
 {
     settings: Arc<SettingsConfig>,
     storage: Arc<Storage>,
@@ -24,7 +24,7 @@ where
 
 impl<Storage> StorageUseCase<Storage>
 where
-    Storage: IndexManager + DocumentManager + Send + Sync + Clone,
+    Storage: IndexManager + DocumentManager + Send + Sync,
 {
     pub fn new(
         settings: &SettingsConfig,
@@ -42,7 +42,7 @@ where
 
 impl<Storage> StorageUseCase<Storage>
 where
-    Storage: IndexManager + DocumentManager + Send + Sync + Clone,
+    Storage: IndexManager + DocumentManager + Send + Sync,
 {
     #[tracing::instrument(skip(self), level = "info")]
     pub async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<String> {
@@ -90,37 +90,22 @@ where
     pub async fn store_document(
         &self,
         index: &str,
-        doc: &Document,
+        doc: &DocumentPart,
         _force: bool,
-    ) -> StorageResult<StoredDocument> {
+    ) -> StorageResult<StoredDocumentPart> {
         let _ = self.storage.get_index(index).await?;
-
-        let Some(content) = doc.content() else {
-            let err = anyhow!("empty document content: {}", doc.file_path());
-            return Err(StorageError::ValidationError(err));
-        };
-
-        let max_content_size = self.settings.max_content_size();
-        let document_parts = match content.len() > max_content_size {
-            false => vec![doc.clone()],
-            true => self.split_document(doc)?,
-        };
-
-        match self
-            .storage
-            .store_document_parts(index, &document_parts)
-            .await
-        {
+        let doc_parts = self.get_document_parts(doc).await?;
+        match self.storage.store_document_parts(index, &doc_parts).await {
             Ok(stored_docs) => {
                 let root_doc = stored_docs.first().unwrap();
                 Ok(root_doc.clone())
             }
             #[cfg(feature = "enable-unique-doc-id")]
-            Err(_err) if _force => {
+            Err(StorageError::DocumentAlreadyExists(_err)) if _force => {
                 let doc_id = OpenSearchStorage::gen_unique_document_id(index, doc);
                 tracing::warn!(index = index, id = doc_id, "document already exists");
                 self.storage.update_document(index, &doc_id, doc).await?;
-                Ok(StoredDocument::new(doc_id, doc.file_path().clone()))
+                Ok(StoredDocumentPart::new(doc_id, doc.file_path().clone()))
             }
             Err(err) => Err(err),
         }
@@ -130,10 +115,9 @@ where
     pub async fn store_documents(
         &self,
         index: &str,
-        docs: &[Document],
-    ) -> StorageResult<Vec<StoredDocument>> {
+        docs: &[DocumentPart],
+    ) -> StorageResult<Vec<StoredDocumentPart>> {
         let _ = self.storage.get_index(index).await?;
-
         let mut stored_docs = Vec::with_capacity(docs.len());
         for doc in docs {
             let stored_doc = self.store_document(index, doc, true).await?;
@@ -149,7 +133,7 @@ where
     }
 
     #[tracing::instrument(skip(self), level = "info")]
-    pub async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
+    pub async fn get_document(&self, index: &str, id: &str) -> StorageResult<DocumentPart> {
         self.storage.get_document(index, id).await
     }
 
@@ -158,17 +142,32 @@ where
         &self,
         index: &str,
         id: &str,
-        doc: &Document,
+        doc: &DocumentPart,
     ) -> StorageResult<()> {
         let _ = self.storage.get_index(index).await?;
         self.storage.update_document(index, id, doc).await
     }
 
-    fn split_document(&self, doc: &Document) -> StorageResult<Vec<Document>> {
+    async fn get_document_parts(&self, doc: &DocumentPart) -> StorageResult<Vec<DocumentPart>> {
         let Some(content) = doc.content() else {
             let err = anyhow!("empty document content: {}", doc.file_path());
             return Err(StorageError::ValidationError(err));
         };
+
+        let max_content_size = self.settings.max_content_size();
+        let document_parts = match content.len() > max_content_size {
+            false => vec![doc.clone()],
+            true => self.split_document(doc)?,
+        };
+
+        Ok(document_parts)
+    }
+
+    fn split_document(&self, doc: &DocumentPart) -> StorageResult<Vec<DocumentPart>> {
+        let content = doc.content().as_ref().ok_or_else(|| {
+            let err = anyhow!("empty document content: {}", doc.file_path());
+            StorageError::ValidationError(err)
+        })?;
 
         let doc_parts = CharacterTextSplitter::new()
             .with_chunk_size(self.settings.max_content_size())
@@ -181,7 +180,7 @@ where
                 doc_part.set_content(Some(it));
                 doc_part
             })
-            .collect::<Vec<Document>>();
+            .collect::<Vec<DocumentPart>>();
 
         Ok(doc_parts)
     }

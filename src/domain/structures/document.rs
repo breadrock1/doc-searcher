@@ -1,4 +1,4 @@
-pub struct Document {
+pub struct DocumentPart {
     pub file_name: String,
     pub file_path: String,
     pub file_size: u32,
