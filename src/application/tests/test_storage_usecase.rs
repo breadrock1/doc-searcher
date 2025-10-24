@@ -2,12 +2,14 @@ use rstest::rstest;
 use std::sync::Arc;
 
 use crate::application::services::usermanager::UserManager;
-use crate::application::StorageUseCase;
-use crate::application::structures::{Document, IndexBuilder, StoredDocument, UserInfoBuilder};
+use crate::application::structures::{
+    DocumentPart, IndexBuilder, StoredDocumentPart, UserInfoBuilder,
+};
 use crate::application::tests::fixture::document::{build_large_document, DOC_FILE_PATH, DOC_ID};
 use crate::application::tests::fixture::index::{DEFAULT_INDEX_ID, DEFAULT_INDEX_PATH};
 use crate::application::tests::fixture::resource::build_resource;
 use crate::application::tests::mock::{init_test_environment, TestEnvironment};
+use crate::application::StorageUseCase;
 use crate::config::ServiceConfig;
 
 const DEFAULT_USER_ID: &str = "abfisgf9aadS";
@@ -66,7 +68,7 @@ async fn test_get_all_indexes_error(
 #[tokio::test]
 async fn test_store_document_empty(
     #[from(init_test_environment)] test_env: TestEnvironment,
-    #[from(build_large_document)] mut test_doc: Document,
+    #[from(build_large_document)] mut test_doc: DocumentPart,
 ) -> anyhow::Result<()> {
     test_doc.set_content(None);
 
@@ -89,7 +91,9 @@ async fn test_store_document_empty(
     let um: Arc<Box<dyn UserManager + Send + Sync>> = Arc::new(Box::new(test_env.um));
     let storage_uc = StorageUseCase::new(config.settings(), storage, um);
 
-    let result = storage_uc.store_document(DEFAULT_INDEX_ID, &test_doc, false).await;
+    let result = storage_uc
+        .store_document(DEFAULT_INDEX_ID, &test_doc, false)
+        .await;
     assert!(result.is_err());
 
     Ok(())
@@ -99,7 +103,7 @@ async fn test_store_document_empty(
 #[tokio::test]
 async fn test_store_document(
     #[from(init_test_environment)] test_env: TestEnvironment,
-    #[from(build_large_document)] test_doc: Document,
+    #[from(build_large_document)] test_doc: DocumentPart,
 ) -> anyhow::Result<()> {
     let mut mock_storage = test_env.storage;
     mock_storage
@@ -122,7 +126,7 @@ async fn test_store_document(
             let first_part = &parts[0];
             let doc_id = DOC_ID.to_string();
             let doc_path = first_part.file_path().clone();
-            let doc = StoredDocument::new(doc_id, doc_path);
+            let doc = StoredDocumentPart::new(doc_id, doc_path);
             Ok(vec![doc])
         });
 
@@ -131,7 +135,9 @@ async fn test_store_document(
     let um: Arc<Box<dyn UserManager + Send + Sync>> = Arc::new(Box::new(test_env.um));
     let storage_uc = StorageUseCase::new(config.settings(), storage, um);
 
-    let result = storage_uc.store_document(DEFAULT_INDEX_ID, &test_doc, false).await;
+    let result = storage_uc
+        .store_document(DEFAULT_INDEX_ID, &test_doc, false)
+        .await;
     assert!(result.is_ok());
 
     let stored_doc = result.expect("empty stored document");

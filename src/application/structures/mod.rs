@@ -1,5 +1,5 @@
 mod document;
-pub use document::{Document, DocumentBuilder, Embeddings, StoredDocument};
+pub use document::{DocumentPart, DocumentPartBuilder, Embeddings, StoredDocumentPart};
 
 mod founded;
 pub use founded::{FoundedDocument, FoundedDocumentBuilder};

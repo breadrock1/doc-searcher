@@ -6,8 +6,8 @@ use utoipa::ToSchema;
 use serde_json::json;
 
 use crate::application::structures::{
-    Document, DocumentBuilder, Embeddings, FoundedDocument, FoundedDocumentBuilder, Index,
-    IndexBuilder, Paginated, StoredDocument,
+    DocumentPart, DocumentPartBuilder, Embeddings, FoundedDocument, FoundedDocumentBuilder, Index,
+    IndexBuilder, Paginated, StoredDocumentPart,
 };
 
 #[derive(Builder, Serialize, Deserialize, ToSchema)]
@@ -68,7 +68,7 @@ pub struct DocumentSchema {
     doc_part_id: Option<usize>,
 }
 
-impl From<DocumentSchema> for Document {
+impl From<DocumentSchema> for DocumentPart {
     fn from(form: DocumentSchema) -> Self {
         let embeddings = form
             .embeddings
@@ -80,7 +80,7 @@ impl From<DocumentSchema> for Document {
             .unwrap_or_default();
 
         let doc_part = form.doc_part_id.unwrap_or(0);
-        DocumentBuilder::default()
+        DocumentPartBuilder::default()
             .file_name(form.file_name)
             .file_path(form.file_path)
             .file_size(form.file_size)
@@ -95,8 +95,8 @@ impl From<DocumentSchema> for Document {
     }
 }
 
-impl From<Document> for DocumentSchema {
-    fn from(doc: Document) -> Self {
+impl From<DocumentPart> for DocumentSchema {
+    fn from(doc: DocumentPart) -> Self {
         let embeddings = doc
             .embeddings()
             .to_owned()
@@ -217,8 +217,8 @@ pub struct StoredDocumentSchema {
     file_path: String,
 }
 
-impl From<StoredDocument> for StoredDocumentSchema {
-    fn from(doc: StoredDocument) -> Self {
+impl From<StoredDocumentPart> for StoredDocumentSchema {
+    fn from(doc: StoredDocumentPart) -> Self {
         StoredDocumentSchemaBuilder::default()
             .id(doc.id)
             .file_path(doc.file_path)

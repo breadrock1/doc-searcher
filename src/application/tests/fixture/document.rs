@@ -1,6 +1,6 @@
 use rstest::fixture;
 
-use crate::application::structures::{Document, DocumentBuilder};
+use crate::application::structures::{DocumentPart, DocumentPartBuilder};
 
 pub const DOC_ID: &str = "29346839246dsf987a1173sfa7sd781h";
 pub const DOC_FILE_NAME: &str = "test-document.docx";
@@ -11,8 +11,8 @@ pub const DOC_FILE_LARGE_CONTENT: &str = include_str!("../resources/doc-content-
 pub const DOC_FILE_SHORT_CONTENT: &str = include_str!("../resources/doc-content-short.txt");
 
 #[fixture]
-pub fn build_large_document() -> Document {
-    DocumentBuilder::default()
+pub fn build_large_document() -> DocumentPart {
+    DocumentPartBuilder::default()
         .file_name(DOC_FILE_NAME.to_string())
         .file_path(DOC_FILE_PATH.to_string())
         .file_size(DOC_FILE_SIZE)
@@ -27,8 +27,8 @@ pub fn build_large_document() -> Document {
 }
 
 #[fixture]
-pub fn build_short_document() -> Document {
-    DocumentBuilder::default()
+pub fn build_short_document() -> DocumentPart {
+    DocumentPartBuilder::default()
         .file_name(DOC_FILE_NAME.to_string())
         .file_path(DOC_FILE_PATH.to_string())
         .file_size(DOC_FILE_SIZE)

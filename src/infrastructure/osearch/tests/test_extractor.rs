@@ -3,8 +3,8 @@ use rstest::rstest;
 use serde_json::Value;
 
 use crate::infrastructure::osearch::extractor::extract_founded_docs;
+use crate::infrastructure::osearch::tests::fixture::search::build_osearch_search_result;
 use crate::infrastructure::osearch::tests::fixture::search::{DOCUMENT_ID, INDEX_ID, SCROLL_ID};
-use crate::infrastructure::osearch::tests::fixture::search::{build_osearch_search_result};
 
 #[rstest]
 fn test_extract_founded_docs(
@@ -13,7 +13,10 @@ fn test_extract_founded_docs(
     println!("{}", serde_json::to_string_pretty(&founded).unwrap());
     let extracted_docs = extract_founded_docs(founded)?;
 
-    let scroll_id = extracted_docs.scroll_id().as_ref().expect("expected scroll_id");
+    let scroll_id = extracted_docs
+        .scroll_id()
+        .as_ref()
+        .expect("expected scroll_id");
     assert_eq!(SCROLL_ID, scroll_id);
     assert_eq!(1, extracted_docs.founded().len());
 

@@ -12,7 +12,7 @@ use crate::application::structures::params::{
     RetrieveDocumentParams, RetrieveDocumentParamsBuilder, SemanticSearchParams,
     SemanticSearchParamsBuilder,
 };
-use crate::application::structures::{Document, DocumentBuilder, Embeddings};
+use crate::application::structures::{DocumentPart, DocumentPartBuilder, Embeddings};
 use crate::infrastructure::httpserver::api::v1::models::response::EmbeddingsSchema;
 
 const EMPTY_INDEX_ID: &str = "";
@@ -62,11 +62,11 @@ pub struct CreateDocumentForm {
     modified_at: i64,
 }
 
-impl TryFrom<CreateDocumentForm> for Document {
+impl TryFrom<CreateDocumentForm> for DocumentPart {
     type Error = anyhow::Error;
 
     fn try_from(form: CreateDocumentForm) -> Result<Self, Self::Error> {
-        let form = DocumentBuilder::default()
+        let form = DocumentPartBuilder::default()
             .file_name(form.file_name)
             .file_path(form.file_path)
             .file_size(form.file_size)
@@ -98,7 +98,7 @@ pub struct UpdateDocumentForm {
     embeddings: Option<Vec<EmbeddingsSchema>>,
 }
 
-impl TryFrom<UpdateDocumentForm> for Document {
+impl TryFrom<UpdateDocumentForm> for DocumentPart {
     type Error = anyhow::Error;
 
     fn try_from(form: UpdateDocumentForm) -> Result<Self, Self::Error> {
@@ -114,7 +114,7 @@ impl TryFrom<UpdateDocumentForm> for Document {
             .unwrap_or_default();
 
         let modified_dt = chrono::Utc::now().timestamp();
-        let form = DocumentBuilder::default()
+        let form = DocumentPartBuilder::default()
             .file_name(form.file_name)
             .file_path(form.file_path)
             .file_size(form.file_size)

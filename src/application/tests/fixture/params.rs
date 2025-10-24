@@ -5,7 +5,9 @@ use crate::application::structures::params::{FilterParams, FilterParamsBuilder};
 use crate::application::structures::params::{FullTextSearchParams, FullTextSearchParamsBuilder};
 use crate::application::structures::params::{HybridSearchParams, HybridSearchParamsBuilder};
 use crate::application::structures::params::{ResultParams, ResultParamsBuilder};
-use crate::application::structures::params::{RetrieveDocumentParams, RetrieveDocumentParamsBuilder};
+use crate::application::structures::params::{
+    RetrieveDocumentParams, RetrieveDocumentParamsBuilder,
+};
 use crate::application::structures::params::{SemanticSearchParams, SemanticSearchParamsBuilder};
 
 pub const QUERY_PARAMETER: &str = "There is some query";

@@ -32,7 +32,7 @@ use crate::application::structures::params::{
     CreateIndexParams, FullTextSearchParams, HybridSearchParams, KnnIndexParams, PaginateParams,
     RetrieveDocumentParams, SemanticSearchParams,
 };
-use crate::application::structures::{Document, FoundedDocument, Index, StoredDocument};
+use crate::application::structures::{DocumentPart, FoundedDocument, Index, StoredDocumentPart};
 use crate::infrastructure::osearch::config::OSearchKnnConfig;
 use crate::infrastructure::osearch::dto::SourceDocument;
 use crate::infrastructure::osearch::query::{QueryBuilder, QueryBuilderParams};
@@ -193,10 +193,10 @@ impl DocumentManager for OpenSearchStorage {
     async fn store_document_parts(
         &self,
         index: &str,
-        docs: &[Document],
-    ) -> StorageResult<Vec<StoredDocument>> {
+        docs: &[DocumentPart],
+    ) -> StorageResult<Vec<StoredDocumentPart>> {
         let mut operations: Vec<JsonBody<_>> = Vec::with_capacity(docs.len() * 2);
-        let mut stored_documents = Vec::<StoredDocument>::with_capacity(docs.len());
+        let mut stored_documents = Vec::<StoredDocumentPart>::with_capacity(docs.len());
 
         for doc in docs {
             #[cfg(not(feature = "enable-unique-doc-id"))]
@@ -204,7 +204,10 @@ impl DocumentManager for OpenSearchStorage {
             #[cfg(feature = "enable-unique-doc-id")]
             let id = Self::gen_unique_document_id(index, doc);
 
-            stored_documents.push(StoredDocument::new(id.clone(), doc.file_path().to_owned()));
+            stored_documents.push(StoredDocumentPart::new(
+                id.clone(),
+                doc.file_path().to_owned(),
+            ));
 
             let header = json!({"index": {"_id": id}}).into();
             operations.push(header);
@@ -230,7 +233,7 @@ impl DocumentManager for OpenSearchStorage {
     }
 
     #[tracing::instrument(skip(self), level = "info")]
-    async fn get_document(&self, index: &str, id: &str) -> StorageResult<Document> {
+    async fn get_document(&self, index: &str, id: &str) -> StorageResult<DocumentPart> {
         let response = self
             .client
             .get(opensearch::GetParts::IndexId(index, id))
@@ -243,7 +246,7 @@ impl DocumentManager for OpenSearchStorage {
             return Err(StorageError::from(err));
         }
 
-        let document: Document = response.json::<SourceDocument>().await?.into();
+        let document: DocumentPart = response.json::<SourceDocument>().await?.into();
         Ok(document)
     }
 
@@ -264,7 +267,12 @@ impl DocumentManager for OpenSearchStorage {
     }
 
     #[tracing::instrument(skip(self), level = "info")]
-    async fn update_document(&self, index: &str, id: &str, doc: &Document) -> StorageResult<()> {
+    async fn update_document(
+        &self,
+        index: &str,
+        id: &str,
+        doc: &DocumentPart,
+    ) -> StorageResult<()> {
         let doc_object =
             extractor::build_update_document_object(doc).map_err(StorageError::InternalError)?;
 
@@ -573,7 +581,7 @@ impl OpenSearchStorage {
     }
 
     #[cfg(feature = "enable-unique-doc-id")]
-    pub fn gen_unique_document_id(index: &str, doc: &Document) -> String {
+    pub fn gen_unique_document_id(index: &str, doc: &DocumentPart) -> String {
         let common_file_path = format!("{index}/{}/{}", doc.file_path(), doc.doc_part_id());
         let digest = md5::compute(&common_file_path);
         format!("{digest:x}")

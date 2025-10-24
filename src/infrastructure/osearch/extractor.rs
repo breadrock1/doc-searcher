@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::application::services::storage::{PaginateResult, StorageResult};
-use crate::application::structures::{Document, FoundedDocument, PaginatedBuilder};
+use crate::application::structures::{DocumentPart, FoundedDocument, PaginatedBuilder};
 use crate::infrastructure::osearch::dto::SourceDocument;
 
 #[tracing::instrument(level = "info")]
@@ -40,7 +40,7 @@ pub fn extract_founded_document(value: &Value) -> StorageResult<FoundedDocument>
     Ok(document)
 }
 
-pub fn build_update_document_object(doc: &Document) -> anyhow::Result<Value> {
+pub fn build_update_document_object(doc: &DocumentPart) -> anyhow::Result<Value> {
     let mut doc_value = json!({
         "file_name": doc.file_name(),
         "file_path": doc.file_path(),

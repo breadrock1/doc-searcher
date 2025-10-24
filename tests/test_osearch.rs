@@ -1,6 +1,9 @@
 use doc_search::application::services::storage::{DocumentManager, DocumentSearcher, IndexManager};
-use doc_search::application::structures::Document;
-use doc_search::application::structures::params::{CreateIndexParamsBuilder, FullTextSearchParams, KnnIndexParams, RetrieveDocumentParams, SemanticSearchParams};
+use doc_search::application::structures::params::{
+    CreateIndexParamsBuilder, FullTextSearchParams, KnnIndexParams, RetrieveDocumentParams,
+    SemanticSearchParams,
+};
+use doc_search::application::structures::DocumentPart;
 use doc_search::config::ServiceConfig;
 use doc_search::infrastructure::osearch::OpenSearchStorage;
 use doc_search::ServiceConnect;
@@ -22,7 +25,7 @@ async fn test_searcher_api() -> anyhow::Result<()> {
     let _ = client.delete_index(TEST_FOLDER_ID).await;
     let _ = create_test_index(client.clone()).await;
 
-    let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
+    let documents = serde_json::from_slice::<Vec<DocumentPart>>(TEST_DOCUMENTS_DATA)?;
     let result = client
         .store_document_parts(TEST_FOLDER_ID, &documents)
         .await;
@@ -61,7 +64,7 @@ async fn test_documents_api() -> anyhow::Result<()> {
     let _ = client.delete_index(TEST_FOLDER_ID).await;
     let _ = create_test_index(client.clone()).await;
 
-    let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
+    let documents = serde_json::from_slice::<Vec<DocumentPart>>(TEST_DOCUMENTS_DATA)?;
     let result = client
         .store_document_parts(TEST_FOLDER_ID, &documents)
         .await;
@@ -118,7 +121,7 @@ async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<Str
 #[test]
 #[cfg(feature = "enable-unique-doc-id")]
 fn test_gen_unique_document_id() -> anyhow::Result<()> {
-    let documents = serde_json::from_slice::<Vec<Document>>(TEST_DOCUMENTS_DATA)?;
+    let documents = serde_json::from_slice::<Vec<DocumentPart>>(TEST_DOCUMENTS_DATA)?;
     for doc in documents.iter() {
         let result = OpenSearchStorage::gen_unique_document_id(TEST_FOLDER_ID, doc);
         println!("doc unique id is: {result}");

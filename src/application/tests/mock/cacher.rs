@@ -1,4 +1,3 @@
-
 use crate::application::services::cacher::Cacher;
 
 use mockall::mock;

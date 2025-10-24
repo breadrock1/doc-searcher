@@ -1,15 +1,17 @@
 use mockall::mock;
 
+use crate::application::services::storage::StorageError;
 use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
-use crate::application::services::storage::StorageError;
 use crate::application::structures::params::CreateIndexParams;
 use crate::application::structures::params::{
-    PaginateParams, RetrieveDocumentParams, FullTextSearchParams, HybridSearchParams,
-    SemanticSearchParams
+    FullTextSearchParams, HybridSearchParams, PaginateParams, RetrieveDocumentParams,
+    SemanticSearchParams,
 };
-use crate::application::structures::{Document, Index, StoredDocument, FoundedDocument, Paginated};
+use crate::application::structures::{
+    DocumentPart, FoundedDocument, Index, Paginated, StoredDocumentPart,
+};
 
 mock! {
     pub Storage{}
@@ -28,11 +30,11 @@ mock! {
         async fn store_document_parts(
             &self,
             index: &str,
-            docs: &[Document],
-        ) -> Result<Vec<StoredDocument>, StorageError>;
-        async fn get_document(&self, index: &str, id: &str) -> Result<Document, StorageError>;
+            docs: &[DocumentPart],
+        ) -> Result<Vec<StoredDocumentPart>, StorageError>;
+        async fn get_document(&self, index: &str, id: &str) -> Result<DocumentPart, StorageError>;
         async fn delete_document(&self, index: &str, id: &str) -> Result<(), StorageError>;
-        async fn update_document(&self, index: &str, id: &str, doc: &Document) -> Result<(), StorageError>;
+        async fn update_document(&self, index: &str, id: &str, doc: &DocumentPart) -> Result<(), StorageError>;
     }
 
     #[async_trait::async_trait]

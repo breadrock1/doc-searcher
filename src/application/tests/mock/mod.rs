@@ -15,5 +15,9 @@ pub fn init_test_environment() -> TestEnvironment {
     let cacher = cacher::MockCacher::new();
     let storage = storage::MockStorage::new();
     let um = um::MockUserManagerClient::new();
-    TestEnvironment {cacher, storage, um}
+    TestEnvironment {
+        cacher,
+        storage,
+        um,
+    }
 }
