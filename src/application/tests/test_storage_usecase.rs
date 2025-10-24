@@ -122,7 +122,7 @@ async fn test_store_document(
     mock_storage
         .expect_store_document_parts()
         .times(1)
-        .returning(move |index, parts| {
+        .returning(move |_index, parts| {
             let first_part = &parts[0];
             let doc_id = DOC_ID.to_string();
             let doc_path = first_part.file_path().clone();
