@@ -6,7 +6,7 @@ use crate::application::structures::{Document, FoundedDocument, PaginatedBuilder
 use crate::infrastructure::osearch::dto::SourceDocument;
 
 #[tracing::instrument(level = "info")]
-pub async fn extract_founded_docs(common_object: Value) -> PaginateResult<FoundedDocument> {
+pub fn extract_founded_docs(common_object: Value) -> PaginateResult<FoundedDocument> {
     let scroll_id = common_object[&"_scroll_id"].as_str().map(String::from);
     let founded_hits = common_object[&"hits"][&"hits"].as_array();
     let Some(hits) = founded_hits else {
