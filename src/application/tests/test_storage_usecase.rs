@@ -2,16 +2,14 @@ use rstest::rstest;
 use std::sync::Arc;
 
 use crate::application::services::usermanager::UserManager;
-use crate::application::structures::{
-    DocumentPart, IndexBuilder, StoredDocumentPart, UserInfoBuilder,
-};
+use crate::application::structures::{DocumentPart, IndexBuilder, StoredDocumentPart};
 use crate::application::tests::fixture::document::{build_large_document, DOC_FILE_PATH, DOC_ID};
 use crate::application::tests::fixture::index::{DEFAULT_INDEX_ID, DEFAULT_INDEX_PATH};
-use crate::application::tests::fixture::resource::build_resource;
 use crate::application::tests::mock::{init_test_environment, TestEnvironment};
 use crate::application::StorageUseCase;
 use crate::config::ServiceConfig;
 
+#[allow(dead_code)]
 const DEFAULT_USER_ID: &str = "abfisgf9aadS";
 
 #[rstest]
@@ -20,6 +18,9 @@ const DEFAULT_USER_ID: &str = "abfisgf9aadS";
 async fn test_get_all_indexes(
     #[from(init_test_environment)] test_env: TestEnvironment,
 ) -> anyhow::Result<()> {
+    use crate::application::structures::UserInfoBuilder;
+    use crate::application::tests::fixture::resource::build_resource;
+
     let mut mock_um = test_env.um;
     mock_um
         .expect_get_user_resource()
