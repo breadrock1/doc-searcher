@@ -23,6 +23,7 @@ pub struct CreateIndexForm {
     name: String,
     #[schema(example = "./")]
     path: String,
+    #[schema(value_type = Option<KnnIndexForm>, example = KnnIndexForm)]
     knn: Option<KnnIndexForm>,
 }
 
@@ -54,12 +55,12 @@ pub struct CreateDocumentForm {
     file_path: String,
     #[schema(example = 1024)]
     file_size: u32,
-    #[schema(example = "There is some content data")]
-    content: String,
     #[schema(example = 1750957115)]
     created_at: i64,
     #[schema(example = 1750957115)]
     modified_at: i64,
+    #[schema(example = "There is some content data")]
+    content: String,
 }
 
 impl TryFrom<CreateDocumentForm> for DocumentPart {
@@ -279,10 +280,10 @@ impl TryFrom<RetrieveDocumentForm> for RetrieveDocumentParams {
 pub struct FullTextSearchForm {
     #[schema(example = "Hello world")]
     query: Option<String>,
-    filter: Option<FilterForm>,
-    result: ResultForm,
     #[schema(example = "test-folder-1,test-folder-2")]
     indexes: String,
+    filter: Option<FilterForm>,
+    result: ResultForm,
 }
 
 impl TryFrom<FullTextSearchForm> for FullTextSearchParams {
@@ -336,8 +337,8 @@ impl TryFrom<HybridSearchForm> for HybridSearchParams {
             .result(form.result.into())
             .indexes(form.indexes)
             .model_id(form.model_id)
-            .filter(filter)
             .min_score(form.min_score)
+            .filter(filter)
             .build()?;
 
         Ok(params)
@@ -354,8 +355,7 @@ pub struct SemanticSearchForm {
     indexes: String,
     #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
     model_id: Option<String>,
-    #[schema(example = 0.7)]
-    min_score: Option<f32>,
+    #[schema(nullable)]
     tokens: Option<Vec<f64>>,
     result: ShortResultForm,
     filter: Option<FilterForm>,
@@ -378,7 +378,6 @@ impl TryFrom<SemanticSearchForm> for SemanticSearchParams {
             .result(form.result.into())
             .indexes(form.indexes)
             .model_id(form.model_id)
-            .min_score(form.min_score)
             .build()?;
 
         Ok(params)
