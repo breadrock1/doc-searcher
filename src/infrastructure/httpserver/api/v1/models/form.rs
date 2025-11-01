@@ -378,6 +378,7 @@ impl TryFrom<SemanticSearchForm> for SemanticSearchParams {
             .result(form.result.into())
             .indexes(form.indexes)
             .model_id(form.model_id)
+            .min_score(None)
             .build()?;
 
         Ok(params)
