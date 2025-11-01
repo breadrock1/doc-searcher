@@ -12,6 +12,8 @@ async fn main() -> anyhow::Result<()> {
     let os_config = config.storage().opensearch();
     let os_client = OpenSearchStorage::connect(os_config).await?;
 
+    os_client.update_cluster_settings().await?;
+
     let knn_params = create_knn_index_params(os_config)?;
     os_client.init_pipelines(&knn_params).await?;
     os_client.load_ml_model(os_config.semantic()).await?;

@@ -456,6 +456,30 @@ impl PaginateManager for OpenSearchStorage {
 }
 
 impl OpenSearchStorage {
+    pub async fn update_cluster_settings(&self) -> StorageResult<()> {
+        let cluster_settings = json!({
+            "persistent": {
+                "plugins.ml_commons.only_run_on_ml_node": false,
+                "plugins.ml_commons.model_auto_redeploy.enable": true
+              }
+        });
+
+        let response = self
+            .client
+            .cluster()
+            .put_settings()
+            .body(cluster_settings)
+            .send()
+            .await?;
+
+        if !response.status_code().is_success() {
+            let err = error::OSearchError::from_response(response).await;
+            return Err(StorageError::from(err));
+        }
+
+        Ok(())
+    }
+
     pub async fn init_pipelines(&self, params: &KnnIndexParams) -> StorageResult<()> {
         let ingest_schema = schema::create_ingest_schema(self.config.semantic(), Some(params));
         let response = self
