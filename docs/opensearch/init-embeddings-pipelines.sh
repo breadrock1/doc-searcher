@@ -1,8 +1,9 @@
 # Enable for current single node loading ml model
-PUT _cluster/settings
+PUT /_cluster/settings
 {
   "persistent": {
-    "plugins.ml_commons.only_run_on_ml_node": "false"
+    "plugins.ml_commons.only_run_on_ml_node": false,
+    "plugins.ml_commons.model_auto_redeploy.enable": true
   }
 }
 
