@@ -3,6 +3,9 @@ pub mod config;
 pub mod domain;
 pub mod infrastructure;
 pub mod telemetry;
+pub mod core;
+pub mod generic;
+mod support;
 
 pub const SERVICE_NAME: &str = "doc-searcher";
 

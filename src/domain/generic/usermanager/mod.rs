@@ -1,7 +1,8 @@
 mod error;
 pub use error::{UserManagerError, UserManagerResult};
 
-use crate::application::structures::Resource;
+mod model;
+pub use model::Resource;
 
 #[async_trait::async_trait]
 pub trait UserManager {

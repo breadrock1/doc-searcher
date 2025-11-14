@@ -1,3 +1,3 @@
-mod structures;
-
-pub use structures::{DocumentPart, EmbeddingChunk, FoundedDocument, Index};
+pub mod core;
+pub mod generic;
+pub mod support;

@@ -2,12 +2,14 @@ use anyhow::anyhow;
 use character_text_splitter::CharacterTextSplitter;
 use std::sync::Arc;
 
-use crate::application::services::storage::error::StorageResult;
-use crate::application::services::storage::{DocumentManager, IndexManager, StorageError};
-use crate::application::services::usermanager::UserManager;
-use crate::application::structures::params::CreateIndexParams;
-use crate::application::structures::{DocumentPart, Index, StoredDocumentPart, UserInfo};
+// TODO: Move to core? 
 use crate::config::SettingsConfig;
+use crate::core::storage::domain::{IDocumentStorage, IIndexStorage, StoredDocumentPart};
+use crate::core::storage::domain::{DocumentPart, Index};
+use crate::core::storage::domain::{StorageError, StorageResult};
+use crate::core::storage::domain::{CreateIndexParams};
+use crate::generic::usermanager::UserManager;
+use crate::generic::usermanager::UserInfo;
 
 #[cfg(feature = "enable-unique-doc-id")]
 use crate::infrastructure::osearch::OpenSearchStorage;
@@ -15,7 +17,7 @@ use crate::infrastructure::osearch::OpenSearchStorage;
 #[derive(Clone)]
 pub struct StorageUseCase<Storage>
 where
-    Storage: IndexManager + DocumentManager + Send + Sync,
+    Storage: IIndexStorage + IDocumentStorage + Send + Sync,
 {
     settings: Arc<SettingsConfig>,
     storage: Arc<Storage>,
@@ -24,7 +26,7 @@ where
 
 impl<Storage> StorageUseCase<Storage>
 where
-    Storage: IndexManager + DocumentManager + Send + Sync,
+    Storage: IIndexStorage + IDocumentStorage + Send + Sync,
 {
     pub fn new(
         settings: &SettingsConfig,
@@ -42,7 +44,7 @@ where
 
 impl<Storage> StorageUseCase<Storage>
 where
-    Storage: IndexManager + DocumentManager + Send + Sync,
+    Storage: IIndexStorage + IDocumentStorage + Send + Sync,
 {
     #[tracing::instrument(skip(self), level = "info")]
     pub async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<String> {
@@ -98,7 +100,7 @@ where
         match self.storage.store_document_parts(index, &doc_parts).await {
             Ok(stored_docs) => {
                 let root_doc = stored_docs.first().unwrap();
-                Ok(root_doc.clone())
+                Ok(StoredDocumentPart::new(root_doc.clone(), doc.file_path().clone()))
             }
             #[cfg(feature = "enable-unique-doc-id")]
             Err(StorageError::DocumentAlreadyExists(_err)) if _force => {

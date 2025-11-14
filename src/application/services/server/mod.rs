@@ -6,10 +6,11 @@ use crate::application::services::storage::{
     DocumentManager, DocumentSearcher, IndexManager, PaginateManager,
 };
 use crate::application::usecase::{SearcherUseCase, StorageUseCase};
+use crate::domain::core::searching::{IPaginate, ISearcher};
 
 pub struct ServerApp<Storage, Searcher>
 where
-    Searcher: DocumentSearcher + PaginateManager + Send + Sync + Clone,
+    Searcher: ISearcher + IPaginate + Send + Sync + Clone,
     Storage: IndexManager + DocumentManager + Send + Sync + Clone,
 {
     storage: StorageUseCase<Storage>,
