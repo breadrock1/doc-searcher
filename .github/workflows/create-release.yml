@@ -20,11 +20,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        features:
-          - name: all
-            options: '--all-features'
 
     steps:
       - name: Checkout repository
