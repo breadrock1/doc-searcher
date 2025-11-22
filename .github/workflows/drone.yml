@@ -70,7 +70,7 @@ steps:
       - check
       - build
     commands:
-      - cargo test --lib ${CARGO_BUILD_FEATURES}
+      - cargo test --lib --package doc-search-core ${CARGO_BUILD_FEATURES}
     volumes:
       - name: rust-targets
         path: /cache

@@ -1,6 +1,6 @@
 ARG FEATURES='--features default'
 
-FROM rust:1.85 AS chef
+FROM rust:1.91 AS chef
 
 WORKDIR /app
 
@@ -39,9 +39,9 @@ WORKDIR /app
 
 COPY ./config /app/config
 COPY --from=builder /app/target/release/launch .
-COPY --from=builder /app/target/release/init-pipelines .
+COPY --from=builder /app/target/release/init-infrastructure .
 
-CMD [ "/app/init-pipelines" ]
+CMD [ "/app/init-infrastructure" ]
 
 ENTRYPOINT ["/app/launch"]
 

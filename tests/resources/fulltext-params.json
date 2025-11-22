@@ -1,6 +1,6 @@
 {
     "query": "Intuition is very important",
-    "indexes": "test-common-folder",
+    "indexes": "test-folder",
     "filter": {
       "size_range": [0, 4096],
       "created_range": [0, 3434345345435],

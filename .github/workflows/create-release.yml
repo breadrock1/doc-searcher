@@ -12,7 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/doc-searcher
+  IMAGE_NAME: ${{ github.repository }}/doc-search
 
 jobs:
   build-and-push:

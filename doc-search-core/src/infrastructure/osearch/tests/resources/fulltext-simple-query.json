@@ -1,0 +1,39 @@
+{
+  "_source": {
+    "exclude": [
+      "chunked_text",
+      "embeddings"
+    ]
+  },
+  "highlight": {
+    "fields": {
+      "content": {
+        "fragment_size": 100,
+        "number_of_fragments": 10,
+        "post_tags": [
+          ""
+        ],
+        "pre_tags": [
+          ""
+        ]
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "filter": [],
+      "must": [
+        {
+          "match_all": {}
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "created_at": {
+        "order": "desc"
+      }
+    }
+  ]
+}

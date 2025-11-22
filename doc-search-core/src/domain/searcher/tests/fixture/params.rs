@@ -1,0 +1,106 @@
+use crate::domain::searcher::models::{
+    FilterParams, FilterParamsBuilder, FullTextSearchingParamsBuilder,
+    HybridSearchingParamsBuilder, ResultOrder, ResultParams, ResultParamsBuilder,
+    RetrieveIndexDocumentsParamsBuilder, SearchKindParams, SearchingParams,
+    SemanticSearchingParamsBuilder,
+};
+
+const QUERY_FIELD_VALUE: &str = "query string";
+const EMBEDDINGS_MODEL_ID: &str = "bge-model";
+const CURRENT_TIMESTAMP: i64 = 1756498133;
+
+pub fn build_retrieve_searching_params() -> SearchingParams {
+    let indexes = vec!["test-index-1".into(), "test-index-2".into()];
+    let result = build_result_searching_params();
+    let filter = build_filter_searching_params();
+    let params = RetrieveIndexDocumentsParamsBuilder::default()
+        .path(Some(QUERY_FIELD_VALUE.to_string()))
+        .build()
+        .unwrap();
+    SearchingParams::new(
+        indexes,
+        SearchKindParams::Retrieve(params),
+        result,
+        Some(filter),
+    )
+}
+
+pub fn build_full_text_searching_params() -> SearchingParams {
+    let indexes = vec!["test-index-1".into(), "test-index-2".into()];
+    let result = build_result_searching_params();
+    let filter = build_filter_searching_params();
+    let params = FullTextSearchingParamsBuilder::default()
+        .query(Some(QUERY_FIELD_VALUE.to_string()))
+        .build()
+        .unwrap();
+    SearchingParams::new(
+        indexes,
+        SearchKindParams::FullText(params),
+        result,
+        Some(filter),
+    )
+}
+
+pub fn build_semantic_searching_params() -> SearchingParams {
+    let indexes = vec!["test-index-1".into(), "test-index-2".into()];
+    let result = build_result_searching_params();
+    let filter = build_filter_searching_params();
+    let params = SemanticSearchingParamsBuilder::default()
+        .query(QUERY_FIELD_VALUE.to_string())
+        .model_id(Some(EMBEDDINGS_MODEL_ID.to_string()))
+        .tokens(None)
+        .knn_amount(100)
+        .min_score(Some(0.6))
+        .build()
+        .unwrap();
+    SearchingParams::new(
+        indexes,
+        SearchKindParams::Semantic(params),
+        result,
+        Some(filter),
+    )
+}
+
+pub fn build_hybrid_searching_params() -> SearchingParams {
+    let indexes = vec!["test-index-1".into(), "test-index-2".into()];
+    let result = build_result_searching_params();
+    let filter = build_filter_searching_params();
+    let params = HybridSearchingParamsBuilder::default()
+        .query(QUERY_FIELD_VALUE.to_string())
+        .model_id(Some(EMBEDDINGS_MODEL_ID.to_string()))
+        .knn_amount(100)
+        .min_score(Some(0.6))
+        .build()
+        .unwrap();
+    SearchingParams::new(
+        indexes,
+        SearchKindParams::Hybrid(params),
+        result,
+        Some(filter),
+    )
+}
+
+pub fn build_filter_searching_params() -> FilterParams {
+    FilterParamsBuilder::default()
+        .doc_part_id(Some(1))
+        .size_from(Some(0))
+        .size_to(Some(4096))
+        .created_from(Some(CURRENT_TIMESTAMP))
+        .created_to(Some(CURRENT_TIMESTAMP))
+        .modified_from(Some(CURRENT_TIMESTAMP))
+        .modified_to(Some(CURRENT_TIMESTAMP))
+        .build()
+        .unwrap()
+}
+
+pub fn build_result_searching_params() -> ResultParams {
+    ResultParamsBuilder::default()
+        .size(10)
+        .offset(0)
+        .order(ResultOrder::ASC)
+        .highlight_items(Some(10))
+        .highlight_item_size(Some(10))
+        .include_extra_fields(Some(true))
+        .build()
+        .unwrap()
+}

@@ -1,6 +1,6 @@
 [package]
 name = "doc-search"
-version = "0.3.17"
+version = "0.3.20"
 edition = "2021"
 
 [badges]
@@ -11,45 +11,29 @@ lto = true
 panic = "abort"
 strip = "debuginfo"
 
-[features]
-# temporary feature
-enable-multi-user = []
-enable-user-manager = []
-enable-unique-doc-id = ["dep:md5"]
-enable-cache-redis = ["dep:redis"]
-default = []
+[workspace]
+members = [
+    ".",
+    "doc-search-core",
+    "doc-search-otlp",
+]
 
 [dev-dependencies]
-rstest = "0.24.0"
-mockall = "0.13.1"
-#wiremock = "0.6.2"
+rstest = "0.26.1"
+serial_test = "3.2.0"
 
 [dependencies]
 anyhow = "1.0.96"
-async-trait = "0.1.86"
-character_text_splitter = "0.1.3"
-config = "0.15.8"
-console-subscriber = "0.4.1"
+axum-prometheus = "0.9.0"
+axum-tracing-opentelemetry = "0.26.1"
+config = "0.15.19"
 derive_builder = "0.20.2"
 dotenv = "0.15.0"
-futures = "0.3.31"
 gset = "1.1.0"
-opensearch = "2.3.0"
-opentelemetry = "0.28.0"
-regex = "1.11.1"
 serde_derive = "1.0.218"
 serde_json = "1.0.139"
 thiserror = "2.0.11"
-tower = "0.5.2"
 tracing = "0.1.41"
-tracing-loki = "0.2.6"
-tracing-opentelemetry = "0.29.0"
-tracing-subscriber = "0.3.19"
-
-# metrics dependencies
-axum-prometheus = "0.8.0"
-axum-tracing-opentelemetry = "0.26.1"
-metrics-exporter-prometheus = "0.16.2"
 
 [dependencies.axum]
 version = "0.8.1"
@@ -58,23 +42,6 @@ features = ["tracing", "tower-log"]
 [dependencies.chrono]
 version = "0.4.37"
 features = ["serde"]
-
-[dependencies.opentelemetry-otlp]
-version = "0.28.0"
-features = ["grpc-tonic"]
-
-[dependencies.opentelemetry_sdk]
-version = "0.28.0"
-features = ["rt-tokio-current-thread"]
-
-[dependencies.redis]
-optional = true
-version = "0.27.6"
-features = ["aio", "tokio-comp", "connection-manager", "serde_json", "json"]
-
-[dependencies.reqwest]
-version = "0.12.12"
-features = ["json", "multipart"]
 
 [dependencies.serde]
 version = "1.0.218"
@@ -96,18 +63,16 @@ features = ["axum_extras", "chrono"]
 version = "9.0.0"
 features = ["axum", "vendored"]
 
-[dependencies.uuid]
-version = "1.15.0"
-features = ["v4"]
+[dependencies.doc-search-core]
+path = "doc-search-core"
 
-[dependencies.md5]
-optional = true
-version = "0.7.0"
+[dependencies.doc-search-otlp]
+path = "doc-search-otlp"
 
 [[bin]]
 name = "launch"
 path = "src/bin/launch.rs"
 
 [[bin]]
-name = "init-pipelines"
-path = "src/bin/init-pipelines.rs"
+name = "init-infrastructure"
+path = "src/bin/init-infrastructure.rs"

@@ -1,0 +1,47 @@
+{
+  "_source": {
+    "exclude": [
+      "content"
+    ]
+  },
+  "highlight": {
+    "fields": {
+      "content": {
+        "fragment_size": 100,
+        "number_of_fragments": 10,
+        "post_tags": [
+          ""
+        ],
+        "pre_tags": [
+          ""
+        ]
+      }
+    }
+  },
+  "min_score": 0.6000000238418579,
+  "query": {
+    "bool": {
+      "filter": [],
+      "must": [
+        {
+          "nested": {
+            "path": "embeddings",
+            "query": {
+              "knn": {
+                "embeddings.knn": {
+                  "k": 1024,
+                  "vector": [
+                    -1.4354,
+                    0.435435
+                  ]
+                }
+              }
+            },
+            "score_mode": "max"
+          }
+        }
+      ]
+    }
+  },
+  "size": 10
+}
