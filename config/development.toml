@@ -29,3 +29,12 @@ knn_ef_searcher = 100
 knn_dimension = 768
 token_limit = 700
 overlap_rate = 0.2
+
+[cache]
+is_enabled = false
+
+[cache.redis]
+address = "redis://localhost:6379"
+username = "redis"
+password = "redis"
+expired = 3600

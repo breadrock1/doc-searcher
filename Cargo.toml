@@ -24,8 +24,9 @@ serial_test = "3.2.0"
 
 [dependencies]
 anyhow = "1.0.96"
+async-trait = "0.1.89"
 axum-prometheus = "0.9.0"
-axum-tracing-opentelemetry = "0.26.1"
+axum-tracing-opentelemetry = "0.32.2"
 config = "0.15.19"
 derive_builder = "0.20.2"
 dotenv = "0.15.0"
@@ -34,6 +35,8 @@ serde_derive = "1.0.218"
 serde_json = "1.0.139"
 thiserror = "2.0.11"
 tracing = "0.1.41"
+regex = "1.11.1"
+tower = "0.5.2"
 
 [dependencies.axum]
 version = "0.8.1"
@@ -42,6 +45,10 @@ features = ["tracing", "tower-log"]
 [dependencies.chrono]
 version = "0.4.37"
 features = ["serde"]
+
+[dependencies.redis]
+version = "0.32.7"
+features = ["aio", "tokio-comp", "connection-manager", "json"]
 
 [dependencies.serde]
 version = "1.0.218"

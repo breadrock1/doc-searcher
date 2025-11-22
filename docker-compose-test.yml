@@ -35,15 +35,13 @@ services:
       OPENSEARCH_USERNAME: 'admin'
       OPENSEARCH_PASSWORD: 'admin'
 
-  cacher:
+  redis:
     image: redis:latest
     restart: on-failure
     networks:
       - doc-search-net
     ports:
       - '6379:6379'
-    volumes:
-      - 'cacher-vol-1:/data/cacher'
     environment:
       REDIS_USER: 'redis'
       REDIS_PASSWORD: 'redis'
@@ -55,12 +53,7 @@ services:
     networks:
       - doc-search-net
     ports:
-      - '6831:6831/udp'
-      - '6832:6832/udp'
-      - '5778:5778'
-      - '14268:14268'
       - '4317:4317'
-      - '14250:14250'
       - '4318:4318'
       - '16686:16686'
 

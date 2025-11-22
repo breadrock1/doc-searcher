@@ -1,4 +1,4 @@
-[![Pull Request Actions](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-request.yaml/badge.svg)](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-request.yaml)
+[![Pull Request Actions](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-request.yml/badge.svg)](https://github.com/breadrock1/doc-searcher/actions/workflows/pull-request.yml)
 
 [![Target - Linux](https://img.shields.io/badge/OS-Linux-blue?logo=linux&logoColor=white)](https://www.linux.org/ "Go to Linux homepage")
 [![Target - MacOS](https://img.shields.io/badge/OS-MacOS-blue?logo=linux&logoColor=white)](https://www.apple.com/ "Go to Apple homepage")

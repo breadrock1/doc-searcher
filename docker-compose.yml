@@ -39,8 +39,8 @@ services:
       - OPENSEARCH_DEFAULT_INDEX=common-folder
       - OPENSEARCH_USERNAME=admin
       # TODO: set secure password
-      - OPENSEARCH_PASSWORD=S0v4P@ssw0rd3543
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=S0v4P@ssw0rd3543
+      - OPENSEARCH_PASSWORD=admin
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=admin
     volumes:
       - 'opensearch-vol-1:/usr/share/opensearch/data'
 
@@ -56,7 +56,39 @@ services:
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
       OPENSEARCH_USERNAME: 'admin'
-      OPENSEARCH_PASSWORD: 'S0v4P@ssw0rd3543'
+      OPENSEARCH_PASSWORD: 'admin'
+
+  redis:
+    image: redis:latest
+    restart: on-failure
+    networks:
+      - doc-search-net
+    ports:
+      - '6379:6379'
+    environment:
+      REDIS_USER: 'redis'
+      REDIS_PASSWORD: 'redis'
+      REDIS_USER_PASSWORD: 'redis'
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    restart: unless-stopped
+    networks:
+      - doc-search-net
+    ports:
+      - '4317:4317'
+      - '4318:4318'
+      - '16686:16686'
+
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+    command:
+      - '-config.file=/etc/loki/local-config.yaml'
+    networks:
+      - doc-search-net
+    ports:
+      - '3100:3100'
 
 networks:
   doc-search-net:

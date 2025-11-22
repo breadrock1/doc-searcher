@@ -4,10 +4,10 @@ use dotenv::dotenv;
 use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::server::{ServerConfig, StorageConfig};
+use crate::server::{CacheConfig, ServerConfig, StorageConfig};
 
-const CONFIG_PREFIX: &str = "DOC_SEARCHER";
-const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";
+const CONFIG_PREFIX: &str = "DOC_SEARCH";
+const SERVICE_RUN_MODE: &str = "DOC_SEARCH__RUN_MODE";
 const DEV_FILE_CONFIG_PATH: &str = "./config/development.toml";
 
 #[derive(Clone, Deserialize, Getset)]
@@ -20,6 +20,8 @@ pub struct ServiceConfig {
     server: ServerConfig,
     #[getset(get, vis = "pub")]
     storage: StorageConfig,
+    #[getset(get, vis = "pub")]
+    cache: CacheConfig,
 }
 
 #[derive(Clone, Deserialize, Getset)]
