@@ -1,0 +1,84 @@
+{
+  "_source": {
+    "exclude": [
+      "chunked_text",
+      "embeddings"
+    ]
+  },
+  "highlight": {
+    "fields": {
+      "content": {
+        "fragment_size": 100,
+        "number_of_fragments": 10,
+        "post_tags": [
+          ""
+        ],
+        "pre_tags": [
+          ""
+        ]
+      }
+    }
+  },
+  "min_score": 0.6000000238418579,
+  "query": {
+    "hybrid": {
+      "queries": [
+        {
+          "neural": {
+            "embeddings.knn": {
+              "k": 1024,
+              "model_id": "p30o65gBnrvKdVIONWdC",
+              "query_text": "There is some query"
+            }
+          }
+        },
+        {
+          "bool": {
+            "filter": [
+              {
+                "range": {
+                  "created_at": {
+                    "gte": 1756498133,
+                    "lte": 1756498133
+                  }
+                }
+              },
+              {
+                "range": {
+                  "file_size": {
+                    "gte": 0,
+                    "lte": 4096
+                  }
+                }
+              }
+            ],
+            "should": [
+              {
+                "multi_match": {
+                  "fields": [
+                    "content",
+                    "chunked_text"
+                  ],
+                  "operator": "or",
+                  "query": "There is some query",
+                  "type": "cross_fields"
+                }
+              },
+              {
+                "match_phrase": {
+                  "content": {
+                    "boost": 3.0,
+                    "query": "There is some query",
+                    "slop": 2
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "search_pipeline": "hybrid-search-pipeline",
+  "size": 10
+}

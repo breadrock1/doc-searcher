@@ -1,130 +1,136 @@
-use doc_search::application::services::storage::{DocumentManager, DocumentSearcher, IndexManager};
-use doc_search::application::structures::params::{
-    CreateIndexParamsBuilder, FullTextSearchParams, KnnIndexParams, RetrieveDocumentParams,
-    SemanticSearchParams,
-};
-use doc_search::application::structures::DocumentPart;
-use doc_search::config::ServiceConfig;
-use doc_search::infrastructure::osearch::OpenSearchStorage;
-use doc_search::ServiceConnect;
-use std::sync::Arc;
+mod common;
+use common::fixture::document::*;
+use common::fixture::search_params::*;
+use common::setup_osearch_environment;
 
-const TEST_FOLDER_ID: &str = "test-common-folder";
-const TEST_DOCUMENTS_DATA: &[u8] = include_bytes!("resources/test-document.json");
-const TEST_FULLTEXT_DATA: &[u8] = include_bytes!("resources/fulltext-params.json");
-const TEST_RETRIEVE_DATA: &[u8] = include_bytes!("resources/retrieve-params.json");
-const TEST_SEMANTIC_DATA: &[u8] = include_bytes!("resources/semantic-params.json");
+use doc_search_core::application::usecase::searcher::SearcherUseCase;
+use doc_search_core::application::usecase::storage::StorageUseCase;
+use doc_search_core::domain::searcher::models::{Pagination, SearchingParams};
+use doc_search_core::domain::storage::models::{AllDocumentParts, StoredDocumentPartsInfo};
+use rstest::rstest;
+use serial_test::serial;
 
-#[ignore]
+const TEST_INDEX_ID: &str = "test-folder";
+const MAX_CONTENT_SIZE: usize = 10;
+
+#[rstest]
+#[serial]
 #[tokio::test]
-async fn test_searcher_api() -> anyhow::Result<()> {
-    let config = ServiceConfig::new()?;
-    let config = config.storage().opensearch();
-    let client = Arc::new(OpenSearchStorage::connect(config).await?);
+async fn test_opensearch_store_document() -> anyhow::Result<()> {
+    let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
+    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let _ = client.delete_index(TEST_FOLDER_ID).await;
-    let _ = create_test_index(client.clone()).await;
+    let index_id = test_env.get_index();
+    let large_document = build_large_document();
+    let result: anyhow::Result<AllDocumentParts> = {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let stored_doc_info = storage
+            .store_document(index_id, large_document, false)
+            .await?;
 
-    let documents = serde_json::from_slice::<Vec<DocumentPart>>(TEST_DOCUMENTS_DATA)?;
-    let result = client
-        .store_document_parts(TEST_FOLDER_ID, &documents)
-        .await;
-    assert!(result.is_ok());
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let large_doc_id = &stored_doc_info.large_doc_id;
+        let doc_parts = storage
+            .get_all_document_parts(&index_id, large_doc_id)
+            .await?;
+        Ok(doc_parts)
+    };
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    test_env.teardown(index_id).await?;
 
-    let retrieve_params = serde_json::from_slice::<RetrieveDocumentParams>(TEST_RETRIEVE_DATA)?;
-    let result = client.retrieve(TEST_FOLDER_ID, &retrieve_params).await;
-    assert!(result.is_ok());
-    let result = result?;
-    assert_eq!(result.founded().len(), 3);
-
-    let fulltext_params = serde_json::from_slice::<FullTextSearchParams>(TEST_FULLTEXT_DATA)?;
-    let result = client.fulltext(&fulltext_params).await;
-    assert!(result.is_ok());
-    let result = result?;
-    assert_eq!(result.founded().len(), 3);
-
-    let semantic_params = serde_json::from_slice::<SemanticSearchParams>(TEST_SEMANTIC_DATA)?;
-    let result = client.semantic(&semantic_params).await;
-    assert!(result.is_ok());
-    let result = result?;
-    assert_eq!(result.founded().len(), 3);
+    let founded_doc_parts = result?;
+    assert_eq!(founded_doc_parts.len(), 1);
 
     Ok(())
 }
 
-#[ignore]
+#[rstest]
+#[serial]
 #[tokio::test]
-async fn test_documents_api() -> anyhow::Result<()> {
-    let config = ServiceConfig::new()?;
-    let config = config.storage().opensearch();
-    let client = Arc::new(OpenSearchStorage::connect(config).await?);
+async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
+    let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
+    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let _ = client.delete_index(TEST_FOLDER_ID).await;
-    let _ = create_test_index(client.clone()).await;
+    let index_id = test_env.get_index();
+    let large_document = build_large_document();
+    let result: anyhow::Result<AllDocumentParts> = {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let stored_doc_info = storage
+            .store_document(index_id, large_document, false)
+            .await?;
 
-    let documents = serde_json::from_slice::<Vec<DocumentPart>>(TEST_DOCUMENTS_DATA)?;
-    let result = client
-        .store_document_parts(TEST_FOLDER_ID, &documents)
-        .await;
-    assert!(result.is_ok());
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let large_doc_id = &stored_doc_info.large_doc_id;
+        storage.delete_document(index_id, large_doc_id).await?;
 
-    for stored_doc in result?.iter() {
-        let id = &stored_doc.id;
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let doc_parts = storage
+            .get_all_document_parts(index_id, large_doc_id)
+            .await?;
 
-        let result = client.get_document(TEST_FOLDER_ID, id).await;
-        assert!(result.is_ok());
+        Ok(doc_parts)
+    };
 
-        client.delete_document(TEST_FOLDER_ID, id).await?;
-        let result = client.get_document(TEST_FOLDER_ID, id).await;
-        assert!(result.is_err());
-    }
+    test_env.teardown(index_id).await?;
 
-    let _ = client.delete_index(TEST_FOLDER_ID).await;
+    let founded_doc_parts = result?;
+    assert_eq!(founded_doc_parts.len(), 0);
 
     Ok(())
 }
 
-#[ignore]
+#[rstest]
+#[serial]
 #[tokio::test]
-async fn test_index_api() -> anyhow::Result<()> {
-    let config = ServiceConfig::new()?;
-    let config = config.storage().opensearch();
-    let client = Arc::new(OpenSearchStorage::connect(config).await?);
+async fn test_opensearch_store_multiple_documents() -> anyhow::Result<()> {
+    let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
+    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let _ = client.delete_index(TEST_FOLDER_ID).await;
-    let _ = create_test_index(client.clone()).await;
-    let loaded_index = client.get_index(TEST_FOLDER_ID).await?;
-    assert_eq!(TEST_FOLDER_ID, loaded_index.id());
+    let index_id = test_env.get_index();
+    let large_documents = build_real_large_documents()?;
+    let result: anyhow::Result<Vec<StoredDocumentPartsInfo>> = {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let stored_docs_info = storage.store_documents(index_id, large_documents).await?;
+        Ok(stored_docs_info)
+    };
 
-    client.delete_index(TEST_FOLDER_ID).await?;
-    let result = client.get_index(TEST_FOLDER_ID).await;
-    assert!(result.is_err());
+    test_env.teardown(index_id).await?;
+
+    let stored_docs_info = result?;
+    assert_eq!(stored_docs_info.len(), 3);
 
     Ok(())
 }
 
-async fn create_test_index(client: Arc<OpenSearchStorage>) -> anyhow::Result<String> {
-    let create_index = CreateIndexParamsBuilder::default()
-        .id(TEST_FOLDER_ID.to_owned())
-        .name(TEST_FOLDER_ID.to_owned())
-        .path("".to_owned())
-        .knn(Some(KnnIndexParams::default()))
-        .build()
-        .unwrap();
+#[rstest]
+#[case(build_simple_retrieve_params(), 3)]
+#[case(build_simple_fulltext_params(), 3)]
+#[case(build_simple_semantic_params(), 3)]
+#[case(build_simple_hybrid_params(), 3)]
+#[serial]
+#[tokio::test]
+async fn test_opensearch_search_documents(
+    #[case] searching_params: SearchingParams,
+    #[case] founded_documents_amount: usize,
+) -> anyhow::Result<()> {
+    let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
+    let searcher = SearcherUseCase::new(test_env.osearch());
+    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let id = client.create_index(&create_index).await?;
-    Ok(id)
-}
+    let index_id = test_env.get_index();
+    let large_documents = build_real_large_documents()?;
+    let result: anyhow::Result<Pagination> = {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let _ = storage.store_documents(index_id, large_documents).await?;
 
-#[test]
-#[cfg(feature = "enable-unique-doc-id")]
-fn test_gen_unique_document_id() -> anyhow::Result<()> {
-    let documents = serde_json::from_slice::<Vec<DocumentPart>>(TEST_DOCUMENTS_DATA)?;
-    for doc in documents.iter() {
-        let result = OpenSearchStorage::gen_unique_document_id(TEST_FOLDER_ID, doc);
-        println!("doc unique id is: {result}");
-    }
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        let pagination = searcher.search_document_parts(&searching_params).await?;
+
+        Ok(pagination)
+    };
+
+    let pagination = result?;
+    assert_eq!(pagination.founded.len(), founded_documents_amount);
+
     Ok(())
 }

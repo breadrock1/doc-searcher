@@ -1,20 +1,14 @@
 use config::{Config, ConfigError, Environment, File, FileFormat};
+use doc_search_otlp::OtlpConfig;
 use dotenv::dotenv;
 use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::infrastructure::config::{CacherConfig, ServerConfig, StorageConfig};
-use crate::telemetry::OtlpConfig;
+use crate::server::{ServerConfig, StorageConfig};
 
 const CONFIG_PREFIX: &str = "DOC_SEARCHER";
 const SERVICE_RUN_MODE: &str = "DOC_SEARCHER__RUN_MODE";
 const DEV_FILE_CONFIG_PATH: &str = "./config/development.toml";
-
-#[derive(Clone, Deserialize, Getset)]
-pub struct SettingsConfig {
-    #[getset(get_copy, vis = "pub")]
-    max_content_size: usize,
-}
 
 #[derive(Clone, Deserialize, Getset)]
 pub struct ServiceConfig {
@@ -26,8 +20,12 @@ pub struct ServiceConfig {
     server: ServerConfig,
     #[getset(get, vis = "pub")]
     storage: StorageConfig,
-    #[getset(get, vis = "pub")]
-    cacher: CacherConfig,
+}
+
+#[derive(Clone, Deserialize, Getset)]
+pub struct SettingsConfig {
+    #[getset(get_copy, vis = "pub")]
+    max_content_size: usize,
 }
 
 impl ServiceConfig {

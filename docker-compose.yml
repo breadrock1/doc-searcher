@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+  doc-search-migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ./init-infrastructure
+    networks:
+      - doc-searcher-net
+    env_file:
+      - '.env'
+
+  doc-search:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - doc-search-migration
+    networks:
+      - doc-searcher-net
+    ports:
+      - '2892:2892'
+    env_file:
+      - '.env'
+
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    restart: unless-stopped
+    networks:
+      - doc-searcher-net
+    ports:
+      - '9200:9200'
+      - '9600:9600'
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_URL=https://0.0.0.0:9200
+      - OPENSEARCH_DEFAULT_INDEX=common-folder
+      - OPENSEARCH_USERNAME=admin
+      # TODO: set secure password
+      - OPENSEARCH_PASSWORD=S0v4P@ssw0rd3543
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=S0v4P@ssw0rd3543
+    volumes:
+      - 'opensearch-vol-1:/usr/share/opensearch/data'
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.18.0
+    restart: unless-stopped
+    depends_on:
+      - opensearch
+    networks:
+      - doc-searcher-net
+    ports:
+      - '5601:5601'
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+      OPENSEARCH_USERNAME: 'admin'
+      OPENSEARCH_PASSWORD: 'S0v4P@ssw0rd3543'
+
+networks:
+  doc-searcher-net:
+    name: doc-searcher-net
+    driver: bridge
+
+volumes:
+  opensearch-vol-1:
+    driver: local

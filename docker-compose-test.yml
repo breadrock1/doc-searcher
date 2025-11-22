@@ -82,5 +82,3 @@ networks:
 volumes:
   opensearch-vol-1:
     driver: local
-  cacher-vol-1:
-    driver: local

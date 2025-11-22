@@ -14,9 +14,6 @@ address = "http://localhost:4317"
 [server.http]
 address = "0.0.0.0:2892"
 
-[server.usermanager]
-address = "http://localhost:2899/api/v1"
-
 [storage.opensearch]
 address = "http://localhost:9200"
 username = "admin"
@@ -28,14 +25,7 @@ number_of_replicas = 1
 
 [storage.opensearch.semantic]
 model_id = "uPRh30JcBW8Qg3Gf4I6K"
-# Optional parameters
 knn_ef_searcher = 100
 knn_dimension = 768
 token_limit = 700
 overlap_rate = 0.2
-
-[cacher.redis]
-address = "redis://localhost:6379"
-username = "redis"
-password = "redis"
-expired = 3600
