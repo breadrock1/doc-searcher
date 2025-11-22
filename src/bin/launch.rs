@@ -1,3 +1,4 @@
+use axum::Router;
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use doc_search::config::ServiceConfig;
 use doc_search::server::{httpserver, ServerApp};
@@ -35,6 +36,17 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors_layer)
         .layer(OtelAxumLayer::default());
 
+    let cache_config = config.cache();
+    let tmp_app_state: anyhow::Result<Router> = match cache_config.is_enabled() {
+        false => Ok(app),
+        true => {
+            let redis_config = cache_config.redis();
+            let app = httpserver::mw::cache::enable_caching_mw(app, redis_config).await?;
+            Ok(app)
+        }
+    };
+
+    let app = tmp_app_state?;
     let server_config = config.server();
     let listener = TcpListener::bind(server_config.http().address()).await?;
     if let Err(err) = axum::serve(listener, app).await {

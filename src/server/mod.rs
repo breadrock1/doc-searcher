@@ -1,5 +1,5 @@
 mod config;
-pub use config::{ServerConfig, StorageConfig};
+pub use config::{CacheConfig, ServerConfig, StorageConfig};
 
 mod error;
 pub use error::{ServerError, ServerResult, Success};
