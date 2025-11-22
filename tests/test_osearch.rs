@@ -31,7 +31,7 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let large_doc_id = &stored_doc_info.large_doc_id;
         let doc_parts = storage
-            .get_all_document_parts(&index_id, large_doc_id)
+            .get_all_document_parts(index_id, large_doc_id)
             .await?;
         Ok(doc_parts)
     };
