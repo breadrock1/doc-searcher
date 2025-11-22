@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     entrypoint: ./init-infrastructure
     networks:
-      - doc-searcher-net
+      - doc-search-net
     env_file:
       - '.env'
 
@@ -18,7 +18,7 @@ services:
     depends_on:
       - doc-search-migration
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '2892:2892'
     env_file:
@@ -28,7 +28,7 @@ services:
     image: opensearchproject/opensearch:2.18.0
     restart: unless-stopped
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '9200:9200'
       - '9600:9600'
@@ -50,7 +50,7 @@ services:
     depends_on:
       - opensearch
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '5601:5601'
     environment:
@@ -59,8 +59,8 @@ services:
       OPENSEARCH_PASSWORD: 'S0v4P@ssw0rd3543'
 
 networks:
-  doc-searcher-net:
-    name: doc-searcher-net
+  doc-search-net:
+    name: doc-search-net
     driver: bridge
 
 volumes:

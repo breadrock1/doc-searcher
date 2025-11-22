@@ -1,6 +1,6 @@
 # Doc-Search project
 
-Doc-Searcher is the simple and flexible searching documents application, leveraging the capabilities of Rust and Opensearch
+Doc-Search is the simple and flexible searching documents application, leveraging the capabilities of Rust and Opensearch
 to provide efficient and effective full-text search in documents. This project aims to offer a straightforward solution for
 indexing and searching through a large corpus of documents with the speed and accuracy provided by Opensearch.
 

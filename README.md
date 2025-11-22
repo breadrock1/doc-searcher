@@ -4,9 +4,9 @@
 [![Target - MacOS](https://img.shields.io/badge/OS-MacOS-blue?logo=linux&logoColor=white)](https://www.apple.com/ "Go to Apple homepage")
 [![Target - Windows](https://img.shields.io/badge/OS-Windows-blue?logo=linux&logoColor=white)](https://www.microsoft.com/ "Go to Apple homepage")
 
-# Doc-Searcher Metaverse project
+# Doc-Search Metaverse project
 
-Doc-Searcher is the simple and flexible searching documents application, leveraging the capabilities of Rust and Opensearch
+Doc-Search is the simple and flexible searching documents application, leveraging the capabilities of Rust and Opensearch
 to provide efficient and effective full-text search in documents. This project aims to offer a straightforward solution for
 indexing and searching through a large corpus of documents with the speed and accuracy provided by Opensearch.
 
@@ -17,7 +17,7 @@ by implementing several async traits for Tantivy, QDrant or own solution:
 The principle schema:
 ![architecture.png](docs/architecture.png)
 
-Doc-Searcher includes following sub-services:
+Doc-Search includes following sub-services:
  - Cache Service       - API of caching service like Redis;
  - Metrics Service     - API of metrics to Prometheus monitoring;
  - Storage Service     - API (CRUD) of indexed folders and documents;
@@ -69,7 +69,7 @@ Features to parse and store documents localy from current service (Not stable):
  - enable-loki-logger    - enable sending log messages to loki collector;
  - enable-jaeger-tracing - enable sending tracing data to jaeger exporter.  
 
-[![Bread White - doc-searcher](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
+[![Bread White - doc-search](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 
-[![stars - doc-searcher](https://img.shields.io/github/stars/breadrock1/doc-searcher?style=social)](https://github.com/breadrock1/doc-searcher)
-[![forks - doc-searcher](https://img.shields.io/github/forks/breadrock1/doc-searcher?style=social)](https://github.com/breadrock1/doc-searcher)
+[![stars - doc-search](https://img.shields.io/github/stars/breadrock1/doc-searcher?style=social)](https://github.com/breadrock1/doc-searcher)
+[![forks - doc-search](https://img.shields.io/github/forks/breadrock1/doc-searcher?style=social)](https://github.com/breadrock1/doc-searcher)

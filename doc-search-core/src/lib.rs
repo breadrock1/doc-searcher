@@ -2,7 +2,7 @@ pub mod application;
 pub mod domain;
 pub mod infrastructure;
 
-pub const SERVICE_NAME: &str = "doc-searcher";
+pub const SERVICE_NAME: &str = "doc-search";
 
 #[async_trait::async_trait]
 pub trait ServiceConnect {
