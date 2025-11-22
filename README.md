@@ -67,7 +67,7 @@ There is context map:
 
 ```
 +----------------+         +-----------------+
-| StorageUseCase | <─────> | SearcherUseCase |
+| StorageUseCase | <────── | SearcherUseCase |
 +----------------+         +-----------------+
         |                           |
         ▼                           ▼
