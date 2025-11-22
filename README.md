@@ -18,13 +18,84 @@ The principle schema:
 ![architecture.png](docs/architecture.png)
 
 Doc-Search includes following sub-services:
- - Cache Service       - API of caching service like Redis;
- - Metrics Service     - API of metrics to Prometheus monitoring;
- - Storage Service     - API (CRUD) of indexed folders and documents;
- - Searcher Service    - API of searcher functionalities (fulltext, semantic, hybrid);
- - Embeddings Service  - API of embeddings service if you would like to use own model.
+ - Cache Service                  - API of caching service like Redis;
+ - Metrics Service                - API of metrics to Prometheus monitoring;
+ - Storage Service                - API (CRUD) of indexed folders and documents;
+ - Searcher Service               - API of searcher functionalities (fulltext, semantic, hybrid);
+ - Embeddings Service (removed)   - API of embeddings service if you would like to use own model.
  
 !!! Searcher and Storage services at this moment has common implementation with opensearch
+
+### Domain
+
+There are following domains:
+
+```
+domain
+   |----> Document storage (core)
+   |        |----> Index
+   |        |       |----> Context: index management into vector storage
+   |        |       |----> Services: IIndexStorage
+   |        |----> Document
+   |                |----> Context: splits document on parts and stores into vector storage
+   |                |----> Services: IDocumentPartStorage
+   |
+   |----> Document searching (core)
+   |        |----> Founded document
+   |        |       |----> Context: multiple searching kind results 
+   |        |       |----> Services: ISearcher
+   |        |----> Pagination
+   |                |----> Context: paginating of founded results
+   |                |----> Services: IPAginator
+```
+
+And there are usecases:
+
+```
+usecase
+   |----> Storage Use Case
+   |        |----> CRUD of index and document
+   |        |----> split large document on parts to store 
+   |        |----> upload file to storage and create new task processing event
+   |
+   |----> Searching Use Case
+   |        |----> searching document parts by multiple algorithms
+   |        |----> paginate founded document parts results
+```
+
+There is context map:
+
+```
++----------------+         +-----------------+
+| StorageUseCase | <─────> | SearcherUseCase |
++----------------+         +-----------------+
+        |                           |
+        ▼                           ▼
++----------------+         +-----------------+
+| Storage Domain |         | Searcher Domain |
++----------------+         +-----------------+
+```
+
+Context data flow:
+
+```
+HTTP Request
+     │
+     ▼
+HTTP Handler (ServerState)
+     │
+     ▼
+ServerAppState
+    ├── StorageUseCase (application)
+    │       │
+    │       ▼
+    │    Storage (domain)
+    │
+    └── SearcherUseCase (application)
+            │
+            ▼
+          Task (domain)
+```
 
 ## Features
 
