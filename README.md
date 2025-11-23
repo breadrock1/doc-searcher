@@ -23,10 +23,33 @@ Doc-Search includes following sub-services:
  - Storage Service                - API (CRUD) of indexed folders and documents;
  - Searcher Service               - API of searcher functionalities (fulltext, semantic, hybrid);
  - Embeddings Service (removed)   - API of embeddings service if you would like to use own model.
- 
-!!! Searcher and Storage services at this moment has common implementation with opensearch
 
-### Domain
+#### Changelog:
+
+**OpenSearch instead Elasticsearch**
+Searcher and Storage services at this moment has common implementation with opensearch
+
+**Removed custom embeddings functionality**
+After switching on OpenSearch instead Elasticsearch the neccessary of custon embeddings model integration has gone, 
+because the newer versions of OpenSearch provides ML plugin with neccessary functionality (chunking and emebdding).
+So Embeddings module was been removed from code base. When i add Qdrant supporting his functionality will be added into
+infrastructure with Qdrant client implementation.
+
+## Features
+Service based: 
+- **Rust Performance**: Benefit from the speed and safety of Rust;
+- **REST API**: Easy to use REST API for searching documents and control management of indexing;
+- **Swagger**: Using swagger documentation service for all available endpoints;
+- **Remote logging**: Send error or warning messages or other metrics to remote server;
+- **Docker Support**: Easy deployment with Docker and docker-compose;
+- **Caching Queries**: Store data to cache service like Redis or own solutions;
+
+Searching: 
+- **Full-Text Search**: Quickly find documents based on content based on choose searching engine;
+- **Semantic Search**: Fast semantic searching by external embeddings service;
+- **Hybrid Search**: Fast hybrid searching by external embeddings service;
+
+## Domain
 
 There are following domains:
 
@@ -96,19 +119,6 @@ ServerAppState
             ▼
           Task (domain)
 ```
-
-## Features
-
-- **Full-Text Search**: Quickly find documents based on content based on choose searching engine;
-- **Semantic Search**: Fast semantic searching by external embeddings service;
-- **Hybrid Search**: Fast hybrid searching by external embeddings service;
-- **Rust Performance**: Benefit from the speed and safety of Rust;
-- **REST API**: Easy to use REST API for searching documents and control management of indexing;
-- **Docker Support**: Easy deployment with Docker and docker-compose;
-- **Caching Actor**: Store data to cache service like Redis or own solutions;
-- **Remote logging**: Send error or warning messages or other metrics to remote server;
-- **Swagger**: Using swagger documentation service for all available endpoints;
-- **Parsing and storing**: Allows to parse and store files to searching engine localy.
 
 ## Getting Started
 
