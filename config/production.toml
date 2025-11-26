@@ -1,5 +1,5 @@
 [settings]
-mac_content_size = 90000
+max_content_size = 80000
 
 [otlp]
 enable_remote_otlp = true

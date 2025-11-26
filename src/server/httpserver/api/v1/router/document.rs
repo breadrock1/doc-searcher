@@ -19,6 +19,7 @@ use crate::server::{ServerResult, Success};
 
 pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_ids}/documents";
 pub const STORAGE_DOCUMENT_URL: &str = "/storage/{index_id}/{document_id}";
+pub const STORAGE_GET_DOCUMENT_PARTS_URL: &str = "/storage/{index_id}/{large_document_id}";
 pub const CREATE_DOCUMENT_URL: &str = "/storage/{index_id}/create";
 
 const RETRIEVE_DESCRIPTION: &str =
@@ -30,7 +31,7 @@ const CREATE_DOCUMENT_DESCRIPTION: &str =
 #[utoipa::path(
     get,
     tag = "document",
-    path = STORAGE_DOCUMENT_URL,
+    path = STORAGE_GET_DOCUMENT_PARTS_URL,
     description = "Load full Document information by id",
     params(
         (

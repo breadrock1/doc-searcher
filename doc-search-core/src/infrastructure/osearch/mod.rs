@@ -249,7 +249,7 @@ impl IDocumentPartStorage for OSearchClient {
     ) -> StorageResult<AllDocumentParts> {
         let query_params = RetrieveAllDocPartsQueryParamsBuilder::default()
             .large_doc_id(large_doc_id.to_string())
-            .only_first_part(true)
+            .only_first_part(false)
             .with_sorting(true)
             .build()
             .context("failed to build query params")
