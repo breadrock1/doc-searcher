@@ -23,10 +23,33 @@ Doc-Search includes following sub-services:
  - Storage Service                - API (CRUD) of indexed folders and documents;
  - Searcher Service               - API of searcher functionalities (fulltext, semantic, hybrid);
  - Embeddings Service (removed)   - API of embeddings service if you would like to use own model.
- 
-!!! Searcher and Storage services at this moment has common implementation with opensearch
 
-### Domain
+#### Changelog:
+
+**OpenSearch instead Elasticsearch**
+Searcher and Storage services at this moment has common implementation with opensearch
+
+**Removed custom embeddings functionality**
+After switching on OpenSearch instead Elasticsearch the neccessary of custon embeddings model integration has gone, 
+because the newer versions of OpenSearch provides ML plugin with neccessary functionality (chunking and emebdding).
+So Embeddings module was been removed from code base. When i add Qdrant supporting his functionality will be added into
+infrastructure with Qdrant client implementation.
+
+## Features
+Service based: 
+- **Rust Performance**: Benefit from the speed and safety of Rust;
+- **REST API**: Easy to use REST API for searching documents and control management of indexing;
+- **Swagger**: Using swagger documentation service for all available endpoints;
+- **Remote logging**: Send error or warning messages or other metrics to remote server;
+- **Docker Support**: Easy deployment with Docker and docker-compose;
+- **Caching Queries**: Store data to cache service like Redis or own solutions;
+
+Searching: 
+- **Full-Text Search**: Quickly find documents based on content based on choose searching engine;
+- **Semantic Search**: Fast semantic searching by external embeddings service;
+- **Hybrid Search**: Fast hybrid searching by external embeddings service;
+
+## Domain
 
 There are following domains:
 
@@ -97,19 +120,6 @@ ServerAppState
           Task (domain)
 ```
 
-## Features
-
-- **Full-Text Search**: Quickly find documents based on content based on choose searching engine;
-- **Semantic Search**: Fast semantic searching by external embeddings service;
-- **Hybrid Search**: Fast hybrid searching by external embeddings service;
-- **Rust Performance**: Benefit from the speed and safety of Rust;
-- **REST API**: Easy to use REST API for searching documents and control management of indexing;
-- **Docker Support**: Easy deployment with Docker and docker-compose;
-- **Caching Actor**: Store data to cache service like Redis or own solutions;
-- **Remote logging**: Send error or warning messages or other metrics to remote server;
-- **Swagger**: Using swagger documentation service for all available endpoints;
-- **Parsing and storing**: Allows to parse and store files to searching engine localy.
-
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
@@ -123,22 +133,17 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Quick Start
 
-0. Check `docs/opensearch` scripts how load ml cluster into single node and setup pipelines. Also you can find how setup multi-user supporting - needs to build with feature `enable-multi-user`
+0. Check `docs/opensearch` scripts how load ml cluster into single node and setup infrastructure as ingest and searching pipelines and deploying model.
 1. Clone the repository
 2. Run `cargo install --path .` to build project
 3. Setting up `.env` file with services creds
-4. Run `cargo run --bin init-pipelines` to init elasticsearch schemas
+4. Run `cargo run --bin init-infrastructure` to init elasticsearch schemas
 4. Run `cargo run --bin launch` to launch service
 
 ### Features of project
 
 Features to parse and store documents localy from current service (Not stable):
- - enable-cache-redis    - enable cacher service like redis oe other custom implementation;
- - enable-unique-doc-id  - enable generating unique document id based on index and file_path string value;
- - enable-multi-user     - enable user distribution access to common opensearch node;
- - enable-unique-doc-id  - generate unique index for documents based on md5 of document index and file_path;
- - enable-loki-logger    - enable sending log messages to loki collector;
- - enable-jaeger-tracing - enable sending tracing data to jaeger exporter.  
+ - enable-unique-doc-id  - enable generating unique document id based on index and document ids.
 
 [![Bread White - doc-search](https://img.shields.io/static/v1?label=Bread%20White&message=author&color=blue&logo=github)](https://github.com/breadrock1/doc-searcher)
 
