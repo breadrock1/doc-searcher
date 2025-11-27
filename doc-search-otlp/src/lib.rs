@@ -7,19 +7,17 @@ pub use filter::PathFilter;
 use gset::Getset;
 use opentelemetry::global;
 use opentelemetry::trace::TracerProvider;
-use opentelemetry_appender_log::OpenTelemetryLogBridge;
-use opentelemetry_otlp::{LogExporter, WithExportConfig};
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::logs::SdkLoggerProvider;
 use opentelemetry_sdk::metrics::SdkMeterProvider;
 use opentelemetry_sdk::propagation::TraceContextPropagator;
-use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::trace::SdkTracerProvider;
+use std::str::FromStr;
+use tracing_subscriber::Layer;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
-use std::str::FromStr;
-use tracing::log;
 
 #[derive(Default, Getset)]
 pub struct TelemetryGuard {
@@ -36,18 +34,21 @@ impl Drop for TelemetryGuard {
         if let Some(meter_provider) = self.meter_provider.as_mut()
             && let Err(err) = meter_provider.shutdown()
         {
-            tracing::error!(err=?err, "failed to shutdown meter provider");
+            tracing::error!(?err, "failed to shutdown meter provider");
         }
 
         if let Some(provider) = self.tracing_provider.as_mut()
             && let Err(err) = provider.shutdown()
         {
-            tracing::error!(err=?err, "failed to shutdown tracing provider");
+            tracing::error!(?err, "failed to shutdown tracing provider");
         }
     }
 }
 
-pub fn init_telemetry(app_name: &'static str, config: &TelemetryConfig) -> anyhow::Result<TelemetryGuard> {
+pub fn init_telemetry(
+    app_name: &'static str,
+    config: &TelemetryConfig,
+) -> anyhow::Result<TelemetryGuard> {
     init_rust_log_env(config.level());
 
     let mut telemetry_guard = TelemetryGuard::default();
@@ -57,8 +58,8 @@ pub fn init_telemetry(app_name: &'static str, config: &TelemetryConfig) -> anyho
         true => {
             let resource = Resource::builder().with_service_name(app_name).build();
             let otlp_addr = config.otlp_address().clone().unwrap_or_default();
-            let level = LevelFilter::from_str(&config.level())
-                .expect("invalid level value into config");
+            let level =
+                LevelFilter::from_str(config.level()).expect("invalid level value into config");
 
             // Metrics are exported in batch - recommended setup for a production application.
             let metric_exporter = opentelemetry_otlp::MetricExporter::builder()
@@ -73,19 +74,19 @@ pub fn init_telemetry(app_name: &'static str, config: &TelemetryConfig) -> anyho
             telemetry_guard.set_meter_provider(Some(meter_provider.clone()));
             global::set_meter_provider(meter_provider);
 
+            // TODO: Find solution to send logs through tracing
             // Logs are exported in batch - recommended setup for a production application.
-            let log_exporter = LogExporter::builder()
-                .with_tonic()
-                .with_endpoint(&otlp_addr)
-                .build()
-                .expect("failed to build the log exporter");
-            let log_provider = SdkLoggerProvider::builder()
-                .with_batch_exporter(log_exporter)
-                .with_resource(resource.clone())
-                .build();
-            telemetry_guard.set_log_provider(Some(log_provider.clone()));
-            let test = OpenTelemetryLogBridge::new(&log_provider);
-            log::set_boxed_logger(Box::new(test)).ok();
+            // let log_exporter = LogExporter::builder()
+            //     .with_tonic()
+            //     .with_endpoint(&otlp_addr)
+            //     .with_timeout(Duration::from_secs(5))
+            //     .build()
+            //     .expect("failed to build the log exporter");
+            // let log_provider = SdkLoggerProvider::builder()
+            //     .with_batch_exporter(log_exporter)
+            //     .with_resource(resource.clone())
+            //     .build();
+            // telemetry_guard.set_log_provider(Some(log_provider.clone()));
 
             // Spans are exported in batch - recommended setup for a production application.
             global::set_text_map_propagator(TraceContextPropagator::new());
@@ -109,6 +110,31 @@ pub fn init_telemetry(app_name: &'static str, config: &TelemetryConfig) -> anyho
         }
     };
 
+    let loki_layer = {
+        match config.enable_direct_loki() {
+            false => None,
+            true => {
+                let address = config
+                    .loki_address()
+                    .as_ref()
+                    .expect("missing loki address into config");
+
+                let loki_url = tracing_loki::url::Url::parse(address)
+                    .expect("failed to parse loki url address");
+
+                let (loki_layer, bg_task) = tracing_loki::builder()
+                    .label("service", app_name)
+                    .expect("failed to set service label")
+                    .build_url(loki_url)
+                    .expect("failed to build loki url");
+
+                tokio::spawn(bg_task);
+
+                Some(loki_layer)
+            }
+        }
+    };
+
     let env_filter = tracing_subscriber::EnvFilter::from_default_env();
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_level(true)
@@ -120,27 +146,13 @@ pub fn init_telemetry(app_name: &'static str, config: &TelemetryConfig) -> anyho
     let common_subscriber = tracing_subscriber::registry()
         .with(fmt_layer)
         .with(env_filter)
-        .with(telemetry_layer);
+        .with(telemetry_layer)
+        .with(loki_layer);
 
     tracing::subscriber::set_global_default(common_subscriber)?;
 
     Ok(telemetry_guard)
 }
-
-// fn init_loki_logger(
-//     app_name: &'static str,
-//     config: &LoggerConfig,
-// ) -> anyhow::Result<tracing_loki::Layer> {
-//     let loki_address = config.address().as_str();
-//     let loki_url = tracing_loki::url::Url::parse(loki_address)?;
-//     let (loki_layer, bg_task) = tracing_loki::builder()
-//         .label("service", app_name)?
-//         .build_url(loki_url)?;
-//
-//     tokio::spawn(bg_task);
-//
-//     Ok(loki_layer)
-// }
 
 fn init_rust_log_env(level: &String) {
     if std::env::var("RUST_LOG").is_err() {
