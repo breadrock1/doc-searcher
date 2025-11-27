@@ -5,7 +5,7 @@ services:
     image: opensearchproject/opensearch:2.18.0
     restart: unless-stopped
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '9200:9200'
       - '9600:9600'
@@ -27,7 +27,7 @@ services:
     depends_on:
       - opensearch
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '5601:5601'
     environment:
@@ -35,15 +35,13 @@ services:
       OPENSEARCH_USERNAME: 'admin'
       OPENSEARCH_PASSWORD: 'admin'
 
-  cacher:
+  redis:
     image: redis:latest
     restart: on-failure
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '6379:6379'
-    volumes:
-      - 'cacher-vol-1:/data/cacher'
     environment:
       REDIS_USER: 'redis'
       REDIS_PASSWORD: 'redis'
@@ -53,14 +51,9 @@ services:
     image: jaegertracing/all-in-one:latest
     restart: unless-stopped
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
-      - '6831:6831/udp'
-      - '6832:6832/udp'
-      - '5778:5778'
-      - '14268:14268'
       - '4317:4317'
-      - '14250:14250'
       - '4318:4318'
       - '16686:16686'
 
@@ -70,17 +63,15 @@ services:
     command:
       - '-config.file=/etc/loki/local-config.yaml'
     networks:
-      - doc-searcher-net
+      - doc-search-net
     ports:
       - '3100:3100'
 
 networks:
-  doc-searcher-net:
-    name: doc-searcher-net
+  doc-search-net:
+    name: doc-search-net
     driver: bridge
 
 volumes:
   opensearch-vol-1:
-    driver: local
-  cacher-vol-1:
     driver: local
