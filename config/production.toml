@@ -1,15 +1,10 @@
 [settings]
 max_content_size = 80000
 
-[otlp]
-enable_remote_otlp = true
-
-[otlp.logger]
+[telemetry]
 level = "debug"
-address = "http://loki:3100"
-
-[otlp.tracing]
-address = "http://jaeger:4317"
+enable_remote_otlp = true
+otlp_address = "http://otlp-collector:4317"
 
 [server.http]
 address = "0.0.0.0:2892"
