@@ -9,24 +9,26 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 anyhow = "1.0.96"
 gset = "1.1.0"
-opentelemetry = "0.28.0"
+opentelemetry = "0.31.0"
 regex = "1.11.1"
 serde_derive = "1.0.218"
 tracing = "0.1.41"
-tracing-loki = "0.2.6"
-tracing-opentelemetry = "0.29.0"
+tracing-opentelemetry = "0.32.0"
 
 [dependencies.axum]
 version = "0.8.1"
 features = ["tracing", "tower-log"]
 
+[dependencies.opentelemetry-appender-log]
+version = "0.31.0"
+
 [dependencies.opentelemetry-otlp]
-version = "0.28.0"
-features = ["grpc-tonic"]
+version = "0.31.0"
+features = ["grpc-tonic", "logs"]
 
 [dependencies.opentelemetry_sdk]
-version = "0.28.0"
-features = ["rt-tokio-current-thread"]
+version = "0.31.0"
+features = ["rt-tokio-current-thread", "logs"]
 
 [dependencies.serde]
 version = "1.0.218"
