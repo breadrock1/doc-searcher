@@ -50,7 +50,7 @@ impl<B> tower_http::trace::MakeSpan<B> for PathFilter {
             propagator.extract(&HeaderExtractor(request.headers()))
         });
 
-        span.set_parent(parent_context);
+        let _ = span.set_parent(parent_context);
         span
     }
 }

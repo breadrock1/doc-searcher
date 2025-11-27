@@ -33,7 +33,7 @@ pub fn extract_founded_document_parts(object: Value) -> SearchResult<Pagination>
             .founded(Vec::default())
             .scroll_id(scroll_id)
             .build()
-            .map_err(anyhow::Error::from)
+            .context("failed to build pagination result")
             .map_err(SearchError::InternalError)?;
 
         return Ok(paginated_result);
@@ -48,7 +48,7 @@ pub fn extract_founded_document_parts(object: Value) -> SearchResult<Pagination>
         .scroll_id(scroll_id)
         .founded(documents)
         .build()
-        .map_err(anyhow::Error::from)
+        .context("failed to build pagination result")
         .map_err(SearchError::InternalError)?;
 
     Ok(documents)
