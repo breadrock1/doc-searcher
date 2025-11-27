@@ -71,7 +71,7 @@ impl ServiceConnect for OSearchClient {
             .cert_validation(validation)
             .build()?;
 
-        tracing::debug!(address = config.address(), "connected to opensearch");
+        tracing::debug!(address=%config.address(), "connected to opensearch");
         let client = OpenSearch::new(transport);
         let arc_client = Arc::new(client);
         Ok(OSearchClient {
@@ -505,7 +505,7 @@ impl OSearchClient {
         }
 
         let deploy_task = response.json::<DeployModelTaskResponse>().await?;
-        tracing::debug!(deploy_task=?deploy_task, "created deploy task");
+        tracing::debug!(?deploy_task, "created deploy task");
 
         let mut await_task_completed = true;
         let target_url = format!("/_plugins/_ml/tasks/{}", deploy_task.task_id);
@@ -530,7 +530,7 @@ impl OSearchClient {
             tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
             let fetch_response = response.json::<DeployModelFetchResponse>().await?;
-            tracing::debug!(fetch_response=?fetch_response, "fetched task status");
+            tracing::debug!(?fetch_response, "fetched task status");
             await_task_completed = match fetch_response.state.as_str() {
                 "FAILED" => {
                     let msg = "failed to deploy model";

@@ -71,7 +71,7 @@ impl From<OSearchError> for SearchError {
 impl OSearchError {
     pub async fn from_response(response: Response) -> OSearchError {
         let status = response.status_code();
-        tracing::debug!(response=?response, "returned error response");
+        tracing::debug!(?response, "returned error response");
         let data = match response.text().await {
             Ok(data) => data,
             Err(err) => {
@@ -108,7 +108,6 @@ impl OSearchError {
 
         let _err = anyhow!(msg);
         let details = &err.details;
-        tracing::warn!(details=?details, "details data");
         match details.error_type.as_str() {
             "index_not_found_exception" => OSearchError::IndexNotFound(_err),
             "document_missing_exception" | "document_not_found" => {
