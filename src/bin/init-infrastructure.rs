@@ -8,7 +8,7 @@ const APP_NAME: &str = "doc-search";
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    let _ = doc_search_otlp::init_otlp_tracing(APP_NAME, config.otlp())?;
+    let _otlp_guard = doc_search_otlp::init_telemetry(APP_NAME, config.telemetry())?;
 
     let os_config = config.storage().opensearch();
     let os_client = OSearchClient::connect(os_config).await?;

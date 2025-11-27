@@ -1,5 +1,5 @@
 use config::{Config, ConfigError, Environment, File, FileFormat};
-use doc_search_otlp::OtlpConfig;
+use doc_search_otlp::TelemetryConfig;
 use dotenv::dotenv;
 use gset::Getset;
 use serde_derive::Deserialize;
@@ -15,7 +15,7 @@ pub struct ServiceConfig {
     #[getset(get, vis = "pub")]
     settings: SettingsConfig,
     #[getset(get, vis = "pub")]
-    otlp: OtlpConfig,
+    telemetry: TelemetryConfig,
     #[getset(get, vis = "pub")]
     server: ServerConfig,
     #[getset(get, vis = "pub")]
