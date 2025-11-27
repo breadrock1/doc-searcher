@@ -16,7 +16,7 @@ const APP_NAME: &str = "doc-search";
 #[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    let _otlp_guard = doc_search_otlp::init_otlp_tracing(APP_NAME, config.otlp())?;
+    let _otlp_guard = doc_search_otlp::init_telemetry(APP_NAME, config.telemetry())?;
 
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OSearchClient::connect(osearch_config).await?);
