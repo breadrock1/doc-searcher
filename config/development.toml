@@ -3,8 +3,10 @@ max_content_size = 900
 
 [telemetry]
 level = "debug"
-enable_remote_otlp = true
+enable_remote_otlp = false
 otlp_address = "http://localhost:4317"
+enable_direct_loki = false
+loki_address = "http://localhost:3100"
 
 [server.http]
 address = "0.0.0.0:2892"

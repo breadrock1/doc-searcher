@@ -5,6 +5,8 @@ max_content_size = 80000
 level = "debug"
 enable_remote_otlp = true
 otlp_address = "http://otlp-collector:4317"
+enable_direct_loki = true
+loki_address = "http://localhost:3100"
 
 [server.http]
 address = "0.0.0.0:2892"
