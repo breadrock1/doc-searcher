@@ -1,0 +1,44 @@
+{
+  "_source": {
+    "exclude": [
+      "content"
+    ]
+  },
+  "highlight": {
+    "fields": {
+      "content": {
+        "fragment_size": 100,
+        "number_of_fragments": 10,
+        "post_tags": [
+          ""
+        ],
+        "pre_tags": [
+          ""
+        ]
+      }
+    }
+  },
+  "query": {
+    "bool": {
+      "filter": [],
+      "must": [
+        {
+          "nested": {
+            "path": "embeddings",
+            "query": {
+              "neural": {
+                "embeddings.knn": {
+                  "k": 1024,
+                  "model_id": "p30o65gBnrvKdVIONWdC",
+                  "query_text": "There is some query"
+                }
+              }
+            },
+            "score_mode": "max"
+          }
+        }
+      ]
+    }
+  },
+  "size": 10
+}
