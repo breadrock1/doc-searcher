@@ -3,7 +3,7 @@ type: docker
 name: doc-search-ci
 
 environment:
-  RUSTUP_VERSION: 1.90
+  RUSTUP_VERSION: 1.91
   CARGO_BUILD_FEATURES: --all-features
 
 steps:
