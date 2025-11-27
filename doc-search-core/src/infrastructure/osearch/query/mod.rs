@@ -1,3 +1,4 @@
+use anyhow::Context;
 use serde_json::{Value, json};
 
 use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
@@ -27,7 +28,7 @@ pub fn build_search_query(
                 .result(result.to_owned())
                 .filter(filter.cloned())
                 .build()
-                .map_err(anyhow::Error::from)
+                .context("failed to build retrieve query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
             Ok(query_params.build_query())
@@ -38,7 +39,7 @@ pub fn build_search_query(
                 .result(result.to_owned())
                 .filter(filter.cloned())
                 .build()
-                .map_err(anyhow::Error::from)
+                .context("failed to build fulltext query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
             Ok(query_params.build_query())
@@ -54,7 +55,7 @@ pub fn build_search_query(
                 .result(result.to_owned())
                 .filter(filter.cloned())
                 .build()
-                .map_err(anyhow::Error::from)
+                .context("failed to build semantic query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
             Ok(query_params.build_query())
@@ -69,7 +70,7 @@ pub fn build_search_query(
                 .result(result.to_owned())
                 .filter(filter.cloned())
                 .build()
-                .map_err(anyhow::Error::from)
+                .context("failed to build hybrid query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
             Ok(query_params.build_query())
