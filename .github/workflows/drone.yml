@@ -1,6 +1,12 @@
 kind: pipeline
 type: docker
-name: doc-search-ci
+name: doc-search-pr
+
+trigger:
+  event:
+    - pull_request
+  actions:
+    - synchronized
 
 environment:
   RUSTUP_VERSION: 1.91
@@ -19,7 +25,7 @@ steps:
         path: /cache
 
   - name: build
-    image: rust:1.90
+    image: rust:1.91
     depends_on:
       - cache-built-rust
     commands:
@@ -31,7 +37,7 @@ steps:
         path: /cache
 
   - name: check
-    image: rust:1.90
+    image: rust:1.91
     depends_on:
       - build
     commands:
@@ -41,7 +47,7 @@ steps:
         path: /cache
 
   - name: fmt
-    image: rust:1.90
+    image: rust:1.91
     depends_on:
       - check
       - build
@@ -53,7 +59,7 @@ steps:
         path: /cache
 
   - name: clippy
-    image: rust:1.90
+    image: rust:1.91
     depends_on:
       - check
       - build
@@ -65,7 +71,7 @@ steps:
         path: /cache
 
   - name: test
-    image: rust:1.90
+    image: rust:1.91
     depends_on:
       - check
       - build
@@ -75,19 +81,130 @@ steps:
       - name: rust-targets
         path: /cache
 
-  - name: notify-gitea
-    image: plugins/gitea-release
+volumes:
+  - name: rust-targets
+    temp: {}
+
+# On merged pull request to main branch or created release branch
+---
+kind: pipeline
+type: docker
+name: doc-search-merged
+
+trigger:
+  event:
+    - push
+  branch:
+    - main
+    - master
+    - release/*
+
+environment:
+  RUSTUP_VERSION: 1.91
+  CARGO_BUILD_FEATURES: --all-features
+
+steps:
+  - name: cache-built-rust
+    image: drillster/drone-volume-cache
     settings:
-      base_url: ${GITEA_SERVER}
-      api_key:
-        from_secret: gitea_token
-      files:
-        - config
-        - docs
-        - "*.md"
-        - "bin/*"
-    when:
-      event: tag
+      restore: true
+      mount:
+        - /usr/local/cargo
+        - /drone/src/target
+    volumes:
+      - name: rust-targets
+        path: /cache
+
+  - name: build
+    image: rust:1.91
+    depends_on:
+      - cache-built-rust
+    commands:
+      - rustup component add rustfmt
+      - rustup component add clippy
+      - cargo build --all-targets ${CARGO_BUILD_FEATURES}
+    volumes:
+      - name: rust-targets
+        path: /cache
+
+  - name: check
+    image: rust:1.91
+    depends_on:
+      - build
+    commands:
+      - cargo check --all-targets ${CARGO_BUILD_FEATURES}
+    volumes:
+      - name: rust-targets
+        path: /cache
+
+  - name: fmt
+    image: rust:1.91
+    depends_on:
+      - check
+      - build
+    commands:
+      - rustup component add rustfmt
+      - cargo fmt --all --check
+    volumes:
+      - name: rust-targets
+        path: /cache
+
+  - name: clippy
+    image: rust:1.91
+    depends_on:
+      - check
+      - build
+    commands:
+      - rustup component add clippy
+      - cargo clippy --all-targets ${CARGO_BUILD_FEATURES}
+    volumes:
+      - name: rust-targets
+        path: /cache
+
+  - name: test
+    image: rust:1.91
+    depends_on:
+      - check
+      - build
+    commands:
+      - cargo test --lib --package doc-search-core ${CARGO_BUILD_FEATURES}
+    volumes:
+      - name: rust-targets
+        path: /cache
+
+volumes:
+  - name: rust-targets
+    temp: {}
+
+# Build release on new tag creating event
+---
+kind: pipeline
+type: docker
+name: doc-search-release
+
+trigger:
+  event:
+    - tag
+
+environment:
+  REGISTRY_ADDRESS: ${REGISTRY_ADDRESS}
+
+steps:
+  - name: build-and-push-docker
+    image: plugins/docker
+    settings:
+      repo: 192.168.0.35:3000/sova-core/doc-search
+      insecure: true
+      dockerfile: Dockerfile
+      registry: 192.168.0.35:3000
+      tags:
+        - ${DRONE_COMMIT_SHA:0:8}
+        - ${DRONE_TAG}
+        - latest
+      username:
+        from_secret: GITEA_USERNAME
+      password:
+        from_secret: GITEA_TOKEN
 
 volumes:
   - name: rust-targets
