@@ -13,7 +13,7 @@ use std::sync::Arc;
 use crate::server::httpserver::api::v1::form::{CreateDocumentForm, RetrieveDocumentForm};
 use crate::server::httpserver::api::v1::query::CreateDocumentQuery;
 use crate::server::httpserver::api::v1::schema::{DocumentPartSchema, StoredDocumentSchema};
-use crate::server::httpserver::api::v1::swagger::*;
+use crate::server::httpserver::swagger::DefaultErrorForm;
 use crate::server::httpserver::ServerApp;
 use crate::server::{ServerResult, Success};
 
