@@ -9,7 +9,7 @@ use crate::server::httpserver::api::v1::form::{
     FullTextSearchForm, HybridSearchForm, SemanticSearchForm,
 };
 use crate::server::httpserver::api::v1::schema::PaginationSchema;
-use crate::server::httpserver::api::v1::swagger::DefaultErrorForm;
+use crate::server::httpserver::swagger::DefaultErrorForm;
 use crate::server::httpserver::ServerApp;
 use crate::server::{ServerError, ServerResult};
 
