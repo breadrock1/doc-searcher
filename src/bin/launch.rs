@@ -23,7 +23,10 @@ async fn main() -> anyhow::Result<()> {
     let osearch_client = Arc::new(OSearchClient::connect(osearch_config).await?);
 
     let max_content_size = config.settings().max_content_size();
-    let storage_uc = Arc::new(StorageUseCase::new(osearch_client.clone(), max_content_size));
+    let storage_uc = Arc::new(StorageUseCase::new(
+        osearch_client.clone(),
+        max_content_size,
+    ));
     let searcher_uc = Arc::new(SearcherUseCase::new(osearch_client.clone()));
     let app_meter = AppMeterRegistry::build_meter_registry()?;
     let server_app = ServerApp::new(storage_uc, searcher_uc, app_meter);

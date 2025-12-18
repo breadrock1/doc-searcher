@@ -19,8 +19,14 @@ impl AppMeterRegistry {
             .install_recorder()
             .expect("failed to install Prometheus recorder");
 
-        describe_counter!("http_requests_counter", "Count all http requests with status");
-        describe_histogram!("http_request_duration_seconds", "Store http request processing latency");
+        describe_counter!(
+            "http_requests_counter",
+            "Count all http requests with status"
+        );
+        describe_histogram!(
+            "http_request_duration_seconds",
+            "Store http request processing latency"
+        );
 
         Ok(Arc::new(AppMeterRegistry { meter_handle }))
     }

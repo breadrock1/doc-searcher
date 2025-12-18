@@ -34,7 +34,11 @@ where
         searcher: Arc<SearcherUseCase<Searcher>>,
         meter_handle: Arc<AppMeterRegistry>,
     ) -> Self {
-        ServerApp { storage, searcher, meter_handle }
+        ServerApp {
+            storage,
+            searcher,
+            meter_handle,
+        }
     }
 
     pub fn get_storage(&self) -> Arc<StorageUseCase<Storage>> {

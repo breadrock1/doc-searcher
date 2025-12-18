@@ -1,3 +1,3 @@
 pub mod config;
-pub mod server;
 pub mod meter;
+pub mod server;

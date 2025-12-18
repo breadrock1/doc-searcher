@@ -43,5 +43,8 @@ where
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
 {
     let (format_type, body) = state.meter_handle.render_collected_data();
-    Ok(([(axum::http::header::CONTENT_TYPE, format_type.to_string())], body))
+    Ok((
+        [(axum::http::header::CONTENT_TYPE, format_type.to_string())],
+        body,
+    ))
 }

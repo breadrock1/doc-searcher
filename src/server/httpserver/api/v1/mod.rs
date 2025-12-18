@@ -1,7 +1,7 @@
 pub mod form;
+mod query;
 pub mod router;
 pub mod schema;
-mod query;
 
 use axum::routing::{get, post, put};
 use axum::Router;

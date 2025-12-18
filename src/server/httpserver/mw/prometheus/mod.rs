@@ -1,5 +1,4 @@
-use axum::body::{Body, Bytes};
-use axum::extract::{MatchedPath, Request, State};
+use axum::extract::{MatchedPath, Request};
 use axum::middleware::Next;
 use axum::response::Response;
 use metrics::{counter, histogram};

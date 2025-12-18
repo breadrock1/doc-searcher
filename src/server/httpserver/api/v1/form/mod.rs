@@ -9,8 +9,8 @@ pub use index::CreateIndexForm;
 pub use index::KnnIndexForm;
 
 mod search_params;
-pub use search_params::{FilterForm, ResultForm, ShortResultForm};
 pub use search_params::PaginateForm;
+pub use search_params::{FilterForm, ResultForm, ShortResultForm};
 pub use search_params::{
     FullTextSearchForm, HybridSearchForm, RetrieveDocumentForm, SemanticSearchForm,
 };

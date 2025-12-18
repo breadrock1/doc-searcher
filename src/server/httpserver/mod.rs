@@ -20,7 +20,6 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
 {
-
     let app_arc = Arc::new(app);
     Router::new()
         .merge(api::v1::init_routers())
