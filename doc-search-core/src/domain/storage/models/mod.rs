@@ -8,8 +8,8 @@ pub use crate::domain::storage::models::document::{LargeDocument, LargeDocumentB
 mod index;
 pub use index::IndexId;
 
-mod params;
 mod metadata;
+mod params;
 
 pub use params::{CreateIndexParams, CreateIndexParamsBuilder};
 pub use params::{KnnIndexParams, KnnIndexParamsBuilder};
