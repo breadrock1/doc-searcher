@@ -28,5 +28,6 @@ where
         .merge(swagger::init_swagger_layer())
         .layer(DefaultBodyLimit::disable())
         .layer(DefaultBodyLimit::max(BYTE_SIZE * FILE_BODY_LIMIT_MB))
+        .layer(axum::middleware::from_fn(mw::prometheus::meter))
         .with_state(app_arc)
 }

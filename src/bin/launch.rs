@@ -1,7 +1,8 @@
 use axum::Router;
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
 use doc_search::config::ServiceConfig;
-use doc_search::server::{httpserver, ServerApp};
+use doc_search::meter::AppMeterRegistry;
+use doc_search::server::{httpserver, httpserver::mw, ServerApp};
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
 use doc_search_core::infrastructure::osearch::OSearchClient;
@@ -22,9 +23,10 @@ async fn main() -> anyhow::Result<()> {
     let osearch_client = Arc::new(OSearchClient::connect(osearch_config).await?);
 
     let max_content_size = config.settings().max_content_size();
-    let storage_uc = StorageUseCase::new(osearch_client.clone(), max_content_size);
-    let searcher_uc = SearcherUseCase::new(osearch_client.clone());
-    let server_app = ServerApp::new(storage_uc, searcher_uc);
+    let storage_uc = Arc::new(StorageUseCase::new(osearch_client.clone(), max_content_size));
+    let searcher_uc = Arc::new(SearcherUseCase::new(osearch_client.clone()));
+    let app_meter = AppMeterRegistry::build_meter_registry()?;
+    let server_app = ServerApp::new(storage_uc, searcher_uc, app_meter);
 
     let cors_layer = cors::CorsLayer::permissive();
     let trace_layer = TraceLayer::new_for_http()
@@ -34,14 +36,15 @@ async fn main() -> anyhow::Result<()> {
     let app = httpserver::init_server(server_app)
         .layer(trace_layer)
         .layer(cors_layer)
-        .layer(OtelAxumLayer::default());
+        .layer(OtelAxumLayer::default())
+        .layer(axum::middleware::from_fn(mw::prometheus::meter));
 
     let cache_config = config.cache();
     let tmp_app_state: anyhow::Result<Router> = match cache_config.is_enabled() {
         false => Ok(app),
         true => {
             let redis_config = cache_config.redis();
-            let app = httpserver::mw::cache::enable_caching_mw(app, redis_config).await?;
+            let app = mw::cache::enable_caching_mw(app, redis_config).await?;
             Ok(app)
         }
     };
