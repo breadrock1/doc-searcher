@@ -1,3 +1,4 @@
+#![allow(dead_code, dead_code)]
 use derive_builder::Builder;
 
 #[derive(Debug, Builder)]
