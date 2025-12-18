@@ -9,5 +9,7 @@ mod index;
 pub use index::IndexId;
 
 mod params;
+mod metadata;
+
 pub use params::{CreateIndexParams, CreateIndexParamsBuilder};
 pub use params::{KnnIndexParams, KnnIndexParamsBuilder};
