@@ -4,22 +4,21 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::server::ServerError;
 use crate::server::Success;
 
-use super::form::*;
-use super::router::document::*;
-use super::router::index::*;
-use super::router::searcher::*;
-use super::schema::*;
+use crate::server::httpserver::api::v1::form::*;
+use crate::server::httpserver::api::v1::router::document::*;
+use crate::server::httpserver::api::v1::router::index::*;
+use crate::server::httpserver::api::v1::router::searcher::*;
+use crate::server::httpserver::api::v1::schema::*;
 
-use crate::server::httpserver::api::v1::swagger;
+const SWAGGER_URL_PATH: &str = "/api/swagger";
+const SWAGGER_CONFIG_PATH: &str = "/api-docs/openapi.json";
 
-pub fn init_swagger_layer(version: &str) -> SwaggerUi {
-    let url_path = format!("/api/{version}/swagger");
-    let config_file_path = format!("/api-docs/openapi-{version}.json");
-    let swagger_app = swagger::ApiDoc::openapi();
-    SwaggerUi::new(url_path).url(config_file_path, swagger_app)
+pub fn init_swagger_layer() -> SwaggerUi {
+    let swagger_app = ApiDoc::openapi();
+    SwaggerUi::new(SWAGGER_URL_PATH).url(SWAGGER_CONFIG_PATH, swagger_app)
 }
 
-const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui");
+const DESCRIPTION: &str = include_str!("../../../../docs/swagger/swagger-ui");
 
 #[derive(OpenApi)]
 #[openapi(
@@ -45,6 +44,7 @@ const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui")
         (url = "/api/v1", description = "Stable API version"),
     ),
     paths(
+        // v1 routes
         get_all_indexes,
         get_index,
         create_index,
@@ -61,7 +61,9 @@ const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui")
     components(
         schemas(
             CreateDocumentForm,
+            UpdateDocumentForm,
             CreateIndexForm,
+            KnnIndexForm,
             DocumentPartSchema,
             IndexSchema,
             FilterForm,
@@ -71,7 +73,6 @@ const DESCRIPTION: &str = include_str!("../../../../../docs/swagger/swagger-ui")
             RetrieveDocumentForm,
             SemanticSearchForm,
             HybridSearchForm,
-            KnnIndexForm,
             ServerError,
             Success,
         ),

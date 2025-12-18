@@ -1,8 +1,7 @@
 pub mod form;
 mod query;
-mod router;
+pub mod router;
 pub mod schema;
-mod swagger;
 
 use axum::routing::{get, post, put};
 use axum::Router;
@@ -12,18 +11,16 @@ use std::sync::Arc;
 
 use crate::server::ServerApp;
 
-const API_VERSION: &str = "v1";
 const API_VERSION_URL: &str = "/api/v1";
 
-pub fn init_v1_routers<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
+pub fn init_routers<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
     Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
 {
     let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
         .nest(API_VERSION_URL, init_storage_layer())
-        .nest(API_VERSION_URL, init_searcher_layer())
-        .merge(swagger::init_swagger_layer(API_VERSION));
+        .nest(API_VERSION_URL, init_searcher_layer());
 
     router
 }

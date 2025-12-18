@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use crate::server::httpserver::api::v1::form::CreateIndexForm;
 use crate::server::httpserver::api::v1::schema::IndexSchema;
-use crate::server::httpserver::api::v1::swagger::*;
+use crate::server::httpserver::swagger::DefaultErrorForm;
 use crate::server::httpserver::ServerApp;
 use crate::server::{ServerResult, Success};
 
