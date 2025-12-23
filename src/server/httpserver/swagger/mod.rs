@@ -1,4 +1,7 @@
-use utoipa::{OpenApi, ToSchema};
+mod examples;
+pub use examples::DefaultErrorForm;
+
+use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::server::ServerError;
@@ -12,19 +15,18 @@ use crate::server::httpserver::api::v1::schema::*;
 
 const SWAGGER_URL_PATH: &str = "/api/swagger";
 const SWAGGER_CONFIG_PATH: &str = "/api-docs/openapi.json";
+const PROJECT_DESCRIPTION: &str = include_str!("./descriptions/project");
 
 pub fn init_swagger_layer() -> SwaggerUi {
     let swagger_app = ApiDoc::openapi();
     SwaggerUi::new(SWAGGER_URL_PATH).url(SWAGGER_CONFIG_PATH, swagger_app)
 }
 
-const DESCRIPTION: &str = include_str!("../../../../docs/swagger/swagger-ui");
-
 #[derive(OpenApi)]
 #[openapi(
     info(
         title = "Doc-Search",
-        description = DESCRIPTION,
+        description = PROJECT_DESCRIPTION,
     ),
     tags(
         (
@@ -79,13 +81,3 @@ const DESCRIPTION: &str = include_str!("../../../../docs/swagger/swagger-ui");
     ),
 )]
 struct ApiDoc;
-
-#[allow(dead_code)]
-#[derive(utoipa::ToResponse, ToSchema)]
-#[response(description = "Error form", content_type = "application/json")]
-pub struct DefaultErrorForm {
-    #[schema(example = 501)]
-    status: u16,
-    #[schema(example = "Error form")]
-    message: String,
-}

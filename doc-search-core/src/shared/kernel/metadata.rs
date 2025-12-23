@@ -1,7 +1,6 @@
-#![allow(dead_code, dead_code)]
 use derive_builder::Builder;
 
-#[derive(Debug, Builder)]
+#[derive(Clone, Debug, Builder)]
 pub struct DocumentMetadata {
     pub photo: Option<String>,
     pub source: Option<String>,
@@ -10,17 +9,26 @@ pub struct DocumentMetadata {
     pub locations: Vec<DocumentLocation>,
     pub subjects: Vec<DocumentSubject>,
     pub classes: Vec<DocumentClass>,
-    pub icons: Vec<DocumentIcons>,
-    pub groups: Vec<DocumentGroups>,
+    pub icons: Vec<DocumentIcon>,
+    pub groups: Vec<DocumentGroup>,
     pub pipelines: Vec<PipelineLabel>,
     pub references: Vec<DocumentReference>,
 }
 
 #[derive(Clone, Debug)]
-pub struct DocumentReference(String);
+pub struct DocumentIcon(pub String);
 
 #[derive(Clone, Debug)]
-pub struct PipelineLabel(String);
+pub struct DocumentSubject(pub String);
+
+#[derive(Clone, Debug)]
+pub struct DocumentReference(pub String);
+
+#[derive(Clone, Debug)]
+pub struct PipelineLabel(pub String);
+
+#[derive(Clone, Debug)]
+pub struct DocumentGroup(pub String);
 
 #[derive(Clone, Debug, Builder)]
 pub struct DocumentLocation {
@@ -30,22 +38,7 @@ pub struct DocumentLocation {
 }
 
 #[derive(Clone, Debug, Builder)]
-pub struct DocumentSubject {
-    pub name: String,
-}
-
-#[derive(Clone, Debug, Builder)]
 pub struct DocumentClass {
     pub name: String,
     pub probability: f64,
-}
-
-#[derive(Clone, Debug, Builder)]
-pub struct DocumentIcons {
-    pub name: String,
-}
-
-#[derive(Clone, Debug, Builder)]
-pub struct DocumentGroups {
-    pub name: String,
 }

@@ -1,0 +1,64 @@
+{
+  "_scroll_id": "dksfsjvJHZVFDskjdbfsdfsdfdsg",
+  "hits": {
+    "hits": [
+      {
+        "_id": "kwejbrw46dsf987a1173sfa7sd781h",
+        "_index": "test-folder",
+        "_score": 0.7,
+        "highlight": {
+          "content": [
+            "There is some highlight"
+          ]
+        },
+        "_source": {
+          "large_doc_id": "29346839246dsf987a1173sfa7sd781h",
+          "file_name": "test-document.docx",
+          "file_path": "./test-document.docx",
+          "file_size": 1024,
+          "created_at": 1750957215,
+          "modified_at": 1750957215,
+          "content": "There is some highlight content",
+          "chunked_text": [],
+          "embeddings": [],
+          "doc_part_id": 0,
+          "metadata": {
+            "photo_path": "test-document.png",
+            "source": "source",
+            "semantic_source": "semantic-source",
+            "summary": "There is summary",
+            "locations": [
+              {
+                "name": "country",
+                "coords": [40.0, 25.0]
+              }
+            ],
+            "subjects": [
+              {
+                "name": "subject name"
+              }
+            ],
+            "groups": [
+              {
+                "name": "any group name"
+              }
+            ],
+            "classes": [
+              {
+                "name": "class-name",
+                "probability": 8
+              }
+            ],
+            "icons": [
+              {
+                "name": "icon"
+              }
+            ],
+            "references": ["reference"],
+            "pipelines": ["pipeline-id"]
+          }
+        }
+      }
+    ]
+  }
+}

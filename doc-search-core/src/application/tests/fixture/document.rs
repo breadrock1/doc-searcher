@@ -1,16 +1,9 @@
 use rstest::fixture;
 
+use crate::application::tests::fixture::*;
 use crate::domain::storage::models::LargeDocument;
-use crate::domain::storage::models::document::LargeDocumentBuilder;
-
-pub const LARGE_DOC_ID: &str = "29346839246dsf987a1173sfa7sd781h";
-pub const FIRST_DOC_PART_ID: &str = "k3j5b49246dsf987a1173sfa7sd781h";
-pub const DOC_FILE_NAME: &str = "test-document.docx";
-pub const DOC_FILE_PATH: &str = "./test-document.docx";
-pub const DOC_FILE_SIZE: u32 = 1024;
-pub const DOC_FILE_TIMESTAMP: i64 = 1750957215;
-pub const DOC_FILE_LARGE_CONTENT: &str = include_str!("../resources/doc-content-large.txt");
-pub const DOC_FILE_SHORT_CONTENT: &str = include_str!("../resources/doc-content-short.txt");
+use crate::domain::storage::models::LargeDocumentBuilder;
+use crate::shared::kernel::metadata::*;
 
 #[fixture]
 pub fn build_large_document() -> LargeDocument {
@@ -21,6 +14,7 @@ pub fn build_large_document() -> LargeDocument {
         .created_at(DOC_FILE_TIMESTAMP)
         .modified_at(DOC_FILE_TIMESTAMP)
         .content(DOC_FILE_LARGE_CONTENT.to_string())
+        .metadata(Some(build_document_metadata()))
         .build()
         .unwrap()
 }
@@ -34,6 +28,73 @@ pub fn build_short_document() -> LargeDocument {
         .created_at(DOC_FILE_TIMESTAMP)
         .modified_at(DOC_FILE_TIMESTAMP)
         .content(DOC_FILE_SHORT_CONTENT.to_string())
+        .metadata(None)
         .build()
         .unwrap()
+}
+
+#[fixture]
+fn build_document_metadata() -> DocumentMetadata {
+    DocumentMetadataBuilder::default()
+        .photo(Some(PHOTO_PATH.to_string()))
+        .source(Some(DOCUMENT_SOURCE.to_string()))
+        .semantic_source(Some(DOCUMENT_SEMANTIC_SOURCE.to_string()))
+        .summary(Some(DOCUMENT_SUMMARY_SOURCE.to_string()))
+        .locations(build_metadata_locations())
+        .subjects(build_metadata_subjects())
+        .classes(build_metadata_classes())
+        .icons(build_metadata_icons())
+        .groups(build_metadata_groups())
+        .pipelines(build_metadata_pipelines())
+        .references(build_metadata_references())
+        .build()
+        .expect("failed to build metadata")
+}
+
+#[fixture]
+fn build_metadata_subjects() -> Vec<DocumentSubject> {
+    vec![DocumentSubject(DOCUMENT_SUBJECT_NAME.to_string())]
+}
+
+#[fixture]
+fn build_metadata_groups() -> Vec<DocumentGroup> {
+    vec![DocumentGroup(DOCUMENT_GROUP_NAME.to_string())]
+}
+
+#[fixture]
+fn build_metadata_icons() -> Vec<DocumentIcon> {
+    vec![DocumentIcon(DOCUMENT_ICON_NAME.to_string())]
+}
+
+#[fixture]
+fn build_metadata_pipelines() -> Vec<PipelineLabel> {
+    vec![PipelineLabel(DOCUMENT_PIPELINE_NAME.to_string())]
+}
+
+#[fixture]
+fn build_metadata_references() -> Vec<DocumentReference> {
+    vec![DocumentReference(DOCUMENT_REFERENCE_NAME.to_string())]
+}
+
+#[fixture]
+fn build_metadata_locations() -> Vec<DocumentLocation> {
+    let location = DocumentLocationBuilder::default()
+        .name(DOCUMENT_LOCATION_NAME.to_string())
+        .latitude(0f64)
+        .longitude(0f64)
+        .build()
+        .expect("built document location failed");
+
+    vec![location]
+}
+
+#[fixture]
+fn build_metadata_classes() -> Vec<DocumentClass> {
+    let class = DocumentClassBuilder::default()
+        .name(DOCUMENT_CLASS_NAME.to_string())
+        .probability(8f64)
+        .build()
+        .expect("built document class failed");
+
+    vec![class]
 }

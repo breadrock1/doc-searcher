@@ -2,8 +2,7 @@ use anyhow::Context;
 use serde_derive::Deserialize;
 
 use crate::domain::searcher::models::{FoundedDocument, FoundedDocumentBuilder};
-use crate::domain::storage::models::DocumentPart;
-use crate::domain::storage::models::document::DocumentPartBuilder;
+use crate::domain::storage::models::{DocumentPart, DocumentPartBuilder};
 use crate::infrastructure::osearch::dto::document::SourceDocument;
 use crate::infrastructure::osearch::error::OSearchError;
 

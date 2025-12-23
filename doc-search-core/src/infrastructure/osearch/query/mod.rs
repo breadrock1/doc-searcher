@@ -351,46 +351,76 @@ fn build_filter_query(filter: &Option<FilterParams>) -> Value {
         Some(params) => {
             let array_json_value = json!([]);
             if let Value::Array(mut filter_params) = array_json_value {
+                if let Some(source) = params.source.as_ref() {
+                    filter_params.push(json!({
+                        "match": {
+                            "metadata.source": source,
+                        }
+                    }))
+                }
+
+                if let Some(semantic_source) = params.semantic_source.as_ref() {
+                    filter_params.push(json!({
+                        "match": {
+                            "metadata.semantic_source": semantic_source,
+                        }
+                    }))
+                }
+
+                if let Some(location_coords) = params.location_coords.as_ref() {
+                    let distance = params.distance.as_deref().unwrap_or("5km");
+
+                    filter_params.push(json!({
+                        "nested": {
+                            "path": "metadata.location",
+                            "query": {
+                                "geo_distance": {
+                                    "distance": distance,
+                                    "metadata.locations.coords": location_coords,
+                                }
+                            }
+                        }
+                    }));
+                }
+
                 if let Some(created_from) = params.created_from {
-                    if let Some(created_to) = params.created_to {
-                        filter_params.push(json!({
-                            "range": {
-                                "created_at": {
-                                    "gte": created_from,
-                                    "lte": created_to,
-                                }
+                    filter_params.push(json!({
+                        "range": {
+                            "created_at": {
+                                "gte": created_from,
                             }
-                        }))
-                    } else {
-                        filter_params.push(json!({
-                            "range": {
-                                "created_at": {
-                                    "gte": created_from,
-                                }
+                        }
+                    }));
+                }
+
+                if let Some(created_to) = params.created_to {
+                    filter_params.push(json!({
+                        "range": {
+                            "created_at": {
+                                "lte": created_to,
                             }
-                        }))
-                    }
+                        }
+                    }));
                 }
 
                 if let Some(file_size_from) = params.size_from {
-                    if let Some(file_size_to) = params.size_to {
-                        filter_params.push(json!({
-                            "range": {
-                                "file_size": {
-                                    "gte": file_size_from,
-                                    "lte": file_size_to,
-                                }
+                    filter_params.push(json!({
+                        "range": {
+                            "file_size": {
+                                "gte": file_size_from,
                             }
-                        }))
-                    } else {
-                        filter_params.push(json!({
-                            "range": {
-                                "file_size": {
-                                    "gte": params.size_from,
-                                }
+                        }
+                    }));
+                }
+
+                if let Some(file_size_to) = params.size_to {
+                    filter_params.push(json!({
+                        "range": {
+                            "file_size": {
+                                "lte": file_size_to,
                             }
-                        }))
-                    }
+                        }
+                    }));
                 }
 
                 return Value::from(filter_params);

@@ -3,6 +3,7 @@ use character_text_splitter::CharacterTextSplitter;
 use derive_builder::Builder;
 
 use crate::domain::storage::{StorageError, StorageResult};
+use crate::shared::kernel::metadata::DocumentMetadata;
 
 const FIRST_DOCUMENT_PART_ID: usize = 1;
 
@@ -19,6 +20,7 @@ pub struct LargeDocument {
     pub created_at: i64,
     pub modified_at: i64,
     pub content: String,
+    pub metadata: Option<DocumentMetadata>,
 }
 
 #[derive(Clone, Debug, Builder)]
@@ -31,6 +33,7 @@ pub struct DocumentPart {
     pub created_at: i64,
     pub modified_at: i64,
     pub content: String,
+    pub metadata: Option<DocumentMetadata>,
 }
 
 impl LargeDocument {
@@ -53,6 +56,7 @@ impl LargeDocument {
             .created_at(self.created_at)
             .modified_at(self.modified_at)
             .content(String::default())
+            .metadata(self.metadata)
             .build()
             .context("failed to build document part")
             .map_err(StorageError::CantSplitLargeDocuments)?;

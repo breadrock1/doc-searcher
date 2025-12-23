@@ -147,6 +147,85 @@ pub fn build_index_mappings(config: &OSearchConfig, params: Option<&KnnIndexPara
                             }
                         }
                     }
+                },
+                "metadata": {
+                    "type": "object",
+                    "properties": {
+                        "photo": {
+                            "type": "keyword"
+                        },
+                        "pipelines": {
+                            "type": "keyword"
+                        },
+                        "references": {
+                            "type": "keyword"
+                        },
+                        "semantic_source": {
+                            "type": "keyword"
+                        },
+                        "source": {
+                            "type": "keyword"
+                        },
+                        "summary": {
+                            "type": "text"
+                        },
+                        "groups": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword"
+                                        }
+                                    },
+                                    "type": "text"
+                                }
+                            }
+                        },
+                        "classes": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {
+                                    "type": "keyword"
+                                },
+                                "probability": {
+                                    "type": "float"
+                                }
+                            }
+                        },
+                        "icons": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {
+                                    "type": "keyword"
+                                }
+                            }
+                        },
+                        "locations": {
+                            "type": "nested",
+                            "properties": {
+                                "coords": {
+                                    "type": "geo_point"
+                                },
+                                "name": {
+                                    "type": "text"
+                                }
+                            }
+                        },
+                        "subjects": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword"
+                                        }
+                                    },
+                                    "type": "text"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

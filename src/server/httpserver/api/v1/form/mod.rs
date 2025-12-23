@@ -8,6 +8,14 @@ mod index;
 pub use index::CreateIndexForm;
 pub use index::KnnIndexForm;
 
+mod metadata;
+pub use metadata::Class;
+pub use metadata::Group;
+pub use metadata::Icons;
+pub use metadata::Location;
+pub use metadata::Metadata;
+pub use metadata::Subject;
+
 mod search_params;
 pub use search_params::PaginateForm;
 pub use search_params::{FilterForm, ResultForm, ShortResultForm};

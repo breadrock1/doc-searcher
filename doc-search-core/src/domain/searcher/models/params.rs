@@ -89,6 +89,12 @@ pub struct FilterParams {
     pub created_to: Option<i64>,
     pub modified_from: Option<i64>,
     pub modified_to: Option<i64>,
+    pub source: Option<String>,
+    pub semantic_source: Option<String>,
+    pub distance: Option<String>,
+    pub location_coords: Option<Vec<f32>>,
+    pub doc_class: Option<String>,
+    pub doc_class_probability: Option<f32>,
 }
 
 #[derive(Clone, Default, Debug, Builder)]
