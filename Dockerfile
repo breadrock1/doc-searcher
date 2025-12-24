@@ -10,7 +10,7 @@ RUN cargo install cargo-chef
 # Planner layer with cargo-chef cli tool and projects sources to create recipe.json
 FROM chef AS planner
 
-RUN apt update && apt install -y libssl-dev
+RUN apt-get update && apt-get install -y libssl-dev
 
 COPY . .
 
@@ -34,7 +34,7 @@ RUN cargo install ${FEATURES} --bins --path .
 # Target layer based on tiny official ubuntu image with neccessary binaries and data to run.
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt install -y openssl
+RUN apt-get update && apt-get install -y openssl
 WORKDIR /app
 
 COPY ./config /app/config
