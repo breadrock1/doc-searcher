@@ -1,4 +1,4 @@
-use rstest::{fixture, rstest};
+use rstest::fixture;
 use serde_json::Value;
 
 const SEARCHING_RESULT: &[u8] = include_bytes!("../../resources/searching-result.json");

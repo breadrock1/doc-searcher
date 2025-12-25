@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::infrastructure::osearch::extractor::extract_founded_document_parts;
 use crate::infrastructure::osearch::tests::fixture::search::*;
-use crate::infrastructure::osearch::tests::fixture::{DOCUMENT_PART_ID, INDEX_ID, SCROLL_ID};
+use crate::infrastructure::osearch::tests::fixture::{DOCUMENT_PART_ID, DOCUMENT_ID, INDEX_ID, SCROLL_ID};
 
 #[rstest]
 #[case(build_full_search_result(), Some(SCROLL_ID.to_string()))]
@@ -22,6 +22,7 @@ fn test_extract_founded_docs(
     assert_eq!(1, extracted_docs.founded.len());
 
     let root_document = extracted_docs.founded.first().expect("expected document");
+    assert_eq!(DOCUMENT_ID, root_document.document.large_doc_id);
     assert_eq!(DOCUMENT_PART_ID, root_document.id);
     assert_eq!(INDEX_ID, root_document.index);
 
