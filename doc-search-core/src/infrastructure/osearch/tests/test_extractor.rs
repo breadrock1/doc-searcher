@@ -4,7 +4,9 @@ use serde_json::Value;
 
 use crate::infrastructure::osearch::extractor::extract_founded_document_parts;
 use crate::infrastructure::osearch::tests::fixture::search::*;
-use crate::infrastructure::osearch::tests::fixture::{DOCUMENT_PART_ID, DOCUMENT_ID, INDEX_ID, SCROLL_ID};
+use crate::infrastructure::osearch::tests::fixture::{
+    DOCUMENT_ID, DOCUMENT_PART_ID, INDEX_ID, SCROLL_ID,
+};
 
 #[rstest]
 #[case(build_full_search_result(), Some(SCROLL_ID.to_string()))]
