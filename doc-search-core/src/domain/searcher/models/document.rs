@@ -1,5 +1,7 @@
 use derive_builder::Builder;
 
+use crate::shared::kernel::metadata::DocumentMetadata;
+
 #[derive(Clone, Builder)]
 pub struct FoundedDocument {
     pub id: String,
@@ -21,6 +23,7 @@ pub struct DocumentPartEntrails {
     pub content: Option<String>,
     pub chunked_text: Option<Vec<String>>,
     pub embeddings: Option<Vec<Embeddings>>,
+    pub metadata: Option<DocumentMetadata>,
 }
 
 #[derive(Clone, Debug)]

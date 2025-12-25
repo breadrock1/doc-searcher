@@ -2,9 +2,8 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use doc_search_core::domain::searcher::models::{
-    ResultParams, RetrieveIndexDocumentsParams, SearchKindParams, SearchingParams,
-};
+use doc_search_core::domain::searcher::models::RetrieveIndexDocumentsParamsBuilder;
+use doc_search_core::domain::searcher::models::{FilterParams, SearchKindParams, SearchingParams};
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::models::LargeDocument;
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
@@ -15,18 +14,15 @@ use crate::server::httpserver::api::v1::query::CreateDocumentQuery;
 use crate::server::httpserver::api::v1::schema::{DocumentPartSchema, StoredDocumentSchema};
 use crate::server::httpserver::swagger::DefaultErrorForm;
 use crate::server::httpserver::ServerApp;
-use crate::server::{ServerResult, Success};
+use crate::server::{ServerError, ServerResult, Success};
 
 pub const STORAGE_ALL_DOCUMENTS_URL: &str = "/storage/{index_ids}/documents";
 pub const STORAGE_DOCUMENT_URL: &str = "/storage/{index_id}/{document_id}";
 pub const STORAGE_GET_DOCUMENT_PARTS_URL: &str = "/storage/{index_id}/{large_document_id}";
 pub const CREATE_DOCUMENT_URL: &str = "/storage/{index_id}/create";
 
-const RETRIEVE_DESCRIPTION: &str =
-    include_str!("../../../../../../docs/swagger/swagger-ui-retrieve");
-
-const CREATE_DOCUMENT_DESCRIPTION: &str =
-    include_str!("../../../../../../docs/swagger/swagger-ui-create-doc");
+const RETRIEVE_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/searcher-retrieve");
+const CREATE_DOC_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/document-create");
 
 #[utoipa::path(
     get,
@@ -115,18 +111,28 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
 {
-    let result = ResultParams {
-        size: 100,
-        offset: 0,
-        ..Default::default()
-    };
-
-    let params = RetrieveIndexDocumentsParams::try_from(form)?;
     let indexes = index_ids
         .split(',')
         .map(String::from)
         .collect::<Vec<String>>();
-    let params = SearchingParams::new(indexes, SearchKindParams::Retrieve(params), result, None);
+
+    let result = form.result.try_into()?;
+    let filter_params = form
+        .filter
+        .map(|it| FilterParams::try_from(it).ok())
+        .unwrap_or_default();
+
+    let retrieve_params = RetrieveIndexDocumentsParamsBuilder::default()
+        .path(form.path)
+        .build()
+        .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
+
+    let params = SearchingParams::new(
+        indexes,
+        SearchKindParams::Retrieve(retrieve_params),
+        result,
+        filter_params,
+    );
 
     let searcher = state.get_searcher();
     let documents = searcher.search_document_parts(&params).await?;
@@ -189,7 +195,7 @@ where
     put,
     tag = "document",
     path = CREATE_DOCUMENT_URL,
-    description = CREATE_DOCUMENT_DESCRIPTION,
+    description = CREATE_DOC_DESCRIPTION,
     request_body(content = CreateDocumentForm),
     params(
         (
@@ -239,8 +245,8 @@ where
 
 #[utoipa::path(
     delete,
-    path = STORAGE_DOCUMENT_URL,
     tag = "document",
+    path = STORAGE_DOCUMENT_URL,
     description = "Delete Document object from index",
     params(
         (

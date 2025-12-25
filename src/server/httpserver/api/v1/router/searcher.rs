@@ -18,11 +18,9 @@ pub const SEARCH_SEMANTIC_URL: &str = "/search/semantic";
 pub const SEARCH_HYBRID_URL: &str = "/search/hybrid";
 pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{scroll_id}";
 
-const FULLTEXT_DESCRIPTION: &str =
-    include_str!("../../../../../../docs/swagger/swagger-ui-fulltext");
-const SEMANTIC_DESCRIPTION: &str =
-    include_str!("../../../../../../docs/swagger/swagger-ui-semantic");
-const HYBRID_DESCRIPTION: &str = include_str!("../../../../../../docs/swagger/swagger-ui-hybrid");
+const FULLTEXT_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/searcher-fulltext");
+const SEMANTIC_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/searcher-semantic");
+const HYBRID_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/searcher-hybrid");
 
 #[utoipa::path(
     post,
