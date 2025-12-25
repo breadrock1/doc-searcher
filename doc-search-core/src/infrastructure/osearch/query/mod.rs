@@ -372,7 +372,7 @@ fn build_filter_query(filter: &Option<FilterParams>) -> Value {
 
                     filter_params.push(json!({
                         "nested": {
-                            "path": "metadata.location",
+                            "path": "metadata.locations",
                             "query": {
                                 "geo_distance": {
                                     "distance": distance,
