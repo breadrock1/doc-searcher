@@ -40,6 +40,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY ./config /app/config
+COPY ./static /app/static
 COPY --from=builder /app/target/release/launch .
 COPY --from=builder /app/target/release/init-infrastructure .
 
