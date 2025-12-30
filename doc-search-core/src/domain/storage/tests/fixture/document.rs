@@ -11,6 +11,7 @@ pub fn build_large_document() -> LargeDocument {
         .created_at(LARGE_DOCUMENT_CREATED_TIMESTAMP)
         .modified_at(LARGE_DOCUMENT_CREATED_TIMESTAMP)
         .content(LARGE_DOCUMENT_CONTENT.to_string())
+        .metadata(None)
         .build()
         .unwrap()
 }

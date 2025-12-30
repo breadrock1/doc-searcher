@@ -1,10 +1,8 @@
 use rstest::rstest;
 use std::sync::Arc;
 
-use crate::application::tests::fixture::document::{
-    FIRST_DOC_PART_ID, LARGE_DOC_ID, build_large_document,
-};
-use crate::application::tests::fixture::index::DEFAULT_INDEX_ID;
+use crate::application::tests::fixture::document::build_large_document;
+use crate::application::tests::fixture::{DEFAULT_INDEX_ID, FIRST_DOC_PART_ID, LARGE_DOC_ID};
 use crate::application::tests::mock::{TestEnvironment, init_test_environment};
 use crate::application::usecase::storage::StorageUseCase;
 use crate::domain::storage::models::{LargeDocument, StoredDocumentPartsInfoBuilder};
@@ -64,7 +62,7 @@ async fn test_store_document(
                 .first_part_id(first_doc_part_id)
                 .doc_parts_amount(doc_parts_amount)
                 .build()
-                .unwrap();
+                .expect("failed to build stored document parts information");
 
             Ok(stored_doc_parts_info)
         });

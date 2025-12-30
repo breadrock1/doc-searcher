@@ -1,8 +1,7 @@
 use rstest::fixture;
 
+use crate::application::tests::fixture::DEFAULT_INDEX_ID;
 use crate::domain::storage::models::IndexId;
-
-pub const DEFAULT_INDEX_ID: &str = "test-folder";
 
 #[fixture]
 pub fn build_index() -> IndexId {
