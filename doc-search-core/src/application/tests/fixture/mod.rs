@@ -1,3 +1,24 @@
 pub mod document;
 pub mod index;
 pub mod search_params;
+
+pub const DEFAULT_INDEX_ID: &str = "test-folder";
+pub const LARGE_DOC_ID: &str = "29346839246dsf987a1173sfa7sd781h";
+pub const FIRST_DOC_PART_ID: &str = "k3j5b49246dsf987a1173sfa7sd781h";
+pub const DOC_FILE_NAME: &str = "test-document.docx";
+pub const DOC_FILE_PATH: &str = "./test-document.docx";
+pub const DOC_FILE_SIZE: u32 = 1024;
+pub const DOC_FILE_TIMESTAMP: i64 = 1750957215;
+pub const DOC_FILE_LARGE_CONTENT: &str = include_str!("../resources/doc-content-large.txt");
+pub const DOC_FILE_SHORT_CONTENT: &str = include_str!("../resources/doc-content-short.txt");
+pub const PHOTO_PATH: &str = "test-document.png";
+pub const DOCUMENT_SOURCE: &str = "source";
+pub const DOCUMENT_SEMANTIC_SOURCE: &str = "semantic-source";
+pub const DOCUMENT_SUMMARY_SOURCE: &str = "there is content summary";
+pub const DOCUMENT_LOCATION_NAME: &str = "country";
+pub const DOCUMENT_SUBJECT_NAME: &str = "subject";
+pub const DOCUMENT_CLASS_NAME: &str = "class";
+pub const DOCUMENT_ICON_NAME: &str = "icon";
+pub const DOCUMENT_GROUP_NAME: &str = "group";
+pub const DOCUMENT_PIPELINE_NAME: &str = "any";
+pub const DOCUMENT_REFERENCE_NAME: &str = "reference";

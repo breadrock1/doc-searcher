@@ -2,8 +2,9 @@ use derive_builder::Builder;
 use doc_search_core::domain::searcher::models::{
     DocumentPartEntrails, DocumentPartEntrailsBuilder, Embeddings,
 };
-use doc_search_core::domain::storage::models::document::DocumentPartBuilder;
-use doc_search_core::domain::storage::models::{DocumentPart, StoredDocumentPartsInfo};
+use doc_search_core::domain::storage::models::{
+    DocumentPart, DocumentPartBuilder, StoredDocumentPartsInfo,
+};
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

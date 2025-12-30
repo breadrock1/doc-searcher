@@ -30,6 +30,18 @@ pub struct FilterForm {
     modified_from: Option<i64>,
     #[schema(example = 1750957215)]
     modified_to: Option<i64>,
+    #[schema(example = "source-name")]
+    source: Option<String>,
+    #[schema(example = "semantic-source-name")]
+    semantic_source: Option<String>,
+    #[schema(example = "80km")]
+    distance: Option<String>,
+    #[schema(example = json!([45.99, 29.43]))]
+    location_coordinates: Option<Vec<f32>>,
+    #[schema(example = "war")]
+    document_class: Option<String>,
+    #[schema(example = 0.8)]
+    document_class_probability: Option<f32>,
 }
 
 impl TryFrom<FilterForm> for FilterParams {
@@ -44,6 +56,12 @@ impl TryFrom<FilterForm> for FilterParams {
             .created_to(form.created_to)
             .modified_from(form.modified_from)
             .modified_to(form.modified_to)
+            .source(form.source)
+            .semantic_source(form.semantic_source)
+            .distance(form.distance)
+            .location_coords(form.location_coordinates)
+            .doc_class(form.document_class)
+            .doc_class_probability(form.document_class_probability)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))
     }
@@ -111,10 +129,12 @@ impl TryFrom<ShortResultForm> for ResultParams {
     }
 }
 
-#[derive(Serialize, Deserialize, IntoParams, ToSchema, Getset)]
+#[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct RetrieveDocumentForm {
     #[schema(example = "./test-document.docx")]
-    path: Option<String>,
+    pub path: Option<String>,
+    pub filter: Option<FilterForm>,
+    pub result: ResultForm,
 }
 
 impl TryFrom<RetrieveDocumentForm> for RetrieveIndexDocumentsParams {
