@@ -13,6 +13,7 @@ pub const DOC_FILE_LARGE_CONTENT: &str = include_str!("../resources/doc-content-
 pub const DOC_FILE_SHORT_CONTENT: &str = include_str!("../resources/doc-content-short.txt");
 pub const PHOTO_PATH: &str = "test-document.png";
 pub const DOCUMENT_SOURCE: &str = "source";
+pub const DOCUMENT_PIPELINE_ID: i64 = 1;
 pub const DOCUMENT_SEMANTIC_SOURCE: &str = "semantic-source";
 pub const DOCUMENT_SUMMARY_SOURCE: &str = "there is content summary";
 pub const DOCUMENT_LOCATION_NAME: &str = "country";

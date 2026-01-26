@@ -163,6 +163,9 @@ pub fn build_index_mappings(config: &OSearchConfig, params: Option<&KnnIndexPara
                         "semantic_source": {
                             "type": "keyword"
                         },
+                        "pipeline_id": {
+                            "type": "long"
+                        },
                         "source": {
                             "type": "keyword"
                         },

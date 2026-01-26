@@ -2,6 +2,7 @@ use derive_builder::Builder;
 
 #[derive(Clone, Debug, Builder)]
 pub struct DocumentMetadata {
+    pub pipeline_id: Option<i64>,
     pub photo: Option<String>,
     pub source: Option<String>,
     pub semantic_source: Option<String>,
