@@ -93,6 +93,7 @@ pub fn build_filter_searching_params() -> FilterParams {
         .created_to(Some(CURRENT_TIMESTAMP))
         .modified_from(Some(CURRENT_TIMESTAMP))
         .modified_to(Some(CURRENT_TIMESTAMP))
+        .pipeline_id(Some(PIPELINE_ID_FILTER_PARAMS))
         .source(Some(SOURCE_FILTER_PARAMS.to_string()))
         .semantic_source(Some(SEMANTIC_SOURCE_FILTER_PARAMS.to_string()))
         .distance(Some(DISTANCE_FILTER_PARAMS.to_string()))

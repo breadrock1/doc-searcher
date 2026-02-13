@@ -30,6 +30,8 @@ pub struct FilterForm {
     modified_from: Option<i64>,
     #[schema(example = 1750957215)]
     modified_to: Option<i64>,
+    #[schema(example = 1)]
+    pipeline_id: Option<i64>,
     #[schema(example = "source-name")]
     source: Option<String>,
     #[schema(example = "semantic-source-name")]
@@ -37,11 +39,11 @@ pub struct FilterForm {
     #[schema(example = "80km")]
     distance: Option<String>,
     #[schema(example = json!([45.99, 29.43]))]
-    location_coordinates: Option<Vec<f32>>,
+    location_coordinates: Option<Vec<f64>>,
     #[schema(example = "war")]
     document_class: Option<String>,
     #[schema(example = 0.8)]
-    document_class_probability: Option<f32>,
+    document_class_probability: Option<f64>,
 }
 
 impl TryFrom<FilterForm> for FilterParams {
@@ -56,6 +58,7 @@ impl TryFrom<FilterForm> for FilterParams {
             .created_to(form.created_to)
             .modified_from(form.modified_from)
             .modified_to(form.modified_to)
+            .pipeline_id(form.pipeline_id)
             .source(form.source)
             .semantic_source(form.semantic_source)
             .distance(form.distance)
