@@ -29,7 +29,7 @@ use std::sync::Arc;
 use crate::application::usecase::storage::gen_unique_document_id;
 
 use crate::ServiceConnect;
-use crate::domain::searcher::models::{Pagination, PaginationParams, SearchingParams};
+use crate::domain::searcher::models::{Pagination, PaginationParams, SearchKindParams, SearchingParams};
 use crate::domain::searcher::{IPaginator, ISearcher};
 use crate::domain::searcher::{SearchError, SearchResult};
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart};
@@ -345,7 +345,12 @@ impl ISearcher for OSearchClient {
 
         let request_builder = match params.get_result().offset > 0 {
             true => request.from(params.get_result().offset),
-            false => request.scroll(SCROLL_LIFETIME),
+            false => {
+                match params.get_kind() {
+                    SearchKindParams::Hybrid(_) => request.from(params.get_result().offset),
+                    _ => request.scroll(SCROLL_LIFETIME)
+                }
+            },
         };
 
         let response = request_builder

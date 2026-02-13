@@ -278,6 +278,7 @@ impl QueryBuildHelper for HybridQueryParams {
             "highlight": highlight,
             "query": {
                 "hybrid": {
+                    "pagination_depth": 20,
                     "queries": [
                         {
                             "neural": {
