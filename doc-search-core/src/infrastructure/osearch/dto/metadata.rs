@@ -11,6 +11,7 @@ use crate::shared::kernel::metadata::{
 #[derive(Clone, Deserialize, Serialize)]
 pub struct SourceDocumentMetadata {
     pub photo: Option<String>,
+    pub pipeline_id: Option<i64>,
     pub source: Option<String>,
     pub semantic_source: Option<String>,
     pub summary: Option<String>,
@@ -59,6 +60,7 @@ impl TryFrom<DocumentMetadata> for SourceDocumentMetadata {
 
         Ok(SourceDocumentMetadata {
             photo: doc_metadata.photo,
+            pipeline_id: doc_metadata.pipeline_id,
             source: doc_metadata.source,
             semantic_source: doc_metadata.semantic_source,
             summary: doc_metadata.summary,
@@ -109,6 +111,7 @@ impl TryFrom<SourceDocumentMetadata> for DocumentMetadata {
 
         DocumentMetadataBuilder::default()
             .photo(src_metadata.photo)
+            .pipeline_id(src_metadata.pipeline_id)
             .source(src_metadata.source)
             .semantic_source(src_metadata.semantic_source)
             .summary(src_metadata.summary)

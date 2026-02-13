@@ -193,10 +193,10 @@ steps:
   - name: build-and-push-docker
     image: plugins/docker
     settings:
-      repo: 192.168.0.35:3000/sova-core/doc-search
+      repo: 192.168.0.84:3000/sova-core/doc-search
       insecure: true
       dockerfile: Dockerfile
-      registry: 192.168.0.35:3000
+      registry: 192.168.0.84:3000
       tags:
         - ${DRONE_COMMIT_SHA:0:8}
         - ${DRONE_TAG}

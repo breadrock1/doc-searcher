@@ -37,6 +37,7 @@ pub fn build_short_document() -> LargeDocument {
 fn build_document_metadata() -> DocumentMetadata {
     DocumentMetadataBuilder::default()
         .photo(Some(PHOTO_PATH.to_string()))
+        .pipeline_id(Some(DOCUMENT_PIPELINE_ID))
         .source(Some(DOCUMENT_SOURCE.to_string()))
         .semantic_source(Some(DOCUMENT_SEMANTIC_SOURCE.to_string()))
         .summary(Some(DOCUMENT_SUMMARY_SOURCE.to_string()))
