@@ -16,8 +16,8 @@ use crate::meter::AppMeterRegistry;
 
 pub struct ServerApp<Storage, Searcher>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone,
+    Searcher: ISearcher + IPaginator + Send + Sync,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
     storage: Arc<StorageUseCase<Storage>>,
     searcher: Arc<SearcherUseCase<Searcher>>,
@@ -26,8 +26,8 @@ where
 
 impl<Storage, Searcher> ServerApp<Storage, Searcher>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone,
+    Searcher: ISearcher + IPaginator + Send + Sync,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
     pub fn new(
         storage: Arc<StorageUseCase<Storage>>,

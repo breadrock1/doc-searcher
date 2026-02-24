@@ -22,7 +22,7 @@ const SEMANTIC_FULL_PARAMS: &[u8] = include_bytes!("resources/semantic-full-quer
 const SEMANTIC_SIMPLE_PARAMS: &[u8] = include_bytes!("resources/semantic-simple-query.json");
 const SEMANTIC_TOKENS_PARAMS: &[u8] = include_bytes!("resources/semantic-tokens-query.json");
 const HYBRID_FULL_PARAMS: &[u8] = include_bytes!("resources/hybrid-full-query.json");
-const HYBRID_SIMPLE_PARAMS: &[u8] = include_bytes!("resources/hybrid-full-query.json");
+const HYBRID_SIMPLE_PARAMS: &[u8] = include_bytes!("resources/hybrid-simple-query.json");
 
 #[rstest]
 fn test_build_simplest_retrieve_params_query(
@@ -201,19 +201,26 @@ fn test_build_simple_hybrid_params_query(
     #[from(build_simple_hybrid_params)] params: HybridSearchingParams,
 ) -> anyhow::Result<()> {
     let result = build_result_params();
-    let filter = build_filter_searching_params();
     let query_params = HybridQueryParamsBuilder::default()
         .query(params.query.clone())
         .model_id(params.model_id.unwrap_or_default())
         .knn_amount(params.knn_amount)
         .min_score(params.min_score)
         .result(result.to_owned())
-        .filter(Some(filter))
+        .filter(None)
         .build()
         .context("failed to build hybrid query params")?;
 
     let query = query_params.build_query();
-    let comparable_query = serde_json::from_slice::<Value>(HYBRID_SIMPLE_PARAMS)?;
+
+    #[allow(unused_mut)]
+    let mut comparable_query = serde_json::from_slice::<Value>(HYBRID_SIMPLE_PARAMS)?;
+
+    #[cfg(feature = "support-opensearch-v3")]
+    {
+        comparable_query["query"]["hybrid"] = json!({"pagination_depth": 20});
+    }
+
     assert_eq!(query, comparable_query);
 
     Ok(())
@@ -236,7 +243,15 @@ fn test_build_full_hybrid_params_query(
         .context("failed to build hybrid query params")?;
 
     let query = query_params.build_query();
-    let comparable_query = serde_json::from_slice::<Value>(HYBRID_FULL_PARAMS)?;
+
+    #[allow(unused_mut)]
+    let mut comparable_query = serde_json::from_slice::<Value>(HYBRID_FULL_PARAMS)?;
+
+    #[cfg(feature = "support-opensearch-v3")]
+    {
+        comparable_query["query"]["hybrid"] = json!({"pagination_depth": 20});
+    }
+
     assert_eq!(query, comparable_query);
 
     Ok(())

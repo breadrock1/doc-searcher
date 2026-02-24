@@ -28,6 +28,8 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
             .store_document(index_id, large_document, false)
             .await?;
 
+        println!("document: {stored_doc_info:?} has been stored into index: {index_id}");
+
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let large_doc_id = &stored_doc_info.large_doc_id;
         let doc_parts = storage
@@ -36,7 +38,7 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
         Ok(doc_parts)
     };
 
-    test_env.teardown(index_id).await?;
+    test_env.teardown().await?;
 
     let founded_doc_parts = result?;
     assert_eq!(founded_doc_parts.len(), 1);
@@ -59,9 +61,13 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
             .store_document(index_id, large_document, false)
             .await?;
 
+        println!("document: {stored_doc_info:?} has been stored into index: {index_id}");
+
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let large_doc_id = &stored_doc_info.large_doc_id;
         storage.delete_document(index_id, large_doc_id).await?;
+
+        println!("document: {large_doc_id} has been deleted");
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let doc_parts = storage
@@ -70,8 +76,6 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
 
         Ok(doc_parts)
     };
-
-    test_env.teardown(index_id).await?;
 
     let founded_doc_parts = result?;
     assert_eq!(founded_doc_parts.len(), 0);
@@ -91,10 +95,9 @@ async fn test_opensearch_store_multiple_documents() -> anyhow::Result<()> {
     let result: anyhow::Result<Vec<StoredDocumentPartsInfo>> = {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let stored_docs_info = storage.store_documents(index_id, large_documents).await?;
+        println!("documents: {stored_docs_info:?} has been stored into index: {index_id}");
         Ok(stored_docs_info)
     };
-
-    test_env.teardown(index_id).await?;
 
     let stored_docs_info = result?;
     assert_eq!(stored_docs_info.len(), 3);

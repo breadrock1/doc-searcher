@@ -11,9 +11,9 @@ impl Default for PathFilter {
     fn default() -> Self {
         PathFilter {
             paths: vec![
-                Regex::new("/health").unwrap(),
-                Regex::new("/metrics").unwrap(),
-                Regex::new("/api/.*/swagger").unwrap(),
+                Regex::new("/health").expect("failed to compile health regex"),
+                Regex::new("/metrics").expect("failed to compile metrics regex"),
+                Regex::new("/api/.*/swagger").expect("failed to compile swagger regex"),
             ],
         }
     }

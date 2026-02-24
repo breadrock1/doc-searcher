@@ -8,10 +8,10 @@ use crate::server::ServerError;
 
 #[derive(Builder, Serialize, ToSchema)]
 pub struct PaginationSchema {
-    founded: Vec<FoundedDocumentPartSchema>,
+    pub founded: Vec<FoundedDocumentPartSchema>,
     #[schema(example = "dksfsjvJHZVFDskjdbfsdfsdfdsg")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    scroll_id: Option<String>,
+    pub scroll_id: Option<String>,
 }
 
 impl TryFrom<Pagination> for PaginationSchema {

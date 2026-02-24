@@ -12,4 +12,5 @@ mod pagination;
 pub use pagination::PaginationSchema;
 
 mod founded;
+pub use founded::FoundedDocumentPartSchema;
 pub use founded::FoundedDocumentPartSchemaBuilder;

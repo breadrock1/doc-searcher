@@ -20,8 +20,9 @@ impl TestEnvironment {
         &self.index
     }
 
-    pub async fn teardown(&self, index_id: &str) -> anyhow::Result<()> {
-        self.osearch().delete_index(index_id).await?;
+    pub async fn teardown(&self) -> anyhow::Result<()> {
+        // TODO: This operation does not need
+        // self.osearch().delete_index(index_id).await?;
         Ok(())
     }
 }

@@ -306,6 +306,11 @@ impl QueryBuildHelper for HybridQueryParams {
             },
         });
 
+        #[cfg(feature = "support-opensearch-v3")]
+        {
+            base_value["query"]["hybrid"] = json!({"pagination_depth": 20});
+        }
+
         if let Some(min_score) = self.min_score() {
             base_value["min_score"] = json!(min_score);
         }

@@ -12,9 +12,9 @@ use crate::server::ServerError;
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct CreateIndexForm {
     #[schema(example = "test-folder")]
-    id: String,
+    pub id: String,
     #[schema(value_type = Option<KnnIndexForm>, example = KnnIndexForm)]
-    knn: Option<KnnIndexForm>,
+    pub knn: Option<KnnIndexForm>,
 }
 
 impl TryFrom<CreateIndexForm> for CreateIndexParams {
@@ -36,11 +36,11 @@ impl TryFrom<CreateIndexForm> for CreateIndexParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct KnnIndexForm {
     #[schema(example = 768)]
-    knn_dimension: u32,
+    pub knn_dimension: u32,
     #[schema(example = 50)]
-    token_limit: u32,
+    pub token_limit: u32,
     #[schema(example = 0.2)]
-    overlap_rate: f32,
+    pub overlap_rate: f32,
 }
 
 impl TryFrom<KnnIndexForm> for KnnIndexParams {
