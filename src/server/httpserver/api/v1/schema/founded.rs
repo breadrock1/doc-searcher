@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 use doc_search_core::domain::searcher::models::{FoundedDocument, FoundedDocumentBuilder};
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[allow(unused_imports)]
@@ -9,19 +9,19 @@ use serde_json::json;
 use crate::server::httpserver::api::v1::schema::document::DocumentPartSchema;
 use crate::server::ServerError;
 
-#[derive(Builder, Clone, Serialize, ToSchema)]
+#[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
 pub struct FoundedDocumentPartSchema {
     #[schema(example = "29346839246dsf987a1173sfa7sd781h")]
-    id: String,
+    pub id: String,
     #[schema(example = "test-folder")]
-    index: String,
+    pub index: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(example = 0.7523)]
-    score: Option<f64>,
+    pub score: Option<f64>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[schema(example = json!(vec!["There is", "some text"]))]
-    highlight: Vec<String>,
-    document: DocumentPartSchema,
+    pub highlight: Vec<String>,
+    pub document: DocumentPartSchema,
 }
 
 impl TryFrom<FoundedDocumentPartSchema> for FoundedDocument {

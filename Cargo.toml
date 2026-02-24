@@ -19,8 +19,12 @@ members = [
 ]
 
 [dev-dependencies]
+axum-test = "18.7.0"
+mockall = "0.14.0"
 rstest = "0.26.1"
 serial_test = "3.2.0"
+test-context = "0.5.4"
+doc-search = { path = "." }
 
 [dependencies]
 anyhow = "1.0.96"

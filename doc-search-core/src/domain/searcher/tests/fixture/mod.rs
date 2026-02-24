@@ -1,3 +1,4 @@
+mod pagination;
 pub mod params;
 
 pub const QUERY_FIELD_VALUE: &str = "query string";

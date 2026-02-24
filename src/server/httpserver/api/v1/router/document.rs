@@ -59,8 +59,8 @@ pub async fn get_document_parts<Storage, Searcher>(
     Path(path): Path<(String, String)>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let (folder_id, large_doc_id) = path;
     let storage = state.get_storage();
@@ -108,8 +108,8 @@ pub async fn get_index_documents<Storage, Searcher>(
     Json(form): Json<RetrieveDocumentForm>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let indexes = index_ids
         .split(',')
@@ -153,7 +153,7 @@ where
     request_body(content = Vec<CreateDocumentForm>),
     responses(
         (
-            status = 200,
+            status = 201,
             content_type="application/json",
             description = "List of documents to store into passed index id",
             body = Vec<StoredDocumentSchema>,
@@ -172,8 +172,8 @@ pub async fn store_documents<Storage, Searcher>(
     Json(form): Json<Vec<CreateDocumentForm>>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let documents = form
         .into_iter()
@@ -188,7 +188,7 @@ where
         .filter_map(|it| it.try_into().ok())
         .collect::<Vec<StoredDocumentSchema>>();
 
-    Ok(Json(stored_documents_info))
+    Ok((StatusCode::CREATED, Json(stored_documents_info)))
 }
 
 #[utoipa::path(
@@ -229,8 +229,8 @@ pub async fn store_document<Storage, Searcher>(
     Json(form): Json<CreateDocumentForm>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let is_force = query.force.unwrap_or(false);
     let storage = state.get_storage();
@@ -278,8 +278,8 @@ pub async fn delete_document<Storage, Searcher>(
     Path(path): Path<(String, String)>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let (folder_id, doc_id) = path;
     let storage = state.get_storage();
