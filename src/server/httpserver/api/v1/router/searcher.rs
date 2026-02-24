@@ -46,8 +46,8 @@ pub async fn search_fulltext<Storage, Searcher>(
     Json(form): Json<FullTextSearchForm>,
 ) -> ServerResult<Json<PaginationSchema>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let params = form.try_into()?;
     let searcher = state.get_searcher();
@@ -80,8 +80,8 @@ pub async fn search_semantic<Storage, Searcher>(
     Json(form): Json<SemanticSearchForm>,
 ) -> ServerResult<Json<PaginationSchema>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let params = form.try_into()?;
     let searcher = state.get_searcher();
@@ -114,8 +114,8 @@ pub async fn search_hybrid<Storage, Searcher>(
     Json(form): Json<HybridSearchForm>,
 ) -> ServerResult<Json<PaginationSchema>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let params = form.try_into()?;
     let searcher = state.get_searcher();
@@ -154,8 +154,8 @@ pub async fn paginate_next<Storage, Searcher>(
     Path(scroll_id): Path<String>,
 ) -> ServerResult<Json<PaginationSchema>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let params = PaginationParamsBuilder::default()
         .scroll_id(scroll_id)

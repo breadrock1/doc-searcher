@@ -109,12 +109,18 @@ pub fn build_index_mappings(config: &OSearchConfig, params: Option<&KnnIndexPara
         },
         "mappings": {
             "properties": {
-                "id": {
+                "large_doc_id": {
+                    "type": "keyword"
+                },
+                "doc_part_id": {
                     "type": "keyword"
                 },
                 "file_name": {
-                    "type": "text"
-                },
+                    "type": "text",
+                    "fields": {
+                      "keyword": { "type": "keyword", "ignore_above": 256 }
+                    }
+                  },
                 "file_path": {
                     "type": "text"
                 },

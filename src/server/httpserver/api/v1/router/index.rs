@@ -27,8 +27,6 @@ pub const STORAGE_INDEX_URL: &str = "/storage/{index_id}";
             description = "List of all exists indexes",
             body = Vec<IndexSchema>,
         ),
-        (status = 400, description = "Failed to get all indexes"),
-        (status = 401, description = "Unauthorized access"),
         (status = 500, description = "Internal error"),
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
@@ -37,8 +35,8 @@ pub async fn get_all_indexes<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let storage = state.get_storage();
     let indexes = storage.get_all_indexes().await?;
@@ -82,12 +80,13 @@ pub async fn get_index<Storage, Searcher>(
     Path(index_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let storage = state.get_storage();
-    let folder = storage.get_index(&index_id).await?;
-    Ok(Json(folder))
+    let index = storage.get_index(&index_id).await?;
+    let index_schema = IndexSchema::from(index);
+    Ok(Json(index_schema))
 }
 
 #[utoipa::path(
@@ -108,8 +107,7 @@ where
             status = 201,
             content_type="application/json",
             description = "Index has been created",
-            body = String,
-            example = "test-folder"
+            body = IndexSchema,
         ),
         (status = 400, description = "Validation form error"),
         (status = 401, description = "Unauthorized access"),
@@ -124,14 +122,14 @@ pub async fn create_index<Storage, Searcher>(
     Json(form): Json<CreateIndexForm>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let params = form.try_into()?;
     let storage = state.get_storage();
-    let index_id = storage.create_index(&params).await?;
-    let status = Success::new(201, &index_id);
-    Ok((StatusCode::CREATED, Json(status)))
+    let index = storage.create_index(&params).await?;
+    let index_schema = IndexSchema::from(index);
+    Ok((StatusCode::CREATED, Json(index_schema)))
 }
 
 #[utoipa::path(
@@ -164,8 +162,8 @@ pub async fn delete_index<Storage, Searcher>(
     Path(index_id): Path<String>,
 ) -> ServerResult<impl IntoResponse>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let storage = state.get_storage();
     storage.delete_index(&index_id).await?;

@@ -31,6 +31,24 @@ impl AppMeterRegistry {
         Ok(Arc::new(AppMeterRegistry { meter_handle }))
     }
 
+    pub fn build_local_meter_registry() -> anyhow::Result<Arc<AppMeterRegistry>> {
+        let meter_handle = PrometheusBuilder::new()
+            .add_global_label("service", SERVICE_NAME)
+            .build_recorder()
+            .handle();
+
+        describe_counter!(
+            "http_requests_counter",
+            "Count all http requests with status"
+        );
+        describe_histogram!(
+            "http_request_duration_seconds",
+            "Store http request processing latency"
+        );
+
+        Ok(Arc::new(AppMeterRegistry { meter_handle }))
+    }
+
     pub fn render_collected_data(&self) -> (&str, String) {
         (RETURNED_FORMAT_TYPE, self.meter_handle.render())
     }

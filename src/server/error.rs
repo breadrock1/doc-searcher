@@ -104,9 +104,9 @@ impl IntoResponse for ServerError {
 #[derive(Serialize, ToSchema)]
 pub struct Success {
     #[schema(example = 200)]
-    status: u16,
-    #[schema(example = "Ok")]
-    message: String,
+    pub status: u16,
+    #[schema(example = "ok")]
+    pub message: String,
 }
 
 impl Default for Success {
@@ -114,7 +114,7 @@ impl Default for Success {
         let status_code = StatusCode::OK;
         Success {
             status: status_code.as_u16(),
-            message: status_code.to_string(),
+            message: "ok".to_string(),
         }
     }
 }

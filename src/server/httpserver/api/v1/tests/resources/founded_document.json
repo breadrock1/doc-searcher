@@ -1,0 +1,67 @@
+{
+  "id": "29346839246dsf987a1173sfa7sd781h",
+  "index": "test-folder",
+  "score": 0.7523,
+  "highlight": ["There is", "some text"],
+  "document": {
+    "large_doc_id": "dksfsjvJHZVFDskjdbfsdfsdfdsg",
+    "doc_part_id": 1,
+    "file_name": "test-document.docx",
+    "file_path": "./test-document.docx",
+    "file_size": 1024,
+    "created_at": 1771405059,
+    "modified_at": 1771405059,
+    "content": "There is content",
+    "chunked_text": [
+      "There is content"
+    ],
+    "embeddings": [
+      {
+        "knn": [
+          -0.3123123,
+          0.1231233
+        ]
+      }
+    ],
+    "metadata": {
+      "photo": "./attachment.jpeg",
+      "source": "source",
+      "semantic_source": "semantic-source",
+      "summary": "summary",
+      "locations": [
+        {
+          "name": "location-name",
+          "latitude": 10.0,
+          "longitude": 20.0
+        }
+      ],
+      "subjects": [
+        {
+          "name": "subject"
+        }
+      ],
+      "classes": [
+        {
+          "name": "class",
+          "probability": 1.0
+        }
+      ],
+      "icons": [
+        {
+          "name": "icon"
+        }
+      ],
+      "groups": [
+        {
+          "name": "group"
+        }
+      ],
+      "pipelines": [
+        "pipeline"
+      ],
+      "references": [
+        "reference"
+      ]
+    }
+  }
+}
