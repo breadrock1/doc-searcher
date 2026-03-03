@@ -139,7 +139,17 @@ where
     let response = documents
         .founded
         .into_iter()
-        .filter_map(|it| it.document.try_into().ok())
+        .filter_map(|it| {
+            let index = it.index;
+            let converted_doc: Option<DocumentPartSchema> = it.document.try_into().ok();
+            match converted_doc {
+                None => None,
+                Some(mut doc) => {
+                    doc.index = Some(index);
+                    Some(doc)
+                }
+            }
+        })
         .collect::<Vec<DocumentPartSchema>>();
 
     Ok(Json(response))
