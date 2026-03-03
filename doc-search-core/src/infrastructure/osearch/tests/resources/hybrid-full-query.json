@@ -22,7 +22,6 @@
   "min_score": 0.6000000238418579,
   "query": {
     "hybrid": {
-      "pagination_depth": 20,
       "queries": [
         {
           "neural": {
