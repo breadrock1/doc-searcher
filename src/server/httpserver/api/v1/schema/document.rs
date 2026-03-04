@@ -5,6 +5,7 @@ use doc_search_core::domain::searcher::models::{
 use doc_search_core::domain::storage::models::{
     DocumentPart, DocumentPartBuilder, StoredDocumentPartsInfo,
 };
+use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -36,8 +37,11 @@ impl TryFrom<StoredDocumentPartsInfo> for StoredDocumentSchema {
     }
 }
 
-#[derive(Builder, Clone, Default, Serialize, Deserialize, ToSchema)]
+#[derive(Builder, Clone, Default, Serialize, Deserialize, ToSchema, Getset)]
 pub struct DocumentPartSchema {
+    #[schema(example = "test-folder")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index: Option<String>,
     #[schema(example = "dksfsjvJHZVFDskjdbfsdfsdfdsg")]
     large_doc_id: String,
     #[schema(example = 0)]
@@ -98,6 +102,7 @@ impl TryFrom<DocumentPart> for DocumentPartSchema {
             .content(Some(doc_part.content))
             .chunked_text(None)
             .embeddings(None)
+            .index(None)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
     }
@@ -156,6 +161,7 @@ impl TryFrom<DocumentPartEntrails> for DocumentPartSchema {
             .content(doc_entrails.content)
             .chunked_text(doc_entrails.chunked_text)
             .embeddings(embeddings)
+            .index(None)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
     }
