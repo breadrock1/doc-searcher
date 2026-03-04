@@ -89,12 +89,19 @@ pub struct FilterParams {
     pub created_to: Option<i64>,
     pub modified_from: Option<i64>,
     pub modified_to: Option<i64>,
+    #[builder(default)]
     pub pipeline_id: Option<i64>,
+    #[builder(default)]
     pub source: Option<String>,
+    #[builder(default)]
     pub semantic_source: Option<String>,
+    #[builder(default)]
     pub distance: Option<String>,
+    #[builder(default)]
     pub location_coords: Option<Vec<f64>>,
+    #[builder(default)]
     pub doc_class: Option<String>,
+    #[builder(default)]
     pub doc_class_probability: Option<f64>,
 }
 

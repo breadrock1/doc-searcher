@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use rstest::fixture;
 
 use crate::domain::searcher::models::{

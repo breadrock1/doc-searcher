@@ -8,14 +8,14 @@ use crate::domain::searcher::{IPaginator, ISearcher};
 #[derive(Clone)]
 pub struct SearcherUseCase<Searcher>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone,
+    Searcher: ISearcher + IPaginator + Send + Sync,
 {
     searcher: Arc<Searcher>,
 }
 
 impl<Searcher> SearcherUseCase<Searcher>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone,
+    Searcher: ISearcher + IPaginator + Send + Sync,
 {
     pub fn new(searcher: Arc<Searcher>) -> Self {
         SearcherUseCase { searcher }
@@ -24,7 +24,7 @@ where
 
 impl<Searcher> SearcherUseCase<Searcher>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone,
+    Searcher: ISearcher + IPaginator + Send + Sync,
 {
     pub async fn search_document_parts(
         &self,

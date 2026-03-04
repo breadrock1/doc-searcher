@@ -108,7 +108,7 @@ impl From<Location> for DocumentLocation {
             .latitude(location.latitude)
             .longitude(location.longitude)
             .build()
-            .unwrap()
+            .expect("converting location to document location failed")
     }
 }
 
@@ -135,7 +135,7 @@ impl From<Class> for DocumentClass {
             .name(class.name)
             .probability(class.probability)
             .build()
-            .unwrap()
+            .expect("converting class to document class failed")
     }
 }
 

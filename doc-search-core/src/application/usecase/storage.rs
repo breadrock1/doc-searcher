@@ -10,7 +10,7 @@ use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
 #[derive(Clone)]
 pub struct StorageUseCase<Storage>
 where
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
     storage: Arc<Storage>,
     max_content_size: usize,
@@ -18,7 +18,7 @@ where
 
 impl<Storage> StorageUseCase<Storage>
 where
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
     pub fn new(storage: Arc<Storage>, max_content_size: usize) -> Self {
         StorageUseCase {
@@ -30,7 +30,7 @@ where
 
 impl<Storage> StorageUseCase<Storage>
 where
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
     pub async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<IndexId> {
         let created_index_id = self
