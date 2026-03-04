@@ -1,3 +1,6 @@
+#[cfg(test)]
+pub mod tests;
+
 pub mod form;
 mod query;
 pub mod router;
@@ -11,12 +14,12 @@ use std::sync::Arc;
 
 use crate::server::ServerApp;
 
-const API_VERSION_URL: &str = "/api/v1";
+pub const API_VERSION_URL: &str = "/api/v1";
 
 pub fn init_routers<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
         .nest(API_VERSION_URL, init_storage_layer())
@@ -27,8 +30,8 @@ where
 
 fn init_storage_layer<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     Router::new()
         .route(
@@ -57,8 +60,8 @@ where
 
 fn init_searcher_layer<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
-    Searcher: ISearcher + IPaginator + Send + Sync + Clone + 'static,
-    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + Clone + 'static,
+    Searcher: ISearcher + IPaginator + Send + Sync + 'static,
+    Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     Router::new()
         .route(

@@ -26,6 +26,7 @@ impl TryFrom<LargeDocumentObject> for LargeDocument {
             .created_at(doc.created_at)
             .modified_at(doc.modified_at)
             .content(doc.content)
+            .metadata(None)
             .build()?;
 
         Ok(large_document)
@@ -40,8 +41,9 @@ pub fn build_large_document() -> LargeDocument {
         .created_at(LARGE_DOCUMENT_CREATED_TIMESTAMP)
         .modified_at(LARGE_DOCUMENT_CREATED_TIMESTAMP)
         .content(LARGE_DOCUMENT_CONTENT.to_string())
+        .metadata(None)
         .build()
-        .unwrap()
+        .expect("build large document fixture failed")
 }
 
 #[allow(dead_code)]

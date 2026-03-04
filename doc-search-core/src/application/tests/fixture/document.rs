@@ -16,7 +16,7 @@ pub fn build_large_document() -> LargeDocument {
         .content(DOC_FILE_LARGE_CONTENT.to_string())
         .metadata(Some(build_document_metadata()))
         .build()
-        .unwrap()
+        .expect("failed to build large document fixture")
 }
 
 #[fixture]
@@ -30,7 +30,7 @@ pub fn build_short_document() -> LargeDocument {
         .content(DOC_FILE_SHORT_CONTENT.to_string())
         .metadata(None)
         .build()
-        .unwrap()
+        .expect("failed to build short document fixture")
 }
 
 #[fixture]

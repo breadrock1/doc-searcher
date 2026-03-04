@@ -17,33 +17,33 @@ use crate::server::ServerError;
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct FilterForm {
     #[schema(example = 0)]
-    doc_part_id: Option<usize>,
+    pub doc_part_id: Option<usize>,
     #[schema(example = 0)]
-    size_from: Option<u32>,
+    pub size_from: Option<u32>,
     #[schema(example = 1024)]
-    size_to: Option<u32>,
+    pub size_to: Option<u32>,
     #[schema(example = 1750957115)]
-    created_from: Option<i64>,
+    pub created_from: Option<i64>,
     #[schema(example = 1750957215)]
-    created_to: Option<i64>,
+    pub created_to: Option<i64>,
     #[schema(example = 1750957115)]
-    modified_from: Option<i64>,
+    pub modified_from: Option<i64>,
     #[schema(example = 1750957215)]
-    modified_to: Option<i64>,
+    pub modified_to: Option<i64>,
     #[schema(example = 1)]
-    pipeline_id: Option<i64>,
+    pub pipeline_id: Option<i64>,
     #[schema(example = "source-name")]
-    source: Option<String>,
+    pub source: Option<String>,
     #[schema(example = "semantic-source-name")]
-    semantic_source: Option<String>,
+    pub semantic_source: Option<String>,
     #[schema(example = "80km")]
-    distance: Option<String>,
+    pub distance: Option<String>,
     #[schema(example = json!([45.99, 29.43]))]
-    location_coordinates: Option<Vec<f64>>,
+    pub location_coordinates: Option<Vec<f64>>,
     #[schema(example = "war")]
-    document_class: Option<String>,
+    pub document_class: Option<String>,
     #[schema(example = 0.8)]
-    document_class_probability: Option<f64>,
+    pub document_class_probability: Option<f64>,
 }
 
 impl TryFrom<FilterForm> for FilterParams {
@@ -73,17 +73,17 @@ impl TryFrom<FilterForm> for FilterParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct ResultForm {
     #[schema(example = "desc")]
-    order: String,
+    pub order: String,
     #[schema(example = 10)]
-    size: u32,
+    pub size: u32,
     #[schema(example = 0)]
-    offset: u32,
+    pub offset: u32,
     #[schema(example = false)]
-    include_extra_fields: Option<bool>,
+    pub include_extra_fields: Option<bool>,
     #[schema(example = 3)]
-    highlight_items: Option<u16>,
+    pub highlight_items: Option<u16>,
     #[schema(example = 600)]
-    highlight_item_size: Option<u32>,
+    pub highlight_item_size: Option<u32>,
 }
 
 impl TryFrom<ResultForm> for ResultParams {
@@ -106,13 +106,13 @@ impl TryFrom<ResultForm> for ResultParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct ShortResultForm {
     #[schema(example = "desc")]
-    order: String,
+    pub order: String,
     #[schema(example = 10)]
-    size: u32,
+    pub size: u32,
     #[schema(example = 0)]
-    offset: u32,
+    pub offset: u32,
     #[schema(example = false)]
-    include_extra_fields: Option<bool>,
+    pub include_extra_fields: Option<bool>,
 }
 
 impl TryFrom<ShortResultForm> for ResultParams {
@@ -154,11 +154,11 @@ impl TryFrom<RetrieveDocumentForm> for RetrieveIndexDocumentsParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct FullTextSearchForm {
     #[schema(example = "Hello world")]
-    query: Option<String>,
+    pub query: Option<String>,
     #[schema(example = "test-folder-1,test-folder-2")]
-    indexes: String,
-    filter: Option<FilterForm>,
-    result: ResultForm,
+    pub indexes: String,
+    pub filter: Option<FilterForm>,
+    pub result: ResultForm,
 }
 
 impl TryFrom<FullTextSearchForm> for SearchingParams {
@@ -192,17 +192,17 @@ impl TryFrom<FullTextSearchForm> for SearchingParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct HybridSearchForm {
     #[schema(example = "Hello world")]
-    query: String,
+    pub query: String,
     #[schema(example = 5)]
-    knn_amount: u16,
+    pub knn_amount: u16,
     #[schema(example = "test-folder-1,test-folder-2")]
-    indexes: String,
+    pub indexes: String,
     #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
-    model_id: Option<String>,
+    pub model_id: Option<String>,
     #[schema(example = 0.7)]
-    min_score: Option<f32>,
-    result: ResultForm,
-    filter: Option<FilterForm>,
+    pub min_score: Option<f32>,
+    pub result: ResultForm,
+    pub filter: Option<FilterForm>,
 }
 
 impl TryFrom<HybridSearchForm> for SearchingParams {
@@ -239,17 +239,17 @@ impl TryFrom<HybridSearchForm> for SearchingParams {
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct SemanticSearchForm {
     #[schema(example = "Hello world")]
-    query: String,
+    pub query: String,
     #[schema(example = 100)]
-    knn_amount: u16,
+    pub knn_amount: u16,
     #[schema(example = "test-folder-1,test-folder-2")]
-    indexes: String,
+    pub indexes: String,
     #[schema(example = "PRh30JcBW8Qg3Gf4I6Ku")]
-    model_id: Option<String>,
+    pub model_id: Option<String>,
     #[schema(nullable)]
-    tokens: Option<Vec<f64>>,
-    result: ShortResultForm,
-    filter: Option<FilterForm>,
+    pub tokens: Option<Vec<f64>>,
+    pub result: ShortResultForm,
+    pub filter: Option<FilterForm>,
 }
 
 impl TryFrom<SemanticSearchForm> for SearchingParams {

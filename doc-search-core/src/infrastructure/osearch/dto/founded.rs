@@ -10,8 +10,8 @@ use crate::infrastructure::osearch::error::OSearchError;
 pub struct FoundedDocumentInfo {
     _id: String,
     _index: String,
-    _source: SourceDocument,
     _score: Option<f64>,
+    _source: SourceDocument,
     highlight: Option<HighlightContent>,
 }
 
@@ -43,6 +43,11 @@ impl TryFrom<FoundedDocumentInfo> for DocumentPart {
 
     fn try_from(doc_info: FoundedDocumentInfo) -> Result<Self, Self::Error> {
         let src_doc = doc_info._source;
+        let metadata = match src_doc.metadata {
+            Some(meta) => meta.try_into().ok(),
+            None => None,
+        };
+
         DocumentPartBuilder::default()
             .large_doc_id(src_doc.large_doc_id)
             .doc_part_id(src_doc.doc_part_id)
@@ -52,6 +57,7 @@ impl TryFrom<FoundedDocumentInfo> for DocumentPart {
             .created_at(src_doc.created_at)
             .modified_at(src_doc.modified_at)
             .content(src_doc.content.unwrap_or_default())
+            .metadata(metadata)
             .build()
             .context("failed to build founded document")
             .map_err(OSearchError::ValidationError)

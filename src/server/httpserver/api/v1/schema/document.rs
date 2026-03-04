@@ -5,6 +5,7 @@ use doc_search_core::domain::searcher::models::{
 use doc_search_core::domain::storage::models::{
     DocumentPart, DocumentPartBuilder, StoredDocumentPartsInfo,
 };
+use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -13,14 +14,14 @@ use serde_json::json;
 
 use crate::server::ServerError;
 
-#[derive(Builder, Clone, Serialize, ToSchema)]
+#[derive(Builder, Clone, Deserialize, Serialize, ToSchema)]
 pub struct StoredDocumentSchema {
     #[schema(example = "dksfsjvJHZVFDskjdbfsdfsdfdsg")]
-    large_doc_id: String,
+    pub large_doc_id: String,
     #[schema(example = "3b4kb534k5bkqjb1kj3b21kj23b")]
-    first_part_id: String,
+    pub first_part_id: String,
     #[schema(example = 10)]
-    doc_parts_amount: u64,
+    pub doc_parts_amount: u64,
 }
 
 impl TryFrom<StoredDocumentPartsInfo> for StoredDocumentSchema {
@@ -36,8 +37,11 @@ impl TryFrom<StoredDocumentPartsInfo> for StoredDocumentSchema {
     }
 }
 
-#[derive(Builder, Clone, Default, Serialize, Deserialize, ToSchema)]
+#[derive(Builder, Clone, Default, Serialize, Deserialize, ToSchema, Getset)]
 pub struct DocumentPartSchema {
+    #[schema(example = "test-folder")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index: Option<String>,
     #[schema(example = "dksfsjvJHZVFDskjdbfsdfsdfdsg")]
     large_doc_id: String,
     #[schema(example = 0)]
@@ -67,6 +71,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPart {
     type Error = ServerError;
 
     fn try_from(schema: DocumentPartSchema) -> Result<Self, Self::Error> {
+        // TODO: Does need to pass metadata to DocumentPart?
         DocumentPartBuilder::default()
             .large_doc_id(schema.large_doc_id)
             .doc_part_id(schema.doc_part_id as usize)
@@ -76,6 +81,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPart {
             .created_at(schema.created_at)
             .modified_at(schema.modified_at)
             .content(schema.content.unwrap_or_default())
+            .metadata(None)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
     }
@@ -96,6 +102,7 @@ impl TryFrom<DocumentPart> for DocumentPartSchema {
             .content(Some(doc_part.content))
             .chunked_text(None)
             .embeddings(None)
+            .index(None)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
     }
@@ -114,6 +121,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPartEntrails {
             })
             .unwrap_or_default();
 
+        // TODO: Does need to pass metadata to DocumentPartEntrails?
         DocumentPartEntrailsBuilder::default()
             .large_doc_id(schema.large_doc_id)
             .doc_part_id(schema.doc_part_id as usize)
@@ -125,6 +133,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPartEntrails {
             .content(schema.content)
             .chunked_text(schema.chunked_text)
             .embeddings(Some(embeddings))
+            .metadata(None)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
     }
@@ -152,6 +161,7 @@ impl TryFrom<DocumentPartEntrails> for DocumentPartSchema {
             .content(doc_entrails.content)
             .chunked_text(doc_entrails.chunked_text)
             .embeddings(embeddings)
+            .index(None)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
     }
