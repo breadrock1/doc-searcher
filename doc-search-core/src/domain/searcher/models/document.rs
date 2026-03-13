@@ -2,7 +2,7 @@ use derive_builder::Builder;
 
 use crate::shared::kernel::metadata::DocumentMetadata;
 
-#[derive(Clone, Builder)]
+#[derive(Clone, Debug, Builder)]
 pub struct FoundedDocument {
     pub id: String,
     pub index: String,

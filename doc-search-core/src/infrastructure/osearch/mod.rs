@@ -339,6 +339,8 @@ impl ISearcher for OSearchClient {
 
         let search_parts = Self::build_search_parts(&indexes);
         let query = build_search_query(params, self.config.semantic())?;
+        let query_str = serde_json::to_string_pretty(&query);
+        tracing::debug!(query=?query_str, "search query");
         let request = self
             .client
             .search(search_parts)
