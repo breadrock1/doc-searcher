@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::server::{ServerApp, ServerResult};
 
 const HEALTH_URL: &str = "/health";
-const METRICS_URL: &str = "/metrics";
+const METRICS_URL: &str = "/api/metrics";
 const HOME_URL: &str = "/";
 const INDEX_HTML_PAGE_DATA: &str = include_str!("../../../../static/index.html");
 

@@ -307,7 +307,6 @@ impl QueryBuildHelper for HybridQueryParams {
             },
         });
 
-
         #[cfg(feature = "support-opensearch-v3")]
         {
             let pagination_depth_value = Value::Number(serde_json::Number::from(20));

@@ -1,4 +1,5 @@
 use derive_builder::Builder;
+use std::fmt::Display;
 
 pub type SearchIndexes = Vec<String>;
 
@@ -41,11 +42,24 @@ impl SearchingParams {
     }
 }
 
+#[derive(Debug)]
 pub enum SearchKindParams {
     Retrieve(RetrieveIndexDocumentsParams),
     FullText(FullTextSearchingParams),
     Semantic(SemanticSearchingParams),
     Hybrid(HybridSearchingParams),
+}
+
+impl Display for SearchKindParams {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let kind = match &self {
+            SearchKindParams::Retrieve(_) => "retrieve",
+            SearchKindParams::FullText(_) => "fulltext",
+            SearchKindParams::Semantic(_) => "semantic",
+            SearchKindParams::Hybrid(_) => "hybrid",
+        };
+        write!(fmt, "{}", kind)
+    }
 }
 
 #[derive(Debug, Builder)]

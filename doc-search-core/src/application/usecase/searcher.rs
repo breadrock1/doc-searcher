@@ -1,3 +1,4 @@
+use metrics::{counter, histogram};
 use std::sync::Arc;
 use tracing::Instrument;
 
@@ -30,12 +31,30 @@ where
         &self,
         params: &SearchingParams,
     ) -> SearchResult<Pagination> {
-        let pagination = self
+        let instant = tokio::time::Instant::now();
+        let result = self
             .searcher
             .search(params)
             .instrument(tracing::info_span!("search-document-parts"))
-            .await?;
+            .await;
 
+        let is_error = result.is_err();
+        let searching_kind = params.get_kind().to_string();
+        counter!(
+            "searching_operations_total",
+            "searching_kind" => searching_kind.clone(),
+            "searching_status" => is_error.to_string(),
+        )
+        .increment(1);
+
+        histogram!(
+            "searching_duration_seconds",
+            "searching_kind" => searching_kind,
+            "searching_status" => is_error.to_string(),
+        )
+        .record(instant.elapsed().as_secs_f64());
+
+        let pagination = result?;
         Ok(pagination)
     }
 

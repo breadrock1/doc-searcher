@@ -1,3 +1,4 @@
+use metrics::{counter, histogram};
 use std::sync::Arc;
 use tracing::{Instrument, info_span};
 
@@ -101,15 +102,28 @@ where
         let part_size = self.max_content_size;
         let document_parts = large_doc.divide_large_document_on_parts(part_size)?;
 
-        match self
+        let instant = tokio::time::Instant::now();
+        let result = self
             .storage
             .store_document_parts(index, document_parts)
             .instrument(info_span!("store-document"))
-            .await
-        {
-            Err(err) => Err(err),
-            Ok(info) => Ok(info),
-        }
+            .await;
+
+        let is_error = result.is_err();
+        counter!(
+            "searching_operations_total",
+            "storing_status" => is_error.to_string(),
+        )
+        .increment(1);
+
+        histogram!(
+            "storing_duration_seconds",
+            "storing_status" => is_error.to_string(),
+        )
+        .record(instant.elapsed().as_secs_f64());
+
+        let stored_doc_info = result?;
+        Ok(stored_doc_info)
     }
 
     pub async fn store_documents(

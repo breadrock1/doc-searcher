@@ -21,30 +21,32 @@ impl AppMeterRegistry {
 
         describe_counter!(
             "http_requests_counter",
-            "Count all http requests with status"
+            "Count all http requests with status",
         );
         describe_histogram!(
             "http_request_duration_seconds",
-            "Store http request processing latency"
+            "Store http request processing latency",
+        );
+
+        describe_counter!(
+            "searching_operations_total",
+            "Count all searching operations",
+        );
+
+        describe_histogram!("searching_duration_seconds", "Store searching latency",);
+
+        describe_counter!("storing_errors_count", "Count all storing documents errors",);
+
+        describe_histogram!(
+            "storing_duration_seconds",
+            "Store latency of stored document",
         );
 
         Ok(Arc::new(AppMeterRegistry { meter_handle }))
     }
 
-    pub fn build_local_meter_registry() -> anyhow::Result<Arc<AppMeterRegistry>> {
-        let meter_handle = PrometheusBuilder::new()
-            .add_global_label("service", SERVICE_NAME)
-            .build_recorder()
-            .handle();
-
-        describe_counter!(
-            "http_requests_counter",
-            "Count all http requests with status"
-        );
-        describe_histogram!(
-            "http_request_duration_seconds",
-            "Store http request processing latency"
-        );
+    pub fn build_local_meter_register() -> anyhow::Result<Arc<AppMeterRegistry>> {
+        let meter_handle = PrometheusBuilder::new().build_recorder().handle();
 
         Ok(Arc::new(AppMeterRegistry { meter_handle }))
     }
