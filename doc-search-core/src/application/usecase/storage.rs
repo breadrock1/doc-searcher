@@ -111,7 +111,7 @@ where
 
         let is_error = result.is_err();
         counter!(
-            "searching_operations_total",
+            "storing_operations_total",
             "storing_status" => is_error.to_string(),
         )
         .increment(1);
