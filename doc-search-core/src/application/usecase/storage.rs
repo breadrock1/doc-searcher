@@ -102,7 +102,7 @@ where
         .increment(1);
 
         histogram!(
-            "storing_duration_seconds",
+            "docsearch_storing_duration_seconds",
             "storing_status" => is_error.to_string(),
         )
         .record(instant.elapsed().as_secs_f64());

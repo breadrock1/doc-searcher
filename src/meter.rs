@@ -29,16 +29,16 @@ impl AppMeterRegistry {
         );
 
         describe_counter!(
-            "searching_operations_total",
+            "docsearch_searching_operations_total",
             "Count all searching operations",
         );
 
-        describe_histogram!("searching_duration_seconds", "Store searching latency",);
+        describe_histogram!("docsearch_searching_duration_seconds", "Store searching latency",);
 
-        describe_counter!("storing_errors_count", "Count all storing documents errors",);
+        describe_counter!("docsearch_storing_errors_count", "Count all storing documents errors",);
 
         describe_histogram!(
-            "storing_duration_seconds",
+            "docsearch_storing_duration_seconds",
             "Store latency of stored document",
         );
 

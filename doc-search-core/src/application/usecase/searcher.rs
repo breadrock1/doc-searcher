@@ -38,14 +38,14 @@ where
         let is_error = result.is_err();
         let searching_kind = params.get_kind().to_string();
         counter!(
-            "searching_operations_total",
+            "docsearch_searching_operations_total",
             "searching_kind" => searching_kind.clone(),
             "searching_status" => is_error.to_string(),
         )
         .increment(1);
 
         histogram!(
-            "searching_duration_seconds",
+            "docsearch_searching_duration_seconds",
             "searching_kind" => searching_kind,
             "searching_status" => is_error.to_string(),
         )
