@@ -18,7 +18,7 @@ use crate::domain::searcher::models::document::FoundedDocument;
 ///     founded: vec![found_doc1, found_doc2],
 /// };
 /// ```
-#[derive(Builder)]
+#[derive(Builder, Debug)]
 pub struct Pagination {
     pub scroll_id: Option<String>,
     pub founded: Vec<FoundedDocument>,

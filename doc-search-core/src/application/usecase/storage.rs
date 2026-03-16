@@ -1,6 +1,6 @@
 use metrics::{counter, histogram};
 use std::sync::Arc;
-use tracing::{Instrument, info_span};
+use tracing::{Instrument, info_span, instrument};
 
 use crate::domain::storage::StorageResult;
 use crate::domain::storage::models::StoredDocumentPartsInfo;
@@ -33,50 +33,36 @@ impl<Storage> StorageUseCase<Storage>
 where
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
+    #[instrument(level = "info", skip(self), ret(Debug))]
     pub async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<IndexId> {
-        let created_index_id = self
-            .storage
-            .create_index(params)
-            .instrument(info_span!("create-index"))
-            .await?;
+        let created_index_id = self.storage.create_index(params).await?;
 
         Ok(created_index_id)
     }
 
+    #[instrument(level = "info", skip(self), ret(Debug))]
     pub async fn check_index_exists(&self, index_id: &IndexId) -> StorageResult<IndexId> {
-        self.storage
-            .get_index(index_id)
-            .instrument(info_span!("check-index-exists"))
-            .await
+        self.storage.get_index(index_id).await
     }
-
+    #[instrument(level = "info", skip(self), err)]
     pub async fn delete_index(&self, index_id: &IndexId) -> StorageResult<()> {
-        self.storage
-            .delete_index(index_id)
-            .instrument(info_span!("delete-index"))
-            .await
+        self.storage.delete_index(index_id).await
     }
 
+    #[instrument(level = "info", skip(self), ret(Debug))]
     pub async fn get_all_indexes(&self) -> StorageResult<Vec<IndexId>> {
-        let all_indexes = self
-            .storage
-            .get_all_indexes()
-            .instrument(info_span!("get-all-indexes"))
-            .await?;
+        let all_indexes = self.storage.get_all_indexes().await?;
 
         Ok(all_indexes)
     }
-
+    #[instrument(level = "info", skip(self), ret(Debug))]
     pub async fn get_index(&self, index_id: &IndexId) -> StorageResult<IndexId> {
-        let index = self
-            .storage
-            .get_index(index_id)
-            .instrument(info_span!("get-index"))
-            .await?;
+        let index = self.storage.get_index(index_id).await?;
 
         Ok(index)
     }
 
+    #[instrument(level = "info", skip(self), ret(Debug))]
     pub async fn get_all_document_parts(
         &self,
         index_id: &IndexId,
@@ -85,12 +71,12 @@ where
         let all_document_parts = self
             .storage
             .get_document_parts(index_id, large_doc_id)
-            .instrument(info_span!("get-all-document-parts"))
             .await?;
 
         Ok(all_document_parts)
     }
 
+    #[instrument(level = "info", skip(self), ret(Debug))]
     pub async fn store_document(
         &self,
         index: &IndexId,
@@ -106,7 +92,6 @@ where
         let result = self
             .storage
             .store_document_parts(index, document_parts)
-            .instrument(info_span!("store-document"))
             .await;
 
         let is_error = result.is_err();
@@ -126,6 +111,7 @@ where
         Ok(stored_doc_info)
     }
 
+    #[instrument(level = "info", skip_all)]
     pub async fn store_documents(
         &self,
         index: &IndexId,
@@ -142,6 +128,7 @@ where
         Ok(stored_docs)
     }
 
+    #[instrument(level = "info", skip(self), err)]
     pub async fn delete_document(
         &self,
         index_id: &IndexId,
@@ -149,7 +136,6 @@ where
     ) -> StorageResult<()> {
         self.storage
             .delete_document_parts(index_id, large_doc_id)
-            .instrument(info_span!("delete-document-parts"))
             .await
     }
 }

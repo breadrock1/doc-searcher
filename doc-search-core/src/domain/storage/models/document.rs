@@ -1,6 +1,7 @@
 use anyhow::{Context, anyhow};
 use character_text_splitter::CharacterTextSplitter;
 use derive_builder::Builder;
+use std::fmt::{Debug, Formatter};
 
 use crate::domain::storage::{StorageError, StorageResult};
 use crate::shared::kernel::metadata::DocumentMetadata;
@@ -60,7 +61,7 @@ pub type AllDocumentParts = Vec<DocumentPart>;
 ///     }),
 /// };
 /// ```
-#[derive(Debug, Builder)]
+#[derive(Builder)]
 pub struct LargeDocument {
     pub file_name: String,
     pub file_path: String,
@@ -69,6 +70,16 @@ pub struct LargeDocument {
     pub modified_at: i64,
     pub content: String,
     pub metadata: Option<DocumentMetadata>,
+}
+
+impl Debug for LargeDocument {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "file_path: {}, create_at: {}",
+            &self.file_path, &self.created_at
+        )
+    }
 }
 
 /// Represents a single part of a split large document.
@@ -105,7 +116,7 @@ pub struct LargeDocument {
 ///     metadata: None,
 /// };
 /// ```
-#[derive(Clone, Debug, Builder)]
+#[derive(Clone, Builder)]
 pub struct DocumentPart {
     pub large_doc_id: String,
     pub doc_part_id: usize,
@@ -116,6 +127,16 @@ pub struct DocumentPart {
     pub modified_at: i64,
     pub content: String,
     pub metadata: Option<DocumentMetadata>,
+}
+
+impl Debug for DocumentPart {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "large_doc_id: {}, doc_part_id: {}",
+            &self.large_doc_id, &self.doc_part_id
+        )
+    }
 }
 
 impl LargeDocument {

@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use std::fmt::Display;
+use std::fmt::{Debug, Display, Formatter};
 
 /// Type alias for a collection of search indexes.
 ///
@@ -22,6 +22,16 @@ pub struct SearchingParams {
     kind: SearchKindParams,
     result: ResultParams,
     filter: Option<FilterParams>,
+}
+
+impl Debug for SearchingParams {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "indexes: {:?}, kind: {:?}, result: {:?}, filter: {:?}",
+            &self.indexes, &self.kind, &self.result, &self.filter,
+        )
+    }
 }
 
 impl SearchingParams {
@@ -72,7 +82,7 @@ pub enum SearchKindParams {
 }
 
 impl Display for SearchKindParams {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         let kind = match &self {
             SearchKindParams::Retrieve(_) => "retrieve",
             SearchKindParams::FullText(_) => "fulltext",
@@ -120,13 +130,23 @@ pub struct FullTextSearchingParams {
 ///     tokens: None,
 /// };
 /// ```
-#[derive(Debug, Builder)]
+#[derive(Builder)]
 pub struct SemanticSearchingParams {
     pub query: String,
     pub knn_amount: u16,
     pub min_score: Option<f32>,
     pub model_id: Option<String>,
     pub tokens: Option<Vec<f64>>,
+}
+
+impl Debug for SemanticSearchingParams {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
+            &self.query, &self.knn_amount, &self.min_score, &self.model_id,
+        )
+    }
 }
 
 /// Parameters for hybrid search combining full-text and semantic search.
@@ -136,12 +156,22 @@ pub struct SemanticSearchingParams {
 /// * `knn_amount` - Number of nearest neighbors for semantic component
 /// * `min_score` - Minimum combined score threshold (optional)
 /// * `model_id` - Identifier of the embedding model to use (optional)
-#[derive(Debug, Builder)]
+#[derive(Builder)]
 pub struct HybridSearchingParams {
     pub query: String,
     pub knn_amount: u16,
     pub min_score: Option<f32>,
     pub model_id: Option<String>,
+}
+
+impl Debug for HybridSearchingParams {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
+            &self.query, &self.knn_amount, &self.min_score, &self.model_id,
+        )
+    }
 }
 
 /// Parameters for paginating through search results.

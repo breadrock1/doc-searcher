@@ -1,4 +1,5 @@
 use derive_builder::Builder;
+use std::fmt::{Debug, Formatter};
 
 use crate::shared::kernel::metadata::DocumentMetadata;
 
@@ -24,13 +25,23 @@ use crate::shared::kernel::metadata::DocumentMetadata;
 ///     document: document_part,
 /// };
 /// ```
-#[derive(Clone, Debug, Builder)]
+#[derive(Clone, Builder)]
 pub struct FoundedDocument {
     pub id: String,
     pub index: String,
     pub score: Option<f64>,
     pub highlight: Vec<String>,
     pub document: DocumentPartEntrails,
+}
+
+impl Debug for FoundedDocument {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "id: {}, index: {}, document: {:?}",
+            self.id, self.index, self.document
+        )
+    }
 }
 
 /// Represents the detailed content and metadata of a document part.
@@ -67,7 +78,7 @@ pub struct FoundedDocument {
 ///     metadata: None,
 /// };
 /// ```
-#[derive(Clone, Default, Debug, Builder)]
+#[derive(Clone, Default, Builder)]
 pub struct DocumentPartEntrails {
     pub large_doc_id: String,
     pub doc_part_id: usize,
@@ -80,6 +91,16 @@ pub struct DocumentPartEntrails {
     pub chunked_text: Option<Vec<String>>,
     pub embeddings: Option<Vec<Embeddings>>,
     pub metadata: Option<DocumentMetadata>,
+}
+
+impl Debug for DocumentPartEntrails {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "large_doc_id: {}, doc_part_id: {}",
+            &self.large_doc_id, &self.doc_part_id
+        )
+    }
 }
 
 /// Represents vector embeddings for semantic search.
