@@ -1,8 +1,9 @@
-use doc_search_core::SERVICE_NAME;
 use gset::Getset;
 use metrics::{describe_counter, describe_histogram};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use std::sync::Arc;
+
+use crate::SERVICE_NAME;
 
 const RETURNED_FORMAT_TYPE: &str = "text/plain";
 

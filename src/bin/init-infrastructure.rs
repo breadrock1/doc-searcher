@@ -3,12 +3,12 @@ use doc_search_core::domain::storage::models::{KnnIndexParams, KnnIndexParamsBui
 use doc_search_core::infrastructure::osearch::{OSearchClient, OSearchConfig};
 use doc_search_core::ServiceConnect;
 
-const APP_NAME: &str = "doc-search";
+const SERVICE_NAME: &str = "doc-search-migrator";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    let _otlp_guard = doc_search_otlp::init_telemetry(APP_NAME, config.telemetry())?;
+    let _otlp_guard = otlp::init_telemetry(SERVICE_NAME, config.telemetry())?;
 
     let os_config = config.storage().opensearch();
     let os_client = OSearchClient::connect(os_config).await?;

@@ -1,23 +1,23 @@
 use axum::Router;
 use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
-use doc_search::config::ServiceConfig;
-use doc_search::meter::AppMeterRegistry;
-use doc_search::server::{httpserver, httpserver::mw, ServerApp};
-use doc_search_core::application::usecase::searcher::SearcherUseCase;
-use doc_search_core::application::usecase::storage::StorageUseCase;
-use doc_search_core::infrastructure::osearch::OSearchClient;
-use doc_search_core::ServiceConnect;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 use tower_http::{cors, trace};
 
-const APP_NAME: &str = "doc-search";
+use doc_search::config::ServiceConfig;
+use doc_search::meter::AppMeterRegistry;
+use doc_search::server::{httpserver, httpserver::mw, ServerApp};
+use doc_search::SERVICE_NAME;
+use doc_search_core::application::usecase::searcher::SearcherUseCase;
+use doc_search_core::application::usecase::storage::StorageUseCase;
+use doc_search_core::infrastructure::osearch::OSearchClient;
+use doc_search_core::ServiceConnect;
 
 #[tokio::main(worker_threads = 8)]
 async fn main() -> anyhow::Result<()> {
     let config = ServiceConfig::new()?;
-    let _otlp_guard = doc_search_otlp::init_telemetry(APP_NAME, config.telemetry())?;
+    let _otlp_guard = otlp::init_telemetry(SERVICE_NAME, config.telemetry())?;
 
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OSearchClient::connect(osearch_config).await?);
@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cors_layer = cors::CorsLayer::permissive();
     let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(doc_search_otlp::PathFilter::default())
+        .make_span_with(otlp::PathFilter::default())
         .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
 
     let app = httpserver::init_server(server_app)

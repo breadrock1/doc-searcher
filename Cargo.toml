@@ -15,7 +15,6 @@ strip = "debuginfo"
 members = [
     ".",
     "doc-search-core",
-    "doc-search-otlp",
 ]
 
 [dev-dependencies]
@@ -78,8 +77,8 @@ features = ["axum", "vendored"]
 [dependencies.doc-search-core]
 path = "doc-search-core"
 
-[dependencies.doc-search-otlp]
-path = "doc-search-otlp"
+[dependencies.otlp]
+path = "../otlp-rs"
 
 [[bin]]
 name = "launch"

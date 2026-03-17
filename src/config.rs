@@ -1,7 +1,7 @@
 use config::{Config, ConfigError, Environment, File, FileFormat};
-use doc_search_otlp::TelemetryConfig;
 use dotenv::dotenv;
 use gset::Getset;
+use otlp::TelemetryConfig;
 use serde_derive::Deserialize;
 
 use crate::server::{CacheConfig, ServerConfig, StorageConfig};
