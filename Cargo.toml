@@ -78,7 +78,9 @@ features = ["axum", "vendored"]
 path = "doc-search-core"
 
 [dependencies.otlp]
-path = "../otlp-rs"
+git = "http://192.168.0.84:3000/breadrock1/otlp-rs.git"
+tag = "v0.0.1"
+
 
 [[bin]]
 name = "launch"
