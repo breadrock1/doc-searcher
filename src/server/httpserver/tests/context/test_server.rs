@@ -27,7 +27,7 @@ pub fn create_test_server_context(
     storage: MockStorageService,
     searcher: MockSearcherService,
 ) -> TestServerContext {
-    let meter = AppMeterRegistry::build_local_meter_registry()
+    let meter = AppMeterRegistry::build_local_meter_register()
         .expect("failed to create local meter registry");
 
     let searcher_uc = SearcherUseCase::new(Arc::new(searcher));

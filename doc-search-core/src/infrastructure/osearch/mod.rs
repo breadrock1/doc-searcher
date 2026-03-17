@@ -10,6 +10,8 @@ mod schema;
 
 pub use config::OSearchConfig;
 
+#[cfg(feature = "enable-unique-doc-id")]
+use crate::application::usecase::storage::gen_unique_document_id;
 use anyhow::{Context, anyhow};
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
@@ -24,9 +26,7 @@ use opensearch::{DeleteByQueryParts, OpenSearch};
 use serde_derive::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
-
-#[cfg(feature = "enable-unique-doc-id")]
-use crate::application::usecase::storage::gen_unique_document_id;
+use tracing::instrument;
 
 use crate::ServiceConnect;
 use crate::domain::searcher::models::{
@@ -85,6 +85,7 @@ impl ServiceConnect for OSearchClient {
 
 #[async_trait::async_trait]
 impl IIndexStorage for OSearchClient {
+    #[instrument(level = "info", skip(self))]
     async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
         let index_id = &params.id;
         let knn_params = params.knn.as_ref();
@@ -106,6 +107,7 @@ impl IIndexStorage for OSearchClient {
         Ok(index_id.to_owned())
     }
 
+    #[instrument(level = "info", skip(self))]
     async fn delete_index(&self, index_id: &str) -> StorageResult<()> {
         let response = self
             .client
@@ -123,6 +125,7 @@ impl IIndexStorage for OSearchClient {
         Ok(())
     }
 
+    #[instrument(level = "info", skip(self))]
     async fn get_index(&self, index_id: &str) -> StorageResult<IndexId> {
         let response = self
             .client
@@ -152,6 +155,7 @@ impl IIndexStorage for OSearchClient {
         Ok(index.to_owned())
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn get_all_indexes(&self) -> StorageResult<Vec<IndexId>> {
         let response = self
             .client
@@ -180,6 +184,15 @@ impl IIndexStorage for OSearchClient {
 
 #[async_trait::async_trait]
 impl IDocumentPartStorage for OSearchClient {
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(
+            index_id = index_id,
+            document_parts_amount = all_doc_parts.len(),
+        ),
+        ret(Debug),
+    )]
     async fn store_document_parts(
         &self,
         index_id: &str,
@@ -244,6 +257,7 @@ impl IDocumentPartStorage for OSearchClient {
         Ok(stored_doc_info)
     }
 
+    #[instrument(level = "info", skip(self), ret(Debug))]
     async fn get_document_parts(
         &self,
         index: &str,
@@ -274,6 +288,7 @@ impl IDocumentPartStorage for OSearchClient {
         Ok(all_doc_parts)
     }
 
+    #[instrument(level = "info", skip(self), ret(Debug))]
     async fn get_document_part(
         &self,
         index: &str,
@@ -301,6 +316,7 @@ impl IDocumentPartStorage for OSearchClient {
         Ok(document)
     }
 
+    #[instrument(level = "info", skip(self))]
     async fn delete_document_parts(&self, index: &str, large_doc_id: &str) -> StorageResult<()> {
         let query_params = RetrieveAllDocPartsQueryParamsBuilder::default()
             .large_doc_id(large_doc_id.to_string())
@@ -330,6 +346,7 @@ impl IDocumentPartStorage for OSearchClient {
 
 #[async_trait::async_trait]
 impl ISearcher for OSearchClient {
+    #[instrument(level = "info", skip(self), ret(Debug))]
     async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination> {
         let indexes = params
             .get_indexes()
@@ -339,6 +356,8 @@ impl ISearcher for OSearchClient {
 
         let search_parts = Self::build_search_parts(&indexes);
         let query = build_search_query(params, self.config.semantic())?;
+        let query_str = serde_json::to_string_pretty(&query);
+        tracing::debug!(query=?query_str, "search query");
         let request = self
             .client
             .search(search_parts)
@@ -378,6 +397,7 @@ impl ISearcher for OSearchClient {
 
 #[async_trait::async_trait]
 impl IPaginator for OSearchClient {
+    #[instrument(level = "info", skip(self), ret(Debug))]
     async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination> {
         let response = self
             .client

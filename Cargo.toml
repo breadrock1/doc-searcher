@@ -1,6 +1,6 @@
 [package]
 name = "doc-search"
-version = "0.4.6"
+version = "0.4.9"
 edition = "2021"
 
 [badges]
@@ -15,7 +15,6 @@ strip = "debuginfo"
 members = [
     ".",
     "doc-search-core",
-    "doc-search-otlp",
 ]
 
 [dev-dependencies]
@@ -78,8 +77,10 @@ features = ["axum", "vendored"]
 [dependencies.doc-search-core]
 path = "doc-search-core"
 
-[dependencies.doc-search-otlp]
-path = "doc-search-otlp"
+[dependencies.otlp]
+git = "http://192.168.0.84:3000/breadrock1/otlp-rs.git"
+tag = "v0.0.1"
+
 
 [[bin]]
 name = "launch"

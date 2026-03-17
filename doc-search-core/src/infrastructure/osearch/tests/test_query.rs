@@ -218,7 +218,8 @@ fn test_build_simple_hybrid_params_query(
 
     #[cfg(feature = "support-opensearch-v3")]
     {
-        comparable_query["query"]["hybrid"] = json!({"pagination_depth": 20});
+        let pagination_depth_value = Value::Number(serde_json::Number::from(20));
+        comparable_query["query"]["hybrid"]["pagination_depth"] = pagination_depth_value;
     }
 
     assert_eq!(query, comparable_query);
@@ -249,7 +250,8 @@ fn test_build_full_hybrid_params_query(
 
     #[cfg(feature = "support-opensearch-v3")]
     {
-        comparable_query["query"]["hybrid"] = json!({"pagination_depth": 20});
+        let pagination_depth_value = Value::Number(serde_json::Number::from(20));
+        comparable_query["query"]["hybrid"]["pagination_depth"] = pagination_depth_value;
     }
 
     assert_eq!(query, comparable_query);

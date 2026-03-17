@@ -309,7 +309,8 @@ impl QueryBuildHelper for HybridQueryParams {
 
         #[cfg(feature = "support-opensearch-v3")]
         {
-            base_value["query"]["hybrid"] = json!({"pagination_depth": 20});
+            let pagination_depth_value = Value::Number(serde_json::Number::from(20));
+            base_value["query"]["hybrid"]["pagination_depth"] = pagination_depth_value;
         }
 
         if let Some(min_score) = self.min_score() {
