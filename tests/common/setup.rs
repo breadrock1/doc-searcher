@@ -2,6 +2,7 @@ use doc_search::config::ServiceConfig;
 use doc_search_core::domain::storage::models::CreateIndexParamsBuilder;
 use doc_search_core::domain::storage::IIndexStorage;
 use doc_search_core::infrastructure::osearch::OSearchClient;
+use doc_search_core::shared::kernel::IndexId;
 use doc_search_core::ServiceConnect;
 use std::sync::Arc;
 
@@ -32,16 +33,17 @@ pub async fn setup_osearch_environment(index_id: &str) -> anyhow::Result<TestEnv
     let config = config.storage().opensearch();
     let client = OSearchClient::connect(config).await?;
 
+    let index_id = &IndexId(index_id.to_string());
     let _ = client.delete_index(index_id).await;
     let create_index_params = CreateIndexParamsBuilder::default()
-        .id(index_id.to_string())
+        .id(index_id.0.clone())
         .knn(None)
         .build()?;
 
     let _ = client.create_index(&create_index_params).await?;
 
     Ok(TestEnvironment {
-        index: index_id.to_string(),
+        index: index_id.0.clone(),
         osearch: Arc::new(client),
     })
 }

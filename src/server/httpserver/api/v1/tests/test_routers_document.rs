@@ -8,6 +8,7 @@ use tower::ServiceExt;
 use doc_search_core::domain::searcher::models::Pagination;
 use doc_search_core::domain::searcher::SearchError;
 use doc_search_core::domain::storage::StorageError;
+use doc_search_core::shared::kernel::IndexId;
 
 use crate::server::httpserver::api::v1::API_VERSION_URL;
 use crate::server::httpserver::tests::context::test_server;
@@ -212,7 +213,7 @@ async fn test_store_document(
 
     storage
         .expect_get_index()
-        .returning(|_| Ok(TEST_INDEX_ID.to_string()));
+        .returning(|_| Ok(IndexId(TEST_INDEX_ID.to_string())));
 
     let expectation = storage.expect_store_document_parts().once();
 
@@ -302,7 +303,7 @@ async fn test_store_documents(
 
     storage
         .expect_get_index()
-        .returning(|index_id| Ok(index_id.to_string()));
+        .returning(|index_id| Ok(index_id.clone()));
 
     let expectation = storage.expect_store_document_parts().times(1);
 

@@ -24,7 +24,7 @@ fn test_extract_founded_docs(
     assert_eq!(1, extracted_docs.founded.len());
 
     let root_document = extracted_docs.founded.first().expect("expected document");
-    assert_eq!(DOCUMENT_ID, root_document.document.large_doc_id);
+    assert_eq!(DOCUMENT_ID, root_document.document.large_doc_id.0);
     assert_eq!(DOCUMENT_PART_ID, root_document.id);
     assert_eq!(INDEX_ID, root_document.index);
 
