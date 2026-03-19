@@ -2,8 +2,9 @@ use serde_json::json;
 use serde_json::Value;
 
 use doc_search_core::domain::storage::models::{
-    DocumentPart, DocumentPartBuilder, StoredDocumentPartsInfo,
+    DocumentPart, DocumentPartBuilder, LargeDocument, StoredDocumentPartsInfo,
 };
+use doc_search_core::shared::kernel::{DocumentPartId, LargeDocumentId};
 
 use crate::server::httpserver::api::v1::schema::DocumentPartSchema;
 
@@ -57,15 +58,15 @@ pub fn document_parts_json_object() -> Value {
 
 pub fn stored_document_info() -> StoredDocumentPartsInfo {
     StoredDocumentPartsInfo {
-        large_doc_id: LARGE_DOCUMENT_ID.to_string(),
-        first_part_id: FIRST_DOC_PART_ID.to_string(),
+        large_doc_id: LargeDocumentId(LARGE_DOCUMENT_ID.to_string()),
+        first_part_id: DocumentPartId(FIRST_DOC_PART_ID.to_string()),
         doc_parts_amount: 2,
     }
 }
 
 pub fn build_document_part(doc_part_id: usize) -> DocumentPart {
     DocumentPartBuilder::default()
-        .large_doc_id(LARGE_DOCUMENT_ID.to_string())
+        .large_doc_id(LargeDocumentId(LARGE_DOCUMENT_ID.to_string()))
         .doc_part_id(doc_part_id)
         .file_name(DOCUMENT_FILE_NAME.to_string())
         .file_path(DOCUMENT_FILE_PATH.to_string())

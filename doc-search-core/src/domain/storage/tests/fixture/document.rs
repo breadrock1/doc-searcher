@@ -5,6 +5,7 @@ use rstest::fixture;
 use crate::domain::storage::models::{
     DocumentPart, DocumentPartBuilder, LargeDocument, LargeDocumentBuilder,
 };
+use crate::shared::kernel::LargeDocumentId;
 
 pub const LARGE_DOCUMENT_ID: &str = "098f6bcd4621d373cade4e832627b4f6";
 pub const LARGE_DOCUMENT_CONTENT: &str = "there is some huge content about current project";
@@ -26,7 +27,7 @@ pub fn build_large_document() -> LargeDocument {
 
 pub fn build_document_part(doc_part_id: usize) -> DocumentPart {
     DocumentPartBuilder::default()
-        .large_doc_id(LARGE_DOCUMENT_ID.to_string())
+        .large_doc_id(LargeDocumentId(LARGE_DOCUMENT_ID.to_string()))
         .doc_part_id(doc_part_id)
         .file_name("test-document.docx".to_string())
         .file_path("./test-document.docx".to_string())

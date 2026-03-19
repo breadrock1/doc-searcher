@@ -2,12 +2,14 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use std::sync::Arc;
+
 use doc_search_core::domain::searcher::models::RetrieveIndexDocumentsParamsBuilder;
 use doc_search_core::domain::searcher::models::{FilterParams, SearchKindParams, SearchingParams};
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::models::LargeDocument;
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
-use std::sync::Arc;
+use doc_search_core::shared::kernel::{IndexId, LargeDocumentId};
 
 use crate::server::httpserver::api::v1::form::{CreateDocumentForm, RetrieveDocumentForm};
 use crate::server::httpserver::api::v1::query::CreateDocumentQuery;
@@ -62,10 +64,11 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let (folder_id, large_doc_id) = path;
+    let (index_id, large_doc_id) = path;
+    let (index_id, large_doc_id) = (IndexId(index_id), LargeDocumentId(large_doc_id));
     let storage = state.get_storage();
     let document = storage
-        .get_all_document_parts(&folder_id, &large_doc_id)
+        .get_all_document_parts(&index_id, &large_doc_id)
         .await?;
     let response = document
         .into_iter()
@@ -185,6 +188,7 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
+    let index_id = IndexId(index_id);
     let documents = form
         .into_iter()
         .filter_map(|it| it.try_into().ok())
@@ -242,6 +246,7 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
+    let index_id = IndexId(index_id);
     let is_force = query.force.unwrap_or(false);
     let storage = state.get_storage();
     let document = form.try_into()?;
@@ -291,9 +296,10 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let (folder_id, doc_id) = path;
+    let (index_id, large_doc_id) = path;
+    let (index_id, large_doc_id) = (IndexId(index_id), LargeDocumentId(large_doc_id));
     let storage = state.get_storage();
-    storage.delete_document(&folder_id, &doc_id).await?;
+    storage.delete_document(&index_id, &large_doc_id).await?;
     let status = Success::default();
     Ok(Json(status))
 }

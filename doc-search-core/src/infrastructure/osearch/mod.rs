@@ -35,7 +35,7 @@ use crate::domain::searcher::models::{
 use crate::domain::searcher::{IPaginator, ISearcher};
 use crate::domain::searcher::{SearchError, SearchResult};
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart};
-use crate::domain::storage::models::{CreateIndexParams, IndexId, KnnIndexParams};
+use crate::domain::storage::models::{CreateIndexParams, KnnIndexParams};
 use crate::domain::storage::models::{StoredDocumentPartsInfo, StoredDocumentPartsInfoBuilder};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use crate::domain::storage::{StorageError, StorageResult};
@@ -43,6 +43,7 @@ use crate::infrastructure::osearch::config::OSearchKnnConfig;
 use crate::infrastructure::osearch::dto::RetrieveAllDocPartsQueryParamsBuilder;
 use crate::infrastructure::osearch::dto::{FoundedDocumentInfo, IndexInformation, SourceDocument};
 use crate::infrastructure::osearch::query::{QueryBuildHelper, build_search_query};
+use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
 
 const SCROLL_LIFETIME: &str = "5m";
 const EXECUTE_TIMEOUT: &str = "1m";
@@ -86,7 +87,7 @@ impl ServiceConnect for OSearchClient {
 #[async_trait::async_trait]
 impl IIndexStorage for OSearchClient {
     #[instrument(level = "info", skip(self))]
-    async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<String> {
+    async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<IndexId> {
         let index_id = &params.id;
         let knn_params = params.knn.as_ref();
         let folder_schema = schema::build_index_mappings(&self.config, knn_params);
@@ -104,15 +105,15 @@ impl IIndexStorage for OSearchClient {
             return Err(StorageError::from(err));
         }
 
-        Ok(index_id.to_owned())
+        Ok(IndexId(index_id.to_owned()))
     }
 
     #[instrument(level = "info", skip(self))]
-    async fn delete_index(&self, index_id: &str) -> StorageResult<()> {
+    async fn delete_index(&self, index_id: &IndexId) -> StorageResult<()> {
         let response = self
             .client
             .indices()
-            .delete(IndicesDeleteParts::Index(&[index_id]))
+            .delete(IndicesDeleteParts::Index(&[index_id.as_string()]))
             .timeout(EXECUTE_TIMEOUT)
             .send()
             .await?;
@@ -126,11 +127,11 @@ impl IIndexStorage for OSearchClient {
     }
 
     #[instrument(level = "info", skip(self))]
-    async fn get_index(&self, index_id: &str) -> StorageResult<IndexId> {
+    async fn get_index(&self, index_id: &IndexId) -> StorageResult<IndexId> {
         let response = self
             .client
             .cat()
-            .indices(CatIndicesParts::Index(&[index_id]))
+            .indices(CatIndicesParts::Index(&[index_id.as_string()]))
             .format(RESPONSE_FORMAT)
             .send()
             .await?;
@@ -188,14 +189,14 @@ impl IDocumentPartStorage for OSearchClient {
         level = "info",
         skip_all,
         fields(
-            index_id = index_id,
+            index_id = index_id.0,
             document_parts_amount = all_doc_parts.len(),
         ),
         ret(Debug),
     )]
     async fn store_document_parts(
         &self,
-        index_id: &str,
+        index_id: &IndexId,
         all_doc_parts: AllDocumentParts,
     ) -> StorageResult<StoredDocumentPartsInfo> {
         let doc_parts_amount = all_doc_parts.len();
@@ -230,7 +231,7 @@ impl IDocumentPartStorage for OSearchClient {
 
         let response = self
             .client
-            .bulk(opensearch::BulkParts::Index(index_id))
+            .bulk(opensearch::BulkParts::Index(index_id.as_string()))
             .pipeline(schema::INGEST_PIPELINE_NAME)
             .body(operations)
             .send()
@@ -243,6 +244,7 @@ impl IDocumentPartStorage for OSearchClient {
 
         let first_doc_id = stored_doc_ids
             .first()
+            .map(|it| DocumentPartId(it.clone()))
             .ok_or(anyhow!("there is no any stored id's"))
             .map_err(StorageError::InternalError)?;
 
@@ -260,8 +262,8 @@ impl IDocumentPartStorage for OSearchClient {
     #[instrument(level = "info", skip(self), ret(Debug))]
     async fn get_document_parts(
         &self,
-        index: &str,
-        large_doc_id: &str,
+        index: &IndexId,
+        large_doc_id: &LargeDocumentId,
     ) -> StorageResult<AllDocumentParts> {
         let query_params = RetrieveAllDocPartsQueryParamsBuilder::default()
             .large_doc_id(large_doc_id.to_string())
@@ -272,7 +274,7 @@ impl IDocumentPartStorage for OSearchClient {
             .map_err(StorageError::InternalError)?;
 
         let query = query_params.build_query();
-        let indexes = index.split(',').collect::<Vec<&str>>();
+        let indexes = index.as_string().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
 
         let request = self.client.search(search_parts).pretty(true);
@@ -291,12 +293,15 @@ impl IDocumentPartStorage for OSearchClient {
     #[instrument(level = "info", skip(self), ret(Debug))]
     async fn get_document_part(
         &self,
-        index: &str,
-        doc_part_id: &str,
+        index: &IndexId,
+        doc_part_id: &DocumentPartId,
     ) -> StorageResult<DocumentPart> {
         let response = self
             .client
-            .get(opensearch::GetParts::IndexId(index, doc_part_id))
+            .get(opensearch::GetParts::IndexId(
+                index.as_string(),
+                doc_part_id.as_string(),
+            ))
             .pretty(true)
             .send()
             .await?;
@@ -317,7 +322,11 @@ impl IDocumentPartStorage for OSearchClient {
     }
 
     #[instrument(level = "info", skip(self))]
-    async fn delete_document_parts(&self, index: &str, large_doc_id: &str) -> StorageResult<()> {
+    async fn delete_document_parts(
+        &self,
+        index: &IndexId,
+        large_doc_id: &LargeDocumentId,
+    ) -> StorageResult<()> {
         let query_params = RetrieveAllDocPartsQueryParamsBuilder::default()
             .large_doc_id(large_doc_id.to_string())
             .only_first_part(false)
@@ -327,7 +336,7 @@ impl IDocumentPartStorage for OSearchClient {
             .map_err(StorageError::InternalError)?;
 
         let query = query_params.build_query();
-        let indexes = index.split(',').collect::<Vec<&str>>();
+        let indexes = index.as_string().split(',').collect::<Vec<&str>>();
         let response = self
             .client
             .delete_by_query(DeleteByQueryParts::Index(&indexes))

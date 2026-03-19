@@ -2,9 +2,11 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use std::sync::Arc;
+
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
-use std::sync::Arc;
+use doc_search_core::shared::kernel::IndexId;
 
 use crate::server::httpserver::api::v1::form::CreateIndexForm;
 use crate::server::httpserver::api::v1::schema::IndexSchema;
@@ -83,6 +85,7 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
+    let index_id = IndexId(index_id);
     let storage = state.get_storage();
     let index = storage.get_index(&index_id).await?;
     let index_schema = IndexSchema::from(index);
@@ -165,6 +168,7 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
+    let index_id = IndexId(index_id);
     let storage = state.get_storage();
     storage.delete_index(&index_id).await?;
     let status = Success::default();

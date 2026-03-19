@@ -5,24 +5,13 @@ use std::fmt::{Debug, Formatter};
 
 use crate::domain::storage::{StorageError, StorageResult};
 use crate::shared::kernel::metadata::DocumentMetadata;
+use crate::shared::kernel::{DocumentPartId, LargeDocumentId};
 
 /// The ID of the first document part in a sequence.
 ///
 /// Document parts are numbered starting from 1 to maintain
 /// consistent ordering when splitting large documents.
 pub const FIRST_DOCUMENT_PART_ID: usize = 1;
-
-/// Type alias for a large document identifier.
-///
-/// Represents the unique identifier of a complete document that may be split
-/// into multiple parts for processing and storage.
-pub type LargeDocumentId = String;
-
-/// Type alias for a document part identifier.
-///
-/// Represents the unique identifier of an individual document part,
-/// typically combining the large document ID with the part number.
-pub type DocumentPartId = String;
 
 /// Type alias for a collection of all document parts belonging to a large document.
 ///
@@ -118,7 +107,7 @@ impl Debug for LargeDocument {
 /// ```
 #[derive(Clone, Builder)]
 pub struct DocumentPart {
-    pub large_doc_id: String,
+    pub large_doc_id: LargeDocumentId,
     pub doc_part_id: usize,
     pub file_name: String,
     pub file_path: String,
@@ -133,7 +122,7 @@ impl Debug for DocumentPart {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "large_doc_id: {}, doc_part_id: {}",
+            "large_doc_id: {:?}, doc_part_id: {}",
             &self.large_doc_id, &self.doc_part_id
         )
     }
@@ -151,7 +140,7 @@ impl LargeDocument {
 
         let large_doc_id = uuid::Uuid::new_v4().to_string();
         let document_part = DocumentPartBuilder::default()
-            .large_doc_id(large_doc_id)
+            .large_doc_id(LargeDocumentId(large_doc_id))
             .doc_part_id(FIRST_DOCUMENT_PART_ID)
             .file_name(self.file_name)
             .file_path(self.file_path)
@@ -201,7 +190,7 @@ impl LargeDocument {
 /// ```
 #[derive(Debug, Builder)]
 pub struct StoredDocumentPartsInfo {
-    pub large_doc_id: String,
-    pub first_part_id: String,
+    pub large_doc_id: LargeDocumentId,
+    pub first_part_id: DocumentPartId,
     pub doc_parts_amount: usize,
 }

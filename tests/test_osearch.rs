@@ -7,6 +7,7 @@ use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
 use doc_search_core::domain::searcher::models::{Pagination, SearchingParams};
 use doc_search_core::domain::storage::models::{AllDocumentParts, StoredDocumentPartsInfo};
+use doc_search_core::shared::kernel::IndexId;
 use rstest::rstest;
 use serial_test::serial;
 
@@ -20,7 +21,7 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
     let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let index_id = test_env.get_index();
+    let index_id = &IndexId(test_env.get_index().clone());
     let large_document = build_large_document();
     let result: anyhow::Result<AllDocumentParts> = {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -28,7 +29,7 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
             .store_document(index_id, large_document, false)
             .await?;
 
-        println!("document: {stored_doc_info:?} has been stored into index: {index_id}");
+        println!("document: {stored_doc_info:?} has been stored into index: {index_id:?}");
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let large_doc_id = &stored_doc_info.large_doc_id;
@@ -53,7 +54,7 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
     let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let index_id = test_env.get_index();
+    let index_id = &IndexId(test_env.get_index().clone());
     let large_document = build_large_document();
     let result: anyhow::Result<AllDocumentParts> = {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -61,7 +62,7 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
             .store_document(index_id, large_document, false)
             .await?;
 
-        println!("document: {stored_doc_info:?} has been stored into index: {index_id}");
+        println!("document: {stored_doc_info:?} has been stored into index: {index_id:?}");
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let large_doc_id = &stored_doc_info.large_doc_id;
@@ -90,12 +91,12 @@ async fn test_opensearch_store_multiple_documents() -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
     let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let index_id = test_env.get_index();
+    let index_id = &IndexId(test_env.get_index().clone());
     let large_documents = build_real_large_documents()?;
     let result: anyhow::Result<Vec<StoredDocumentPartsInfo>> = {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let stored_docs_info = storage.store_documents(index_id, large_documents).await?;
-        println!("documents: {stored_docs_info:?} has been stored into index: {index_id}");
+        println!("documents: {stored_docs_info:?} has been stored into index: {index_id:?}");
         Ok(stored_docs_info)
     };
 
@@ -120,7 +121,7 @@ async fn test_opensearch_search_documents(
     let searcher = SearcherUseCase::new(test_env.osearch());
     let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
 
-    let index_id = test_env.get_index();
+    let index_id = &IndexId(test_env.get_index().to_string());
     let large_documents = build_real_large_documents()?;
     let result: anyhow::Result<Pagination> = {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
