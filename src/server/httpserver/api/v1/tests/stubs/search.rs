@@ -217,6 +217,7 @@ pub fn founded_document_with_part_id(doc_part_id: usize) -> FoundedDocument {
         .split(' ')
         .map(String::from)
         .collect::<Vec<String>>();
+
     let doc_part_entrails = document_part_entrails_with_part_id(doc_part_id);
     FoundedDocumentBuilder::default()
         .id(LARGE_DOCUMENT_ID.to_string())
