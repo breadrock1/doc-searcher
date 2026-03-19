@@ -1,7 +1,8 @@
 use derive_builder::Builder;
-use doc_search_core::domain::storage::models::IndexId;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
+
+use doc_search_core::shared::kernel::IndexId;
 
 #[derive(Clone, Builder, Serialize, Deserialize, ToSchema)]
 pub struct IndexSchema {
@@ -11,14 +12,14 @@ pub struct IndexSchema {
 
 impl From<IndexSchema> for IndexId {
     fn from(form: IndexSchema) -> Self {
-        form.id
+        IndexId(form.id)
     }
 }
 
 impl From<IndexId> for IndexSchema {
     fn from(index: IndexId) -> Self {
         IndexSchemaBuilder::default()
-            .id(index)
+            .id(index.0)
             .build()
             .expect("failed to build IndexSchema from index id")
     }

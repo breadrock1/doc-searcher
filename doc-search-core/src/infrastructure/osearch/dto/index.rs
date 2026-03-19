@@ -1,7 +1,7 @@
 use gset::Getset;
 use serde_derive::Deserialize;
 
-use crate::domain::storage::models::IndexId;
+use crate::shared::kernel::IndexId;
 
 #[derive(Debug, Deserialize, Getset)]
 pub struct IndexInformation {
@@ -11,6 +11,6 @@ pub struct IndexInformation {
 
 impl From<IndexInformation> for IndexId {
     fn from(value: IndexInformation) -> Self {
-        value.index
+        IndexId(value.index)
     }
 }

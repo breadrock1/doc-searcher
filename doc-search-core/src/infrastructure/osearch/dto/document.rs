@@ -6,6 +6,7 @@ use crate::domain::searcher::models::{DocumentPartEntrails, DocumentPartEntrails
 use crate::domain::storage::models::DocumentPart;
 use crate::infrastructure::osearch::dto::metadata::SourceDocumentMetadata;
 use crate::infrastructure::osearch::error::OSearchError;
+use crate::shared::kernel::LargeDocumentId;
 
 #[derive(Builder, Deserialize, Serialize)]
 pub struct SourceDocument {
@@ -30,7 +31,7 @@ impl TryFrom<SourceDocument> for DocumentPartEntrails {
         };
 
         DocumentPartEntrailsBuilder::default()
-            .large_doc_id(src_doc.large_doc_id)
+            .large_doc_id(LargeDocumentId(src_doc.large_doc_id))
             .doc_part_id(src_doc.doc_part_id)
             .file_name(src_doc.file_name)
             .file_path(src_doc.file_path)
@@ -57,7 +58,7 @@ impl TryFrom<DocumentPart> for SourceDocument {
         };
 
         SourceDocumentBuilder::default()
-            .large_doc_id(doc_part.large_doc_id)
+            .large_doc_id(doc_part.large_doc_id.0)
             .doc_part_id(doc_part.doc_part_id)
             .file_name(doc_part.file_name)
             .file_path(doc_part.file_path)

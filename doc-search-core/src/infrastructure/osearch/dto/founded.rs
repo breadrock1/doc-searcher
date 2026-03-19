@@ -5,6 +5,7 @@ use crate::domain::searcher::models::{FoundedDocument, FoundedDocumentBuilder};
 use crate::domain::storage::models::{DocumentPart, DocumentPartBuilder};
 use crate::infrastructure::osearch::dto::document::SourceDocument;
 use crate::infrastructure::osearch::error::OSearchError;
+use crate::shared::kernel::LargeDocumentId;
 
 #[derive(Deserialize)]
 pub struct FoundedDocumentInfo {
@@ -49,7 +50,7 @@ impl TryFrom<FoundedDocumentInfo> for DocumentPart {
         };
 
         DocumentPartBuilder::default()
-            .large_doc_id(src_doc.large_doc_id)
+            .large_doc_id(LargeDocumentId(src_doc.large_doc_id))
             .doc_part_id(src_doc.doc_part_id)
             .file_name(src_doc.file_name)
             .file_path(src_doc.file_path)

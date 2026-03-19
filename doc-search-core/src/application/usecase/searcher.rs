@@ -1,6 +1,6 @@
 use metrics::{counter, histogram};
 use std::sync::Arc;
-use tracing::{Instrument, instrument};
+use tracing::instrument;
 
 use crate::domain::searcher::SearchResult;
 use crate::domain::searcher::models::{Pagination, PaginationParams, SearchingParams};

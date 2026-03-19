@@ -1,16 +1,18 @@
+#[allow(unused_imports)]
+use serde_json::json;
+
 use derive_builder::Builder;
-use doc_search_core::domain::searcher::models::{
-    DocumentPartEntrails, DocumentPartEntrailsBuilder, Embeddings,
-};
-use doc_search_core::domain::storage::models::{
-    DocumentPart, DocumentPartBuilder, StoredDocumentPartsInfo,
-};
 use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[allow(unused_imports)]
-use serde_json::json;
+use doc_search_core::domain::searcher::models::{
+    DocumentPartEntrails, DocumentPartEntrailsBuilder, Embeddings,
+};
+use doc_search_core::domain::storage::models::{
+    DocumentPart, DocumentPartBuilder, LargeDocument, StoredDocumentPartsInfo,
+};
+use doc_search_core::shared::kernel::LargeDocumentId;
 
 use crate::server::ServerError;
 
@@ -29,8 +31,8 @@ impl TryFrom<StoredDocumentPartsInfo> for StoredDocumentSchema {
 
     fn try_from(doc: StoredDocumentPartsInfo) -> Result<Self, Self::Error> {
         StoredDocumentSchemaBuilder::default()
-            .large_doc_id(doc.large_doc_id)
-            .first_part_id(doc.first_part_id)
+            .large_doc_id(doc.large_doc_id.0)
+            .first_part_id(doc.first_part_id.0)
             .doc_parts_amount(doc.doc_parts_amount as u64)
             .build()
             .map_err(|err| ServerError::InternalError(err.to_string()))
@@ -73,7 +75,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPart {
     fn try_from(schema: DocumentPartSchema) -> Result<Self, Self::Error> {
         // TODO: Does need to pass metadata to DocumentPart?
         DocumentPartBuilder::default()
-            .large_doc_id(schema.large_doc_id)
+            .large_doc_id(LargeDocumentId(schema.large_doc_id))
             .doc_part_id(schema.doc_part_id as usize)
             .file_name(schema.file_name)
             .file_path(schema.file_path)
@@ -92,7 +94,7 @@ impl TryFrom<DocumentPart> for DocumentPartSchema {
 
     fn try_from(doc_part: DocumentPart) -> Result<Self, Self::Error> {
         DocumentPartSchemaBuilder::default()
-            .large_doc_id(doc_part.large_doc_id)
+            .large_doc_id(doc_part.large_doc_id.0)
             .doc_part_id(doc_part.doc_part_id as u32)
             .file_name(doc_part.file_name)
             .file_path(doc_part.file_path)
@@ -123,7 +125,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPartEntrails {
 
         // TODO: Does need to pass metadata to DocumentPartEntrails?
         DocumentPartEntrailsBuilder::default()
-            .large_doc_id(schema.large_doc_id)
+            .large_doc_id(LargeDocumentId(schema.large_doc_id))
             .doc_part_id(schema.doc_part_id as usize)
             .file_name(schema.file_name)
             .file_path(schema.file_path)
@@ -151,7 +153,7 @@ impl TryFrom<DocumentPartEntrails> for DocumentPartSchema {
         });
 
         DocumentPartSchemaBuilder::default()
-            .large_doc_id(doc_entrails.large_doc_id)
+            .large_doc_id(doc_entrails.large_doc_id.0)
             .doc_part_id(doc_entrails.doc_part_id as u32)
             .file_name(doc_entrails.file_name)
             .file_path(doc_entrails.file_path)

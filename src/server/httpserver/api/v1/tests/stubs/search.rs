@@ -1,11 +1,11 @@
 use serde_json::json;
 use serde_json::Value;
 
+use crate::server::httpserver::api::v1::schema::FoundedDocumentPartSchema;
 use doc_search_core::domain::searcher::models::{
     DocumentPartEntrails, FoundedDocument, FoundedDocumentBuilder,
 };
-
-use crate::server::httpserver::api::v1::schema::FoundedDocumentPartSchema;
+use doc_search_core::shared::kernel::LargeDocumentId;
 
 use super::constants::{
     COMPOSITE_INDEX_IDS, DOCUMENT_CONTENT, DOCUMENT_CREATED_AT, DOCUMENT_FILE_NAME,
@@ -198,7 +198,7 @@ pub fn filter_params_json_object() -> Value {
 
 pub fn document_part_entrails_with_part_id(doc_part_id: usize) -> DocumentPartEntrails {
     DocumentPartEntrails {
-        large_doc_id: LARGE_DOCUMENT_ID.to_string(),
+        large_doc_id: LargeDocumentId(LARGE_DOCUMENT_ID.to_string()),
         doc_part_id,
         file_name: DOCUMENT_FILE_NAME.to_string(),
         file_path: DOCUMENT_FILE_PATH.to_string(),
@@ -217,6 +217,7 @@ pub fn founded_document_with_part_id(doc_part_id: usize) -> FoundedDocument {
         .split(' ')
         .map(String::from)
         .collect::<Vec<String>>();
+
     let doc_part_entrails = document_part_entrails_with_part_id(doc_part_id);
     FoundedDocumentBuilder::default()
         .id(LARGE_DOCUMENT_ID.to_string())

@@ -1,7 +1,7 @@
+use crate::shared::kernel::LargeDocumentId;
+use crate::shared::kernel::metadata::DocumentMetadata;
 use derive_builder::Builder;
 use std::fmt::{Debug, Formatter};
-
-use crate::shared::kernel::metadata::DocumentMetadata;
 
 /// Represents a document found in search results.
 ///
@@ -78,9 +78,9 @@ impl Debug for FoundedDocument {
 ///     metadata: None,
 /// };
 /// ```
-#[derive(Clone, Default, Builder)]
+#[derive(Clone, Builder)]
 pub struct DocumentPartEntrails {
-    pub large_doc_id: String,
+    pub large_doc_id: LargeDocumentId,
     pub doc_part_id: usize,
     pub file_name: String,
     pub file_path: String,
@@ -97,7 +97,7 @@ impl Debug for DocumentPartEntrails {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "large_doc_id: {}, doc_part_id: {}",
+            "large_doc_id: {:?}, doc_part_id: {}",
             &self.large_doc_id, &self.doc_part_id
         )
     }
