@@ -6,6 +6,7 @@ use crate::application::tests::fixture::{DEFAULT_INDEX_ID, FIRST_DOC_PART_ID, LA
 use crate::application::tests::mock::{TestEnvironment, init_test_environment};
 use crate::application::usecase::storage::StorageUseCase;
 use crate::domain::storage::models::{LargeDocument, StoredDocumentPartsInfoBuilder};
+use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
 
 const MAX_CONTENT_SIZE: usize = 1024;
 
@@ -22,12 +23,12 @@ async fn test_store_document_empty(
     mock_storage
         .expect_get_index()
         .times(1)
-        .returning(move |index| Ok(index.to_string()));
+        .returning(move |index| Ok(index.clone()));
 
     let storage = Arc::new(mock_storage);
     let storage_uc = StorageUseCase::new(storage, MAX_CONTENT_SIZE);
 
-    let index_id = DEFAULT_INDEX_ID.to_string();
+    let index_id = IndexId(DEFAULT_INDEX_ID.to_string());
     let result = storage_uc.store_document(&index_id, test_doc, false).await;
 
     assert!(result.is_err());
@@ -45,7 +46,7 @@ async fn test_store_document(
     mock_storage
         .expect_get_index()
         .times(1)
-        .returning(move |index| Ok(index.to_string()));
+        .returning(move |index| Ok(index.clone()));
 
     mock_storage
         .expect_store_document_parts()
@@ -58,8 +59,8 @@ async fn test_store_document(
             let doc_parts_amount = 10;
 
             let stored_doc_parts_info = StoredDocumentPartsInfoBuilder::default()
-                .large_doc_id(large_doc_id)
-                .first_part_id(first_doc_part_id)
+                .large_doc_id(LargeDocumentId(large_doc_id))
+                .first_part_id(DocumentPartId(first_doc_part_id))
                 .doc_parts_amount(doc_parts_amount)
                 .build()
                 .expect("failed to build stored document parts information");
@@ -70,12 +71,12 @@ async fn test_store_document(
     let storage = Arc::new(mock_storage);
     let storage_uc = StorageUseCase::new(storage, MAX_CONTENT_SIZE);
 
-    let index_id = DEFAULT_INDEX_ID.to_string();
+    let index_id = IndexId(DEFAULT_INDEX_ID.to_string());
     let result = storage_uc.store_document(&index_id, test_doc, false).await;
     assert!(result.is_ok());
 
     let stored_doc = result.expect("empty stored document");
-    assert_eq!(LARGE_DOC_ID, stored_doc.large_doc_id);
+    assert_eq!(LARGE_DOC_ID, stored_doc.large_doc_id.0);
 
     Ok(())
 }

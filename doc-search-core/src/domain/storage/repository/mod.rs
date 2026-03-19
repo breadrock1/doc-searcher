@@ -1,6 +1,7 @@
 use crate::domain::storage::StorageResult;
+use crate::domain::storage::models::CreateIndexParams;
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart, StoredDocumentPartsInfo};
-use crate::domain::storage::models::{CreateIndexParams, IndexId};
+use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
 
 /// Trait for managing search index lifecycle operations.
 ///
@@ -38,27 +39,27 @@ use crate::domain::storage::models::{CreateIndexParams, IndexId};
 ///         Ok(index.id.clone())
 ///     }
 ///
-///     async fn delete_index(&self, id: &str) -> StorageResult<()> {
+///     async fn delete_index(&self, id: &IndexId) -> StorageResult<()> {
 ///         // Implementation for deleting index
 ///         Ok(())
 ///     }
 ///
-///     async fn get_index(&self, id: &str) -> StorageResult<IndexId> {
+///     async fn get_index(&self, id: &IndexId) -> StorageResult<IndexId> {
 ///         // Implementation for retrieving index info
-///         Ok(id.to_string())
+///         Ok(id)
 ///     }
 ///
 ///     async fn get_all_indexes(&self) -> StorageResult<Vec<IndexId>> {
 ///         // Implementation for listing all indexes
-///         Ok(vec!["index1".to_string(), "index2".to_string()])
+///         Ok(vec![IndexId("index1".to_string()), IndexId("index2".to_string())])
 ///     }
 /// }
 /// ```
 #[async_trait::async_trait]
 pub trait IIndexStorage {
     async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<IndexId>;
-    async fn delete_index(&self, id: &str) -> StorageResult<()>;
-    async fn get_index(&self, id: &str) -> StorageResult<IndexId>;
+    async fn delete_index(&self, id: &IndexId) -> StorageResult<()>;
+    async fn get_index(&self, id: &IndexId) -> StorageResult<IndexId>;
     async fn get_all_indexes(&self) -> StorageResult<Vec<IndexId>>;
 }
 
@@ -95,11 +96,13 @@ pub trait IIndexStorage {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::shared::kernel::DocumentPartId;
+///
 /// #[async_trait::async_trait]
 /// impl IDocumentPartStorage for ElasticsearchStorage {
 ///     async fn store_document_parts(
 ///         &self,
-///         index: &str,
+///         index: &IndexId,
 ///         all_doc_parts: AllDocumentParts,
 ///     ) -> StorageResult<StoredDocumentPartsInfo> {
 ///         // Implementation for bulk indexing document parts
@@ -112,8 +115,8 @@ pub trait IIndexStorage {
 ///
 ///     async fn get_document_parts(
 ///         &self,
-///         index: &str,
-///         large_doc_id: &str,
+///         index: &IndexId,
+///         large_doc_id: &LargeDocumentId,
 ///     ) -> StorageResult<AllDocumentParts> {
 ///         // Implementation for retrieving all parts of a document
 ///         Ok(vec![])
@@ -121,8 +124,8 @@ pub trait IIndexStorage {
 ///
 ///     async fn get_document_part(
 ///         &self,
-///         index: &str,
-///         doc_part_id: &str,
+///         index: &IndexId,
+///         doc_part_id: &DocumentPartId,
 ///     ) -> StorageResult<DocumentPart> {
 ///         // Implementation for retrieving a single part
 ///         Err(StorageError::DocumentNotFound(
@@ -132,8 +135,8 @@ pub trait IIndexStorage {
 ///
 ///     async fn delete_document_parts(
 ///         &self,
-///         index: &str,
-///         large_doc_id: &str,
+///         index: &IndexId,
+///         large_doc_id: &LargeDocumentId,
 ///     ) -> StorageResult<()> {
 ///         // Implementation for deleting document parts
 ///         Ok(())
@@ -144,20 +147,24 @@ pub trait IIndexStorage {
 pub trait IDocumentPartStorage {
     async fn store_document_parts(
         &self,
-        index: &str,
+        index: &IndexId,
         all_doc_parts: AllDocumentParts,
     ) -> StorageResult<StoredDocumentPartsInfo>;
 
     async fn get_document_parts(
         &self,
-        index: &str,
-        large_doc_id: &str,
+        index: &IndexId,
+        large_doc_id: &LargeDocumentId,
     ) -> StorageResult<AllDocumentParts>;
 
     async fn get_document_part(
         &self,
-        index: &str,
-        doc_part_id: &str,
+        index: &IndexId,
+        doc_part_id: &DocumentPartId,
     ) -> StorageResult<DocumentPart>;
-    async fn delete_document_parts(&self, index: &str, large_doc_id: &str) -> StorageResult<()>;
+    async fn delete_document_parts(
+        &self,
+        index: &IndexId,
+        large_doc_id: &LargeDocumentId,
+    ) -> StorageResult<()>;
 }

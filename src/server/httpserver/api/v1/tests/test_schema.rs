@@ -1,5 +1,6 @@
 use doc_search_core::domain::searcher::models::{DocumentPartEntrails, FoundedDocument};
-use doc_search_core::domain::storage::models::{DocumentPart, IndexId};
+use doc_search_core::domain::storage::models::DocumentPart;
+use doc_search_core::shared::kernel::IndexId;
 
 use crate::server::httpserver::api::v1::schema::{
     DocumentPartSchema, FoundedDocumentPartSchema, IndexSchema,
@@ -12,7 +13,7 @@ use super::fixtures::schema::*;
 #[case(index_schema())]
 fn test_index_schema_mappings(#[case] form: IndexSchema) -> anyhow::Result<()> {
     let result: IndexId = form.clone().into();
-    assert_eq!(form.id, result);
+    assert_eq!(form.id, result.0);
     Ok(())
 }
 

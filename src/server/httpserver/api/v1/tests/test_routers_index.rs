@@ -6,6 +6,7 @@ use serde_json::Value;
 use tower::ServiceExt;
 
 use doc_search_core::domain::storage::StorageError;
+use doc_search_core::shared::kernel::IndexId;
 
 use crate::server::httpserver::api::v1::form::*;
 use crate::server::httpserver::api::v1::router::index::STORAGE_ALL_INDEXES_URL;
@@ -36,7 +37,7 @@ async fn test_get_all_indexes(
     let mocked = storage.expect_get_all_indexes().once();
 
     match expected_status {
-        StatusCode::OK => mocked.returning(move || Ok(vec![TEST_INDEX_ID.to_string()])),
+        StatusCode::OK => mocked.returning(move || Ok(vec![IndexId(TEST_INDEX_ID.to_string())])),
         StatusCode::BAD_REQUEST => mocked.returning(move || {
             let err = anyhow!("bad request");
             Err(StorageError::ValidationError(err))
@@ -93,7 +94,7 @@ async fn test_get_index(
     let expectation = storage.expect_get_index().once();
 
     match expected_status {
-        StatusCode::OK => expectation.returning(move |index_id| Ok(index_id.to_string())),
+        StatusCode::OK => expectation.returning(move |index_id| Ok(index_id.clone())),
         StatusCode::BAD_REQUEST => expectation.returning(move |_| {
             let err = anyhow!("bad request");
             Err(StorageError::ValidationError(err))
@@ -163,7 +164,7 @@ async fn test_create_index_route(
     let expectation = storage.expect_create_index().once();
 
     match expected_status {
-        StatusCode::CREATED => expectation.returning(move |params| Ok(params.id.clone())),
+        StatusCode::CREATED => expectation.returning(move |params| Ok(IndexId(params.id.clone()))),
         StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_| {
             let err = anyhow!("internal server error");
             Err(StorageError::InternalError(err))

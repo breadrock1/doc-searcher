@@ -1,12 +1,12 @@
 use metrics::{counter, histogram};
 use std::sync::Arc;
-use tracing::{Instrument, info_span, instrument};
+use tracing::instrument;
 
 use crate::domain::storage::StorageResult;
-use crate::domain::storage::models::StoredDocumentPartsInfo;
-use crate::domain::storage::models::{AllDocumentParts, LargeDocument, LargeDocumentId};
-use crate::domain::storage::models::{CreateIndexParams, IndexId};
+use crate::domain::storage::models::{AllDocumentParts, LargeDocument};
+use crate::domain::storage::models::{CreateIndexParams, StoredDocumentPartsInfo};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
+use crate::shared::kernel::{IndexId, LargeDocumentId};
 
 #[derive(Clone)]
 pub struct StorageUseCase<Storage>
