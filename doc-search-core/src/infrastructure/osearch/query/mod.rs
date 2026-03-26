@@ -13,6 +13,8 @@ use crate::infrastructure::osearch::dto::{
 };
 use crate::infrastructure::osearch::error::{OSearchError, OSearchResult};
 
+const HYBRID_PAGINATION_DEPTH: usize = 20;
+
 pub fn build_search_query(
     params: &SearchingParams,
     config: &OSearchKnnConfig,
@@ -278,6 +280,7 @@ impl QueryBuildHelper for HybridQueryParams {
             "highlight": highlight,
             "query": {
                 "hybrid": {
+                    "pagination_depth": HYBRID_PAGINATION_DEPTH,
                     "queries": [
                         {
                             "neural": {
@@ -305,12 +308,6 @@ impl QueryBuildHelper for HybridQueryParams {
                 }
             },
         });
-
-        #[cfg(feature = "support-opensearch-v3")]
-        {
-            let pagination_depth_value = Value::Number(serde_json::Number::from(20));
-            base_value["query"]["hybrid"]["pagination_depth"] = pagination_depth_value;
-        }
 
         if let Some(min_score) = self.min_score() {
             base_value["min_score"] = json!(min_score);
