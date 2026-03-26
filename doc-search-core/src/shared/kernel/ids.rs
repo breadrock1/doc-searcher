@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Deref;
 
 /// A large document identifier.
 ///
@@ -7,8 +8,9 @@ use std::fmt::Display;
 #[derive(Clone, Debug)]
 pub struct LargeDocumentId(pub String);
 
-impl LargeDocumentId {
-    pub fn as_string(&self) -> &str {
+impl Deref for LargeDocumentId {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -19,12 +21,25 @@ impl Display for LargeDocumentId {
     }
 }
 
+impl LargeDocumentId {
+    pub fn as_string(&self) -> &str {
+        &self.0
+    }
+}
+
 ///A document part identifier.
 ///
 /// Represents the unique identifier of an individual document part,
 /// typically combining the large document ID with the part number.
 #[derive(Clone, Debug)]
 pub struct DocumentPartId(pub String);
+
+impl Deref for DocumentPartId {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl DocumentPartId {
     pub fn as_string(&self) -> &str {
@@ -38,6 +53,13 @@ impl DocumentPartId {
 /// document parts are stored and queried.
 #[derive(Clone, Debug)]
 pub struct IndexId(pub String);
+
+impl Deref for IndexId {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl IndexId {
     pub fn as_string(&self) -> &str {
