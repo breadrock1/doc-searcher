@@ -212,16 +212,7 @@ fn test_build_simple_hybrid_params_query(
         .context("failed to build hybrid query params")?;
 
     let query = query_params.build_query();
-
-    #[allow(unused_mut)]
-    let mut comparable_query = serde_json::from_slice::<Value>(HYBRID_SIMPLE_PARAMS)?;
-
-    #[cfg(feature = "support-opensearch-v3")]
-    {
-        let pagination_depth_value = Value::Number(serde_json::Number::from(20));
-        comparable_query["query"]["hybrid"]["pagination_depth"] = pagination_depth_value;
-    }
-
+    let comparable_query = serde_json::from_slice::<Value>(HYBRID_SIMPLE_PARAMS)?;
     assert_eq!(query, comparable_query);
 
     Ok(())
@@ -244,16 +235,7 @@ fn test_build_full_hybrid_params_query(
         .context("failed to build hybrid query params")?;
 
     let query = query_params.build_query();
-
-    #[allow(unused_mut)]
-    let mut comparable_query = serde_json::from_slice::<Value>(HYBRID_FULL_PARAMS)?;
-
-    #[cfg(feature = "support-opensearch-v3")]
-    {
-        let pagination_depth_value = Value::Number(serde_json::Number::from(20));
-        comparable_query["query"]["hybrid"]["pagination_depth"] = pagination_depth_value;
-    }
-
+    let comparable_query = serde_json::from_slice::<Value>(HYBRID_FULL_PARAMS)?;
     assert_eq!(query, comparable_query);
 
     Ok(())

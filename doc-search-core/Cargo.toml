@@ -8,7 +8,6 @@ maintenance = { status = "actively-developed" }
 
 [features]
 enable-unique-doc-id = ["dep:md5"]
-support-opensearch-v3 = []
 default = []
 
 [dev-dependencies]
