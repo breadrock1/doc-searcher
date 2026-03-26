@@ -2,16 +2,23 @@
 PUT /_cluster/settings
 {
   "persistent": {
+    "archived.*": null,
+    "cluster.blocks.read_only_allow_delete": null,
     "plugins.ml_commons.only_run_on_ml_node": false,
-    "plugins.ml_commons.model_auto_redeploy.enable": true
+    "plugins.ml_commons.memory_feature_enabled": true,
+    "plugins.ml_commons.model_auto_redeploy.enable": true,
+    "plugins.ml_commons.allow_registering_model_via_url": true,
+    "plugins.ml_commons.disk_free_space_threshold" : "5G",
+    "plugins.ml_commons.native_memory_threshold" : "100",
+    "plugins.ml_commons.jvm_heap_memory_threshold" : "100"
   }
 }
 
 # Upload all-MiniLM-L6-v2 mode
 POST /_plugins/_ml/models/_upload
 {
-  "name": "huggingface/sentence-transformers/all-MiniLM-L6-v2",
-  "version": "1.0.1",
+  "name": "huggingface/sentence-transformers/msmarco-distilbert-base-tas-b",
+  "version": "1.0.2",
   "model_format": "TORCH_SCRIPT"
 }
 
