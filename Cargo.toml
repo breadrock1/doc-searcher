@@ -59,7 +59,7 @@ version = "1.0.218"
 features = ["derive"]
 
 [dependencies.tokio]
-version = "1.43.0"
+version = "1.50.0"
 features = ["full"]
 
 [dependencies.tower-http]
