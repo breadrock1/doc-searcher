@@ -1,5 +1,5 @@
 use axum::Router;
-use axum_tracing_opentelemetry::middleware::OtelAxumLayer;
+use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
@@ -36,10 +36,14 @@ async fn main() -> anyhow::Result<()> {
         .make_span_with(otlp::PathFilter::default())
         .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
 
+    let otel_axum_layer = OtelAxumLayer::default()
+        .filter(otlp::otel_axum_layer_filter_callback);
+
     let app = httpserver::init_server(server_app)
+        .layer(OtelInResponseLayer)
+        .layer(otel_axum_layer)
         .layer(trace_layer)
         .layer(cors_layer)
-        .layer(OtelAxumLayer::default())
         .layer(axum::middleware::from_fn(mw::prometheus::meter));
 
     let cache_config = config.cache();
