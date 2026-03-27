@@ -8,10 +8,13 @@ pub mod schema;
 
 use axum::routing::{get, post, put};
 use axum::Router;
+use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use std::sync::Arc;
+use tower_http::trace;
 
+use crate::server::httpserver::mw;
 use crate::server::ServerApp;
 
 pub const API_VERSION_URL: &str = "/api/v1";
@@ -21,7 +24,20 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
+    let trace_layer = trace::TraceLayer::new_for_http()
+        .make_span_with(otlp::PathFilter::default())
+        .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
+
+    let otel_axum_layer = OtelAxumLayer::default()
+        .filter(otlp::otel_axum_layer_filter_callback);
+
+    let meter_mw = axum::middleware::from_fn(mw::prometheus::meter);
+
     let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
+        .layer(OtelInResponseLayer)
+        .layer(otel_axum_layer)
+        .layer(trace_layer)
+        .layer(meter_mw)
         .nest(API_VERSION_URL, init_storage_layer())
         .nest(API_VERSION_URL, init_searcher_layer());
 

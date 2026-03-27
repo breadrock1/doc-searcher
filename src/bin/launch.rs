@@ -31,20 +31,7 @@ async fn main() -> anyhow::Result<()> {
     let app_meter = AppMeterRegistry::build_meter_registry()?;
     let server_app = ServerApp::new(storage_uc, searcher_uc, app_meter);
 
-    let cors_layer = cors::CorsLayer::permissive();
-    let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(otlp::PathFilter::default())
-        .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
-
-    let otel_axum_layer = OtelAxumLayer::default()
-        .filter(otlp::otel_axum_layer_filter_callback);
-
-    let app = httpserver::init_server(server_app)
-        .layer(OtelInResponseLayer)
-        .layer(otel_axum_layer)
-        .layer(trace_layer)
-        .layer(cors_layer)
-        .layer(axum::middleware::from_fn(mw::prometheus::meter));
+    let app = httpserver::init_server(server_app);
 
     let cache_config = config.cache();
     let tmp_app_state: anyhow::Result<Router> = match cache_config.is_enabled() {
