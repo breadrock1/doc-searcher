@@ -1,9 +1,6 @@
 use axum::Router;
-use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tower_http::trace::TraceLayer;
-use tower_http::{cors, trace};
 
 use doc_search::config::ServiceConfig;
 use doc_search::meter::AppMeterRegistry;
