@@ -28,8 +28,7 @@ where
         .make_span_with(otlp::PathFilter::default())
         .on_failure(trace::DefaultOnFailure::new().level(tracing::Level::ERROR));
 
-    let otel_axum_layer = OtelAxumLayer::default()
-        .filter(otlp::otel_axum_layer_filter_callback);
+    let otel_axum_layer = OtelAxumLayer::default().filter(otlp::otel_axum_layer_filter_callback);
 
     let meter_mw = axum::middleware::from_fn(mw::prometheus::meter);
 
