@@ -12,6 +12,7 @@ use axum::Router;
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use std::sync::Arc;
+use tower_http::cors;
 
 use crate::server::ServerApp;
 
@@ -30,6 +31,6 @@ where
         .merge(swagger::init_swagger_layer())
         .layer(DefaultBodyLimit::disable())
         .layer(DefaultBodyLimit::max(BYTE_SIZE * FILE_BODY_LIMIT_MB))
-        .layer(axum::middleware::from_fn(mw::prometheus::meter))
+        .layer(cors::CorsLayer::permissive())
         .with_state(app_arc)
 }
