@@ -14,8 +14,8 @@ pub struct RedisClient {
 #[async_trait::async_trait]
 impl ServiceConnect for RedisClient {
     type Config = RedisConfig;
-    type Error = RedisError;
     type Client = RedisClient;
+    type Error = RedisError;
 
     async fn connect(config: &Self::Config) -> Result<Self::Client, Self::Error> {
         let address = config.address().as_str();
