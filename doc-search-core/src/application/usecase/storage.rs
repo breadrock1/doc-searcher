@@ -33,14 +33,14 @@ impl<Storage> StorageUseCase<Storage>
 where
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn create_index(&self, params: &CreateIndexParams) -> StorageResult<IndexId> {
         let created_index_id = self.storage.create_index(params).await?;
 
         Ok(created_index_id)
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn check_index_exists(&self, index_id: &IndexId) -> StorageResult<IndexId> {
         self.storage.get_index(index_id).await
     }
@@ -49,20 +49,20 @@ where
         self.storage.delete_index(index_id).await
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn get_all_indexes(&self) -> StorageResult<Vec<IndexId>> {
         let all_indexes = self.storage.get_all_indexes().await?;
 
         Ok(all_indexes)
     }
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn get_index(&self, index_id: &IndexId) -> StorageResult<IndexId> {
         let index = self.storage.get_index(index_id).await?;
 
         Ok(index)
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn get_all_document_parts(
         &self,
         index_id: &IndexId,
@@ -76,7 +76,7 @@ where
         Ok(all_document_parts)
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn store_document(
         &self,
         index: &IndexId,
@@ -128,7 +128,7 @@ where
         Ok(stored_docs)
     }
 
-    #[instrument(level = "info", skip(self), err)]
+    #[instrument(level = "info", skip(self))]
     pub async fn delete_document(
         &self,
         index_id: &IndexId,

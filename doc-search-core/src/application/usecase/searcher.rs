@@ -27,7 +27,7 @@ impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: ISearcher + IPaginator + Send + Sync,
 {
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn search_document_parts(
         &self,
         params: &SearchingParams,
@@ -55,7 +55,7 @@ where
         Ok(pagination)
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     pub async fn load_next_pagination(
         &self,
         params: &PaginationParams,

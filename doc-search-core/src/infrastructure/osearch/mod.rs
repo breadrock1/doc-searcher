@@ -74,7 +74,7 @@ impl ServiceConnect for OSearchClient {
             .cert_validation(validation)
             .build()?;
 
-        tracing::debug!(address=%config.address(), "connected to opensearch");
+        tracing::info!(address=%config.address(), "connected to opensearch");
         let client = OpenSearch::new(transport);
         let arc_client = Arc::new(client);
         Ok(OSearchClient {
@@ -192,7 +192,6 @@ impl IDocumentPartStorage for OSearchClient {
             index_id = index_id.0,
             document_parts_amount = all_doc_parts.len(),
         ),
-        ret(Debug),
     )]
     async fn store_document_parts(
         &self,
@@ -259,7 +258,7 @@ impl IDocumentPartStorage for OSearchClient {
         Ok(stored_doc_info)
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     async fn get_document_parts(
         &self,
         index: &IndexId,
@@ -290,7 +289,7 @@ impl IDocumentPartStorage for OSearchClient {
         Ok(all_doc_parts)
     }
 
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     async fn get_document_part(
         &self,
         index: &IndexId,
@@ -355,7 +354,7 @@ impl IDocumentPartStorage for OSearchClient {
 
 #[async_trait::async_trait]
 impl ISearcher for OSearchClient {
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination> {
         let indexes = params
             .get_indexes()
@@ -406,7 +405,7 @@ impl ISearcher for OSearchClient {
 
 #[async_trait::async_trait]
 impl IPaginator for OSearchClient {
-    #[instrument(level = "info", skip(self), ret(Debug))]
+    #[instrument(level = "info", skip(self))]
     async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination> {
         let response = self
             .client
