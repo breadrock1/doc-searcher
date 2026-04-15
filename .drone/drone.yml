@@ -190,13 +190,13 @@ environment:
   REGISTRY_ADDRESS: ${REGISTRY_ADDRESS}
 
 steps:
-  - name: build-and-push-docker
+  - name: build-and-publish-package
     image: plugins/docker
     settings:
       repo: git.sova.local:3000/sova-core/doc-search
+      registry: git.sova.local:3000
       insecure: true
       dockerfile: Dockerfile
-      registry: git.sova.local:5000
       tags:
         - ${DRONE_COMMIT_SHA:0:8}
         - ${DRONE_TAG}
@@ -205,6 +205,20 @@ steps:
         from_secret: GITEA_USERNAME
       password:
         from_secret: GITEA_TOKEN
+
+  - name: build-and-push-dev-docker
+    image: plugins/docker
+    settings:
+      repo: dev.sova.local:3000/sova-core/doc-search
+      registry: dev.sova.local:5000
+      dockerfile: Dockerfile
+      insecure: true
+      tags:
+        - ${DRONE_TAG}
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
 
 volumes:
   - name: rust-targets
