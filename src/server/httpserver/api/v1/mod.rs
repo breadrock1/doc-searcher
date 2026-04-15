@@ -11,7 +11,8 @@ use axum::Router;
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use std::sync::Arc;
-
+use tower_http::trace;
+use crate::server::httpserver::mw;
 use crate::server::ServerApp;
 
 pub const API_VERSION_URL: &str = "/api/v1";
@@ -21,10 +22,18 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
+    let http_log_layer = otlp::HttpLogger::new();
+    let trace_layer = trace::TraceLayer::new_for_http()
+        .make_span_with(otlp::PathFilter::default());
+
+    let meter_mw = axum::middleware::from_fn(mw::prometheus::meter);
+    
     let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
         .nest(API_VERSION_URL, init_storage_layer())
         .nest(API_VERSION_URL, init_searcher_layer())
-        .layer(otlp::HttpLogger::new());
+        .layer(http_log_layer)
+        .layer(trace_layer)
+        .layer(meter_mw);
 
     router
 }
