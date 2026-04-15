@@ -23,7 +23,8 @@ where
 {
     let router: Router<Arc<ServerApp<Storage, Searcher>>> = Router::new()
         .nest(API_VERSION_URL, init_storage_layer())
-        .nest(API_VERSION_URL, init_searcher_layer());
+        .nest(API_VERSION_URL, init_searcher_layer())
+        .layer(otlp::HttpLogger::new());
 
     router
 }

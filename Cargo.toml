@@ -79,7 +79,7 @@ path = "doc-search-core"
 
 [dependencies.otlp]
 git = "https://github.com/breadrock1/otlp-rs.git"
-tag = "v0.0.2"
+tag = "v0.0.3"
 
 [[bin]]
 name = "launch"
