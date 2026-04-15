@@ -209,7 +209,7 @@ steps:
   - name: build-and-push-dev-docker
     image: plugins/docker
     settings:
-      repo: dev.sova.local:3000/sova-core/doc-search
+      repo: dev.sova.local:5000/sova-core/doc-search
       registry: dev.sova.local:5000
       dockerfile: Dockerfile
       insecure: true
