@@ -13,17 +13,20 @@ use axum::Router;
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use std::sync::Arc;
+use otlp::TelemetryConfig;
 use tower_http::trace;
 
 pub const API_VERSION_URL: &str = "/api/v1";
 
-pub fn init_routers<Storage, Searcher>() -> Router<Arc<ServerApp<Storage, Searcher>>>
+pub fn init_routers<Storage, Searcher>(telemetry_config: &TelemetryConfig) -> Router<Arc<ServerApp<Storage, Searcher>>>
 where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let http_log_layer = otlp::HttpLogger::new();
-    let trace_layer = trace::TraceLayer::new_for_http().make_span_with(otlp::PathFilter::default());
+    let attributes = telemetry_config.logger().attributes();
+    let http_log_layer = otlp::HttpLogger::new(attributes.clone());
+    let trace_layer = trace::TraceLayer::new_for_http()
+        .make_span_with(otlp::PathFilter::new(attributes.clone()));
 
     let meter_mw = axum::middleware::from_fn(mw::prometheus::meter);
 
