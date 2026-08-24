@@ -10,7 +10,7 @@ use crate::server::httpserver::api::v1::schema::DocumentPartSchema;
 
 use super::constants::{
     DOCUMENT_CONTENT, DOCUMENT_CREATED_AT, DOCUMENT_FILE_NAME, DOCUMENT_FILE_PATH,
-    DOCUMENT_FILE_SIZE, DOCUMENT_MODIFIED_AT, FIRST_DOC_PART_ID, LARGE_DOCUMENT_ID,
+    DOCUMENT_FILE_SIZE, DOCUMENT_MODIFIED_AT, FIRST_DOC_PART_ID, LARGE_DOCUMENT_ID, TEST_INDEX_ID,
 };
 
 pub fn stored_document_info_json_object() -> Value {
@@ -53,6 +53,23 @@ pub fn document_parts_json_object() -> Value {
     json!([
         build_document_part_json_object(1),
         build_document_part_json_object(2)
+    ])
+}
+
+pub fn build_index_document_part_json_object(doc_part_id: usize) -> Value {
+    let document_part = build_document_part(doc_part_id);
+    let mut document_part_schema = DocumentPartSchema::try_from(document_part)
+        .expect("failed to convert document part to schema");
+    document_part_schema.index = Some(TEST_INDEX_ID.to_string());
+
+    serde_json::to_value(document_part_schema)
+        .expect("failed to convert document part schema to JSON")
+}
+
+pub fn index_documents_json_object() -> Value {
+    json!([
+        build_index_document_part_json_object(1),
+        build_index_document_part_json_object(2)
     ])
 }
 

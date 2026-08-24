@@ -1,8 +1,10 @@
-use doc_search_core::domain::searcher::models::{RetrieveIndexDocumentsParams, SearchingParams};
+use doc_search_core::domain::searcher::models::{
+    PaginationParams, RetrieveIndexDocumentsParams, SearchingParams,
+};
 use doc_search_core::domain::storage::models::{CreateIndexParams, LargeDocument};
 
 use crate::server::httpserver::api::v1::form::{
-    CreateDocumentForm, CreateIndexForm, FullTextSearchForm, HybridSearchForm,
+    CreateDocumentForm, CreateIndexForm, FullTextSearchForm, HybridSearchForm, PaginateForm,
     RetrieveDocumentForm, SemanticSearchForm, UpdateDocumentForm,
 };
 use crate::server::ServerResult;
@@ -91,5 +93,19 @@ fn test_hybrid_search_form_mapping(
 ) -> anyhow::Result<()> {
     let result: ServerResult<SearchingParams> = form.try_into();
     assert_eq!(result.is_ok(), is_success);
+    Ok(())
+}
+
+#[rstest::rstest]
+#[case("first-scroll-id")]
+#[case("second-scroll-id")]
+fn test_paginate_form_mapping(#[case] scroll_id: &str) -> anyhow::Result<()> {
+    let form: PaginateForm = serde_json::from_value(serde_json::json!({ "scroll_id": scroll_id }))
+        .expect("failed to deserialize paginate form");
+
+    let result: ServerResult<PaginationParams> = form.try_into();
+    let pagination = result.expect("paginate form must convert to pagination params");
+    assert_eq!(scroll_id, pagination.scroll_id.as_str());
+
     Ok(())
 }

@@ -1,3 +1,4 @@
+pub mod searcher;
 pub mod storage;
 
 use rstest::fixture;

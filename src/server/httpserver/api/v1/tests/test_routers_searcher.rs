@@ -257,3 +257,61 @@ async fn test_search_hybrid(
 
     Ok(())
 }
+
+#[tokio::test]
+#[rstest::rstest]
+#[case(StatusCode::OK, stubs::pagination_result_json_object())]
+#[case(
+    StatusCode::INTERNAL_SERVER_ERROR,
+    stubs::internal_server_error_json_response()
+)]
+async fn test_paginate_next(
+    #[case] expected_status: StatusCode,
+    #[case] expected_body: Value,
+) -> anyhow::Result<()> {
+    let storage = MockStorageService::new();
+    let mut searcher = MockSearcherService::new();
+
+    let expectation = searcher.expect_paginate().once();
+
+    match expected_status {
+        StatusCode::OK => expectation.returning(move |_| {
+            let scroll = Some(SCROLL_ID.to_string());
+            let documents = vec![
+                stubs::founded_document_with_part_id(1),
+                stubs::founded_document_with_part_id(2),
+            ];
+
+            Ok(Pagination::new(scroll, documents))
+        }),
+        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_| {
+            let err = anyhow!("internal server error");
+            Err(SearchError::InternalError(err))
+        }),
+        _ => return Err(anyhow!("unexpected test case")),
+    };
+
+    let test_server_context = test_server::create_test_server_context(storage, searcher);
+
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri(format!("{}/search/paginate/{}", API_VERSION_URL, SCROLL_ID))
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::empty())
+        .expect("failed to build request");
+
+    let response = test_server_context
+        .test_server
+        .clone()
+        .oneshot(request)
+        .await?;
+    assert_eq!(response.status(), expected_status);
+
+    let body = axum::body::to_bytes(response.into_body(), RESPONSE_BODY_SIZE_LIMIT)
+        .await
+        .expect("body should be ok");
+    let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
+    assert_eq!(expected_body, data);
+
+    Ok(())
+}

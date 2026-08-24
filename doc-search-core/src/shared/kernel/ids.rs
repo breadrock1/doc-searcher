@@ -17,7 +17,7 @@ impl Deref for LargeDocumentId {
 
 impl Display for LargeDocumentId {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(fmt, "{}", &self.0)
+        write!(fmt, "{}", self.0)
     }
 }
 

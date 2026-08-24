@@ -66,7 +66,7 @@ impl Debug for LargeDocument {
         write!(
             f,
             "file_path: {}, create_at: {}",
-            &self.file_path, &self.created_at
+            self.file_path, self.created_at
         )
     }
 }
@@ -123,7 +123,7 @@ impl Debug for DocumentPart {
         write!(
             f,
             "large_doc_id: {:?}, doc_part_id: {}",
-            &self.large_doc_id, &self.doc_part_id
+            self.large_doc_id, self.doc_part_id
         )
     }
 }

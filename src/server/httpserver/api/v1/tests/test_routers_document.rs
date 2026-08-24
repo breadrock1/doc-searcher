@@ -92,19 +92,19 @@ async fn test_get_document_parts(
     StatusCode::OK,
     TEST_INDEX_ID,
     stubs::retrieve_index_documents_params_json_object(),
-    stubs::document_parts_json_object()
+    stubs::index_documents_json_object()
 )]
 #[case(
     StatusCode::OK,
     COMPOSITE_INDEX_IDS,
     stubs::retrieve_index_documents_params_json_object(),
-    stubs::document_parts_json_object()
+    stubs::index_documents_json_object()
 )]
 #[case(
     StatusCode::OK,
     TEST_INDEX_ID,
     stubs::retrieve_index_documents_params_with_filter_json_object(),
-    stubs::document_parts_json_object()
+    stubs::index_documents_json_object()
 )]
 #[case(
     StatusCode::NOT_FOUND,
@@ -172,6 +172,46 @@ async fn test_get_index_documents(
 
     let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
     assert_eq!(expected_body, data);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_index_documents_empty() -> anyhow::Result<()> {
+    let storage = MockStorageService::new();
+    let mut searcher = MockSearcherService::new();
+    searcher
+        .expect_search()
+        .once()
+        .returning(|_| Ok(Pagination::new(None, vec![])));
+
+    let test_server_context = test_server::create_test_server_context(storage, searcher);
+
+    let request_body = serde_json::to_vec(&stubs::retrieve_index_documents_params_json_object())
+        .expect("failed to serialize json");
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri(format!(
+            "{}/storage/{}/documents",
+            API_VERSION_URL, TEST_INDEX_ID
+        ))
+        .header(CONTENT_TYPE, TEST_CONTENT_TYPE)
+        .body(Body::from(request_body))
+        .expect("failed to build request");
+
+    let response = test_server_context
+        .test_server
+        .clone()
+        .oneshot(request)
+        .await?;
+    assert_eq!(StatusCode::OK, response.status());
+
+    let body = axum::body::to_bytes(response.into_body(), RESPONSE_BODY_SIZE_LIMIT)
+        .await
+        .expect("extracting response body failed");
+
+    let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
+    assert_eq!(serde_json::json!([]), data);
 
     Ok(())
 }

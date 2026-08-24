@@ -8,6 +8,7 @@ pub use document::build_document_part_json_object;
 pub use document::create_document_json_object;
 pub use document::create_documents_json_object;
 pub use document::document_parts_json_object;
+pub use document::index_documents_json_object;
 pub use document::stored_document_info;
 pub use document::stored_document_info_json_object;
 pub use document::stored_documents_info_json_object;

@@ -8,6 +8,12 @@ mod index;
 pub use index::IndexInformation;
 
 mod metadata;
+
+#[allow(unused_imports)]
+pub use metadata::{
+    Class, Group, Icons, Location, Pipeline, Reference, SourceDocumentMetadata, Subject,
+};
+
 mod params;
 
 pub use params::{FullTextQueryParams, FullTextQueryParamsBuilder};
