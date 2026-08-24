@@ -8,9 +8,9 @@ use doc_search::server::ServerApp;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
 
-use crate::config::ServiceConfig;
 use super::super::mocks::searcher::MockSearcherService;
 use super::super::mocks::storage::MockStorageService;
+use crate::config::ServiceConfig;
 
 const MAX_CONTENT_SIZE: usize = 100;
 

@@ -11,8 +11,8 @@ use axum::extract::DefaultBodyLimit;
 use axum::Router;
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
-use std::sync::Arc;
 use otlp::TelemetryConfig;
+use std::sync::Arc;
 use tower_http::cors;
 
 use crate::server::ServerApp;
