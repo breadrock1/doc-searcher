@@ -1,3 +1,4 @@
+pub mod config;
 pub mod search;
 
 pub const INDEX_ID: &str = "test-folder";
