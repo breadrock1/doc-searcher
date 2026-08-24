@@ -98,7 +98,7 @@ impl Debug for DocumentPartEntrails {
         write!(
             f,
             "large_doc_id: {:?}, doc_part_id: {}",
-            &self.large_doc_id, &self.doc_part_id
+            self.large_doc_id, self.doc_part_id
         )
     }
 }

@@ -29,7 +29,7 @@ impl Debug for SearchingParams {
         write!(
             f,
             "indexes: {:?}, kind: {:?}, result: {:?}, filter: {:?}",
-            &self.indexes, &self.kind, &self.result, &self.filter,
+            self.indexes, self.kind, self.result, self.filter,
         )
     }
 }
@@ -144,7 +144,7 @@ impl Debug for SemanticSearchingParams {
         write!(
             f,
             "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
-            &self.query, &self.knn_amount, &self.min_score, &self.model_id,
+            self.query, self.knn_amount, self.min_score, self.model_id,
         )
     }
 }
@@ -169,7 +169,7 @@ impl Debug for HybridSearchingParams {
         write!(
             f,
             "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
-            &self.query, &self.knn_amount, &self.min_score, &self.model_id,
+            self.query, self.knn_amount, self.min_score, self.model_id,
         )
     }
 }
