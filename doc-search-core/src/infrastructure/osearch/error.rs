@@ -221,7 +221,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
     use rstest::rstest;
-    
+
     #[rstest]
     #[case::index_not_found("index_not_found_exception", "IndexNotFound")]
     #[case::doc_missing("document_missing_exception", "DocumentNotFound")]

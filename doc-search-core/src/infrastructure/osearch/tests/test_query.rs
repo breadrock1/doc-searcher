@@ -267,7 +267,7 @@ fn test_build_retrieve_all_doc_parts_query() -> anyhow::Result<()> {
         .only_first_part(true)
         .build()
         .context("failed to build retrieve all doc parts query params")?;
-    
+
     let query = params.build_query();
     assert!(
         query["query"]["bool"]["must"]
