@@ -36,6 +36,9 @@ pub type AllDocumentParts = Vec<DocumentPart>;
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::LargeDocument;
+/// use doc_search_core::shared::kernel::metadata::DocumentMetadataBuilder;
+///
 /// let large_doc = LargeDocument {
 ///     file_name: "the_great_gatsby.txt".to_string(),
 ///     file_path: "/uploads/novels/the_great_gatsby.txt".to_string(),
@@ -43,11 +46,7 @@ pub type AllDocumentParts = Vec<DocumentPart>;
 ///     created_at: 1634567890,
 ///     modified_at: 1634567890,
 ///     content: "Chapter 1 ...".to_string(),
-///     metadata: Some(DocumentMetadata {
-///         author: "F. Scott Fitzgerald".to_string(),
-///         language: "en".to_string(),
-///         // ... other metadata fields
-///     }),
+///     metadata: None,
 /// };
 /// ```
 #[derive(Builder)]
@@ -93,8 +92,11 @@ impl Debug for LargeDocument {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::DocumentPart;
+/// use doc_search_core::shared::kernel::LargeDocumentId;
+///
 /// let doc_part = DocumentPart {
-///     large_doc_id: "doc_123".to_string(),
+///     large_doc_id: LargeDocumentId("doc_123".to_string()),
 ///     doc_part_id: 3,
 ///     file_name: "the_great_gatsby.txt".to_string(),
 ///     file_path: "/uploads/novels/the_great_gatsby.txt".to_string(),
@@ -182,9 +184,13 @@ impl LargeDocument {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::StoredDocumentPartsInfo;
+/// use doc_search_core::shared::kernel::LargeDocumentId;
+/// use doc_search_core::shared::kernel::DocumentPartId;
+///
 /// let stored_info = StoredDocumentPartsInfo {
-///     large_doc_id: "doc_123".to_string(),
-///     first_part_id: "doc_123_part_1".to_string(),
+///     large_doc_id: LargeDocumentId("doc_123".to_string()),
+///     first_part_id: DocumentPartId("doc_123_part_1".to_string()),
 ///     doc_parts_amount: 15,
 /// };
 /// ```

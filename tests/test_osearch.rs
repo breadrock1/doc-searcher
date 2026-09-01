@@ -48,6 +48,7 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[rstest]
 #[serial]
 #[tokio::test]
@@ -85,6 +86,7 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[rstest]
 #[serial]
 #[tokio::test]

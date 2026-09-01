@@ -18,6 +18,12 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::IPaginator;
+/// use doc_search_core::domain::searcher::SearchResult;
+/// use doc_search_core::domain::searcher::models::Pagination;
+/// use doc_search_core::domain::searcher::models::PaginationParams;
+/// use doc_search_core::domain::searcher::models::SearchingParams;
+/// 
 /// #[async_trait::async_trait]
 /// impl ISearcher for MySearcher {
 ///     async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination> {
@@ -50,13 +56,18 @@ pub trait ISearcher {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::IPaginator;
+/// use doc_search_core::domain::searcher::SearchResult;
+/// use doc_search_core::domain::searcher::models::Pagination;
+/// use doc_search_core::domain::searcher::models::PaginationParams;
+/// 
 /// #[async_trait::async_trait]
 /// impl IPaginator for MyPaginator {
 ///     async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination> {
 ///         // Implementation logic here
 ///         Ok(Pagination {
 ///             scroll_id: Some("next_scroll_id".to_string()),
-///             founded: next_page_results,
+///             founded: vec![],
 ///         })
 ///     }
 /// }

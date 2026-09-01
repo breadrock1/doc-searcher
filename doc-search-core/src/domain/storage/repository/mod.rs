@@ -32,11 +32,16 @@ use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::CreateIndexParams;
+/// use doc_search_core::domain::storage::StorageResult;
+/// use doc_search_core::domain::storage::IIndexStorage;
+/// use doc_search_core::shared::kernel::IndexId;
+/// 
 /// #[async_trait::async_trait]
 /// impl IIndexStorage for ElasticsearchStorage {
 ///     async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<IndexId> {
 ///         // Implementation for creating index in Elasticsearch
-///         Ok(index.id.clone())
+///         Ok(IndexId(index.id.clone()))
 ///     }
 ///
 ///     async fn delete_index(&self, id: &IndexId) -> StorageResult<()> {
@@ -96,7 +101,15 @@ pub trait IIndexStorage {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::DocumentPart;
+/// use doc_search_core::domain::storage::models::StoredDocumentPartsInfo;
+/// use doc_search_core::domain::storage::models::AllDocumentParts;
+/// use doc_search_core::domain::storage::IDocumentPartStorage;
+/// use doc_search_core::domain::storage::StorageError;
+/// use doc_search_core::domain::storage::StorageResult;
 /// use doc_search_core::shared::kernel::DocumentPartId;
+/// use doc_search_core::shared::kernel::IndexId;
+/// use doc_search_core::shared::kernel::LargeDocumentId;
 ///
 /// #[async_trait::async_trait]
 /// impl IDocumentPartStorage for ElasticsearchStorage {
@@ -108,7 +121,7 @@ pub trait IIndexStorage {
 ///         // Implementation for bulk indexing document parts
 ///         Ok(StoredDocumentPartsInfo {
 ///             large_doc_id: all_doc_parts[0].large_doc_id.clone(),
-///             first_part_id: format!("{}_part_1", all_doc_parts[0].large_doc_id),
+///             first_part_id: DocumentPartId(format!("{:?}_part_1", all_doc_parts[0].large_doc_id)),
 ///             doc_parts_amount: all_doc_parts.len(),
 ///         })
 ///     }
@@ -129,7 +142,7 @@ pub trait IIndexStorage {
 ///     ) -> StorageResult<DocumentPart> {
 ///         // Implementation for retrieving a single part
 ///         Err(StorageError::DocumentNotFound(
-///             anyhow::anyhow!("Document part not found: {}", doc_part_id)
+///             anyhow::anyhow!("Document part not found: {:?}", doc_part_id)
 ///         ))
 ///     }
 ///

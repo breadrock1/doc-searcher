@@ -8,6 +8,9 @@ use derive_builder::Builder;
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::CreateIndexParams;
+/// use doc_search_core::domain::storage::models::KnnIndexParams;
+///
 /// let create_params = CreateIndexParams {
 ///     id: "documents_2024".to_string(),
 ///     knn: Some(KnnIndexParams {
@@ -35,6 +38,8 @@ pub struct CreateIndexParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::models::KnnIndexParams;
+///
 /// let knn_params = KnnIndexParams {
 ///     knn_dimension: 768,
 ///     token_limit: 512,

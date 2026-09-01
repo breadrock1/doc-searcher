@@ -10,6 +10,15 @@ use derive_builder::Builder;
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentMetadata;
+/// use doc_search_core::shared::kernel::metadata::DocumentLocation;
+/// use doc_search_core::shared::kernel::metadata::DocumentSubject;
+/// use doc_search_core::shared::kernel::metadata::DocumentClass;
+/// use doc_search_core::shared::kernel::metadata::DocumentIcon;
+/// use doc_search_core::shared::kernel::metadata::DocumentGroup;
+/// use doc_search_core::shared::kernel::metadata::DocumentReference;
+/// use doc_search_core::shared::kernel::metadata::PipelineLabel;
+/// 
 /// let metadata = DocumentMetadata {
 ///     pipeline_id: Some(12345),
 ///     photo: Some("/images/article.jpg".to_string()),
@@ -115,6 +124,8 @@ pub struct DocumentMetadata {
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentIcon;
+/// 
 /// let icon = DocumentIcon("📰".to_string());
 /// let tech_icon = DocumentIcon("💻".to_string());
 /// ```
@@ -129,6 +140,8 @@ pub struct DocumentIcon(pub String);
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentSubject;
+/// 
 /// let subject = DocumentSubject("Technology".to_string());
 /// let politics = DocumentSubject("Politics".to_string());
 /// ```
@@ -143,6 +156,8 @@ pub struct DocumentSubject(pub String);
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentReference;
+/// 
 /// let reference = DocumentReference("db-id-12345".to_string());
 /// let external_ref = DocumentReference("ext:news:789".to_string());
 /// ```
@@ -157,6 +172,8 @@ pub struct DocumentReference(pub String);
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::PipelineLabel;
+///
 /// let pipeline = PipelineLabel("ner-v2".to_string());
 /// let classifier = PipelineLabel("topic-classifier-v3".to_string());
 /// ```
@@ -171,6 +188,8 @@ pub struct PipelineLabel(pub String);
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentGroup;
+/// 
 /// let group = DocumentGroup("World News".to_string());
 /// let feature = DocumentGroup("Featured Stories".to_string());
 /// ```
@@ -185,6 +204,8 @@ pub struct DocumentGroup(pub String);
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentLocation;
+/// 
 /// let location = DocumentLocation {
 ///     name: "Paris".to_string(),
 ///     latitude: 48.8566,
@@ -226,6 +247,8 @@ pub struct DocumentLocation {
 /// # Examples
 ///
 /// ```
+/// use doc_search_core::shared::kernel::metadata::DocumentClass;
+/// 
 /// let class = DocumentClass {
 ///     name: "Sports".to_string(),
 ///     probability: 0.92,
