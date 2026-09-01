@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:3.4.0
     restart: unless-stopped
     networks:
       - doc-search-net
