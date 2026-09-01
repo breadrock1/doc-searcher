@@ -122,6 +122,8 @@ pub struct FullTextSearchingParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::SemanticSearchingParams;
+///
 /// let semantic_params = SemanticSearchingParams {
 ///     query: "machine learning".to_string(),
 ///     knn_amount: 10,
@@ -205,6 +207,8 @@ pub struct PaginationParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::FilterParams;
+///
 /// let filters = FilterParams {
 ///     doc_part_id: Some(1),
 ///     size_from: Some(1024),
@@ -259,6 +263,9 @@ pub struct FilterParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::ResultParams;
+/// use doc_search_core::domain::searcher::models::ResultOrder;
+///
 /// let result_params = ResultParams {
 ///     size: 20,
 ///     offset: 0,

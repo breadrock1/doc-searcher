@@ -37,6 +37,9 @@ pub type StorageResult<T> = Result<T, StorageError>;
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::storage::StorageError;
+/// use doc_search_core::domain::storage::models::LargeDocument;
+///
 /// fn validate_document(doc: &LargeDocument) -> Result<(), StorageError> {
 ///     if doc.content.is_empty() {
 ///         return Err(StorageError::ValidationError(
@@ -70,9 +73,15 @@ pub type StorageResult<T> = Result<T, StorageError>;
 ///
 /// # Usage in Error Handling
 /// ```
+/// use doc_search_core::domain::storage::StorageError;
+/// use doc_search_core::domain::storage::models::AllDocumentParts;
+/// use doc_search_core::domain::storage::models::StoredDocumentPartsInfo;
+/// use doc_search_core::domain::storage::IDocumentPartStorage;
+/// use doc_search_core::shared::kernel::IndexId;
+///
 /// async fn process_document_storage(
 ///     storage: &dyn IDocumentPartStorage,
-///     index: &str,
+///     index: &IndexId,
 ///     parts: AllDocumentParts,
 /// ) -> Result<StoredDocumentPartsInfo, StorageError> {
 ///     // Validate input
@@ -84,10 +93,10 @@ pub type StorageResult<T> = Result<T, StorageError>;
 ///
 ///     // Check if document already exists
 ///     let large_doc_id = &parts[0].large_doc_id;
-///     match storage.get_document_parts(index, large_doc_id).await {
+///     match storage.get_document_parts(&index, large_doc_id).await {
 ///         Ok(_) => {
 ///             return Err(StorageError::DocumentAlreadyExists(
-///                 anyhow::anyhow!("Document {} already exists in index {}", large_doc_id, index)
+///                 anyhow::anyhow!("Document {:?} already exists in index {:?}", large_doc_id, index)
 ///             ));
 ///         }
 ///         Err(StorageError::DocumentNotFound(_)) => {
@@ -103,6 +112,11 @@ pub type StorageResult<T> = Result<T, StorageError>;
 ///
 /// # Error Conversion Pattern
 /// ```
+/// use doc_search_core::domain::storage::StorageError;
+/// use doc_search_core::domain::storage::models::AllDocumentParts;
+/// use doc_search_core::domain::storage::models::StoredDocumentPartsInfo;
+/// use doc_search_core::domain::storage::IDocumentPartStorage;
+///
 /// impl From<elasticsearch::Error> for StorageError {
 ///     fn from(err: elasticsearch::Error) -> Self {
 ///         match err {
@@ -130,9 +144,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::AuthenticationFailed(
     ///     anyhow::anyhow!("API key has expired")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: auth failed: {0}")]
     AuthenticationFailed(anyhow::Error),
@@ -147,9 +163,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::ConnectionError(
     ///     anyhow::anyhow!("Failed to connect to storage service at localhost:9200")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: connection error: {0}")]
     ConnectionError(anyhow::Error),
@@ -163,9 +181,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::IndexNotFound(
     ///     anyhow::anyhow!("Index 'documents_2023' does not exist")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: index has not been founded: {0}")]
     IndexNotFound(anyhow::Error),
@@ -179,9 +199,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::DocumentNotFound(
     ///     anyhow::anyhow!("Document with id 'documents_2023' does not exist")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: document has not been founded: {0}")]
     DocumentNotFound(anyhow::Error),
@@ -194,9 +216,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::DocumentAlreadyExists(
     ///     anyhow::anyhow!("Index 'documents_2023' does not exist")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: document already exists: {0}")]
     DocumentAlreadyExists(anyhow::Error),
@@ -209,9 +233,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::DocumentAlreadyExists(
     ///     anyhow::anyhow!("Index 'documents_2023' does not exist")
-    /// ))
+    /// ));
     /// ```
     #[error("can't split large document: {0}")]
     CantSplitLargeDocuments(anyhow::Error),
@@ -226,9 +252,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::ValidationError(
     ///     anyhow::anyhow!("missing fields into structure")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: validation error: {0}")]
     ValidationError(anyhow::Error),
@@ -243,9 +271,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::InternalError(
     ///     anyhow::anyhow!("Failed to allocate memory for storing results")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: internal error: {0}")]
     InternalError(anyhow::Error),
@@ -259,9 +289,11 @@ pub enum StorageError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::storage::StorageError;
+    ///
     /// Err(StorageError::UnknownError(
     ///     anyhow::anyhow!("Unexpected response format from storage service")
-    /// ))
+    /// ));
     /// ```
     #[error("storage: unknown error: {0}")]
     UnknownError(anyhow::Error),

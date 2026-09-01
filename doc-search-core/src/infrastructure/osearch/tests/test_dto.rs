@@ -1,108 +1,57 @@
-use anyhow::Result;
+use rstest::rstest;
 
 use crate::domain::searcher::models::DocumentPartEntrails;
-use crate::domain::storage::models::{DocumentPart, DocumentPartBuilder};
-use crate::infrastructure::osearch::dto::{
-    Class, FoundedDocumentInfo, Group, Icons, IndexInformation, Location, Pipeline, Reference,
-    SourceDocument, SourceDocumentMetadata, Subject,
-};
-use crate::infrastructure::osearch::tests::fixture::search::build_full_search_result;
+use crate::domain::storage::models::DocumentPart;
+use crate::domain::storage::tests::fixture::document::*;
+use crate::infrastructure::osearch::dto::*;
+use crate::infrastructure::osearch::tests::fixture::document::*;
 use crate::infrastructure::osearch::tests::fixture::{DOCUMENT_ID, INDEX_ID};
-use crate::shared::kernel::metadata::{
-    DocumentClassBuilder, DocumentGroup, DocumentIcon, DocumentLocationBuilder, DocumentMetadata,
-    DocumentMetadataBuilder, DocumentReference, DocumentSubject, PipelineLabel,
-};
-use crate::shared::kernel::{IndexId, LargeDocumentId};
+use crate::shared::kernel::IndexId;
+use crate::shared::kernel::metadata::DocumentMetadata;
 
-fn build_document_metadata() -> Result<DocumentMetadata> {
-    Ok(DocumentMetadataBuilder::default()
-        .pipeline_id(Some(123))
-        .photo(Some("photo.jpg".to_string()))
-        .source(Some("source".to_string()))
-        .semantic_source(Some("semantic".to_string()))
-        .summary(Some("summary".to_string()))
-        .locations(vec![
-            DocumentLocationBuilder::default()
-                .name("Moscow".to_string())
-                .latitude(55.75)
-                .longitude(37.61)
-                .build()?,
-        ])
-        .subjects(vec![DocumentSubject("politics".to_string())])
-        .classes(vec![
-            DocumentClassBuilder::default()
-                .name("news".to_string())
-                .probability(0.9)
-                .build()?,
-        ])
-        .icons(vec![DocumentIcon("icon".to_string())])
-        .groups(vec![DocumentGroup("group".to_string())])
-        .pipelines(vec![PipelineLabel("ml-pipeline".to_string())])
-        .references(vec![DocumentReference("ref-1".to_string())])
-        .build()?)
-}
-
-fn first_hit_source() -> serde_json::Value {
-    build_full_search_result()["hits"]["hits"][0]["_source"].clone()
-}
-
-#[test]
-fn test_source_document_to_document_part_entrails() -> Result<()> {
-    let source: SourceDocument = serde_json::from_value(first_hit_source())?;
-
-    let entrails: DocumentPartEntrails = source.try_into()?;
+#[rstest]
+fn test_source_document_to_document_part_entrails(
+    #[from(build_source_document)] source_doc: SourceDocument,
+) -> anyhow::Result<()> {
+    let entrails: DocumentPartEntrails = source_doc.try_into()?;
     assert_eq!(DOCUMENT_ID, entrails.large_doc_id.0.as_str());
-    assert!(entrails.content.is_some());
 
     let meta = entrails.metadata.expect("metadata must be converted");
     assert_eq!("source", meta.source.as_deref().expect("source"));
     Ok(())
 }
 
-#[test]
-fn test_document_part_to_source_document() -> Result<()> {
-    let doc_part = DocumentPartBuilder::default()
-        .large_doc_id(LargeDocumentId(DOCUMENT_ID.to_string()))
-        .doc_part_id(1)
-        .file_name("name.txt".to_string())
-        .file_path("/path/name.txt".to_string())
-        .file_size(100)
-        .created_at(1)
-        .modified_at(2)
-        .content("hello world".to_string())
-        .metadata(Some(build_document_metadata()?))
-        .build()?;
-
+#[rstest]
+fn test_document_part_to_source_document() -> anyhow::Result<()> {
+    let doc_part = build_document_part(1);
     let source: SourceDocument = doc_part.try_into()?;
-    assert_eq!(DOCUMENT_ID, source.large_doc_id);
-    assert_eq!(Some("hello world".to_string()), source.content);
-    assert_eq!(100, source.file_size);
-    assert!(source.metadata.is_some());
+    assert_eq!(LARGE_DOCUMENT_ID, source.large_doc_id);
+    assert_eq!(Some(LARGE_DOCUMENT_CONTENT.to_string()), source.content);
+    assert_eq!(LARGE_DOCUMENT_FILE_SIZE, source.file_size);
     Ok(())
 }
 
-#[test]
-fn test_founded_document_info_to_document_part() -> Result<()> {
-    let hit = build_full_search_result()["hits"]["hits"][0].clone();
-    let info: FoundedDocumentInfo = serde_json::from_value(hit)?;
-
-    let doc_part: DocumentPart = info.try_into()?;
+#[rstest]
+fn test_founded_document_info_to_document_part(
+    #[from(build_founded_document_info)] doc_info: FoundedDocumentInfo,
+) -> anyhow::Result<()> {
+    let doc_part: DocumentPart = doc_info.try_into()?;
     assert_eq!(DOCUMENT_ID, doc_part.large_doc_id.0.as_str());
     assert_eq!("There is some highlight content", doc_part.content);
     Ok(())
 }
 
-#[test]
-fn test_index_information_to_index_id() -> Result<()> {
-    let info: IndexInformation = serde_json::from_value(serde_json::json!({ "index": INDEX_ID }))?;
-
-    let index_id: IndexId = info.into();
+#[rstest]
+fn test_index_information_to_index_id(
+    #[from(build_index_info)] index_info: IndexInformation,
+) -> anyhow::Result<()> {
+    let index_id: IndexId = index_info.into();
     assert_eq!(INDEX_ID, index_id.0.as_str());
     Ok(())
 }
 
 #[test]
-fn test_document_metadata_to_source_document_metadata() -> Result<()> {
+fn test_document_metadata_to_source_document_metadata() -> anyhow::Result<()> {
     let meta = build_document_metadata()?;
 
     let src: SourceDocumentMetadata = meta.try_into()?;
@@ -119,7 +68,7 @@ fn test_document_metadata_to_source_document_metadata() -> Result<()> {
 }
 
 #[test]
-fn test_source_document_metadata_to_document_metadata() -> Result<()> {
+fn test_source_document_metadata_to_document_metadata() -> anyhow::Result<()> {
     let src = SourceDocumentMetadata {
         photo: Some("photo.jpg".to_string()),
         pipeline_id: Some(123),

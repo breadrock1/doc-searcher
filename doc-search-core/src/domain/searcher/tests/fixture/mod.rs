@@ -1,4 +1,4 @@
-mod pagination;
+pub mod document;
 pub mod params;
 
 pub const QUERY_FIELD_VALUE: &str = "query string";
@@ -11,3 +11,14 @@ pub const DISTANCE_FILTER_PARAMS: &str = "10km";
 pub const LOCATION_COORDS_FILTER_PARAMS: &[f64; 2] = &[40.0, 25.0];
 pub const DOCUMENT_CLASS_FILTER_PARAMS: &str = "class";
 pub const DOCUMENT_CLASS_PROBABILITY_FILTER_PARAMS: f64 = 0.8;
+pub const DOC_PART_ID: usize = 1;
+pub const DOC_FILE_NAME: &str = "file.pdf";
+pub const DOC_FILE_PATH: &str = "/some/path/file.pdf";
+pub const DOC_FILE_SIZE: u32 = 1024;
+pub const DOC_CREATED_AT: i64 = 1756498133;
+pub const DOC_MODIFIED_AT: i64 = 1756498135;
+pub const DOC_CONTENT: &str = "document content";
+pub const DOC_ID: &str = "document-test";
+pub const INDEX: &str = "index-test";
+pub const SCORE: f64 = 0.9;
+pub const HIGHLIGHT_ITEM: &str = "document content";

@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
     let app_meter = AppMeterRegistry::build_meter_registry()?;
     let server_app = ServerApp::new(storage_uc, searcher_uc, app_meter);
 
-    let app = httpserver::init_server(server_app);
+    let app = httpserver::init_server(server_app, config.telemetry());
 
     let cache_config = config.cache();
     let tmp_app_state: anyhow::Result<Router> = match cache_config.is_enabled() {

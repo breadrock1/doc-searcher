@@ -1,46 +1,35 @@
-use crate::domain::searcher::models::{
-    DocumentPartEntrailsBuilder, Embeddings, FoundedDocumentBuilder,
+use rstest::rstest;
+
+use crate::domain::searcher::models::{DocumentPartEntrails, Embeddings};
+use crate::domain::searcher::tests::fixture::document::{
+    build_document_part_entrails, build_founded_document,
 };
-use crate::shared::kernel::LargeDocumentId;
+use crate::domain::searcher::tests::fixture::{DOC_ID, DOC_PART_ID, INDEX};
 
-const LARGE_DOC_ID: &str = "large-doc-1";
+const LARGE_DOC_ID: &str = "29346839246dsf987a1173sfa7sd781h";
 
-#[test]
-fn test_embeddings_from_vec() {
-    let tokens = vec![0.1_f64, 0.2, 0.3];
+#[rstest]
+fn test_embeddings_from_vec(
+    #[values(
+        vec![0.1_f64, 0.2324, 0.3],
+        vec![0.0_f64, 0.1, -0.3324],
+        vec![-0.1_f64, 0.345435, 0.0],
+    )]
+    tokens: Vec<f64>,
+) {
     let embeddings: Embeddings = tokens.clone().into();
     assert_eq!(tokens, embeddings.knn);
 }
 
-#[test]
-fn test_founded_document_debug() {
-    let document_part = DocumentPartEntrailsBuilder::default()
-        .large_doc_id(LargeDocumentId(LARGE_DOC_ID.to_string()))
-        .doc_part_id(1)
-        .file_name("file.pdf".to_string())
-        .file_path("/some/path/file.pdf".to_string())
-        .file_size(1024)
-        .created_at(1_756_498_133)
-        .modified_at(1_756_498_133)
-        .content(Some("document content".to_string()))
-        .chunked_text(None)
-        .embeddings(None)
-        .metadata(None)
-        .build()
-        .expect("failed to build document part entrails");
+#[rstest]
+fn test_founded_document_debug(
+    #[from(build_document_part_entrails)] document_part: DocumentPartEntrails,
+) {
+    let found = build_founded_document(document_part);
+    println!("{:#?}", found);
 
-    let found = FoundedDocumentBuilder::default()
-        .id("doc-1".to_string())
-        .index("index-1".to_string())
-        .score(Some(0.9))
-        .highlight(vec!["term".to_string()])
-        .document(document_part)
-        .build()
-        .expect("failed to build founded document");
-
-    let debug = format!("{found:?}");
-    assert!(debug.contains("id: doc-1"));
-    assert!(debug.contains("index: index-1"));
-    assert!(debug.contains("large_doc_id"));
-    assert!(debug.contains("doc_part_id: 1"));
+    assert_eq!(found.id.as_str(), DOC_ID);
+    assert_eq!(found.index.as_str(), INDEX);
+    assert_eq!(found.document.doc_part_id, DOC_PART_ID);
+    assert_eq!(found.document.large_doc_id.as_string(), LARGE_DOC_ID);
 }

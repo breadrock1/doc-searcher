@@ -13,6 +13,7 @@ pub use config::OSearchConfig;
 #[cfg(feature = "enable-unique-doc-id")]
 use crate::application::usecase::storage::gen_unique_document_id;
 use anyhow::{Context, anyhow};
+use metrics::{counter, histogram};
 use opensearch::auth::Credentials;
 use opensearch::cat::CatIndicesParts;
 use opensearch::cert::CertificateValidation;
@@ -26,6 +27,7 @@ use opensearch::{DeleteByQueryParts, OpenSearch};
 use serde_derive::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
+use std::time::Instant;
 use tracing::instrument;
 
 use crate::ServiceConnect;
@@ -92,13 +94,20 @@ impl IIndexStorage for OSearchClient {
         let knn_params = params.knn.as_ref();
         let folder_schema = schema::build_index_mappings(&self.config, knn_params);
 
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .indices()
             .create(IndicesCreateParts::Index(index_id))
             .body(folder_schema)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("create_index", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -110,13 +119,20 @@ impl IIndexStorage for OSearchClient {
 
     #[instrument(level = "info", skip(self))]
     async fn delete_index(&self, index_id: &IndexId) -> StorageResult<()> {
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .indices()
             .delete(IndicesDeleteParts::Index(&[index_id.as_string()]))
             .timeout(EXECUTE_TIMEOUT)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("delete_index", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -128,13 +144,20 @@ impl IIndexStorage for OSearchClient {
 
     #[instrument(level = "info", skip(self))]
     async fn get_index(&self, index_id: &IndexId) -> StorageResult<IndexId> {
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .cat()
             .indices(CatIndicesParts::Index(&[index_id.as_string()]))
             .format(RESPONSE_FORMAT)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("get_index", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -158,13 +181,20 @@ impl IIndexStorage for OSearchClient {
 
     #[instrument(level = "info", skip_all)]
     async fn get_all_indexes(&self) -> StorageResult<Vec<IndexId>> {
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .cat()
             .indices(CatIndicesParts::None)
             .format("json")
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("get_all_indexes", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -228,13 +258,20 @@ impl IDocumentPartStorage for OSearchClient {
             operations.push(doc_body);
         }
 
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .bulk(opensearch::BulkParts::Index(index_id.as_string()))
             .pipeline(schema::INGEST_PIPELINE_NAME)
             .body(operations)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("bulk", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -278,7 +315,14 @@ impl IDocumentPartStorage for OSearchClient {
 
         let request = self.client.search(search_parts).pretty(true);
 
-        let response = request.body(query).send().await?;
+        let start = Instant::now();
+        let result = request.body(query).send().await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("get_document_parts", start, is_success);
+        let response = result?;
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
             return Err(StorageError::from(err));
@@ -295,7 +339,8 @@ impl IDocumentPartStorage for OSearchClient {
         index: &IndexId,
         doc_part_id: &DocumentPartId,
     ) -> StorageResult<DocumentPart> {
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .get(opensearch::GetParts::IndexId(
                 index.as_string(),
@@ -303,7 +348,13 @@ impl IDocumentPartStorage for OSearchClient {
             ))
             .pretty(true)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("get_document_part", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -336,12 +387,19 @@ impl IDocumentPartStorage for OSearchClient {
 
         let query = query_params.build_query();
         let indexes = index.as_string().split(',').collect::<Vec<&str>>();
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .delete_by_query(DeleteByQueryParts::Index(&indexes))
             .body(query)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("delete_document_parts", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -380,12 +438,18 @@ impl ISearcher for OSearchClient {
             },
         };
 
-        let response = request_builder
+        let start = Instant::now();
+        let search_result = request_builder
             .body(query)
             .send()
             .await
-            .context("failed to send query result")
-            .map_err(SearchError::InternalError)?;
+            .context("failed to send query result");
+        let is_success = search_result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("search", start, is_success);
+        let response = search_result.map_err(SearchError::InternalError)?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -407,14 +471,20 @@ impl ISearcher for OSearchClient {
 impl IPaginator for OSearchClient {
     #[instrument(level = "info", skip(self))]
     async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination> {
-        let response = self
+        let start = Instant::now();
+        let scroll_result = self
             .client
             .scroll(opensearch::ScrollParts::ScrollId(&params.scroll_id))
             .pretty(true)
             .send()
             .await
-            .context("pagination failed")
-            .map_err(SearchError::InternalError)?;
+            .context("pagination failed");
+        let is_success = scroll_result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("scroll", start, is_success);
+        let response = scroll_result.map_err(SearchError::InternalError)?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -441,13 +511,20 @@ impl OSearchClient {
               }
         });
 
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .cluster()
             .put_settings()
             .body(cluster_settings)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("update_cluster_settings", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -459,13 +536,20 @@ impl OSearchClient {
 
     pub async fn init_pipelines(&self, params: &KnnIndexParams) -> StorageResult<()> {
         let ingest_schema = schema::builder_ingest_schema(&self.config, Some(params));
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .ingest()
             .put_pipeline(IngestPutPipelineParts::Id(schema::INGEST_PIPELINE_NAME))
             .body(ingest_schema)
             .send()
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("put_ingest_pipeline", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -478,7 +562,8 @@ impl OSearchClient {
             .context("response deserialization error")
             .map_err(StorageError::InternalError)?;
 
-        let response = self
+        let start = Instant::now();
+        let result = self
             .client
             .transport()
             .send(
@@ -489,7 +574,13 @@ impl OSearchClient {
                 Some(&schema_bytes),
                 None,
             )
-            .await?;
+            .await;
+        let is_success = result
+            .as_ref()
+            .map(|r| r.status_code().is_success())
+            .unwrap_or(false);
+        Self::emit_call_metrics("put_search_pipeline", start, is_success);
+        let response = result?;
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
@@ -575,6 +666,24 @@ impl OSearchClient {
         }
 
         Ok(())
+    }
+
+    /// Records the outcome of a single outgoing OpenSearch call.
+    ///
+    /// `operation` is a stable name (e.g. "search", "bulk", "scroll") used to
+    /// break down metrics; `is_success` mirrors `response.status_code().is_success()`.
+    fn emit_call_metrics(operation: &str, start: Instant, is_success: bool) {
+        counter!(
+            "docsearch_opensearch_requests_total",
+            "operation" => operation.to_owned(),
+            "status" => is_success.to_string(),
+        )
+        .increment(1);
+        histogram!(
+            "docsearch_opensearch_request_duration_seconds",
+            "operation" => operation.to_owned(),
+        )
+        .record(start.elapsed().as_secs_f64());
     }
 
     fn build_search_parts<'a>(indexes: &'a [&'a str]) -> opensearch::SearchParts<'a> {

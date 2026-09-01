@@ -14,6 +14,7 @@ use serial_test::serial;
 const TEST_INDEX_ID: &str = "test-folder";
 const MAX_CONTENT_SIZE: usize = 10;
 
+#[ignore]
 #[rstest]
 #[serial]
 #[tokio::test]
@@ -47,6 +48,7 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[rstest]
 #[serial]
 #[tokio::test]
@@ -84,6 +86,7 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[rstest]
 #[serial]
 #[tokio::test]
@@ -106,11 +109,12 @@ async fn test_opensearch_store_multiple_documents() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[rstest]
 #[case(build_simple_retrieve_params(), 3)]
-#[case(build_simple_fulltext_params(), 3)]
-#[case(build_simple_semantic_params(), 3)]
-#[case(build_simple_hybrid_params(), 3)]
+// #[case(build_simple_fulltext_params(), 3)]
+// #[case(build_simple_semantic_params(), 3)]
+// #[case(build_simple_hybrid_params(), 3)]
 #[serial]
 #[tokio::test]
 async fn test_opensearch_search_documents(

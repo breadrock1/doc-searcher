@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:3.4.0
     restart: unless-stopped
     networks:
       - doc-search-net
@@ -17,7 +17,7 @@ services:
       - OPENSEARCH_USERNAME=admin
       # TODO: set secure password
       - OPENSEARCH_PASSWORD=admin
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=admin
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=S0v4P@ssw0rd2026!
     volumes:
       - 'opensearch-vol-1:/usr/share/opensearch/data'
 
