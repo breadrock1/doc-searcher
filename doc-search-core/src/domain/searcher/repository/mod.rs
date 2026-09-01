@@ -23,7 +23,7 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 /// use doc_search_core::domain::searcher::models::Pagination;
 /// use doc_search_core::domain::searcher::models::PaginationParams;
 /// use doc_search_core::domain::searcher::models::SearchingParams;
-/// 
+///
 /// #[async_trait::async_trait]
 /// impl ISearcher for MySearcher {
 ///     async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination> {
@@ -60,7 +60,7 @@ pub trait ISearcher {
 /// use doc_search_core::domain::searcher::SearchResult;
 /// use doc_search_core::domain::searcher::models::Pagination;
 /// use doc_search_core::domain::searcher::models::PaginationParams;
-/// 
+///
 /// #[async_trait::async_trait]
 /// impl IPaginator for MyPaginator {
 ///     async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination> {

@@ -36,7 +36,7 @@ use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
 /// use doc_search_core::domain::storage::StorageResult;
 /// use doc_search_core::domain::storage::IIndexStorage;
 /// use doc_search_core::shared::kernel::IndexId;
-/// 
+///
 /// #[async_trait::async_trait]
 /// impl IIndexStorage for ElasticsearchStorage {
 ///     async fn create_index(&self, index: &CreateIndexParams) -> StorageResult<IndexId> {

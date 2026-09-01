@@ -18,7 +18,7 @@ use derive_builder::Builder;
 /// use doc_search_core::shared::kernel::metadata::DocumentGroup;
 /// use doc_search_core::shared::kernel::metadata::DocumentReference;
 /// use doc_search_core::shared::kernel::metadata::PipelineLabel;
-/// 
+///
 /// let metadata = DocumentMetadata {
 ///     pipeline_id: Some(12345),
 ///     photo: Some("/images/article.jpg".to_string()),
@@ -125,7 +125,7 @@ pub struct DocumentMetadata {
 ///
 /// ```
 /// use doc_search_core::shared::kernel::metadata::DocumentIcon;
-/// 
+///
 /// let icon = DocumentIcon("📰".to_string());
 /// let tech_icon = DocumentIcon("💻".to_string());
 /// ```
@@ -141,7 +141,7 @@ pub struct DocumentIcon(pub String);
 ///
 /// ```
 /// use doc_search_core::shared::kernel::metadata::DocumentSubject;
-/// 
+///
 /// let subject = DocumentSubject("Technology".to_string());
 /// let politics = DocumentSubject("Politics".to_string());
 /// ```
@@ -157,7 +157,7 @@ pub struct DocumentSubject(pub String);
 ///
 /// ```
 /// use doc_search_core::shared::kernel::metadata::DocumentReference;
-/// 
+///
 /// let reference = DocumentReference("db-id-12345".to_string());
 /// let external_ref = DocumentReference("ext:news:789".to_string());
 /// ```
@@ -189,7 +189,7 @@ pub struct PipelineLabel(pub String);
 ///
 /// ```
 /// use doc_search_core::shared::kernel::metadata::DocumentGroup;
-/// 
+///
 /// let group = DocumentGroup("World News".to_string());
 /// let feature = DocumentGroup("Featured Stories".to_string());
 /// ```
@@ -205,7 +205,7 @@ pub struct DocumentGroup(pub String);
 ///
 /// ```
 /// use doc_search_core::shared::kernel::metadata::DocumentLocation;
-/// 
+///
 /// let location = DocumentLocation {
 ///     name: "Paris".to_string(),
 ///     latitude: 48.8566,
@@ -248,7 +248,7 @@ pub struct DocumentLocation {
 ///
 /// ```
 /// use doc_search_core::shared::kernel::metadata::DocumentClass;
-/// 
+///
 /// let class = DocumentClass {
 ///     name: "Sports".to_string(),
 ///     probability: 0.92,
