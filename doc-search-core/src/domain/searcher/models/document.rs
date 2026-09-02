@@ -17,12 +17,15 @@ use std::fmt::{Debug, Formatter};
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::FoundedDocument;
+/// use doc_search_core::domain::searcher::models::DocumentPartEntrailsBuilder;
+///
 /// let found_doc = FoundedDocument {
 ///     id: "doc123".to_string(),
 ///     index: "documents".to_string(),
 ///     score: Some(0.95),
 ///     highlight: vec!["<em>search</em> term".to_string()],
-///     document: document_part,
+///     document: DocumentPartEntrailsBuilder::default().build().expect("failed to build doc part entrails"),
 /// };
 /// ```
 #[derive(Clone, Builder)]
@@ -64,8 +67,11 @@ impl Debug for FoundedDocument {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::DocumentPartEntrails;
+/// use doc_search_core::shared::kernel::LargeDocumentId;
+///
 /// let doc_part = DocumentPartEntrails {
-///     large_doc_id: "parent123".to_string(),
+///     large_doc_id: LargeDocumentId("parent123".to_string()),
 ///     doc_part_id: 1,
 ///     file_name: "document.pdf".to_string(),
 ///     file_path: "/storage/docs/document.pdf".to_string(),
@@ -98,7 +104,7 @@ impl Debug for DocumentPartEntrails {
         write!(
             f,
             "large_doc_id: {:?}, doc_part_id: {}",
-            &self.large_doc_id, &self.doc_part_id
+            self.large_doc_id, self.doc_part_id
         )
     }
 }
@@ -112,6 +118,8 @@ impl Debug for DocumentPartEntrails {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::Embeddings;
+///
 /// let embedding = Embeddings {
 ///     knn: vec![0.123, 0.456, 0.789, -0.123],
 /// };

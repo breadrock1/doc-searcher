@@ -41,9 +41,14 @@ pub fn pagination_result_json_object() -> Value {
                 "index": TEST_INDEX_ID,
                 "score": 0.76,
                 "highlight": [
-                    "Intuition is",
+                    "Intuition",
+                    "is",
                     "very",
-                    "important"
+                    "important",
+                    "to",
+                    "understanding",
+                    "a",
+                    "concept."
                 ],
                 "document": {
                     "large_doc_id": LARGE_DOCUMENT_ID,
@@ -61,9 +66,14 @@ pub fn pagination_result_json_object() -> Value {
                 "index": TEST_INDEX_ID,
                 "score": 0.76,
                 "highlight": [
-                    "Intuition is",
+                    "Intuition",
+                    "is",
                     "very",
-                    "important"
+                    "important",
+                    "to",
+                    "understanding",
+                    "a",
+                    "concept."
                 ],
                 "document": {
                     "large_doc_id": LARGE_DOCUMENT_ID,

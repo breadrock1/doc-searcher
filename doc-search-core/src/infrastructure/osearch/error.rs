@@ -215,3 +215,83 @@ impl From<opensearch::Error> for StorageError {
         StorageError::from(err)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::anyhow;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case::index_not_found("index_not_found_exception", "IndexNotFound")]
+    #[case::doc_missing("document_missing_exception", "DocumentNotFound")]
+    #[case::doc_not_found("document_not_found", "DocumentNotFound")]
+    #[case::already_exists("resource_already_exists_exception", "DocumentAlreadyExists")]
+    #[case::version_conflict("version_conflict_engine_exception", "DocumentAlreadyExists")]
+    #[case::security("security_exception", "AuthenticationFailed")]
+    #[case::auth("authentication_exception", "AuthenticationFailed")]
+    #[case::validation("validation_exception", "ValidationError")]
+    #[case::illegal_argument("illegal_argument_exception", "ValidationError")]
+    #[case::search_phase("search_phase_execution_exception", "ExecutionError")]
+    #[case::search_context("search_context_missing_exception", "ExecutionError")]
+    fn test_extract_error_by_type(#[case] error_type: &str, #[case] expected: &str) {
+        let err = OSearchError::extract_error(response_error(error_type, 500));
+        assert_eq!(expected, variant(err));
+    }
+
+    #[rstest]
+    #[case::not_found(404, "IndexNotFound")]
+    #[case::bad_request(400, "ValidationError")]
+    #[case::unauthorized(401, "AuthenticationFailed")]
+    #[case::forbidden(403, "AuthenticationFailed")]
+    #[case::request_timeout(408, "ExecutionError")]
+    #[case::gateway_timeout(504, "ExecutionError")]
+    #[case::unavailable(503, "ConnectionError")]
+    #[case::undeclared(500, "UndeclaredError")]
+    fn test_extract_error_unknown_type_by_status(#[case] status: u16, #[case] expected: &str) {
+        let err = OSearchError::extract_error(response_error("some_unknown", status));
+        assert_eq!(expected, variant(err));
+    }
+
+    #[rstest]
+    #[case::not_found(StatusCode::NOT_FOUND, "IndexNotFound")]
+    #[case::bad_request(StatusCode::BAD_REQUEST, "ValidationError")]
+    #[case::unauthorized(StatusCode::UNAUTHORIZED, "AuthenticationFailed")]
+    #[case::forbidden(StatusCode::FORBIDDEN, "AuthenticationFailed")]
+    #[case::request_timeout(StatusCode::REQUEST_TIMEOUT, "ExecutionError")]
+    #[case::gateway_timeout(StatusCode::GATEWAY_TIMEOUT, "ExecutionError")]
+    #[case::unavailable(StatusCode::SERVICE_UNAVAILABLE, "ConnectionError")]
+    #[case::undeclared(StatusCode::INTERNAL_SERVER_ERROR, "UndeclaredError")]
+    fn test_extract_from_http_status(#[case] status: StatusCode, #[case] expected: &str) {
+        let err = OSearchError::extract_from_http_status(status, anyhow!("boom"));
+        assert_eq!(expected, variant(err));
+    }
+
+    fn response_error(error_type: &str, status: u16) -> ResponseError {
+        ResponseError {
+            status,
+            details: ErrorDetails {
+                root_cause: vec![ErrorRootCause {
+                    error_type: error_type.to_string(),
+                    reason: "boom".to_string(),
+                }],
+                error_type: error_type.to_string(),
+                reason: "boom".to_string(),
+            },
+        }
+    }
+
+    fn variant(err: OSearchError) -> &'static str {
+        match err {
+            OSearchError::AuthenticationFailed(_) => "AuthenticationFailed",
+            OSearchError::IndexNotFound(_) => "IndexNotFound",
+            OSearchError::DocumentNotFound(_) => "DocumentNotFound",
+            OSearchError::DocumentAlreadyExists(_) => "DocumentAlreadyExists",
+            OSearchError::ValidationError(_) => "ValidationError",
+            OSearchError::BuildQueryError(_) => "BuildQueryError",
+            OSearchError::ExecutionError(_) => "ExecutionError",
+            OSearchError::ConnectionError(_) => "ConnectionError",
+            OSearchError::UndeclaredError(_) => "UndeclaredError",
+        }
+    }
+}

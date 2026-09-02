@@ -11,6 +11,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::Router;
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
+use otlp::TelemetryConfig;
 use std::sync::Arc;
 use tower_http::cors;
 
@@ -19,14 +20,17 @@ use crate::server::ServerApp;
 const FILE_BODY_LIMIT_MB: usize = 50;
 const BYTE_SIZE: usize = 1024;
 
-pub fn init_server<Storage, Searcher>(app: ServerApp<Storage, Searcher>) -> Router
+pub fn init_server<Storage, Searcher>(
+    app: ServerApp<Storage, Searcher>,
+    telemetry_config: &TelemetryConfig,
+) -> Router
 where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
     let app_arc = Arc::new(app);
     Router::new()
-        .merge(api::v1::init_routers())
+        .merge(api::v1::init_routers(telemetry_config))
         .merge(api::system::init_system_routers())
         .merge(swagger::init_swagger_layer())
         .layer(DefaultBodyLimit::disable())

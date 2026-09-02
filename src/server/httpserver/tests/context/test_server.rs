@@ -10,6 +10,7 @@ use doc_search_core::application::usecase::storage::StorageUseCase;
 
 use super::super::mocks::searcher::MockSearcherService;
 use super::super::mocks::storage::MockStorageService;
+use crate::config::ServiceConfig;
 
 const MAX_CONTENT_SIZE: usize = 100;
 
@@ -34,6 +35,7 @@ pub fn create_test_server_context(
     let storage_uc = StorageUseCase::new(Arc::new(storage), MAX_CONTENT_SIZE);
     let app = ServerApp::new(Arc::new(storage_uc), Arc::new(searcher_uc), meter);
 
-    let test_server = init_server(app);
+    let config = ServiceConfig::new().expect("load config failed");
+    let test_server = init_server(app, config.telemetry());
     TestServerContext { test_server }
 }

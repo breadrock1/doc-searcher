@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:3.4.0
     restart: unless-stopped
     networks:
       - doc-search-net
@@ -17,23 +17,9 @@ services:
       - OPENSEARCH_USERNAME=admin
       # TODO: set secure password
       - OPENSEARCH_PASSWORD=admin
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=admin
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=S0v4P@ssw0rd2026!
     volumes:
       - 'opensearch-vol-1:/usr/share/opensearch/data'
-
-  dashboards:
-    image: opensearchproject/opensearch-dashboards:2.18.0
-    restart: unless-stopped
-    depends_on:
-      - opensearch
-    networks:
-      - doc-search-net
-    ports:
-      - '5601:5601'
-    environment:
-      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-      OPENSEARCH_USERNAME: 'admin'
-      OPENSEARCH_PASSWORD: 'admin'
 
   redis:
     image: redis:latest
@@ -46,26 +32,6 @@ services:
       REDIS_USER: 'redis'
       REDIS_PASSWORD: 'redis'
       REDIS_USER_PASSWORD: 'redis'
-
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    restart: unless-stopped
-    networks:
-      - doc-search-net
-    ports:
-      - '4317:4317'
-      - '4318:4318'
-      - '16686:16686'
-
-  loki:
-    image: grafana/loki:latest
-    restart: unless-stopped
-    command:
-      - '-config.file=/etc/loki/local-config.yaml'
-    networks:
-      - doc-search-net
-    ports:
-      - '3100:3100'
 
 networks:
   doc-search-net:

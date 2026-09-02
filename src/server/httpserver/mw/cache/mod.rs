@@ -10,6 +10,7 @@ use axum::http::HeaderMap;
 use axum::middleware::Next;
 use axum::response::Response;
 use doc_search_core::ServiceConnect;
+use metrics::counter;
 use std::sync::Arc;
 use tower_http::add_extension::AddExtensionLayer;
 
@@ -62,10 +63,13 @@ async fn cache(State(cache): State<Arc<CacheState>>, request: Request, next: Nex
     let cached: Option<Vec<u8>> = cache.client.load(&cache_key).await;
     if let Some(value) = cached {
         if !value.is_empty() {
+            counter!("docsearch_cache_operations_total", "status" => "hit").increment(1);
             let data = Bytes::from(value);
             return Response::new(Body::from(data));
         }
     }
+
+    counter!("docsearch_cache_operations_total", "status" => "miss").increment(1);
 
     // Execute the request
     let response = next.run(request).await;

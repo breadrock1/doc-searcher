@@ -7,6 +7,9 @@ use thiserror::Error;
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::SearchError;
+/// use doc_search_core::domain::searcher::models::FoundedDocument;
+///
 /// type SearchResult<T> = Result<T, SearchError>;
 ///
 /// async fn search_documents(query: &str) -> SearchResult<Vec<FoundedDocument>> {
@@ -35,6 +38,8 @@ pub type SearchResult<T> = Result<T, SearchError>;
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::SearchError;
+///
 /// fn perform_search() -> Result<(), SearchError> {
 ///     // Simulate authentication failure
 ///     Err(SearchError::AuthenticationFailed(anyhow::anyhow!("Invalid API key")))
@@ -54,10 +59,13 @@ pub type SearchResult<T> = Result<T, SearchError>;
 /// ```
 /// use anyhow::Context;
 ///
+/// use doc_search_core::domain::searcher::models::FoundedDocument;
+/// use doc_search_core::domain::searcher::SearchError;
+///
 /// async fn search_documents() -> Result<Vec<FoundedDocument>, SearchError> {
 ///     let client = get_search_client()
 ///         .await
-///         .map_err(|e| SearchError::ConnectionError(anyhow::anyhow!(e)))?;
+///         .map_err(|e: anyhow::Error| SearchError::ConnectionError(e))?;
 ///
 ///     let results = client
 ///         .search("query")
@@ -74,17 +82,21 @@ pub type SearchResult<T> = Result<T, SearchError>;
 ///
 /// # Error Propagation Pattern
 /// ```
+/// use doc_search_core::domain::searcher::models::SearchingParams;
+/// use doc_search_core::domain::searcher::models::SearchKindParams;
+/// use doc_search_core::domain::searcher::SearchError;
+///
 /// fn process_search_params(params: &SearchingParams) -> Result<(), SearchError> {
-///     if params.indexes.is_empty() {
+///     if params.indexes().is_empty() {
 ///         return Err(SearchError::ValidationError(
 ///             anyhow::anyhow!("At least one index must be specified")
 ///         ));
 ///     }
 ///
 ///     // Validate search kind specific parameters
-///     match &params.kind {
+///     match &params.kind() {
 ///         SearchKindParams::Semantic(semantic_params) => {
-///             if semantic_params.knn_amount == 0 {
+///             if semantic_params.knn_amount() == 0 {
 ///                 return Err(SearchError::ValidationError(
 ///                     anyhow::anyhow!("knn_amount must be greater than 0")
 ///                 ));
@@ -114,9 +126,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::AuthenticationFailed(
     ///     anyhow::anyhow!("API key has expired")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: auth failed: {0}")]
     AuthenticationFailed(anyhow::Error),
@@ -131,9 +145,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::ConnectionError(
     ///     anyhow::anyhow!("Failed to connect to search service at localhost:9200")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: auth failed: {0}")]
     ConnectionError(anyhow::Error),
@@ -147,9 +163,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::IndexNotFound(
     ///     anyhow::anyhow!("Index 'documents_2023' does not exist")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: index has not been founded: {0}")]
     IndexNotFound(anyhow::Error),
@@ -164,9 +182,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::ValidationError(
     ///     anyhow::anyhow!("knn_amount must be between 1 and 100, got 0")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: validation error: {0}")]
     ValidationError(anyhow::Error),
@@ -180,9 +200,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::ServiceError(
     ///     anyhow::anyhow!("Search service returned: query timeout after 30s")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: returned error into response: {0}")]
     ServiceError(anyhow::Error),
@@ -197,9 +219,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::InternalError(
     ///     anyhow::anyhow!("Failed to allocate memory for search results")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: internal error: {0}")]
     InternalError(anyhow::Error),
@@ -213,9 +237,11 @@ pub enum SearchError {
     ///
     /// # Example
     /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
     /// Err(SearchError::UnknownError(
     ///     anyhow::anyhow!("Unexpected response format from search service")
-    /// ))
+    /// ));
     /// ```
     #[error("searcher: unknown error: {0}")]
     UnknownError(anyhow::Error),

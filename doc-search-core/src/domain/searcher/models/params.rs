@@ -29,7 +29,7 @@ impl Debug for SearchingParams {
         write!(
             f,
             "indexes: {:?}, kind: {:?}, result: {:?}, filter: {:?}",
-            &self.indexes, &self.kind, &self.result, &self.filter,
+            self.indexes, self.kind, self.result, self.filter,
         )
     }
 }
@@ -122,6 +122,8 @@ pub struct FullTextSearchingParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::SemanticSearchingParams;
+///
 /// let semantic_params = SemanticSearchingParams {
 ///     query: "machine learning".to_string(),
 ///     knn_amount: 10,
@@ -144,7 +146,7 @@ impl Debug for SemanticSearchingParams {
         write!(
             f,
             "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
-            &self.query, &self.knn_amount, &self.min_score, &self.model_id,
+            self.query, self.knn_amount, self.min_score, self.model_id,
         )
     }
 }
@@ -169,7 +171,7 @@ impl Debug for HybridSearchingParams {
         write!(
             f,
             "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
-            &self.query, &self.knn_amount, &self.min_score, &self.model_id,
+            self.query, self.knn_amount, self.min_score, self.model_id,
         )
     }
 }
@@ -205,6 +207,8 @@ pub struct PaginationParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::FilterParams;
+///
 /// let filters = FilterParams {
 ///     doc_part_id: Some(1),
 ///     size_from: Some(1024),
@@ -259,6 +263,9 @@ pub struct FilterParams {
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::ResultParams;
+/// use doc_search_core::domain::searcher::models::ResultOrder;
+///
 /// let result_params = ResultParams {
 ///     size: 20,
 ///     offset: 0,

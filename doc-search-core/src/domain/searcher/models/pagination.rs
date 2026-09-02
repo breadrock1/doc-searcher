@@ -13,6 +13,8 @@ use crate::domain::searcher::models::document::FoundedDocument;
 ///
 /// # Example
 /// ```
+/// use doc_search_core::domain::searcher::models::Pagination;
+///
 /// let page = Pagination {
 ///     scroll_id: Some("scroll_abc123".to_string()),
 ///     founded: vec![found_doc1, found_doc2],

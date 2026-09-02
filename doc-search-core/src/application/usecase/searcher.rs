@@ -60,8 +60,22 @@ where
         &self,
         params: &PaginationParams,
     ) -> SearchResult<Pagination> {
-        let pagination = self.searcher.paginate(params).await?;
+        let instant = tokio::time::Instant::now();
+        let result = self.searcher.paginate(params).await;
 
+        let is_error = result.is_err();
+        counter!(
+            "docsearch_paginating_operations_total",
+            "paginating_status" => is_error.to_string(),
+        )
+        .increment(1);
+        histogram!(
+            "docsearch_paginating_duration_seconds",
+            "paginating_status" => is_error.to_string(),
+        )
+        .record(instant.elapsed().as_secs_f64());
+
+        let pagination = result?;
         Ok(pagination)
     }
 }

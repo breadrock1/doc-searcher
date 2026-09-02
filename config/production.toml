@@ -1,12 +1,22 @@
 [settings]
 max_content_size = 80000
 
-[telemetry]
-level = "debug"
-enable_remote_otlp = true
-otlp_address = "http://otlp-collector:4317"
-enable_direct_loki = true
-loki_address = "http://localhost:3100"
+[telemetry.tracing]
+enable = true
+level = "info"
+address = "http://otlp-collector:4317"
+
+[telemetry.logger]
+level = "info"
+attributes = []
+
+[telemetry.logger.loki]
+enable = true
+address = "http://loki:3100"
+
+[telemetry.logger.syslog]
+enable = false
+address = "udp://syslog-server:514"
 
 [server.http]
 address = "0.0.0.0:2892"
