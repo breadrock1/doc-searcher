@@ -1,5 +1,5 @@
-use crate::shared::kernel::LargeDocumentId;
 use crate::shared::kernel::metadata::DocumentMetadata;
+use crate::shared::kernel::{LargeDocumentId, Tokens};
 use derive_builder::Builder;
 use std::fmt::{Debug, Formatter};
 
@@ -93,9 +93,13 @@ pub struct DocumentPartEntrails {
     pub file_size: u32,
     pub created_at: i64,
     pub modified_at: i64,
+    #[builder(default)]
     pub content: Option<String>,
+    #[builder(default)]
     pub chunked_text: Option<Vec<String>>,
-    pub embeddings: Option<Vec<Embeddings>>,
+    #[builder(default)]
+    pub embeddings: Option<Vec<Tokens>>,
+    #[builder(default)]
     pub metadata: Option<DocumentMetadata>,
 }
 
@@ -106,31 +110,5 @@ impl Debug for DocumentPartEntrails {
             "large_doc_id: {:?}, doc_part_id: {}",
             self.large_doc_id, self.doc_part_id
         )
-    }
-}
-
-/// Represents vector embeddings for semantic search.
-///
-/// Contains the numerical representation of text for similarity calculations.
-///
-/// # Fields
-/// * `knn` - Vector of floating-point numbers representing the text embedding
-///
-/// # Example
-/// ```
-/// use doc_search_core::domain::searcher::models::Embeddings;
-///
-/// let embedding = Embeddings {
-///     knn: vec![0.123, 0.456, 0.789, -0.123],
-/// };
-/// ```
-#[derive(Clone, Debug)]
-pub struct Embeddings {
-    pub knn: Vec<f64>,
-}
-
-impl From<Vec<f64>> for Embeddings {
-    fn from(tokens: Vec<f64>) -> Self {
-        Embeddings { knn: tokens }
     }
 }

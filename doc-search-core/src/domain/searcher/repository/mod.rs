@@ -26,7 +26,7 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 ///
 /// #[async_trait::async_trait]
 /// impl ISearcher for MySearcher {
-///     async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination> {
+///     async fn search(&self, params: SearchingParams) -> SearchResult<Pagination> {
 ///         // Implementation logic here
 ///         Ok(Pagination {
 ///             scroll_id: None,
@@ -37,7 +37,7 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 /// ```
 #[async_trait::async_trait]
 pub trait ISearcher {
-    async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination>;
+    async fn search(&self, params: SearchingParams) -> SearchResult<Pagination>;
 }
 
 /// Trait for paginating through search results.
@@ -74,5 +74,5 @@ pub trait ISearcher {
 /// ```
 #[async_trait::async_trait]
 pub trait IPaginator {
-    async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination>;
+    async fn paginate(&self, params: PaginationParams) -> SearchResult<Pagination>;
 }

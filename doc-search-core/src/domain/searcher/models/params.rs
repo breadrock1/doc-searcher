@@ -1,6 +1,8 @@
 use derive_builder::Builder;
 use std::fmt::{Debug, Display, Formatter};
 
+use crate::shared::kernel::Tokens;
+
 /// Type alias for a collection of search indexes.
 ///
 /// Represents multiple indexes to search across.
@@ -17,11 +19,12 @@ pub type SearchIndexes = Vec<String>;
 /// * `kind` - Type of search to perform (retrieve, full-text, semantic, or hybrid)
 /// * `result` - Pagination and result formatting parameters
 /// * `filter` - Optional filters to narrow down results
+#[derive(Clone)]
 pub struct SearchingParams {
-    indexes: SearchIndexes,
-    kind: SearchKindParams,
-    result: ResultParams,
-    filter: Option<FilterParams>,
+    pub indexes: SearchIndexes,
+    pub kind: SearchKindParams,
+    pub result: ResultParams,
+    pub filter: Option<FilterParams>,
 }
 
 impl Debug for SearchingParams {
@@ -57,6 +60,21 @@ impl SearchingParams {
         &self.kind
     }
 
+    pub fn is_hybrid_kind(&self) -> bool {
+        matches!(self.kind, SearchKindParams::Hybrid(_))
+    }
+
+    /// Returns the file path / folder prefix used to narrow the search to a
+    /// single object key or folder inside the (bucket) index, when present.
+    pub fn get_prefix(&self) -> Option<&str> {
+        match &self.kind {
+            SearchKindParams::Retrieve(params) => params.path.as_deref(),
+            SearchKindParams::FullText(params) => params.prefix.as_deref(),
+            SearchKindParams::Semantic(params) => params.prefix.as_deref(),
+            SearchKindParams::Hybrid(params) => params.prefix.as_deref(),
+        }
+    }
+
     pub fn get_result(&self) -> &ResultParams {
         &self.result
     }
@@ -73,7 +91,7 @@ impl SearchingParams {
 /// * `FullText` - Traditional full-text search with query string
 /// * `Semantic` - Vector-based semantic similarity search
 /// * `Hybrid` - Combination of full-text and semantic search
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SearchKindParams {
     Retrieve(RetrieveIndexDocumentsParams),
     FullText(FullTextSearchingParams),
@@ -97,7 +115,7 @@ impl Display for SearchKindParams {
 ///
 /// # Fields
 /// * `path` - Optional file path to filter documents by
-#[derive(Debug, Builder)]
+#[derive(Debug, Clone, Builder)]
 pub struct RetrieveIndexDocumentsParams {
     pub path: Option<String>,
 }
@@ -106,9 +124,12 @@ pub struct RetrieveIndexDocumentsParams {
 ///
 /// # Fields
 /// * `query` - Optional search query string
-#[derive(Debug, Builder)]
+/// * `prefix` - Optional file path / folder prefix to filter documents by
+#[derive(Debug, Clone, Builder)]
 pub struct FullTextSearchingParams {
     pub query: Option<String>,
+    #[builder(default)]
+    pub prefix: Option<String>,
 }
 
 /// Parameters for semantic (vector-based) search operations.
@@ -117,8 +138,8 @@ pub struct FullTextSearchingParams {
 /// * `query` - Search query text
 /// * `knn_amount` - Number of nearest neighbors to return
 /// * `min_score` - Minimum similarity score threshold (optional)
-/// * `model_id` - Identifier of the embedding model to use (optional)
 /// * `tokens` - Pre-computed embedding tokens (optional, for optimization)
+/// * `prefix` - Optional file path / folder prefix to filter documents by
 ///
 /// # Example
 /// ```
@@ -128,25 +149,27 @@ pub struct FullTextSearchingParams {
 ///     query: "machine learning".to_string(),
 ///     knn_amount: 10,
 ///     min_score: Some(0.7),
-///     model_id: Some("bert-base".to_string()),
 ///     tokens: None,
+///     prefix: None,
 /// };
 /// ```
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 pub struct SemanticSearchingParams {
     pub query: String,
     pub knn_amount: u16,
     pub min_score: Option<f32>,
-    pub model_id: Option<String>,
-    pub tokens: Option<Vec<f64>>,
+    #[builder(default)]
+    pub tokens: Option<Tokens>,
+    #[builder(default)]
+    pub prefix: Option<String>,
 }
 
 impl Debug for SemanticSearchingParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
-            self.query, self.knn_amount, self.min_score, self.model_id,
+            "query: {}, knn_amount: {}, min_score: {:?}, tokens: {:?}",
+            self.query, self.knn_amount, self.min_score, self.tokens,
         )
     }
 }
@@ -157,21 +180,25 @@ impl Debug for SemanticSearchingParams {
 /// * `query` - Search query text
 /// * `knn_amount` - Number of nearest neighbors for semantic component
 /// * `min_score` - Minimum combined score threshold (optional)
-/// * `model_id` - Identifier of the embedding model to use (optional)
-#[derive(Builder)]
+/// * `tokens` - Pre-computed embedding tokens for the semantic component (optional)
+/// * `prefix` - Optional file path / folder prefix to filter documents by
+#[derive(Builder, Clone)]
 pub struct HybridSearchingParams {
     pub query: String,
     pub knn_amount: u16,
     pub min_score: Option<f32>,
-    pub model_id: Option<String>,
+    #[builder(default)]
+    pub tokens: Option<Tokens>,
+    #[builder(default)]
+    pub prefix: Option<String>,
 }
 
 impl Debug for HybridSearchingParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "query: {}, knn_amount: {}, min_score: {:?}, model_id: {:?}",
-            self.query, self.knn_amount, self.min_score, self.model_id,
+            "query: {}, knn_amount: {}, min_score: {:?}, tokens: {:?}",
+            self.query, self.knn_amount, self.min_score, self.tokens,
         )
     }
 }

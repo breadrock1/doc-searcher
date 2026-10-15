@@ -5,7 +5,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::domain::storage::{StorageError, StorageResult};
 use crate::shared::kernel::metadata::DocumentMetadata;
-use crate::shared::kernel::{DocumentPartId, LargeDocumentId};
+use crate::shared::kernel::{DocumentPartId, LargeDocumentId, Tokens};
 
 /// The ID of the first document part in a sequence.
 ///
@@ -57,6 +57,7 @@ pub struct LargeDocument {
     pub created_at: i64,
     pub modified_at: i64,
     pub content: String,
+    #[builder(default)]
     pub metadata: Option<DocumentMetadata>,
 }
 
@@ -105,6 +106,7 @@ impl Debug for LargeDocument {
 ///     modified_at: 1634567890,
 ///     content: "Chapter 3, Part 1...".to_string(),
 ///     metadata: None,
+///     embeddings: None,
 /// };
 /// ```
 #[derive(Clone, Builder)]
@@ -117,7 +119,10 @@ pub struct DocumentPart {
     pub created_at: i64,
     pub modified_at: i64,
     pub content: String,
+    #[builder(default)]
     pub metadata: Option<DocumentMetadata>,
+    #[builder(default)]
+    pub embeddings: Option<Tokens>,
 }
 
 impl Debug for DocumentPart {

@@ -1,5 +1,4 @@
 mod document;
-pub use document::Embeddings;
 pub use document::{DocumentPartEntrails, DocumentPartEntrailsBuilder};
 pub use document::{FoundedDocument, FoundedDocumentBuilder};
 

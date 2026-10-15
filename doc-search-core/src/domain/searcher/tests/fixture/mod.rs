@@ -2,7 +2,6 @@ pub mod document;
 pub mod params;
 
 pub const QUERY_FIELD_VALUE: &str = "query string";
-pub const EMBEDDINGS_MODEL_ID: &str = "bge-model";
 pub const CURRENT_TIMESTAMP: i64 = 1756498133;
 pub const PIPELINE_ID_FILTER_PARAMS: i64 = 1;
 pub const SOURCE_FILTER_PARAMS: &str = "source";

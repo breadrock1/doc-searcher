@@ -1,10 +1,11 @@
 use rstest::rstest;
 
-use crate::domain::searcher::models::{DocumentPartEntrails, Embeddings};
+use crate::domain::searcher::models::DocumentPartEntrails;
 use crate::domain::searcher::tests::fixture::document::{
     build_document_part_entrails, build_founded_document,
 };
 use crate::domain::searcher::tests::fixture::{DOC_ID, DOC_PART_ID, INDEX};
+use crate::shared::kernel::Tokens;
 
 const LARGE_DOC_ID: &str = "29346839246dsf987a1173sfa7sd781h";
 
@@ -17,8 +18,8 @@ fn test_embeddings_from_vec(
     )]
     tokens: Vec<f64>,
 ) {
-    let embeddings: Embeddings = tokens.clone().into();
-    assert_eq!(tokens, embeddings.knn);
+    let embeddings: Tokens = tokens.clone().into();
+    assert_eq!(tokens, *embeddings);
 }
 
 #[rstest]
