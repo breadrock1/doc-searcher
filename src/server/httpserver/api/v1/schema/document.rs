@@ -7,12 +7,12 @@ use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use doc_search_core::domain::searcher::models::{
-    DocumentPartEntrails, DocumentPartEntrailsBuilder, Embeddings,
+    DocumentPartEntrails, DocumentPartEntrailsBuilder,
 };
 use doc_search_core::domain::storage::models::{
     DocumentPart, DocumentPartBuilder, LargeDocument, StoredDocumentPartsInfo,
 };
-use doc_search_core::shared::kernel::LargeDocumentId;
+use doc_search_core::shared::kernel::{LargeDocumentId, Tokens};
 
 use crate::server::ServerError;
 
@@ -116,11 +116,7 @@ impl TryFrom<DocumentPartSchema> for DocumentPartEntrails {
     fn try_from(schema: DocumentPartSchema) -> Result<Self, Self::Error> {
         let embeddings = schema
             .embeddings
-            .map(|it| {
-                it.into_iter()
-                    .map(|e| e.into())
-                    .collect::<Vec<Embeddings>>()
-            })
+            .map(|it| it.into_iter().map(|e| e.into()).collect::<Vec<Tokens>>())
             .unwrap_or_default();
 
         // TODO: Does need to pass metadata to DocumentPartEntrails?
@@ -175,14 +171,14 @@ pub struct EmbeddingsSchema {
     knn: Vec<f64>,
 }
 
-impl From<EmbeddingsSchema> for Embeddings {
+impl From<EmbeddingsSchema> for Tokens {
     fn from(schema: EmbeddingsSchema) -> Self {
-        Embeddings { knn: schema.knn }
+        Tokens { knn: schema.knn }
     }
 }
 
-impl From<Embeddings> for EmbeddingsSchema {
-    fn from(embeddings: Embeddings) -> Self {
+impl From<Tokens> for EmbeddingsSchema {
+    fn from(embeddings: Tokens) -> Self {
         EmbeddingsSchemaBuilder::default()
             .knn(embeddings.knn)
             .build()

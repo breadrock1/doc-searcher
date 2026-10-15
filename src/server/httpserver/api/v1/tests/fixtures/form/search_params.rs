@@ -22,6 +22,7 @@ pub fn create_retrieve_document_form_with_filter() -> RetrieveDocumentForm {
 pub fn create_fulltext_search_form() -> FullTextSearchForm {
     FullTextSearchForm {
         query: Some("find something".to_string()),
+        prefix: None,
         indexes: "test-index-1,test-index-2".to_string(),
         filter: None,
         result: create_result_form(),
@@ -31,6 +32,7 @@ pub fn create_fulltext_search_form() -> FullTextSearchForm {
 pub fn create_fulltext_search_form_with_filter() -> FullTextSearchForm {
     FullTextSearchForm {
         query: Some("find something".to_string()),
+        prefix: None,
         indexes: "test-index-1,test-index-2".to_string(),
         filter: Some(create_filter_form()),
         result: create_result_form(),
@@ -42,7 +44,7 @@ pub fn create_semantic_search_form() -> SemanticSearchForm {
         query: "find something".to_string(),
         indexes: "test-index-1,test-index-2".to_string(),
         knn_amount: 100,
-        model_id: Some("lsdfblsbgdds".to_string()),
+        prefix: None,
         tokens: Some(vec![]),
         filter: None,
         result: create_short_result_form(),
@@ -54,7 +56,7 @@ pub fn create_semantic_search_form_with_filter() -> SemanticSearchForm {
         query: "find something".to_string(),
         indexes: "test-index-1,test-index-2".to_string(),
         knn_amount: 100,
-        model_id: Some("lsdfblsbgdds".to_string()),
+        prefix: None,
         tokens: Some(vec![]),
         filter: Some(create_filter_form()),
         result: create_short_result_form(),
@@ -66,10 +68,11 @@ pub fn create_hybrid_search_form() -> HybridSearchForm {
         query: "find something".to_string(),
         indexes: "test-index-1,test-index-2".to_string(),
         knn_amount: 100,
-        model_id: Some("lsdfblsbgdds".to_string()),
+        prefix: None,
         filter: None,
         result: create_result_form(),
         min_score: Some(0.6),
+        tokens: Some(vec![]),
     }
 }
 
@@ -78,10 +81,11 @@ pub fn create_hybrid_search_form_with_filter() -> HybridSearchForm {
         query: "find something".to_string(),
         indexes: "test-index-1,test-index-2".to_string(),
         knn_amount: 100,
-        model_id: Some("lsdfblsbgdds".to_string()),
+        prefix: None,
         filter: Some(create_filter_form()),
         result: create_result_form(),
         min_score: Some(0.6),
+        tokens: Some(vec![]),
     }
 }
 

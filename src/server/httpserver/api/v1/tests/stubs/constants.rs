@@ -12,6 +12,5 @@ pub const DOCUMENT_CONTENT: &str = "Intuition is very important to understanding
 
 pub const SCROLL_ID: &str = "dksfsjvJHZVFDskjdbfsdfsdfdsg";
 pub const SEARCH_QUERY: &str = "any query message";
-pub const MODEL_ID: &str = "model-123234";
 pub const KNN_AMOUNT: u16 = 100;
 pub const MIN_SCORE: f64 = 0.76;

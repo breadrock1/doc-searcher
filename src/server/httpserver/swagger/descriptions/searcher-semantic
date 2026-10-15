@@ -6,4 +6,3 @@ The `include_extra_fields` field returns additional fields into Document:
 
 Warning!
  - Using tokens field exclude query tokenizing - each other have the same responsibility;
- - The `model_id` field is optional and it replaced default value.

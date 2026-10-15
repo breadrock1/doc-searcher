@@ -1,3 +1,4 @@
+use doc_search_core::infrastructure::embeddings::EmbeddingsConfig;
 use doc_search_core::infrastructure::osearch::OSearchConfig;
 use gset::Getset;
 use serde_derive::Deserialize;
@@ -15,6 +16,8 @@ pub struct ServerConfig {
 pub struct StorageConfig {
     #[getset(get, vis = "pub")]
     opensearch: OSearchConfig,
+    #[getset(get, vis = "pub")]
+    embeddings: EmbeddingsConfig,
 }
 
 #[derive(Clone, Deserialize, Getset)]
