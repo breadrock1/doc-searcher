@@ -53,11 +53,11 @@ mock! {
 
     #[async_trait::async_trait]
     impl ISearcher for Storage {
-        async fn search(&self, params: &SearchingParams) -> Result<Pagination, SearchError>;
+        async fn search(&self, params: SearchingParams) -> Result<Pagination, SearchError>;
     }
 
     #[async_trait::async_trait]
     impl IPaginator for Storage {
-        async fn paginate(&self, params: &PaginationParams) -> Result<Pagination, SearchError>;
+        async fn paginate(&self, params: PaginationParams) -> Result<Pagination, SearchError>;
     }
 }

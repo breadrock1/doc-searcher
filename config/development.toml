@@ -37,6 +37,14 @@ knn_dimension = 768
 token_limit = 700
 overlap_rate = 0.2
 
+[storage.embeddings]
+address = "http://localhost:8081"
+model = "bge"
+overlap = 0.2
+dimension = 768
+retries = 3
+timeout = 5
+
 [cache]
 is_enabled = false
 
