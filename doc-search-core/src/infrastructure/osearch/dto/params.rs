@@ -60,7 +60,6 @@ impl FullTextQueryParams {
 
 #[derive(Debug, Builder, Getset)]
 pub struct SemanticQueryParams {
-    // текст запроса не используется в knn-запросе (вектор берётся из tokens), оставлен для симметрии DTO
     #[allow(dead_code)]
     #[getset(get, vis = "pub")]
     query: String,
@@ -68,9 +67,6 @@ pub struct SemanticQueryParams {
     knn_amount: u16,
     #[getset(get_copy, vis = "pub")]
     min_score: Option<f32>,
-    #[builder(default)]
-    #[getset(get, vis = "pub")]
-    tokens: Option<Vec<f64>>,
     #[builder(default)]
     #[getset(get, vis = "pub")]
     prefix: Option<String>,
@@ -99,9 +95,6 @@ pub struct HybridQueryParams {
     knn_amount: u16,
     #[getset(get_copy, vis = "pub")]
     min_score: Option<f32>,
-    #[builder(default)]
-    #[getset(get, vis = "pub")]
-    tokens: Option<Vec<f64>>,
     #[builder(default)]
     #[getset(get, vis = "pub")]
     prefix: Option<String>,

@@ -11,10 +11,11 @@ use crate::infrastructure::osearch::dto::{
     RetrieveIndexDocsQueryParamsBuilder, SemanticQueryParams, SemanticQueryParamsBuilder,
 };
 use crate::infrastructure::osearch::error::{OSearchError, OSearchResult};
+use crate::shared::kernel::Tokens;
 
 const HYBRID_PAGINATION_DEPTH: usize = 20;
 
-pub fn build_search_query(params: SearchingParams) -> OSearchResult<Value> {
+pub fn build_search_query(params: SearchingParams, tokens: Option<Tokens>) -> OSearchResult<Value> {
     let result = params.get_result().clone();
     let filter = params.get_filter().cloned();
 
@@ -28,7 +29,7 @@ pub fn build_search_query(params: SearchingParams) -> OSearchResult<Value> {
                 .context("failed to build retrieve query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
-            Ok(query_params.build_query())
+            Ok(query_params.build_query(None))
         }
         SearchKindParams::FullText(params) => {
             let query_params = FullTextQueryParamsBuilder::default()
@@ -40,15 +41,13 @@ pub fn build_search_query(params: SearchingParams) -> OSearchResult<Value> {
                 .context("failed to build fulltext query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
-            Ok(query_params.build_query())
+            Ok(query_params.build_query(None))
         }
         SearchKindParams::Semantic(params) => {
-            let tokens_vec = params.tokens.map(|it| it.knn);
             let query_params = SemanticQueryParamsBuilder::default()
                 .query(params.query)
                 .knn_amount(params.knn_amount)
                 .min_score(params.min_score)
-                .tokens(tokens_vec)
                 .prefix(params.prefix)
                 .result(result)
                 .filter(filter)
@@ -56,15 +55,13 @@ pub fn build_search_query(params: SearchingParams) -> OSearchResult<Value> {
                 .context("failed to build semantic query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
-            Ok(query_params.build_query())
+            Ok(query_params.build_query(tokens.as_deref()))
         }
         SearchKindParams::Hybrid(params) => {
-            let tokens_vec = params.tokens.map(|it| it.knn);
             let query_params = HybridQueryParamsBuilder::default()
                 .query(params.query)
                 .knn_amount(params.knn_amount)
                 .min_score(params.min_score)
-                .tokens(tokens_vec)
                 .prefix(params.prefix)
                 .result(result)
                 .filter(filter)
@@ -72,17 +69,17 @@ pub fn build_search_query(params: SearchingParams) -> OSearchResult<Value> {
                 .context("failed to build hybrid query params")
                 .map_err(OSearchError::BuildQueryError)?;
 
-            Ok(query_params.build_query())
+            Ok(query_params.build_query(tokens.as_deref()))
         }
     }
 }
 
 pub trait QueryBuildHelper {
-    fn build_query(&self) -> Value;
+    fn build_query(&self, query_embedding: Option<&Vec<f64>>) -> Value;
 }
 
 impl QueryBuildHelper for RetrieveAllDocPartsQueryParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, _query_embedding: Option<&Vec<f64>>) -> Value {
         let large_doc_id = self.large_doc_id();
         let must_queries = match self.only_first_part() {
             false => json!([
@@ -127,7 +124,7 @@ impl QueryBuildHelper for RetrieveAllDocPartsQueryParams {
 }
 
 impl QueryBuildHelper for RetrieveIndexDocsQueryParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, _query_embedding: Option<&Vec<f64>>) -> Value {
         let must = match self.path() {
             None => json!([
                 {
@@ -171,7 +168,7 @@ impl QueryBuildHelper for RetrieveIndexDocsQueryParams {
 }
 
 impl QueryBuildHelper for FullTextQueryParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, _query_embedding: Option<&Vec<f64>>) -> Value {
         let mut must = match self.query() {
             None => vec![json!({"match_all": {}})],
             Some(value) => vec![json!({"match": {"content": value} })],
@@ -204,9 +201,9 @@ impl QueryBuildHelper for FullTextQueryParams {
 }
 
 impl QueryBuildHelper for SemanticQueryParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, query_embedding: Option<&Vec<f64>>) -> Value {
         let knn_amount = self.knn_amount();
-        let knn_query = build_knn_query(self.tokens().as_ref(), knn_amount);
+        let knn_query = build_knn_query(query_embedding, knn_amount);
 
         let size = self.result().size;
         let exclude = self.get_excluded_params();
@@ -244,10 +241,10 @@ impl QueryBuildHelper for SemanticQueryParams {
 }
 
 impl QueryBuildHelper for HybridQueryParams {
-    fn build_query(&self) -> Value {
+    fn build_query(&self, query_embedding: Option<&Vec<f64>>) -> Value {
         let query = self.query();
         let knn_amount = self.knn_amount();
-        let semantic_query = build_knn_query(self.tokens().as_ref(), knn_amount);
+        let semantic_query = build_knn_query(query_embedding, knn_amount);
 
         let size = self.result().size;
         let exclude = self.get_excluded_params();

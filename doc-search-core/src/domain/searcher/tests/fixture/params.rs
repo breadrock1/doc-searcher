@@ -51,7 +51,6 @@ pub fn build_semantic_searching_params() -> SearchingParams {
     let filter = build_filter_searching_params();
     let params = SemanticSearchingParamsBuilder::default()
         .query(QUERY_FIELD_VALUE.to_string())
-        .tokens(None)
         .knn_amount(100)
         .min_score(Some(0.6))
         .build()

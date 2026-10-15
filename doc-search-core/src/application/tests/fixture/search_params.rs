@@ -56,21 +56,8 @@ pub fn build_simple_semantic_params() -> SemanticSearchingParams {
     let query = QUERY_PARAMETER.to_string();
     SemanticSearchingParamsBuilder::default()
         .query(query)
-        .tokens(None)
         .knn_amount(KNN_AMOUNT)
         .min_score(None)
-        .build()
-        .expect("failed building semantic params builder")
-}
-
-#[fixture]
-pub fn build_semantic_params_with_tokens() -> SemanticSearchingParams {
-    let query = QUERY_PARAMETER.to_string();
-    SemanticSearchingParamsBuilder::default()
-        .query(query)
-        .tokens(Some(SEARCH_TOKENS.to_vec().into()))
-        .knn_amount(KNN_AMOUNT)
-        .min_score(Some(MIN_SCORE))
         .build()
         .expect("failed building semantic params builder")
 }
@@ -80,7 +67,6 @@ pub fn build_full_semantic_params() -> SemanticSearchingParams {
     let query = QUERY_PARAMETER.to_string();
     SemanticSearchingParamsBuilder::default()
         .query(query)
-        .tokens(None)
         .min_score(Some(MIN_SCORE))
         .knn_amount(KNN_AMOUNT)
         .build()

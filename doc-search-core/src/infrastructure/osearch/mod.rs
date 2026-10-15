@@ -40,7 +40,7 @@ use crate::domain::storage::{StorageError, StorageResult};
 use crate::infrastructure::osearch::dto::RetrieveAllDocPartsQueryParamsBuilder;
 use crate::infrastructure::osearch::dto::{FoundedDocumentInfo, IndexInformation, SourceDocument};
 use crate::infrastructure::osearch::query::{QueryBuildHelper, build_search_query};
-use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
+use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId, Tokens};
 
 const SCROLL_LIFETIME: &str = "5m";
 const EXECUTE_TIMEOUT: &str = "1m";
@@ -303,7 +303,7 @@ impl IDocumentPartStorage for OSearchClient {
             .context("failed to build query params")
             .map_err(StorageError::InternalError)?;
 
-        let query = query_params.build_query();
+        let query = query_params.build_query(None);
         let indexes = index.as_string().split(',').collect::<Vec<&str>>();
         let search_parts = Self::build_search_parts(&indexes);
 
@@ -379,7 +379,7 @@ impl IDocumentPartStorage for OSearchClient {
             .context("failed to build query params")
             .map_err(StorageError::InternalError)?;
 
-        let query = query_params.build_query();
+        let query = query_params.build_query(None);
         let indexes = index.as_string().split(',').collect::<Vec<&str>>();
         let start = Instant::now();
         let result = self
@@ -407,7 +407,11 @@ impl IDocumentPartStorage for OSearchClient {
 #[async_trait::async_trait]
 impl ISearcher for OSearchClient {
     #[instrument(level = "info", skip(self))]
-    async fn search(&self, params: SearchingParams) -> SearchResult<Pagination> {
+    async fn search(
+        &self,
+        params: SearchingParams,
+        tokens: Option<Tokens>,
+    ) -> SearchResult<Pagination> {
         let search_indexes = params.indexes.clone();
         let indexes = search_indexes
             .iter()
@@ -419,7 +423,7 @@ impl ISearcher for OSearchClient {
         let is_hybrid_search = params.is_hybrid_kind();
 
         let search_parts = Self::build_search_parts(&indexes);
-        let query = build_search_query(params)?;
+        let query = build_search_query(params, tokens)?;
         let query_str = serde_json::to_string_pretty(&query);
         tracing::debug!(query=?query_str, "search query");
         let request = self

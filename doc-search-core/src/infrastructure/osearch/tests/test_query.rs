@@ -43,7 +43,7 @@ fn test_build_simplest_retrieve_params_query(
         .build()
         .context("failed to build retrieve query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
 
     let mut comparable_query = serde_json::from_slice::<Value>(RETRIEVE_SIMPLE_PARAMS)?;
     comparable_query["query"]["bool"]["filter"] = json!([]);
@@ -64,7 +64,7 @@ fn test_build_retrieve_params_query_from_with_path(
         .build()
         .context("failed to build retrieve query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let mut comparable_query = serde_json::from_slice::<Value>(RETRIEVE_FULL_PARAMS)?;
     comparable_query["query"]["bool"]["filter"] = json!([]);
     assert_eq!(query, comparable_query);
@@ -85,7 +85,7 @@ fn test_build_full_retrieve_params_query(
         .build()
         .context("failed to build retrieve query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let comparable_query = serde_json::from_slice::<Value>(RETRIEVE_FULL_PARAMS)?;
     assert_eq!(query, comparable_query);
 
@@ -104,7 +104,7 @@ fn test_build_simple_fulltext_params_query(
         .build()
         .context("failed to build fulltext query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let mut comparable_query = serde_json::from_slice::<Value>(FULLTEXT_SIMPLE_PARAMS)?;
     comparable_query["query"]["bool"]["filter"] = json!([]);
     assert_eq!(query, comparable_query);
@@ -125,7 +125,7 @@ fn test_build_full_fulltext_params_query(
         .build()
         .context("failed to build fulltext query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let comparable_query = serde_json::from_slice::<Value>(FULLTEXT_FULL_PARAMS)?;
     assert_eq!(query, comparable_query);
 
@@ -139,7 +139,6 @@ fn test_build_simple_semantic_params_query(
     let result = build_result_params();
     let query_params = SemanticQueryParamsBuilder::default()
         .query(params.query.clone())
-        .tokens(Some(SEARCH_TOKENS.to_vec()))
         .knn_amount(params.knn_amount)
         .min_score(params.min_score)
         .result(result.to_owned())
@@ -147,7 +146,7 @@ fn test_build_simple_semantic_params_query(
         .build()
         .context("failed to build semantic query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(Some(&SEARCH_TOKENS.to_vec()));
     let mut comparable_query = serde_json::from_slice::<Value>(SEMANTIC_SIMPLE_PARAMS)?;
     comparable_query["query"]["bool"]["filter"] = json!([]);
     assert_eq!(query, comparable_query);
@@ -156,21 +155,18 @@ fn test_build_simple_semantic_params_query(
 }
 
 #[rstest]
-fn test_build_semantic_params_query_with_tokens(
-    #[from(build_semantic_params_with_tokens)] params: SemanticSearchingParams,
-) -> anyhow::Result<()> {
+fn test_build_semantic_params_query_with_embedding() -> anyhow::Result<()> {
     let result = build_result_params();
     let query_params = SemanticQueryParamsBuilder::default()
-        .query(params.query.clone())
-        .tokens(Some(SEARCH_TOKENS.to_vec()))
-        .knn_amount(params.knn_amount)
-        .min_score(params.min_score)
+        .query(QUERY_PARAMETER.to_string())
+        .knn_amount(KNN_AMOUNT)
+        .min_score(Some(MIN_SCORE))
         .result(result.to_owned())
         .filter(None)
         .build()
         .context("failed to build semantic params query")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(Some(&SEARCH_TOKENS.to_vec()));
     let comparable_query = serde_json::from_slice::<Value>(SEMANTIC_TOKENS_PARAMS)?;
     assert_eq!(query, comparable_query);
 
@@ -185,7 +181,6 @@ fn test_build_full_semantic_params_query(
     let filter = build_filter_searching_params();
     let query_params = SemanticQueryParamsBuilder::default()
         .query(params.query.clone())
-        .tokens(Some(SEARCH_TOKENS.to_vec()))
         .knn_amount(params.knn_amount)
         .min_score(params.min_score)
         .result(result.to_owned())
@@ -193,7 +188,7 @@ fn test_build_full_semantic_params_query(
         .build()
         .context("failed to build semantic query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(Some(&SEARCH_TOKENS.to_vec()));
     let comparable_query = serde_json::from_slice::<Value>(SEMANTIC_FULL_PARAMS)?;
     assert_eq!(query, comparable_query);
 
@@ -209,13 +204,12 @@ fn test_build_simple_hybrid_params_query(
         .query(params.query.clone())
         .knn_amount(params.knn_amount)
         .min_score(params.min_score)
-        .tokens(Some(SEARCH_TOKENS.to_vec()))
         .result(result.to_owned())
         .filter(None)
         .build()
         .context("failed to build hybrid query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(Some(&SEARCH_TOKENS.to_vec()));
     let comparable_query = serde_json::from_slice::<Value>(HYBRID_SIMPLE_PARAMS)?;
     assert_eq!(query, comparable_query);
 
@@ -232,13 +226,12 @@ fn test_build_full_hybrid_params_query(
         .query(params.query.clone())
         .knn_amount(params.knn_amount)
         .min_score(params.min_score)
-        .tokens(Some(SEARCH_TOKENS.to_vec()))
         .result(result.to_owned())
         .filter(Some(filter))
         .build()
         .context("failed to build hybrid query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(Some(&SEARCH_TOKENS.to_vec()));
     let comparable_query = serde_json::from_slice::<Value>(HYBRID_FULL_PARAMS)?;
     assert_eq!(query, comparable_query);
 
@@ -251,7 +244,7 @@ fn test_build_full_hybrid_params_query(
 #[case(build_semantic_searching_params())]
 #[case(build_hybrid_searching_params())]
 fn test_build_search_query_dispatcher(#[case] params: SearchingParams) -> anyhow::Result<()> {
-    let query = build_search_query(params)?;
+    let query = build_search_query(params, None)?;
     assert!(query.is_object());
     Ok(())
 }
@@ -266,7 +259,7 @@ fn test_build_retrieve_all_doc_parts_query() -> anyhow::Result<()> {
         .build()
         .context("failed to build retrieve all doc parts query params")?;
 
-    let query = params.build_query();
+    let query = params.build_query(None);
     assert!(
         query["query"]["bool"]["must"]
             .as_array()
@@ -281,7 +274,7 @@ fn test_build_retrieve_all_doc_parts_query() -> anyhow::Result<()> {
         .only_first_part(false)
         .build()
         .context("failed to build retrieve all doc parts query params")?;
-    let query = params.build_query();
+    let query = params.build_query(None);
     assert!(
         query["query"]["bool"]["must"]
             .as_array()
@@ -337,7 +330,6 @@ fn test_get_excluded_params_default_branches() -> anyhow::Result<()> {
         .query("query".to_string())
         .knn_amount(10)
         .min_score(None)
-        .tokens(None)
         .result(result.clone())
         .filter(None)
         .build()
@@ -361,7 +353,7 @@ fn test_get_excluded_params_default_branches() -> anyhow::Result<()> {
 }
 
 #[rstest]
-fn test_build_semantic_query_without_tokens_uses_match_none() -> anyhow::Result<()> {
+fn test_build_semantic_query_without_embeddings_uses_match_none() -> anyhow::Result<()> {
     let result = build_result_params();
     let query_params = SemanticQueryParamsBuilder::default()
         .query("query".to_string())
@@ -372,14 +364,14 @@ fn test_build_semantic_query_without_tokens_uses_match_none() -> anyhow::Result<
         .build()
         .context("failed to build semantic query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let knn = &query["query"]["bool"]["must"][0]["nested"]["query"];
     assert_eq!(knn, &json!({ "match_none": {} }));
     Ok(())
 }
 
 #[rstest]
-fn test_build_hybrid_query_without_tokens_uses_match_none() -> anyhow::Result<()> {
+fn test_build_hybrid_query_without_embeddings_uses_match_none() -> anyhow::Result<()> {
     let result = build_result_params();
     let query_params = HybridQueryParamsBuilder::default()
         .query("query".to_string())
@@ -390,7 +382,7 @@ fn test_build_hybrid_query_without_tokens_uses_match_none() -> anyhow::Result<()
         .build()
         .context("failed to build hybrid query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let semantic = &query["query"]["hybrid"]["queries"][0];
     assert_eq!(semantic, &json!({ "match_none": {} }));
     Ok(())
@@ -407,7 +399,7 @@ fn test_build_fulltext_query_with_prefix() -> anyhow::Result<()> {
         .build()
         .context("failed to build fulltext query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let must = query["query"]["bool"]["must"]
         .as_array()
         .expect("must must be an array");
@@ -428,7 +420,7 @@ fn test_build_semantic_query_with_prefix() -> anyhow::Result<()> {
         .build()
         .context("failed to build semantic query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let filter = query["query"]["bool"]["filter"]
         .as_array()
         .expect("filter must be an array");
@@ -449,7 +441,7 @@ fn test_build_hybrid_query_with_prefix() -> anyhow::Result<()> {
         .build()
         .context("failed to build hybrid query params")?;
 
-    let query = query_params.build_query();
+    let query = query_params.build_query(None);
     let filter = query["query"]["hybrid"]["queries"][1]["bool"]["filter"]
         .as_array()
         .expect("hybrid filter must be an array");
@@ -517,7 +509,7 @@ fn test_build_search_query_forwards_prefix(
     #[case] params: SearchingParams,
     #[case] filter_path: &str,
 ) -> anyhow::Result<()> {
-    let query = build_search_query(params)?;
+    let query = build_search_query(params, None)?;
     let filter = query
         .pointer(filter_path)
         .and_then(Value::as_array)

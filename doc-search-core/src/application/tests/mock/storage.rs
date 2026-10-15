@@ -7,7 +7,7 @@ use crate::domain::storage::StorageError;
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart};
 use crate::domain::storage::models::{CreateIndexParams, StoredDocumentPartsInfo};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
-use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId};
+use crate::shared::kernel::{DocumentPartId, IndexId, LargeDocumentId, Tokens};
 
 mock! {
     pub Storage{}
@@ -53,7 +53,11 @@ mock! {
 
     #[async_trait::async_trait]
     impl ISearcher for Storage {
-        async fn search(&self, params: SearchingParams) -> Result<Pagination, SearchError>;
+        async fn search(
+            &self,
+            params: SearchingParams,
+            tokens: Option<Tokens>,
+        ) -> Result<Pagination, SearchError>;
     }
 
     #[async_trait::async_trait]

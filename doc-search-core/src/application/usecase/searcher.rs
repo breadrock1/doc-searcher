@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tracing::instrument;
 
 use crate::application::services::embeddings::ITokenizer;
+use crate::application::usecase::tokens::EnsuredTokens;
 use crate::domain::searcher::models::{
     Pagination, PaginationParams, SearchKindParams, SearchingParams,
 };
@@ -47,11 +48,9 @@ where
         }
 
         let searching_kind = params.get_kind().to_string();
-        let params = match self.ensure_query_tokens(params).await? {
-            Some(params) => params,
-            None => return Ok(Pagination::new(None, vec![])),
-        };
-        let result = self.searcher.search(params).await;
+
+        let ensured = self.ensure_query_embeddings(params).await?;
+        let result = self.searcher.search(ensured.params, ensured.tokens).await;
 
         let is_error = result.is_err();
         counter!(
@@ -93,52 +92,40 @@ where
         Ok(pagination)
     }
 
-    async fn ensure_query_tokens(
+    /// Computes the query embedding via the embeddings service for semantic/hybrid
+    /// search kinds and returns it together with the (unchanged) params.
+    ///
+    /// An embeddings service error is propagated as [`SearchError::InternalError`],
+    /// so the search backend is never touched on failure. For retrieve/fulltext
+    /// search kinds no embedding is computed and `tokens` is `None`. Empty
+    /// embeddings are still passed through — `build_knn_query` degrades them to
+    /// `match_none`, so the full-text part of a hybrid search keeps working.
+    async fn ensure_query_embeddings(
         &self,
-        mut params: SearchingParams,
-    ) -> SearchResult<Option<SearchingParams>> {
-        let search_kind = &mut params.kind;
-
-        let skip_search_by_tokens = match search_kind {
+        params: SearchingParams,
+    ) -> SearchResult<EnsuredTokens> {
+        match &params.kind {
             SearchKindParams::Semantic(par) => {
-                // Клиент уже передал готовые токены — провайдер не нужен.
-                if par.tokens.is_some() {
-                    false
-                } else {
-                    let tokens = self
-                        .embeddings
-                        .compute(&par.query)
-                        .await
-                        .unwrap_or_default();
+                let tokens = self
+                    .embeddings
+                    .compute(&par.query)
+                    .await
+                    .map_err(|err| SearchError::InternalError(err.into()))?;
 
-                    // Без векторов семантический поиск бессмысленен — вернём пустой результат.
-                    if tokens.is_empty() {
-                        true
-                    } else {
-                        par.tokens = Some(tokens);
-                        false
-                    }
-                }
+                Ok(EnsuredTokens::new(params, Some(tokens)))
             }
             SearchKindParams::Hybrid(par) => {
-                if par.tokens.is_none() {
-                    let tokens = self
-                        .embeddings
-                        .compute(&par.query)
-                        .await
-                        .unwrap_or_default();
+                let tokens = self
+                    .embeddings
+                    .compute(&par.query)
+                    .await
+                    .map_err(|err| SearchError::InternalError(err.into()))?;
 
-                    par.tokens = Some(tokens);
-                }
-                false
+                Ok(EnsuredTokens::new(params, Some(tokens)))
             }
-            _ => false,
-        };
-
-        if skip_search_by_tokens {
-            Ok(None)
-        } else {
-            Ok(Some(params))
+            SearchKindParams::Retrieve(_) | SearchKindParams::FullText(_) => {
+                Ok(EnsuredTokens::new(params, None))
+            }
         }
     }
 }

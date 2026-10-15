@@ -1,6 +1,7 @@
 use crate::domain::searcher::SearchResult;
 use crate::domain::searcher::models::PaginationParams;
 use crate::domain::searcher::models::{Pagination, SearchingParams};
+use crate::shared::kernel::Tokens;
 
 /// Trait for performing search operations.
 ///
@@ -12,6 +13,8 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 ///
 /// # Arguments
 /// * `params` - Configuration parameters for the search operation
+/// * `query_embedding` - Pre-computed query embedding for semantic/hybrid kinds
+///   (computed by the caller via the embeddings service, `None` otherwise)
 ///
 /// # Returns
 /// * `SearchResult<Pagination>` - Paginated search results or error
@@ -26,7 +29,11 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 ///
 /// #[async_trait::async_trait]
 /// impl ISearcher for MySearcher {
-///     async fn search(&self, params: SearchingParams) -> SearchResult<Pagination> {
+///     async fn search(
+///         &self,
+///         params: SearchingParams,
+///         query_embedding: Option<Vec<f64>>,
+///     ) -> SearchResult<Pagination> {
 ///         // Implementation logic here
 ///         Ok(Pagination {
 ///             scroll_id: None,
@@ -37,7 +44,11 @@ use crate::domain::searcher::models::{Pagination, SearchingParams};
 /// ```
 #[async_trait::async_trait]
 pub trait ISearcher {
-    async fn search(&self, params: SearchingParams) -> SearchResult<Pagination>;
+    async fn search(
+        &self,
+        params: SearchingParams,
+        query_embedding: Option<Tokens>,
+    ) -> SearchResult<Pagination>;
 }
 
 /// Trait for paginating through search results.

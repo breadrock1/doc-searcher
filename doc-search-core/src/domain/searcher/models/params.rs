@@ -1,8 +1,6 @@
 use derive_builder::Builder;
 use std::fmt::{Debug, Display, Formatter};
 
-use crate::shared::kernel::Tokens;
-
 /// Type alias for a collection of search indexes.
 ///
 /// Represents multiple indexes to search across.
@@ -134,11 +132,13 @@ pub struct FullTextSearchingParams {
 
 /// Parameters for semantic (vector-based) search operations.
 ///
+/// The query embedding is computed by the caller via the embeddings service and
+/// passed to the searcher separately from these parameters.
+///
 /// # Fields
 /// * `query` - Search query text
 /// * `knn_amount` - Number of nearest neighbors to return
 /// * `min_score` - Minimum similarity score threshold (optional)
-/// * `tokens` - Pre-computed embedding tokens (optional, for optimization)
 /// * `prefix` - Optional file path / folder prefix to filter documents by
 ///
 /// # Example
@@ -149,7 +149,6 @@ pub struct FullTextSearchingParams {
 ///     query: "machine learning".to_string(),
 ///     knn_amount: 10,
 ///     min_score: Some(0.7),
-///     tokens: None,
 ///     prefix: None,
 /// };
 /// ```
@@ -159,8 +158,6 @@ pub struct SemanticSearchingParams {
     pub knn_amount: u16,
     pub min_score: Option<f32>,
     #[builder(default)]
-    pub tokens: Option<Tokens>,
-    #[builder(default)]
     pub prefix: Option<String>,
 }
 
@@ -168,27 +165,27 @@ impl Debug for SemanticSearchingParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "query: {}, knn_amount: {}, min_score: {:?}, tokens: {:?}",
-            self.query, self.knn_amount, self.min_score, self.tokens,
+            "query: {}, knn_amount: {}, min_score: {:?}, prefix: {:?}",
+            self.query, self.knn_amount, self.min_score, self.prefix,
         )
     }
 }
 
 /// Parameters for hybrid search combining full-text and semantic search.
 ///
+/// The query embedding for the semantic component is computed by the caller via
+/// the embeddings service and passed to the searcher separately.
+///
 /// # Fields
 /// * `query` - Search query text
 /// * `knn_amount` - Number of nearest neighbors for semantic component
 /// * `min_score` - Minimum combined score threshold (optional)
-/// * `tokens` - Pre-computed embedding tokens for the semantic component (optional)
 /// * `prefix` - Optional file path / folder prefix to filter documents by
 #[derive(Builder, Clone)]
 pub struct HybridSearchingParams {
     pub query: String,
     pub knn_amount: u16,
     pub min_score: Option<f32>,
-    #[builder(default)]
-    pub tokens: Option<Tokens>,
     #[builder(default)]
     pub prefix: Option<String>,
 }
@@ -197,8 +194,8 @@ impl Debug for HybridSearchingParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "query: {}, knn_amount: {}, min_score: {:?}, tokens: {:?}",
-            self.query, self.knn_amount, self.min_score, self.tokens,
+            "query: {}, knn_amount: {}, min_score: {:?}, prefix: {:?}",
+            self.query, self.knn_amount, self.min_score, self.prefix,
         )
     }
 }
