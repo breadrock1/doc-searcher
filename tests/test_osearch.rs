@@ -1,6 +1,7 @@
 mod common;
 use common::fixture::document::*;
 use common::fixture::search_params::*;
+use common::mocks::embeddings::StubEmbeddingsProvider;
 use common::setup_osearch_environment;
 
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
@@ -10,6 +11,7 @@ use doc_search_core::domain::storage::models::{AllDocumentParts, StoredDocumentP
 use doc_search_core::shared::kernel::IndexId;
 use rstest::rstest;
 use serial_test::serial;
+use std::sync::Arc;
 
 const TEST_INDEX_ID: &str = "test-folder";
 const MAX_CONTENT_SIZE: usize = 10;
@@ -20,7 +22,11 @@ const MAX_CONTENT_SIZE: usize = 10;
 #[tokio::test]
 async fn test_opensearch_store_document() -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
-    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
+    let storage = StorageUseCase::new(
+        test_env.osearch(),
+        Arc::new(StubEmbeddingsProvider),
+        MAX_CONTENT_SIZE,
+    );
 
     let index_id = &IndexId(test_env.get_index().clone());
     let large_document = build_large_document();
@@ -54,7 +60,11 @@ async fn test_opensearch_store_document() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
-    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
+    let storage = StorageUseCase::new(
+        test_env.osearch(),
+        Arc::new(StubEmbeddingsProvider),
+        MAX_CONTENT_SIZE,
+    );
 
     let index_id = &IndexId(test_env.get_index().clone());
     let large_document = build_large_document();
@@ -92,7 +102,11 @@ async fn test_opensearch_delete_documents() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_opensearch_store_multiple_documents() -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
-    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
+    let storage = StorageUseCase::new(
+        test_env.osearch(),
+        Arc::new(StubEmbeddingsProvider),
+        MAX_CONTENT_SIZE,
+    );
 
     let index_id = &IndexId(test_env.get_index().clone());
     let large_documents = build_real_large_documents()?;
@@ -122,8 +136,12 @@ async fn test_opensearch_search_documents(
     #[case] founded_documents_amount: usize,
 ) -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
-    let searcher = SearcherUseCase::new(test_env.osearch());
-    let storage = StorageUseCase::new(test_env.osearch(), MAX_CONTENT_SIZE);
+    let searcher = SearcherUseCase::new(test_env.osearch(), Arc::new(StubEmbeddingsProvider));
+    let storage = StorageUseCase::new(
+        test_env.osearch(),
+        Arc::new(StubEmbeddingsProvider),
+        MAX_CONTENT_SIZE,
+    );
 
     let index_id = &IndexId(test_env.get_index().to_string());
     let large_documents = build_real_large_documents()?;
@@ -132,7 +150,7 @@ async fn test_opensearch_search_documents(
         let _ = storage.store_documents(index_id, large_documents).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        let pagination = searcher.search_document_parts(&searching_params).await?;
+        let pagination = searcher.search_document_parts(searching_params).await?;
 
         Ok(pagination)
     };

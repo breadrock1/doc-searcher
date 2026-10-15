@@ -9,11 +9,11 @@ mock! {
 
     #[async_trait::async_trait]
     impl ISearcher for SearcherService {
-        async fn search(&self, params: &SearchingParams) -> Result<Pagination, SearchError>;
+        async fn search(&self, params: SearchingParams) -> Result<Pagination, SearchError>;
     }
 
     #[async_trait::async_trait]
     impl IPaginator for SearcherService {
-        async fn paginate(&self, params: &PaginationParams) -> Result<Pagination, SearchError>;
+        async fn paginate(&self, params: PaginationParams) -> Result<Pagination, SearchError>;
     }
 }
