@@ -1,5 +1,9 @@
 Search Document objects by hybrid algorithm.
 
+The `filter` field is optional. You can see example into `schema`.
+
+The query vector of the semantic part is computed automatically by the external embeddings service - the client does not pass tokens.
+
 The `include_extra_fields` field returns additional fields into Document:
  - `chunked_text` - all chunks of document content;
  - `embeddings` - embeddings for each chunk.

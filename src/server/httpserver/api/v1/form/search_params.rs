@@ -5,7 +5,6 @@ use doc_search_core::domain::searcher::models::{
     RetrieveIndexDocumentsParamsBuilder, SearchKindParams, SearchingParams,
     SemanticSearchingParamsBuilder,
 };
-use doc_search_core::shared::kernel::Tokens;
 use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 #[allow(unused_imports)]
@@ -204,8 +203,6 @@ pub struct HybridSearchForm {
     pub indexes: String,
     #[schema(example = 0.7)]
     pub min_score: Option<f32>,
-    #[schema(nullable)]
-    pub tokens: Option<Vec<f64>>,
     pub result: ResultForm,
     pub filter: Option<FilterForm>,
 }
@@ -224,12 +221,10 @@ impl TryFrom<HybridSearchForm> for SearchingParams {
             .map(|it| FilterParams::try_from(it).ok())
             .unwrap_or_default();
         let result = form.result.try_into()?;
-        let tokens = form.tokens.map(Tokens::from);
         let hybrid_params = HybridSearchingParamsBuilder::default()
             .query(form.query)
             .knn_amount(form.knn_amount)
             .min_score(form.min_score)
-            .tokens(tokens)
             .prefix(form.prefix)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
@@ -253,8 +248,6 @@ pub struct SemanticSearchForm {
     pub prefix: Option<String>,
     #[schema(example = "test-folder-1,test-folder-2")]
     pub indexes: String,
-    #[schema(nullable)]
-    pub tokens: Option<Vec<f64>>,
     pub result: ShortResultForm,
     pub filter: Option<FilterForm>,
 }
@@ -273,10 +266,8 @@ impl TryFrom<SemanticSearchForm> for SearchingParams {
             .map(|it| FilterParams::try_from(it).ok())
             .unwrap_or_default();
         let result = form.result.try_into()?;
-        let tokens = form.tokens.map(Tokens::from);
         let semantic_params = SemanticSearchingParamsBuilder::default()
             .query(form.query)
-            .tokens(tokens)
             .knn_amount(form.knn_amount)
             .min_score(None)
             .prefix(form.prefix)

@@ -13,7 +13,6 @@ use super::constants::{
     MIN_SCORE, SCROLL_ID, SEARCH_QUERY, TEST_INDEX_ID,
 };
 
-const QUERY_TOKENS: [f64; 3] = [-1.123, 0.123, 1.123];
 const RETRIEVE_FILE_PATH: &str = "./test-";
 const RESULT_ORDER: &str = "ASC";
 const RESULT_SIZE: u16 = 10;
@@ -117,16 +116,6 @@ pub fn semantic_search_params_json_object() -> Value {
     })
 }
 
-pub fn semantic_search_params_with_tokens_json_object() -> Value {
-    json!({
-        "query": SEARCH_QUERY,
-        "knn_amount": KNN_AMOUNT,
-        "tokens": QUERY_TOKENS.to_vec(),
-        "indexes": COMPOSITE_INDEX_IDS,
-        "result": result_params_json_object(),
-    })
-}
-
 pub fn semantic_search_params_with_filter_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
@@ -143,7 +132,6 @@ pub fn hybrid_search_params_json_object() -> Value {
         "knn_amount": KNN_AMOUNT,
         "indexes": COMPOSITE_INDEX_IDS,
         "min_score": MIN_SCORE,
-        "tokens": QUERY_TOKENS.to_vec(),
         "result": result_params_json_object(),
     })
 }
@@ -154,7 +142,6 @@ pub fn hybrid_search_params_with_filter_json_object() -> Value {
         "knn_amount": KNN_AMOUNT,
         "indexes": COMPOSITE_INDEX_IDS,
         "min_score": MIN_SCORE,
-        "tokens": QUERY_TOKENS.to_vec(),
         "filter": filter_params_json_object(),
         "result": result_params_json_object(),
     })

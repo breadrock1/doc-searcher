@@ -36,4 +36,3 @@ pub use search::retrieve_index_documents_params_json_object;
 pub use search::retrieve_index_documents_params_with_filter_json_object;
 pub use search::semantic_search_params_json_object;
 pub use search::semantic_search_params_with_filter_json_object;
-pub use search::semantic_search_params_with_tokens_json_object;

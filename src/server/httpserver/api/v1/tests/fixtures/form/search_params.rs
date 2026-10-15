@@ -45,7 +45,6 @@ pub fn create_semantic_search_form() -> SemanticSearchForm {
         indexes: "test-index-1,test-index-2".to_string(),
         knn_amount: 100,
         prefix: None,
-        tokens: Some(vec![]),
         filter: None,
         result: create_short_result_form(),
     }
@@ -57,7 +56,6 @@ pub fn create_semantic_search_form_with_filter() -> SemanticSearchForm {
         indexes: "test-index-1,test-index-2".to_string(),
         knn_amount: 100,
         prefix: None,
-        tokens: Some(vec![]),
         filter: Some(create_filter_form()),
         result: create_short_result_form(),
     }
@@ -72,7 +70,6 @@ pub fn create_hybrid_search_form() -> HybridSearchForm {
         filter: None,
         result: create_result_form(),
         min_score: Some(0.6),
-        tokens: Some(vec![]),
     }
 }
 
@@ -85,7 +82,6 @@ pub fn create_hybrid_search_form_with_filter() -> HybridSearchForm {
         filter: Some(create_filter_form()),
         result: create_result_form(),
         min_score: Some(0.6),
-        tokens: Some(vec![]),
     }
 }
 

@@ -49,7 +49,7 @@ async fn test_search_fulltext(
     let expectation = searcher.expect_search().once();
 
     match expected_status {
-        StatusCode::OK => expectation.returning(move |_| {
+        StatusCode::OK => expectation.returning(move |_, _| {
             let scroll = Some(SCROLL_ID.to_string());
             let documents = vec![
                 stubs::founded_document_with_part_id(1),
@@ -58,11 +58,11 @@ async fn test_search_fulltext(
 
             Ok(Pagination::new(scroll, documents))
         }),
-        StatusCode::BAD_REQUEST => expectation.returning(move |_| {
+        StatusCode::BAD_REQUEST => expectation.returning(move |_, _| {
             let err = anyhow!("bad request");
             Err(SearchError::ValidationError(err))
         }),
-        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_| {
+        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_, _| {
             let err = anyhow!("internal server error");
             Err(SearchError::InternalError(err))
         }),
@@ -103,11 +103,6 @@ async fn test_search_fulltext(
     stubs::pagination_result_json_object()
 )]
 #[case(
-    stubs::semantic_search_params_with_tokens_json_object(),
-    StatusCode::OK,
-    stubs::pagination_result_json_object()
-)]
-#[case(
     stubs::semantic_search_params_with_filter_json_object(),
     StatusCode::OK,
     stubs::pagination_result_json_object()
@@ -133,7 +128,7 @@ async fn test_search_semantic(
     let expectation = searcher.expect_search().once();
 
     match expected_status {
-        StatusCode::OK => expectation.returning(move |_| {
+        StatusCode::OK => expectation.returning(move |_, _| {
             let scroll = Some(SCROLL_ID.to_string());
             let documents = vec![
                 stubs::founded_document_with_part_id(1),
@@ -142,11 +137,11 @@ async fn test_search_semantic(
 
             Ok(Pagination::new(scroll, documents))
         }),
-        StatusCode::BAD_REQUEST => expectation.returning(move |_| {
+        StatusCode::BAD_REQUEST => expectation.returning(move |_, _| {
             let err = anyhow!("bad request");
             Err(SearchError::ValidationError(err))
         }),
-        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_| {
+        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_, _| {
             let err = anyhow!("internal server error");
             Err(SearchError::InternalError(err))
         }),
@@ -212,7 +207,7 @@ async fn test_search_hybrid(
     let expectation = searcher.expect_search().once();
 
     match expected_status {
-        StatusCode::OK => expectation.returning(move |_| {
+        StatusCode::OK => expectation.returning(move |_, _| {
             let scroll = Some(SCROLL_ID.to_string());
             let documents = vec![
                 stubs::founded_document_with_part_id(1),
@@ -221,11 +216,11 @@ async fn test_search_hybrid(
 
             Ok(Pagination::new(scroll, documents))
         }),
-        StatusCode::BAD_REQUEST => expectation.returning(move |_| {
+        StatusCode::BAD_REQUEST => expectation.returning(move |_, _| {
             let err = anyhow!("bad request");
             Err(SearchError::ValidationError(err))
         }),
-        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_| {
+        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_, _| {
             let err = anyhow!("internal server error");
             Err(SearchError::InternalError(err))
         }),
