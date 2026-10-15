@@ -72,6 +72,15 @@ impl AppMeterRegistry {
             "Count cache operations by status (hit/miss)",
         );
 
+        describe_counter!(
+            "docsearch_embeddings_requests_total",
+            "Count all requests to embeddings with status",
+        );
+        describe_histogram!(
+            "docsearch_embeddings_request_duration_seconds",
+            "Store embeddings request latency",
+        );
+
         describe_gauge!(
             "docsearch_http_in_flight_requests",
             "Number of HTTP requests currently being processed",
