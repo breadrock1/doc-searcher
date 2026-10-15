@@ -79,7 +79,6 @@ pub fn build_simple_semantic_params() -> SearchingParams {
     let indexes = build_indexes();
     let params = SemanticSearchingParamsBuilder::default()
         .query(query)
-        .tokens(None)
         .min_score(None)
         .knn_amount(100)
         .build()
