@@ -8,6 +8,11 @@ use crate::infrastructure::osearch::dto::metadata::SourceDocumentMetadata;
 use crate::infrastructure::osearch::error::OSearchError;
 use crate::shared::kernel::LargeDocumentId;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmbeddingsNested {
+    pub knn: Vec<f64>,
+}
+
 #[derive(Builder, Deserialize, Serialize)]
 pub struct SourceDocument {
     pub large_doc_id: String,
@@ -19,6 +24,9 @@ pub struct SourceDocument {
     pub modified_at: i64,
     pub content: Option<String>,
     pub metadata: Option<SourceDocumentMetadata>,
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embeddings: Option<Vec<EmbeddingsNested>>,
 }
 
 impl TryFrom<SourceDocument> for DocumentPartEntrails {
@@ -57,6 +65,10 @@ impl TryFrom<DocumentPart> for SourceDocument {
             None => None,
         };
 
+        let embeddings = doc_part
+            .embeddings
+            .map(|it| vec![EmbeddingsNested { knn: it.knn }]);
+
         SourceDocumentBuilder::default()
             .large_doc_id(doc_part.large_doc_id.0)
             .doc_part_id(doc_part.doc_part_id)
@@ -67,6 +79,7 @@ impl TryFrom<DocumentPart> for SourceDocument {
             .modified_at(doc_part.modified_at)
             .content(Some(doc_part.content))
             .metadata(metadata)
+            .embeddings(embeddings)
             .build()
             .context("failed to build document part")
             .map_err(OSearchError::ValidationError)

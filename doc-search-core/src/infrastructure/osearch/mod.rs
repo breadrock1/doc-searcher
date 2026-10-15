@@ -2,13 +2,13 @@
 mod tests;
 
 mod config;
+pub use config::OSearchConfig;
+
 mod dto;
 mod error;
 mod extractor;
 mod query;
 mod schema;
-
-pub use config::OSearchConfig;
 
 #[cfg(feature = "enable-unique-doc-id")]
 use crate::application::usecase::storage::gen_unique_document_id;
@@ -22,26 +22,21 @@ use opensearch::http::request::JsonBody;
 use opensearch::http::transport::{SingleNodeConnectionPool, TransportBuilder};
 use opensearch::http::{Method, Url};
 use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
-use opensearch::ingest::IngestPutPipelineParts;
 use opensearch::{DeleteByQueryParts, OpenSearch};
-use serde_derive::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::instrument;
 
 use crate::ServiceConnect;
-use crate::domain::searcher::models::{
-    Pagination, PaginationParams, SearchKindParams, SearchingParams,
-};
+use crate::domain::searcher::models::{Pagination, PaginationParams, SearchingParams};
 use crate::domain::searcher::{IPaginator, ISearcher};
 use crate::domain::searcher::{SearchError, SearchResult};
+use crate::domain::storage::models::CreateIndexParams;
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart};
-use crate::domain::storage::models::{CreateIndexParams, KnnIndexParams};
 use crate::domain::storage::models::{StoredDocumentPartsInfo, StoredDocumentPartsInfoBuilder};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use crate::domain::storage::{StorageError, StorageResult};
-use crate::infrastructure::osearch::config::OSearchKnnConfig;
 use crate::infrastructure::osearch::dto::RetrieveAllDocPartsQueryParamsBuilder;
 use crate::infrastructure::osearch::dto::{FoundedDocumentInfo, IndexInformation, SourceDocument};
 use crate::infrastructure::osearch::query::{QueryBuildHelper, build_search_query};
@@ -262,7 +257,6 @@ impl IDocumentPartStorage for OSearchClient {
         let result = self
             .client
             .bulk(opensearch::BulkParts::Index(index_id.as_string()))
-            .pipeline(schema::INGEST_PIPELINE_NAME)
             .body(operations)
             .send()
             .await;
@@ -413,29 +407,31 @@ impl IDocumentPartStorage for OSearchClient {
 #[async_trait::async_trait]
 impl ISearcher for OSearchClient {
     #[instrument(level = "info", skip(self))]
-    async fn search(&self, params: &SearchingParams) -> SearchResult<Pagination> {
-        let indexes = params
-            .get_indexes()
+    async fn search(&self, params: SearchingParams) -> SearchResult<Pagination> {
+        let search_indexes = params.indexes.clone();
+        let indexes = search_indexes
             .iter()
-            .map(String::as_str)
+            .map(|it| it.as_str())
             .collect::<Vec<&str>>();
 
+        let result_size = params.get_result().size;
+        let result_offset = params.get_result().offset;
+        let is_hybrid_search = params.is_hybrid_kind();
+
         let search_parts = Self::build_search_parts(&indexes);
-        let query = build_search_query(params, self.config.semantic())?;
+        let query = build_search_query(params)?;
         let query_str = serde_json::to_string_pretty(&query);
         tracing::debug!(query=?query_str, "search query");
         let request = self
             .client
             .search(search_parts)
             .pretty(true)
-            .size(params.get_result().size);
+            .size(result_size);
 
-        let request_builder = match params.get_result().offset > 0 {
-            true => request.from(params.get_result().offset),
-            false => match params.get_kind() {
-                SearchKindParams::Hybrid(_) => request.from(params.get_result().offset),
-                _ => request.scroll(SCROLL_LIFETIME),
-            },
+        let request_builder = match result_offset > 0 {
+            true => request.from(result_offset),
+            false if is_hybrid_search => request.from(result_offset),
+            false => request.scroll(SCROLL_LIFETIME),
         };
 
         let start = Instant::now();
@@ -470,7 +466,7 @@ impl ISearcher for OSearchClient {
 #[async_trait::async_trait]
 impl IPaginator for OSearchClient {
     #[instrument(level = "info", skip(self))]
-    async fn paginate(&self, params: &PaginationParams) -> SearchResult<Pagination> {
+    async fn paginate(&self, params: PaginationParams) -> SearchResult<Pagination> {
         let start = Instant::now();
         let scroll_result = self
             .client
@@ -503,62 +499,9 @@ impl IPaginator for OSearchClient {
 }
 
 impl OSearchClient {
-    pub async fn update_cluster_settings(&self) -> StorageResult<()> {
-        let cluster_settings = json!({
-            "persistent": {
-                "plugins.ml_commons.only_run_on_ml_node": false,
-                "plugins.ml_commons.model_auto_redeploy.enable": true
-              }
-        });
-
-        let start = Instant::now();
-        let result = self
-            .client
-            .cluster()
-            .put_settings()
-            .body(cluster_settings)
-            .send()
-            .await;
-        let is_success = result
-            .as_ref()
-            .map(|r| r.status_code().is_success())
-            .unwrap_or(false);
-        Self::emit_call_metrics("update_cluster_settings", start, is_success);
-        let response = result?;
-
-        if !response.status_code().is_success() {
-            let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
-        }
-
-        Ok(())
-    }
-
-    pub async fn init_pipelines(&self, params: &KnnIndexParams) -> StorageResult<()> {
-        let ingest_schema = schema::builder_ingest_schema(&self.config, Some(params));
-        let start = Instant::now();
-        let result = self
-            .client
-            .ingest()
-            .put_pipeline(IngestPutPipelineParts::Id(schema::INGEST_PIPELINE_NAME))
-            .body(ingest_schema)
-            .send()
-            .await;
-        let is_success = result
-            .as_ref()
-            .map(|r| r.status_code().is_success())
-            .unwrap_or(false);
-        Self::emit_call_metrics("put_ingest_pipeline", start, is_success);
-        let response = result?;
-
-        if !response.status_code().is_success() {
-            let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
-        }
-
+    pub async fn init_pipelines(&self) -> StorageResult<()> {
         let url = format!("/_search/pipeline/{}", schema::HYBRID_SEARCH_PIPELINE_NAME);
-        let hs_schema = schema::build_hybrid_search_schema(self.config.semantic());
-        let schema_bytes = serde_json::to_vec(&hs_schema)
+        let schema_bytes = serde_json::to_vec(&schema::build_hybrid_search_schema())
             .context("response deserialization error")
             .map_err(StorageError::InternalError)?;
 
@@ -585,84 +528,6 @@ impl OSearchClient {
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
             return Err(StorageError::from(err));
-        }
-
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub async fn load_ml_model(&self, config: &OSearchKnnConfig) -> StorageResult<()> {
-        #[derive(Debug, Deserialize)]
-        struct DeployModelTaskResponse {
-            pub task_id: String,
-            pub status: String,
-        }
-
-        #[derive(Debug, Deserialize)]
-        struct DeployModelFetchResponse {
-            model_id: Option<String>,
-            state: String,
-        }
-
-        let schema_query = json!({
-            "parameters": {
-                "wait_for_completion": true
-            }
-        });
-
-        let target_url = format!("/_plugins/_ml/models/{}/_load", config.model_id());
-        let response = self
-            .client
-            .send(
-                Method::Post,
-                target_url.as_str(),
-                HeaderMap::new(),
-                None::<&String>,
-                Some(schema_query.to_string()),
-                None,
-            )
-            .await?;
-
-        if !response.status_code().is_success() {
-            let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
-        }
-
-        let deploy_task = response.json::<DeployModelTaskResponse>().await?;
-        tracing::debug!(?deploy_task, "created deploy task");
-
-        let mut await_task_completed = true;
-        let target_url = format!("/_plugins/_ml/tasks/{}", deploy_task.task_id);
-        while await_task_completed {
-            let response = self
-                .client
-                .send(
-                    Method::Get,
-                    target_url.as_str(),
-                    HeaderMap::new(),
-                    None::<&String>,
-                    Some(schema_query.to_string()),
-                    None,
-                )
-                .await?;
-
-            if !response.status_code().is_success() {
-                let err = error::OSearchError::from_response(response).await;
-                return Err(StorageError::from(err));
-            }
-
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
-            let fetch_response = response.json::<DeployModelFetchResponse>().await?;
-            tracing::debug!(?fetch_response, "fetched task status");
-            await_task_completed = match fetch_response.state.as_str() {
-                "FAILED" => {
-                    let msg = "failed to deploy model";
-                    return Err(StorageError::InternalError(anyhow!(msg)));
-                }
-                "COMPLETED" => false,
-                _ => true,
-            };
         }
 
         Ok(())

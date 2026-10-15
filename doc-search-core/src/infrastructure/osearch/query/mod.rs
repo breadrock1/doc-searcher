@@ -5,7 +5,6 @@ use super::schema::HYBRID_SEARCH_PIPELINE_NAME;
 use crate::domain::searcher::models::{
     FilterParams, ResultOrder, ResultParams, SearchKindParams, SearchingParams,
 };
-use crate::infrastructure::osearch::config::OSearchKnnConfig;
 use crate::infrastructure::osearch::dto::{
     FullTextQueryParams, FullTextQueryParamsBuilder, HybridQueryParams, HybridQueryParamsBuilder,
     RetrieveAllDocPartsQueryParams, RetrieveIndexDocsQueryParams,
@@ -15,20 +14,16 @@ use crate::infrastructure::osearch::error::{OSearchError, OSearchResult};
 
 const HYBRID_PAGINATION_DEPTH: usize = 20;
 
-pub fn build_search_query(
-    params: &SearchingParams,
-    config: &OSearchKnnConfig,
-) -> OSearchResult<Value> {
-    let default_model_id = config.model_id().clone();
-    let result = params.get_result();
-    let filter = params.get_filter();
+pub fn build_search_query(params: SearchingParams) -> OSearchResult<Value> {
+    let result = params.get_result().clone();
+    let filter = params.get_filter().cloned();
 
-    match params.get_kind() {
+    match params.kind {
         SearchKindParams::Retrieve(params) => {
             let query_params = RetrieveIndexDocsQueryParamsBuilder::default()
-                .path(params.path.clone())
-                .result(result.to_owned())
-                .filter(filter.cloned())
+                .path(params.path)
+                .result(result)
+                .filter(filter)
                 .build()
                 .context("failed to build retrieve query params")
                 .map_err(OSearchError::BuildQueryError)?;
@@ -37,9 +32,10 @@ pub fn build_search_query(
         }
         SearchKindParams::FullText(params) => {
             let query_params = FullTextQueryParamsBuilder::default()
-                .query(params.query.clone())
-                .result(result.to_owned())
-                .filter(filter.cloned())
+                .query(params.query)
+                .prefix(params.prefix)
+                .result(result)
+                .filter(filter)
                 .build()
                 .context("failed to build fulltext query params")
                 .map_err(OSearchError::BuildQueryError)?;
@@ -47,15 +43,15 @@ pub fn build_search_query(
             Ok(query_params.build_query())
         }
         SearchKindParams::Semantic(params) => {
-            let model_id = params.model_id.clone().unwrap_or(default_model_id);
+            let tokens_vec = params.tokens.map(|it| it.knn);
             let query_params = SemanticQueryParamsBuilder::default()
-                .query(params.query.clone())
-                .model_id(model_id)
+                .query(params.query)
                 .knn_amount(params.knn_amount)
                 .min_score(params.min_score)
-                .tokens(params.tokens.clone())
-                .result(result.to_owned())
-                .filter(filter.cloned())
+                .tokens(tokens_vec)
+                .prefix(params.prefix)
+                .result(result)
+                .filter(filter)
                 .build()
                 .context("failed to build semantic query params")
                 .map_err(OSearchError::BuildQueryError)?;
@@ -63,14 +59,15 @@ pub fn build_search_query(
             Ok(query_params.build_query())
         }
         SearchKindParams::Hybrid(params) => {
-            let model_id = params.model_id.clone().unwrap_or(default_model_id);
+            let tokens_vec = params.tokens.map(|it| it.knn);
             let query_params = HybridQueryParamsBuilder::default()
-                .query(params.query.clone())
-                .model_id(model_id)
+                .query(params.query)
                 .knn_amount(params.knn_amount)
                 .min_score(params.min_score)
-                .result(result.to_owned())
-                .filter(filter.cloned())
+                .tokens(tokens_vec)
+                .prefix(params.prefix)
+                .result(result)
+                .filter(filter)
                 .build()
                 .context("failed to build hybrid query params")
                 .map_err(OSearchError::BuildQueryError)?;
@@ -175,10 +172,14 @@ impl QueryBuildHelper for RetrieveIndexDocsQueryParams {
 
 impl QueryBuildHelper for FullTextQueryParams {
     fn build_query(&self) -> Value {
-        let must = match self.query() {
-            None => json!([{"match_all": {}}]),
-            Some(value) => json!([{"match": {"content": value} }]),
+        let mut must = match self.query() {
+            None => vec![json!({"match_all": {}})],
+            Some(value) => vec![json!({"match": {"content": value} })],
         };
+        if let Some(prefix) = self.prefix() {
+            must.push(json!({"match": {"file_path": prefix} }));
+        }
+        let must = json!(must);
 
         let result = self.result();
         let highlight = build_highlight_query(result);
@@ -204,15 +205,12 @@ impl QueryBuildHelper for FullTextQueryParams {
 
 impl QueryBuildHelper for SemanticQueryParams {
     fn build_query(&self) -> Value {
-        let query = self.query();
         let knn_amount = self.knn_amount();
-        let model_id = self.model_id();
-        let tokens = self.tokens().as_ref();
-        let neural_query = build_semantic_query(query, knn_amount, model_id, tokens);
+        let knn_query = build_knn_query(self.tokens().as_ref(), knn_amount);
 
         let size = self.result().size;
         let exclude = self.get_excluded_params();
-        let filter = build_filter_query(self.filter());
+        let filter = build_filter_with_prefix_query(self.filter(), self.prefix().as_deref());
         let highlight = build_highlight_query(self.result());
 
         let mut base_value = json!({
@@ -229,7 +227,7 @@ impl QueryBuildHelper for SemanticQueryParams {
                             "nested": {
                                 "path": "embeddings",
                                 "score_mode": "max",
-                                "query": neural_query
+                                "query": knn_query
                             }
                         }
                     ]
@@ -249,11 +247,11 @@ impl QueryBuildHelper for HybridQueryParams {
     fn build_query(&self) -> Value {
         let query = self.query();
         let knn_amount = self.knn_amount();
-        let model_id = self.model_id();
+        let semantic_query = build_knn_query(self.tokens().as_ref(), knn_amount);
 
         let size = self.result().size;
         let exclude = self.get_excluded_params();
-        let filter = build_filter_query(self.filter());
+        let filter = build_filter_with_prefix_query(self.filter(), self.prefix().as_deref());
         let highlight = build_highlight_query(self.result());
 
         let multi_match_query = json!({
@@ -282,15 +280,7 @@ impl QueryBuildHelper for HybridQueryParams {
                 "hybrid": {
                     "pagination_depth": HYBRID_PAGINATION_DEPTH,
                     "queries": [
-                        {
-                            "neural": {
-                                "embeddings.knn": {
-                                    "query_text": query,
-                                    "model_id": model_id,
-                                    "k": knn_amount
-                                }
-                            }
-                        },
+                        semantic_query,
                         {
                             "bool": {
                                 "should": [
@@ -317,35 +307,29 @@ impl QueryBuildHelper for HybridQueryParams {
     }
 }
 
-fn build_semantic_query(
-    query: &str,
-    knn_amount: u16,
-    model_id: &String,
-    tokens: Option<&Vec<f64>>,
-) -> Value {
-    match tokens {
-        None => {
-            json!({
-                "neural": {
-                    "embeddings.knn": {
-                        "query_text": query,
-                        "model_id": model_id,
-                        "k": knn_amount
-                    }
+fn build_knn_query(tokens: Option<&Vec<f64>>, knn_amount: u16) -> Value {
+    match tokens.filter(|tokens| !tokens.is_empty()) {
+        Some(tokens) => json!({
+            "knn": {
+                "embeddings.knn": {
+                    "vector": tokens,
+                    "k": knn_amount,
                 }
-            })
-        }
-        Some(tokens) => {
-            json!({
-                "knn": {
-                    "embeddings.knn": {
-                        "vector": tokens,
-                        "k": knn_amount
-                    }
-                }
-            })
-        }
+            }
+        }),
+        None => json!({ "match_none": {} }),
     }
+}
+
+fn build_filter_with_prefix_query(filter: &Option<FilterParams>, prefix: Option<&str>) -> Value {
+    let mut terms = match build_filter_query(filter) {
+        Value::Array(terms) => terms,
+        _ => unreachable!("build_filter_query always returns an array"),
+    };
+    if let Some(prefix) = prefix {
+        terms.push(json!({"match": {"file_path": prefix} }));
+    }
+    Value::Array(terms)
 }
 
 fn build_filter_query(filter: &Option<FilterParams>) -> Value {
