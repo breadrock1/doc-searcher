@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tracing::instrument;
 
 use crate::application::services::embeddings::ITokenizer;
-use crate::application::usecase::tokens::EnsuredTokens;
+use crate::application::usecase::models::EnsuredTokens;
 use crate::domain::searcher::models::{
     Pagination, PaginationParams, SearchKindParams, SearchingParams,
 };
@@ -44,7 +44,8 @@ where
         // every search kind: retrieve (path), fulltext, semantic and hybrid.
         if let Some(prefix) = params.get_prefix() {
             validate_path(prefix)
-                .map_err(|err| SearchError::ValidationError(anyhow::anyhow!(err)))?;
+                .map_err(anyhow::Error::from)
+                .map_err(SearchError::ValidationError)?;
         }
 
         let searching_kind = params.get_kind().to_string();

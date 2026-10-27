@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use rstest::rstest;
 use std::sync::Arc;
 
@@ -124,7 +124,7 @@ async fn test_semantic_provider_error_returns_internal_error(
     embeddings
         .expect_compute()
         .times(1)
-        .returning(|_| Err(TokenizerError::Request("unavailable".to_string())));
+        .returning(|_| Err(TokenizerError::Request(anyhow!("unavailable"))));
 
     let mut mock = MockSearcher::new();
     mock.expect_search().never();

@@ -5,9 +5,9 @@ pub type TokenizerResult<T> = Result<T, TokenizerError>;
 #[derive(Debug, Error)]
 pub enum TokenizerError {
     #[error("embeddings request failed: {0}")]
-    Request(String),
+    Request(anyhow::Error),
     #[error("invalid embeddings response: {0}")]
-    InvalidResponse(String),
+    InvalidResponse(anyhow::Error),
     #[error("embeddings service returned unexpected status {status}: {body}")]
     UnexpectedStatus { status: u16, body: String },
 }
@@ -26,11 +26,12 @@ impl TokenizerError {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::anyhow;
     use super::*;
 
     #[test]
     fn test_error_display_and_retriability() {
-        let request = TokenizerError::Request("connection refused".to_string());
+        let request = TokenizerError::Request(anyhow!("connection refused"));
         assert!(request.is_retriable());
         assert!(request.to_string().contains("request failed"));
 
@@ -52,7 +53,7 @@ mod tests {
         };
         assert!(too_many.is_retriable());
 
-        let invalid = TokenizerError::InvalidResponse("bad json".to_string());
+        let invalid = TokenizerError::InvalidResponse(anyhow!("bad json"));
         assert!(!invalid.is_retriable());
     }
 }
