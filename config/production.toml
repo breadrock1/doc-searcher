@@ -38,7 +38,8 @@ token_limit = 700
 overlap_rate = 0.2
 
 [storage.embeddings]
-address = "http://embeddings-server:8081"
+base_url = "http://embeddings-server:8081/v1"
+api_key = ""
 model = "bge"
 overlap = 0.2
 dimension = 768
