@@ -66,3 +66,28 @@ impl IndexId {
         &self.0
     }
 }
+
+/// A resource identifier.
+///
+/// Represents the unique identifier of a resource (e.g. a tenant or service)
+/// managed by the resource manager.
+#[derive(Clone, Debug)]
+pub struct ResourceId(pub String);
+
+impl From<String> for ResourceId {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl AsRef<str> for ResourceId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Display for ResourceId {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(fmt, "{}", self.0)
+    }
+}
