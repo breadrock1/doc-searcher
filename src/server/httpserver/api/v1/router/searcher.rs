@@ -8,6 +8,7 @@ use std::sync::Arc;
 use crate::server::httpserver::api::v1::form::{
     FullTextSearchForm, HybridSearchForm, SemanticSearchForm,
 };
+use crate::server::httpserver::api::v1::router::{join_path_prefix, resolve_resource_info};
 use crate::server::httpserver::api::v1::schema::PaginationSchema;
 use crate::server::httpserver::swagger::DefaultErrorForm;
 use crate::server::httpserver::ServerApp;
@@ -37,6 +38,7 @@ const HYBRID_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/sea
         ),
         (status = 400, description = "Failed while fulltext searching"),
         (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Resource not found"),
         (status = 500, description = "Internal error"),
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
@@ -49,7 +51,14 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let params = form.try_into()?;
+    let mut form = form;
+    let res_manager = state.get_resource_manager().clone();
+    let info = resolve_resource_info(res_manager, &form.resource_id).await?;
+
+    form.prefix = join_path_prefix(&info.prefix, form.prefix.as_deref())?;
+
+    let params = form.try_convert_to_params(&info)?;
+
     let searcher = state.get_searcher();
     let pagination = searcher.search_document_parts(params).await?;
     let response = pagination.try_into()?;
@@ -71,6 +80,7 @@ where
         ),
         (status = 400, description = "Failed while semantic searching"),
         (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Resource not found"),
         (status = 500, description = "Internal error"),
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
@@ -83,7 +93,14 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let params = form.try_into()?;
+    let mut form = form;
+    let res_manager = state.get_resource_manager().clone();
+    let info = resolve_resource_info(res_manager, &form.resource_id).await?;
+
+    form.prefix = join_path_prefix(&info.prefix, form.prefix.as_deref())?;
+
+    let params = form.try_convert_to_params(&info)?;
+
     let searcher = state.get_searcher();
     let pagination = searcher.search_document_parts(params).await?;
     let response = pagination.try_into()?;
@@ -105,6 +122,7 @@ where
         ),
         (status = 400, description = "Failed while hybrid searching"),
         (status = 401, description = "Unauthorized access"),
+        (status = 404, description = "Resource not found"),
         (status = 500, description = "Internal error"),
         (status = 501, description = "Error form", body = DefaultErrorForm),
     )
@@ -117,7 +135,14 @@ where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let params = form.try_into()?;
+    let mut form = form;
+    let res_manager = state.get_resource_manager().clone();
+    let info = resolve_resource_info(res_manager, &form.resource_id).await?;
+
+    form.prefix = join_path_prefix(&info.prefix, form.prefix.as_deref())?;
+
+    let params = form.try_convert_to_params(&info)?;
+
     let searcher = state.get_searcher();
     let pagination = searcher.search_document_parts(params).await?;
     let response = pagination.try_into()?;

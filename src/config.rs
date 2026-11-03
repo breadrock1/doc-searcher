@@ -5,6 +5,7 @@ use otlp::TelemetryConfig;
 use serde_derive::Deserialize;
 
 use crate::server::{CacheConfig, ServerConfig, StorageConfig};
+use crate::services::resource_manager::ResourceManagerConfig;
 
 const CONFIG_PREFIX: &str = "DOC_SEARCH";
 const SERVICE_RUN_MODE: &str = "DOC_SEARCH__RUN_MODE";
@@ -22,6 +23,14 @@ pub struct ServiceConfig {
     storage: StorageConfig,
     #[getset(get, vis = "pub")]
     cache: CacheConfig,
+    #[getset(get, vis = "pub")]
+    services: ServicesConfig,
+}
+
+#[derive(Clone, Deserialize, Getset)]
+pub struct ServicesConfig {
+    #[getset(get, vis = "pub")]
+    resource_manager: ResourceManagerConfig,
 }
 
 #[derive(Clone, Deserialize, Getset)]

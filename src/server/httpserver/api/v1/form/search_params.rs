@@ -5,13 +5,14 @@ use doc_search_core::domain::searcher::models::{
     RetrieveIndexDocumentsParamsBuilder, SearchKindParams, SearchingParams,
     SemanticSearchingParamsBuilder,
 };
+use doc_search_core::shared::services::ResourceInfo;
 use gset::Getset;
 use serde_derive::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use serde_json::json;
 use utoipa::{IntoParams, ToSchema};
 
-use crate::server::ServerError;
+use crate::server::{ServerError, ServerResult};
 
 #[derive(Serialize, Deserialize, IntoParams, ToSchema)]
 pub struct FilterForm {
@@ -160,29 +161,23 @@ pub struct FullTextSearchForm {
     pub query: Option<String>,
     #[schema(example = "user-123/inbox")]
     pub prefix: Option<String>,
-    #[schema(example = "test-folder-1,test-folder-2")]
-    pub indexes: String,
+    #[schema(example = "53079efa-b0f2-4058-96dc-c792531972db")]
+    pub resource_id: String,
     pub filter: Option<FilterForm>,
     pub result: ResultForm,
 }
 
-impl TryFrom<FullTextSearchForm> for SearchingParams {
-    type Error = ServerError;
-
-    fn try_from(form: FullTextSearchForm) -> Result<Self, Self::Error> {
-        let indexes = form
-            .indexes
-            .split(',')
-            .map(String::from)
-            .collect::<Vec<String>>();
-        let filter_params = form
+impl FullTextSearchForm {
+    pub fn try_convert_to_params(self, info: &ResourceInfo) -> ServerResult<SearchingParams> {
+        let indexes = vec![info.index.clone()];
+        let filter_params = self
             .filter
             .map(|it| FilterParams::try_from(it).ok())
             .unwrap_or_default();
-        let result = form.result.try_into()?;
+        let result = self.result.try_into()?;
         let full_text_params = FullTextSearchingParamsBuilder::default()
-            .query(form.query)
-            .prefix(form.prefix)
+            .query(self.query)
+            .prefix(self.prefix)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
 
@@ -203,33 +198,27 @@ pub struct HybridSearchForm {
     pub knn_amount: u16,
     #[schema(example = "user-123/inbox")]
     pub prefix: Option<String>,
-    #[schema(example = "test-folder-1,test-folder-2")]
-    pub indexes: String,
+    #[schema(example = "53079efa-b0f2-4058-96dc-c792531972db")]
+    pub resource_id: String,
     #[schema(example = 0.7)]
     pub min_score: Option<f32>,
     pub result: ResultForm,
     pub filter: Option<FilterForm>,
 }
 
-impl TryFrom<HybridSearchForm> for SearchingParams {
-    type Error = ServerError;
-
-    fn try_from(form: HybridSearchForm) -> Result<Self, Self::Error> {
-        let indexes = form
-            .indexes
-            .split(',')
-            .map(String::from)
-            .collect::<Vec<String>>();
-        let filter_params = form
+impl HybridSearchForm {
+    pub fn try_convert_to_params(self, info: &ResourceInfo) -> ServerResult<SearchingParams> {
+        let indexes = vec![info.index.clone()];
+        let filter_params = self
             .filter
             .map(|it| FilterParams::try_from(it).ok())
             .unwrap_or_default();
-        let result = form.result.try_into()?;
+        let result = self.result.try_into()?;
         let hybrid_params = HybridSearchingParamsBuilder::default()
-            .query(form.query)
-            .knn_amount(form.knn_amount)
-            .min_score(form.min_score)
-            .prefix(form.prefix)
+            .query(self.query)
+            .knn_amount(self.knn_amount)
+            .min_score(self.min_score)
+            .prefix(self.prefix)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
 
@@ -250,31 +239,25 @@ pub struct SemanticSearchForm {
     pub knn_amount: u16,
     #[schema(example = "user-123/inbox")]
     pub prefix: Option<String>,
-    #[schema(example = "test-folder-1,test-folder-2")]
-    pub indexes: String,
+    #[schema(example = "53079efa-b0f2-4058-96dc-c792531972db")]
+    pub resource_id: String,
     pub result: ShortResultForm,
     pub filter: Option<FilterForm>,
 }
 
-impl TryFrom<SemanticSearchForm> for SearchingParams {
-    type Error = ServerError;
-
-    fn try_from(form: SemanticSearchForm) -> Result<Self, Self::Error> {
-        let indexes = form
-            .indexes
-            .split(',')
-            .map(String::from)
-            .collect::<Vec<String>>();
-        let filter_params = form
+impl SemanticSearchForm {
+    pub fn try_convert_to_params(self, info: &ResourceInfo) -> ServerResult<SearchingParams> {
+        let indexes = vec![info.index.clone()];
+        let filter_params = self
             .filter
             .map(|it| FilterParams::try_from(it).ok())
             .unwrap_or_default();
-        let result = form.result.try_into()?;
+        let result = self.result.try_into()?;
         let semantic_params = SemanticSearchingParamsBuilder::default()
-            .query(form.query)
-            .knn_amount(form.knn_amount)
+            .query(self.query)
+            .knn_amount(self.knn_amount)
             .min_score(None)
-            .prefix(form.prefix)
+            .prefix(self.prefix)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
 

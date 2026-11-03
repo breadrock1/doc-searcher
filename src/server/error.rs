@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use doc_search_core::domain::searcher::SearchError;
 use doc_search_core::domain::storage::StorageError;
+use doc_search_core::shared::services::ResourceManagerError;
 use serde_derive::Serialize;
 use thiserror::Error;
 use utoipa::ToSchema;
@@ -63,6 +64,15 @@ impl From<SearchError> for ServerError {
             SearchError::ConnectionError(err) => ServerError::InternalError(err.to_string()),
             SearchError::UnknownError(err) => ServerError::InternalError(err.to_string()),
             SearchError::ServiceError(err) => ServerError::InternalError(err.to_string()),
+        }
+    }
+}
+
+impl From<ResourceManagerError> for ServerError {
+    fn from(err: ResourceManagerError) -> Self {
+        match err {
+            ResourceManagerError::NotFound(err) => ServerError::NotFound(err),
+            ResourceManagerError::InternalError(err) => ServerError::InternalError(err),
         }
     }
 }
