@@ -29,8 +29,8 @@ impl TokenizerError {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::anyhow;
     use super::*;
+    use anyhow::anyhow;
 
     #[test]
     fn test_error_display_and_retriability() {

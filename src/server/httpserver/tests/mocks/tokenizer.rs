@@ -1,7 +1,7 @@
 use mockall::mock;
 
-use doc_search_core::application::services::embeddings::ITokenizer;
 use doc_search_core::application::services::embeddings::error::TokenizerResult;
+use doc_search_core::application::services::embeddings::ITokenizer;
 use doc_search_core::shared::kernel::Tokens;
 
 mock! {

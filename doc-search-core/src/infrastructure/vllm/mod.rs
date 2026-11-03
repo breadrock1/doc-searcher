@@ -5,12 +5,12 @@ mod config;
 pub use config::VLLMConfig;
 
 mod dto;
-use dto::RerankerRequest;
 use dto::RerankedDocuments;
+use dto::RerankerRequest;
 
 mod error;
-use error::map_openai_error;
 use error::map_http_error;
+use error::map_openai_error;
 
 use metrics::{counter, histogram};
 use openai_dive::v1::api::Client;
@@ -62,7 +62,6 @@ impl ServiceConnect for VLLMClient {
 
 #[async_trait::async_trait]
 impl ITokenizer for VLLMClient {
-
     #[instrument(level = "info", skip(self, chunk), fields(chunks_len = 1))]
     async fn compute(&self, chunk: String) -> TokenizerResult<Tokens> {
         let instant = Instant::now();
@@ -75,7 +74,10 @@ impl ITokenizer for VLLMClient {
             .record(instant.elapsed().as_secs_f64());
 
         let computed = computed_result?;
-        computed.first().cloned().ok_or(TokenizerError::EmptyVectors)
+        computed
+            .first()
+            .cloned()
+            .ok_or(TokenizerError::EmptyVectors)
     }
 
     #[instrument(level = "info", skip(self, chunks), fields(chunks_len = chunks.len()))]
@@ -96,7 +98,11 @@ impl ITokenizer for VLLMClient {
 #[async_trait::async_trait]
 impl IReranker for VLLMClient {
     #[instrument(level = "info", skip(self, docs), fields(docs_len = docs.len()))]
-    async fn rerank(&self, query: String, mut docs: Vec<FoundedDocument>) -> RerankerResult<Vec<FoundedDocument>> {
+    async fn rerank(
+        &self,
+        query: String,
+        mut docs: Vec<FoundedDocument>,
+    ) -> RerankerResult<Vec<FoundedDocument>> {
         if !self.config.enable() {
             return Ok(docs);
         }
@@ -117,13 +123,11 @@ impl IReranker for VLLMClient {
             .record(instant.elapsed().as_secs_f64());
 
         let reranked = result?;
-        reranked.results
-            .into_iter()
-            .for_each(|it| {
-                if let Some(doc) = docs.get_mut(it.index as usize) {
-                    doc.score = it.relevance_score
-                }
-            });
+        reranked.results.into_iter().for_each(|it| {
+            if let Some(doc) = docs.get_mut(it.index as usize) {
+                doc.score = it.relevance_score
+            }
+        });
 
         docs.sort_by(|a, b| b.score.total_cmp(&a.score));
 
@@ -165,7 +169,7 @@ impl VLLMClient {
                         expected = self.config.dimension(),
                         "unexpected dimension",
                     );
-                    continue
+                    continue;
                 }
 
                 result_tokens.push(Tokens::from(vector));
@@ -177,7 +181,11 @@ impl VLLMClient {
         RetryIf::start(strategy, send, |err: &TokenizerError| err.is_retriable()).await
     }
 
-    async fn rerank_with_retries(&self, query: String, chunks: Vec<String>) -> RerankerResult<RerankedDocuments> {
+    async fn rerank_with_retries(
+        &self,
+        query: String,
+        chunks: Vec<String>,
+    ) -> RerankerResult<RerankedDocuments> {
         let strategy = ExponentialBackoff::from_millis(EXPONENTIAL_MIN_MILLS)
             .max_delay(Duration::from_secs(EXPONENTIAL_MAX_DELAY_SECS))
             .map(jitter)
@@ -202,7 +210,8 @@ impl VLLMClient {
                 .await
                 .map_err(map_http_error)?;
 
-            let reranked = response.json::<RerankedDocuments>()
+            let reranked = response
+                .json::<RerankedDocuments>()
                 .await
                 .map_err(anyhow::Error::from)
                 .map_err(RerankerError::InvalidResponse)?;

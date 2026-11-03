@@ -8,8 +8,8 @@ use doc_search::server::{httpserver, httpserver::mw, ServerApp};
 use doc_search::SERVICE_NAME;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
-use doc_search_core::infrastructure::vllm::VLLMClient;
 use doc_search_core::infrastructure::osearch::OSearchClient;
+use doc_search_core::infrastructure::vllm::VLLMClient;
 use doc_search_core::ServiceConnect;
 
 #[tokio::main(worker_threads = 8)]

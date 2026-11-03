@@ -147,7 +147,11 @@ where
         }
     }
 
-    async fn ensure_reranked_result(&self, query: String, mut pagination: Pagination) -> SearchResult<Pagination> {
+    async fn ensure_reranked_result(
+        &self,
+        query: String,
+        mut pagination: Pagination,
+    ) -> SearchResult<Pagination> {
         let founded = std::mem::take(&mut pagination.founded);
         let reranked = self
             .reranker

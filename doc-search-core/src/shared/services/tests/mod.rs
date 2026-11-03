@@ -1,5 +1,5 @@
 use crate::shared::kernel::ResourceId;
-use crate::shared::services::error::{ResourceManagerError};
+use crate::shared::services::error::ResourceManagerError;
 
 #[test]
 fn resource_manager_errors_display() {

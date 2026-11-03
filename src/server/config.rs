@@ -1,5 +1,5 @@
-use doc_search_core::infrastructure::vllm::VLLMConfig;
 use doc_search_core::infrastructure::osearch::OSearchConfig;
+use doc_search_core::infrastructure::vllm::VLLMConfig;
 use gset::Getset;
 use serde_derive::Deserialize;
 

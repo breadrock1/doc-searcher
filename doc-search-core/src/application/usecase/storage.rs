@@ -3,10 +3,10 @@ use std::sync::Arc;
 use tracing::instrument;
 
 use crate::application::services::embeddings::ITokenizer;
-use crate::domain::storage::{StorageError, StorageResult};
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart, LargeDocument};
 use crate::domain::storage::models::{CreateIndexParams, StoredDocumentPartsInfo};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
+use crate::domain::storage::{StorageError, StorageResult};
 use crate::shared::kernel::{IndexId, LargeDocumentId};
 
 #[derive(Clone)]
@@ -97,7 +97,10 @@ where
         let document_parts = self.tokenize_doc_parts(document_parts).await?;
 
         let instant = tokio::time::Instant::now();
-        let result = self.storage.store_document_parts(index, document_parts).await;
+        let result = self
+            .storage
+            .store_document_parts(index, document_parts)
+            .await;
 
         let is_error = result.is_err();
         counter!(
@@ -144,24 +147,26 @@ where
             .await
     }
 
-    async fn tokenize_doc_parts(&self, mut parts: Vec<DocumentPart>) -> StorageResult<Vec<DocumentPart>> {
+    async fn tokenize_doc_parts(
+        &self,
+        mut parts: Vec<DocumentPart>,
+    ) -> StorageResult<Vec<DocumentPart>> {
         let chunks = parts.iter().map(|it| it.content.clone()).collect();
-        let mut tokens = self.tokenizer.compute_bulk(chunks)
+        let mut tokens = self
+            .tokenizer
+            .compute_bulk(chunks)
             .await
             .map_err(anyhow::Error::from)
             .map_err(StorageError::InternalError)?;
 
-        tokens
-            .iter_mut()
-            .enumerate()
-            .for_each(|(index, it)| {
-                if let Some(part) = parts.get_mut(index) {
-                    let tokens = std::mem::take(it);
-                    if !tokens.is_empty() {
-                        part.embeddings = Some(tokens);
-                    }
+        tokens.iter_mut().enumerate().for_each(|(index, it)| {
+            if let Some(part) = parts.get_mut(index) {
+                let tokens = std::mem::take(it);
+                if !tokens.is_empty() {
+                    part.embeddings = Some(tokens);
                 }
-            });
+            }
+        });
 
         Ok(parts)
     }

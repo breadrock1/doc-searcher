@@ -32,16 +32,15 @@ pub fn map_openai_error(error: APIError) -> TokenizerError {
             status: StatusCode::GONE.as_u16(),
             body: msg,
         },
-        APIError::UnknownError(status, msg) => TokenizerError::UnexpectedStatus {
-            status,
-            body: msg,
-        },
+        APIError::UnknownError(status, msg) => {
+            TokenizerError::UnexpectedStatus { status, body: msg }
+        }
         APIError::InvalidRequestError(msg) | APIError::ParseError(msg) => {
             TokenizerError::InvalidResponse(anyhow!(msg))
-        },
-        APIError::FileError(msg)
-        | APIError::StreamError(msg)
-        | APIError::WebSocketError(msg) => TokenizerError::Request(anyhow!(msg)),
+        }
+        APIError::FileError(msg) | APIError::StreamError(msg) | APIError::WebSocketError(msg) => {
+            TokenizerError::Request(anyhow!(msg))
+        }
     }
 }
 

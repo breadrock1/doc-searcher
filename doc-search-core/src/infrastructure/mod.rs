@@ -1,2 +1,2 @@
-pub mod vllm;
 pub mod osearch;
+pub mod vllm;

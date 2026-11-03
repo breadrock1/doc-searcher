@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use rstest::rstest;
 use std::sync::Arc;
 
