@@ -56,3 +56,7 @@ address = "redis://redis:6379"
 username = "redis"
 password = "redis"
 expired = 3600
+
+[services.resource_manager]
+base_url = "http://resource-manager:2899"
+timeout = 5
