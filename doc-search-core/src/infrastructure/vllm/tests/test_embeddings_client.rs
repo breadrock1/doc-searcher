@@ -3,8 +3,8 @@ use std::sync::atomic::Ordering;
 
 use crate::ServiceConnect;
 use crate::application::services::embeddings::ITokenizer;
-use crate::infrastructure::embeddings::EmbeddingsClient;
-use crate::infrastructure::embeddings::tests::common::{
+use crate::infrastructure::vllm::VLLMClient;
+use crate::infrastructure::vllm::tests::common::{
     build_embeddings_config_for, json_response, start_test_server,
 };
 
@@ -14,8 +14,8 @@ async fn test_compute_success() -> anyhow::Result<()> {
         start_test_server(Arc::new(move |_| (200, json_response(vec![0.1, 0.2, 0.3])))).await;
 
     let config = build_embeddings_config_for(&address); // dimension 3, retries 2
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert_eq!(vec![0.1, 0.2, 0.3], *result);
     assert_eq!(1, hits.load(Ordering::SeqCst));
@@ -28,14 +28,14 @@ async fn test_compute_sends_openai_request() -> anyhow::Result<()> {
         start_test_server(Arc::new(move |_| (200, json_response(vec![0.1, 0.2, 0.3])))).await;
 
     let config = build_embeddings_config_for(&address);
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert_eq!(vec![0.1, 0.2, 0.3], *result);
 
     let head = head.lock().unwrap();
     assert!(
-        head.starts_with("POST /embeddings HTTP/1.1"),
+        head.starts_with("POST /vllm HTTP/1.1"),
         "unexpected request line: {head}"
     );
     assert!(
@@ -59,8 +59,8 @@ async fn test_compute_dimension_mismatch_degrades_to_empty() -> anyhow::Result<(
         start_test_server(Arc::new(move |_| (200, json_response(vec![0.1])))).await;
 
     let config = build_embeddings_config_for(&address);
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert!(result.is_empty());
     assert_eq!(1, hits.load(Ordering::SeqCst));
@@ -79,8 +79,8 @@ async fn test_compute_retries_on_rate_limit_then_success() -> anyhow::Result<()>
     .await;
 
     let config = build_embeddings_config_for(&address);
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert_eq!(vec![1.0, 2.0, 3.0], *result);
     assert!(hits.load(Ordering::SeqCst) >= 3);
@@ -95,8 +95,8 @@ async fn test_compute_server_error_degrades_to_empty_without_retry() -> anyhow::
         start_test_server(Arc::new(move |_| (500, b"service unavailable".to_vec()))).await;
 
     let config = build_embeddings_config_for(&address);
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert!(result.is_empty());
     assert_eq!(1, hits.load(Ordering::SeqCst));
@@ -111,8 +111,8 @@ async fn test_compute_connection_refused_degrades_to_empty() -> anyhow::Result<(
     drop(dead_listener);
 
     let config = build_embeddings_config_for(&format!("http://{dead_address}"));
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert!(result.is_empty());
     Ok(())
@@ -131,8 +131,8 @@ async fn test_compute_invalid_body_degrades_to_empty() -> anyhow::Result<()> {
     .await;
 
     let config = build_embeddings_config_for(&address);
-    let client = EmbeddingsClient::connect(&config).await?;
-    let result = client.compute("hello").await?;
+    let client = VLLMClient::connect(&config).await?;
+    let result = client.compute("hello".to_string()).await?;
 
     assert!(result.is_empty());
     assert_eq!(1, hits.load(Ordering::SeqCst));

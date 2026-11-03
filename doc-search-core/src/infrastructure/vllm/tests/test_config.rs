@@ -1,5 +1,5 @@
-use crate::infrastructure::embeddings::config::EmbeddingsConfig;
-use crate::infrastructure::embeddings::tests::common::fixture::config::build_embeddings_config;
+use crate::infrastructure::vllm::config::VLLMConfig;
+use crate::infrastructure::vllm::tests::common::fixture::config::build_embeddings_config;
 
 #[test]
 fn test_embeddings_config_fields() {
@@ -15,7 +15,7 @@ fn test_embeddings_config_fields() {
 
 #[test]
 fn test_embeddings_config_requires_all_fields() {
-    let result: Result<EmbeddingsConfig, _> =
+    let result: Result<VLLMConfig, _> =
         serde_json::from_value(serde_json::json!({ "base_url": "http://x" }));
     assert!(result.is_err());
 }

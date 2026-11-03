@@ -80,7 +80,7 @@ impl SemanticQueryParams {
     pub fn get_excluded_params(&self) -> &[&str] {
         let include_extra_fields = self.result.include_extra_fields.unwrap_or_default();
         if include_extra_fields {
-            return &["content"];
+            return &["chunked_text", "embeddings"];
         };
 
         &["content", "chunked_text", "embeddings"]
@@ -111,6 +111,6 @@ impl HybridQueryParams {
             return &["chunked_text", "embeddings"];
         }
 
-        &["content"]
+        &["content", "chunked_text", "embeddings"]
     }
 }

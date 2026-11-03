@@ -13,7 +13,7 @@ use crate::infrastructure::osearch::dto::{
 use crate::infrastructure::osearch::error::{OSearchError, OSearchResult};
 use crate::shared::kernel::Tokens;
 
-const HYBRID_PAGINATION_DEPTH: usize = 20;
+const HYBRID_PAGINATION_DEPTH: usize = 3;
 
 pub fn build_search_query(params: SearchingParams, tokens: Option<Tokens>) -> OSearchResult<Value> {
     let result = params.get_result().clone();
@@ -262,7 +262,7 @@ impl QueryBuildHelper for HybridQueryParams {
             "content": {
                 "query": query,
                 "slop": 2,
-                "boost": 3.0
+                "boost": 2.0
             }
         });
 

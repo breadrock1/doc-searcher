@@ -4,7 +4,7 @@ use crate::domain::storage::models::{KnnIndexParams, KnnIndexParamsBuilder};
 use crate::infrastructure::osearch::OSearchConfig;
 
 pub const HYBRID_SEARCH_PIPELINE_NAME: &str = "hybrid-search-pipeline";
-const NORMALIZATION_TECHNIQUE: &str = "min_max";
+const NORMALIZATION_TECHNIQUE: &str = "rrf";
 const COMBINATION_TECHNIQUE: &str = "arithmetic_mean";
 const ALGO_PARAM_EF_SEARCH: u32 = 100;
 
@@ -20,7 +20,7 @@ pub fn build_hybrid_search_schema() -> Value {
                     "combination": {
                         "technique": COMBINATION_TECHNIQUE,
                         "parameters": {
-                            "weights": [0.3, 0.7]
+                            "weights": [0.55, 0.45]
                         }
                     }
                 }

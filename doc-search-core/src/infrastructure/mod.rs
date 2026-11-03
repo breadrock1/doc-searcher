@@ -1,2 +1,2 @@
-pub mod embeddings;
+pub mod vllm;
 pub mod osearch;

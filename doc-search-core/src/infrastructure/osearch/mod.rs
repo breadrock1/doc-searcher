@@ -10,8 +10,6 @@ mod extractor;
 mod query;
 mod schema;
 
-#[cfg(feature = "enable-unique-doc-id")]
-use crate::application::usecase::storage::gen_unique_document_id;
 use anyhow::{Context, anyhow};
 use metrics::{counter, histogram};
 use opensearch::auth::Credentials;
@@ -27,6 +25,9 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::instrument;
+
+#[cfg(feature = "enable-unique-doc-id")]
+use crate::application::usecase::storage::gen_unique_document_id;
 
 use crate::ServiceConnect;
 use crate::domain::searcher::models::{Pagination, PaginationParams, SearchingParams};
@@ -424,7 +425,7 @@ impl ISearcher for OSearchClient {
 
         let search_parts = Self::build_search_parts(&indexes);
         let query = build_search_query(params, tokens)?;
-        let query_str = serde_json::to_string_pretty(&query);
+        let query_str = serde_json::to_string(&query).expect("should always serialize");
         tracing::debug!(query=?query_str, "search query");
         let request = self
             .client
