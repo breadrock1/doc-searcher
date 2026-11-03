@@ -1,8 +1,5 @@
 use metrics::{counter, histogram};
-use std::collections::HashMap;
 use std::sync::Arc;
-use anyhow::anyhow;
-use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::application::services::embeddings::ITokenizer;

@@ -1,6 +1,5 @@
 use crate::application::services::reranker::RerankerResult;
 use crate::domain::searcher::models::FoundedDocument;
-use crate::shared::kernel::Reranked;
 
 /// Defines the interface for reranking.
 ///

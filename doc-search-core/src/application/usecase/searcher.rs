@@ -9,7 +9,6 @@ use crate::domain::searcher::models::{
     Pagination, PaginationParams, SearchKindParams, SearchingParams,
 };
 use crate::domain::searcher::{IPaginator, ISearcher, SearchError, SearchResult, validate_path};
-use crate::domain::storage::StorageError;
 
 #[derive(Clone)]
 pub struct SearcherUseCase<Searcher>
