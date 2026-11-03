@@ -1,4 +1,4 @@
-version: '3.9'
+name: 'doc-search'
 
 services:
   doc-search-migration:
@@ -89,6 +89,38 @@ services:
       - doc-search-net
     ports:
       - '3100:3100'
+
+  embeddings:
+    image: vllm/vllm-openai:v0.11.0
+    restart: on-failure
+    ipc: host
+    command:
+      - --model
+      - Qwen/Qwen3-Embedding-0.6B
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8074"
+      - --gpu-memory-utilization
+      - "0.7"
+    networks:
+      - doc-search-net
+    ports:
+      - '8074:8074'
+    volumes:
+      - './hgf:/root/.cache/huggingface'
+    environment:
+      VLLM_TARGET_DEVICE: cpu
+      VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
 
 networks:
   doc-search-net:
