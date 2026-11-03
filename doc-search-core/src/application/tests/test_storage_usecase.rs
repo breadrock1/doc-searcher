@@ -21,6 +21,7 @@ async fn test_store_document_empty(
     let TestEnvironment {
         storage: mut mock_storage,
         embeddings,
+        ..
     } = test_env;
     mock_storage.expect_store_document_parts().never();
     mock_storage
@@ -51,6 +52,7 @@ async fn test_store_document(
     let TestEnvironment {
         storage: mut mock_storage,
         embeddings: mut mock_embeddings,
+        ..
     } = test_env;
     mock_embeddings
         .expect_compute()
@@ -103,6 +105,7 @@ async fn test_store_document_embeddings_unavailable_stores_without_vectors(
     let TestEnvironment {
         storage: mut mock_storage,
         embeddings: mut mock_embeddings,
+        ..
     } = test_env;
 
     mock_embeddings

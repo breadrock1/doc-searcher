@@ -9,6 +9,7 @@ mock! {
 
     #[async_trait::async_trait]
     impl ITokenizer for EmbeddingsProvider {
-        async fn compute(&self, text: &str) -> TokenizerResult<Tokens>;
+        async fn compute(&self, chunks: String) -> TokenizerResult<Tokens>;
+        async fn compute_bulk(&self, chunks: Vec<String>) -> TokenizerResult<Vec<Tokens>>;
     }
 }

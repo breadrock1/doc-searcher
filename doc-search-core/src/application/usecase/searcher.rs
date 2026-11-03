@@ -3,11 +3,13 @@ use std::sync::Arc;
 use tracing::instrument;
 
 use crate::application::services::embeddings::ITokenizer;
+use crate::application::services::reranker::IReranker;
 use crate::application::usecase::models::EnsuredTokens;
 use crate::domain::searcher::models::{
     Pagination, PaginationParams, SearchKindParams, SearchingParams,
 };
 use crate::domain::searcher::{IPaginator, ISearcher, SearchError, SearchResult, validate_path};
+use crate::domain::storage::StorageError;
 
 #[derive(Clone)]
 pub struct SearcherUseCase<Searcher>
@@ -16,16 +18,22 @@ where
 {
     searcher: Arc<Searcher>,
     embeddings: Arc<dyn ITokenizer>,
+    reranker: Arc<dyn IReranker>,
 }
 
 impl<Searcher> SearcherUseCase<Searcher>
 where
     Searcher: ISearcher + IPaginator + Send + Sync,
 {
-    pub fn new(searcher: Arc<Searcher>, embeddings: Arc<dyn ITokenizer>) -> Self {
+    pub fn new(
+        searcher: Arc<Searcher>,
+        embeddings: Arc<dyn ITokenizer>,
+        reranker: Arc<dyn IReranker>,
+    ) -> Self {
         SearcherUseCase {
             searcher,
             embeddings,
+            reranker,
         }
     }
 }
@@ -50,6 +58,7 @@ where
 
         let searching_kind = params.get_kind().to_string();
 
+        let (is_ensure_reranking_need, query) = params.get_query_if_hybrid_kind();
         let ensured = self.ensure_query_embeddings(params).await?;
         let result = self.searcher.search(ensured.params, ensured.tokens).await;
 
@@ -69,12 +78,17 @@ where
         .record(instant.elapsed().as_secs_f64());
 
         let pagination = result?;
+        if is_ensure_reranking_need {
+            return self.ensure_reranked_result(query, pagination).await;
+        }
+
         Ok(pagination)
     }
 
     #[instrument(level = "info", skip(self))]
     pub async fn paginate(&self, params: PaginationParams) -> SearchResult<Pagination> {
         let instant = tokio::time::Instant::now();
+
         let result = self.searcher.paginate(params).await;
 
         let is_error = result.is_err();
@@ -88,6 +102,10 @@ where
             "paginating_status" => is_error.to_string(),
         )
         .record(instant.elapsed().as_secs_f64());
+
+        // TODO: does need to rerank pagination results?
+        //  pagination available for fulltext and semantic searching
+        //  bu reranking available for hybrid searching only
 
         let pagination = result?;
         Ok(pagination)
@@ -109,7 +127,7 @@ where
             SearchKindParams::Semantic(par) => {
                 let tokens = self
                     .embeddings
-                    .compute(&par.query)
+                    .compute(par.query.clone())
                     .await
                     .map_err(|err| SearchError::InternalError(err.into()))?;
 
@@ -118,7 +136,7 @@ where
             SearchKindParams::Hybrid(par) => {
                 let tokens = self
                     .embeddings
-                    .compute(&par.query)
+                    .compute(par.query.clone())
                     .await
                     .map_err(|err| SearchError::InternalError(err.into()))?;
 
@@ -128,5 +146,19 @@ where
                 Ok(EnsuredTokens::new(params, None))
             }
         }
+    }
+
+    async fn ensure_reranked_result(&self, query: String, mut pagination: Pagination) -> SearchResult<Pagination> {
+        let founded = std::mem::take(&mut pagination.founded);
+        let reranked = self
+            .reranker
+            .rerank(query, founded)
+            .await
+            .map_err(anyhow::Error::from)
+            .map_err(SearchError::InternalError)?;
+
+        pagination.founded = reranked;
+
+        Ok(pagination)
     }
 }

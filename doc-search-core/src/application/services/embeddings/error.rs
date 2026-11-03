@@ -4,11 +4,13 @@ pub type TokenizerResult<T> = Result<T, TokenizerError>;
 
 #[derive(Debug, Error)]
 pub enum TokenizerError {
-    #[error("embeddings request failed: {0}")]
+    #[error("vllm request failed: {0}")]
     Request(anyhow::Error),
-    #[error("invalid embeddings response: {0}")]
+    #[error("invalid vllm response: {0}")]
     InvalidResponse(anyhow::Error),
-    #[error("embeddings service returned unexpected status {status}: {body}")]
+    #[error("returned empty vectors")]
+    EmptyVectors,
+    #[error("vllm service returned unexpected status {status}: {body}")]
     UnexpectedStatus { status: u16, body: String },
 }
 
@@ -20,6 +22,7 @@ impl TokenizerError {
                 (500..=599).contains(status) || *status == 429
             }
             TokenizerError::InvalidResponse(_) => false,
+            TokenizerError::EmptyVectors => false,
         }
     }
 }

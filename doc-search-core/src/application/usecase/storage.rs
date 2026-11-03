@@ -1,11 +1,12 @@
 use metrics::{counter, histogram};
 use std::collections::HashMap;
 use std::sync::Arc;
+use anyhow::anyhow;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::application::services::embeddings::ITokenizer;
-use crate::domain::storage::StorageResult;
+use crate::domain::storage::{StorageError, StorageResult};
 use crate::domain::storage::models::{AllDocumentParts, DocumentPart, LargeDocument};
 use crate::domain::storage::models::{CreateIndexParams, StoredDocumentPartsInfo};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
@@ -96,13 +97,10 @@ where
 
         let part_size = self.max_content_size;
         let document_parts = large_doc.divide_large_document_on_parts(part_size)?;
-        let document_parts = self.tokenize_doc_parts(document_parts).await;
+        let document_parts = self.tokenize_doc_parts(document_parts).await?;
 
         let instant = tokio::time::Instant::now();
-        let result = self
-            .storage
-            .store_document_parts(index, document_parts)
-            .await;
+        let result = self.storage.store_document_parts(index, document_parts).await;
 
         let is_error = result.is_err();
         counter!(
@@ -149,44 +147,26 @@ where
             .await
     }
 
-    async fn tokenize_doc_parts(&self, mut parts: Vec<DocumentPart>) -> Vec<DocumentPart> {
-        let mut tokenized_parts = HashMap::with_capacity(parts.len());
-        let doc_part_iter = parts.iter().map(|it| (it.doc_part_id, it.content.clone()));
-
-        let mut wait_group = JoinSet::new();
-        for (doc_part_id, part_content) in doc_part_iter {
-            let provider_cln = self.tokenizer.clone();
-            wait_group.spawn(async move {
-                let embeddings = match provider_cln.compute(&part_content).await {
-                    Ok(embeddings) => embeddings,
-                    Err(err) => {
-                        tracing::error!(doc_part_id, ?err, "failed to compute embeddings");
-                        Default::default()
-                    }
-                };
-
-                (doc_part_id, embeddings)
-            });
-        }
-
-        wait_group
-            .join_all()
+    async fn tokenize_doc_parts(&self, mut parts: Vec<DocumentPart>) -> StorageResult<Vec<DocumentPart>> {
+        let chunks = parts.iter().map(|it| it.content.clone()).collect();
+        let mut tokens = self.tokenizer.compute_bulk(chunks)
             .await
-            .into_iter()
-            .for_each(|(doc_id, tokens)| {
-                tokenized_parts.insert(doc_id, tokens);
+            .map_err(anyhow::Error::from)
+            .map_err(StorageError::InternalError)?;
+
+        tokens
+            .iter_mut()
+            .enumerate()
+            .for_each(|(index, it)| {
+                if let Some(part) = parts.get_mut(index) {
+                    let tokens = std::mem::take(it);
+                    if !tokens.is_empty() {
+                        part.embeddings = Some(tokens);
+                    }
+                }
             });
 
-        parts.iter_mut().for_each(|part| {
-            if let Some(tokenized_part) = tokenized_parts.get_mut(&part.doc_part_id) {
-                let tokens = std::mem::take(tokenized_part);
-                if !tokens.is_empty() {
-                    part.embeddings = Some(tokens);
-                }
-            }
-        });
-
-        parts
+        Ok(parts)
     }
 }
 
