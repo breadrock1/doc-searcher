@@ -12,7 +12,6 @@ use crate::domain::searcher::models::{SemanticSearchingParams, SemanticSearching
 
 pub const QUERY_PARAMETER: &str = "There is some query";
 pub const DOCUMENT_PATH: &str = "./test-document.docx";
-pub const SEARCH_MODEL_ID: &str = "p30o65gBnrvKdVIONWdC";
 pub const CURRENT_TIMESTAMP: i64 = 1756498133;
 pub const KNN_AMOUNT: u16 = 1024;
 pub const MIN_SCORE: f32 = 0.6;
@@ -57,23 +56,8 @@ pub fn build_simple_semantic_params() -> SemanticSearchingParams {
     let query = QUERY_PARAMETER.to_string();
     SemanticSearchingParamsBuilder::default()
         .query(query)
-        .model_id(Some(SEARCH_MODEL_ID.to_string()))
-        .tokens(None)
         .knn_amount(KNN_AMOUNT)
         .min_score(None)
-        .build()
-        .expect("failed building semantic params builder")
-}
-
-#[fixture]
-pub fn build_semantic_params_with_tokens() -> SemanticSearchingParams {
-    let query = QUERY_PARAMETER.to_string();
-    SemanticSearchingParamsBuilder::default()
-        .query(query)
-        .model_id(Some(SEARCH_MODEL_ID.to_string()))
-        .tokens(Some(SEARCH_TOKENS.to_vec()))
-        .knn_amount(KNN_AMOUNT)
-        .min_score(Some(MIN_SCORE))
         .build()
         .expect("failed building semantic params builder")
 }
@@ -83,10 +67,8 @@ pub fn build_full_semantic_params() -> SemanticSearchingParams {
     let query = QUERY_PARAMETER.to_string();
     SemanticSearchingParamsBuilder::default()
         .query(query)
-        .tokens(None)
         .min_score(Some(MIN_SCORE))
         .knn_amount(KNN_AMOUNT)
-        .model_id(Some(SEARCH_MODEL_ID.to_string()))
         .build()
         .expect("failed building semantic params builder")
 }
@@ -96,7 +78,6 @@ pub fn build_simple_hybrid_params() -> HybridSearchingParams {
     let query = QUERY_PARAMETER.to_string();
     HybridSearchingParamsBuilder::default()
         .query(query)
-        .model_id(Some(SEARCH_MODEL_ID.to_string()))
         .min_score(Some(MIN_SCORE))
         .knn_amount(KNN_AMOUNT)
         .build()
@@ -109,7 +90,6 @@ pub fn build_full_hybrid_params() -> HybridSearchingParams {
     HybridSearchingParamsBuilder::default()
         .query(query)
         .knn_amount(KNN_AMOUNT)
-        .model_id(Some(SEARCH_MODEL_ID.to_string()))
         .min_score(Some(MIN_SCORE))
         .build()
         .expect("failed building hybrid params builder")
@@ -120,6 +100,7 @@ pub fn build_result_params() -> ResultParams {
         .order(ResultOrder::DESC)
         .size(10)
         .offset(0)
+        .highlight_enable(true)
         .include_extra_fields(Some(true))
         .highlight_items(Some(10))
         .highlight_item_size(Some(100))

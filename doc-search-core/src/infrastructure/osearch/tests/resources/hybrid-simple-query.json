@@ -22,14 +22,16 @@
   "min_score": 0.6000000238418579,
   "query": {
     "hybrid": {
-      "pagination_depth": 20,
+      "pagination_depth": 3,
       "queries": [
         {
-          "neural": {
+          "knn": {
             "embeddings.knn": {
               "k": 1024,
-              "model_id": "p30o65gBnrvKdVIONWdC",
-              "query_text": "There is some query"
+              "vector": [
+                -1.4354,
+                0.435435
+              ]
             }
           }
         },
@@ -51,7 +53,7 @@
               {
                 "match_phrase": {
                   "content": {
-                    "boost": 3.0,
+                    "boost": 2.0,
                     "query": "There is some query",
                     "slop": 2
                   }

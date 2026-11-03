@@ -10,10 +10,9 @@ use doc_search_core::shared::kernel::LargeDocumentId;
 use super::constants::{
     COMPOSITE_INDEX_IDS, DOCUMENT_CONTENT, DOCUMENT_CREATED_AT, DOCUMENT_FILE_NAME,
     DOCUMENT_FILE_PATH, DOCUMENT_FILE_SIZE, DOCUMENT_MODIFIED_AT, KNN_AMOUNT, LARGE_DOCUMENT_ID,
-    MIN_SCORE, MODEL_ID, SCROLL_ID, SEARCH_QUERY, TEST_INDEX_ID,
+    MIN_SCORE, SCROLL_ID, SEARCH_QUERY, TEST_INDEX_ID,
 };
 
-const QUERY_TOKENS: [f64; 3] = [-1.123, 0.123, 1.123];
 const RETRIEVE_FILE_PATH: &str = "./test-";
 const RESULT_ORDER: &str = "ASC";
 const RESULT_SIZE: u16 = 10;
@@ -112,18 +111,6 @@ pub fn semantic_search_params_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "model_id": MODEL_ID,
-        "indexes": COMPOSITE_INDEX_IDS,
-        "result": result_params_json_object(),
-    })
-}
-
-pub fn semantic_search_params_with_tokens_json_object() -> Value {
-    json!({
-        "query": SEARCH_QUERY,
-        "knn_amount": KNN_AMOUNT,
-        "model_id": MODEL_ID,
-        "tokens": QUERY_TOKENS.to_vec(),
         "indexes": COMPOSITE_INDEX_IDS,
         "result": result_params_json_object(),
     })
@@ -133,7 +120,6 @@ pub fn semantic_search_params_with_filter_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "model_id": MODEL_ID,
         "indexes": COMPOSITE_INDEX_IDS,
         "filter": filter_params_json_object(),
         "result": result_params_json_object(),
@@ -144,7 +130,6 @@ pub fn hybrid_search_params_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "model_id": MODEL_ID,
         "indexes": COMPOSITE_INDEX_IDS,
         "min_score": MIN_SCORE,
         "result": result_params_json_object(),
@@ -155,7 +140,6 @@ pub fn hybrid_search_params_with_filter_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "model_id": MODEL_ID,
         "indexes": COMPOSITE_INDEX_IDS,
         "min_score": MIN_SCORE,
         "filter": filter_params_json_object(),
@@ -232,7 +216,7 @@ pub fn founded_document_with_part_id(doc_part_id: usize) -> FoundedDocument {
     FoundedDocumentBuilder::default()
         .id(LARGE_DOCUMENT_ID.to_string())
         .index(TEST_INDEX_ID.to_string())
-        .score(Some(MIN_SCORE))
+        .score(MIN_SCORE)
         .highlight(highlight)
         .document(doc_part_entrails)
         .build()

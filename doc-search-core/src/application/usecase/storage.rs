@@ -2,10 +2,11 @@ use metrics::{counter, histogram};
 use std::sync::Arc;
 use tracing::instrument;
 
-use crate::domain::storage::StorageResult;
-use crate::domain::storage::models::{AllDocumentParts, LargeDocument};
+use crate::application::services::embeddings::ITokenizer;
+use crate::domain::storage::models::{AllDocumentParts, DocumentPart, LargeDocument};
 use crate::domain::storage::models::{CreateIndexParams, StoredDocumentPartsInfo};
 use crate::domain::storage::{IDocumentPartStorage, IIndexStorage};
+use crate::domain::storage::{StorageError, StorageResult};
 use crate::shared::kernel::{IndexId, LargeDocumentId};
 
 #[derive(Clone)]
@@ -14,6 +15,7 @@ where
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
     storage: Arc<Storage>,
+    tokenizer: Arc<dyn ITokenizer>,
     max_content_size: usize,
 }
 
@@ -21,9 +23,14 @@ impl<Storage> StorageUseCase<Storage>
 where
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync,
 {
-    pub fn new(storage: Arc<Storage>, max_content_size: usize) -> Self {
+    pub fn new(
+        storage: Arc<Storage>,
+        embeddings: Arc<dyn ITokenizer>,
+        max_content_size: usize,
+    ) -> Self {
         StorageUseCase {
             storage,
+            tokenizer: embeddings,
             max_content_size,
         }
     }
@@ -87,6 +94,7 @@ where
 
         let part_size = self.max_content_size;
         let document_parts = large_doc.divide_large_document_on_parts(part_size)?;
+        let document_parts = self.tokenize_doc_parts(document_parts).await?;
 
         let instant = tokio::time::Instant::now();
         let result = self
@@ -137,6 +145,30 @@ where
         self.storage
             .delete_document_parts(index_id, large_doc_id)
             .await
+    }
+
+    async fn tokenize_doc_parts(
+        &self,
+        mut parts: Vec<DocumentPart>,
+    ) -> StorageResult<Vec<DocumentPart>> {
+        let chunks = parts.iter().map(|it| it.content.clone()).collect();
+        let mut tokens = self
+            .tokenizer
+            .compute_bulk(chunks)
+            .await
+            .map_err(anyhow::Error::from)
+            .map_err(StorageError::InternalError)?;
+
+        tokens.iter_mut().enumerate().for_each(|(index, it)| {
+            if let Some(part) = parts.get_mut(index) {
+                let tokens = std::mem::take(it);
+                if !tokens.is_empty() {
+                    part.embeddings = Some(tokens);
+                }
+            }
+        });
+
+        Ok(parts)
     }
 }
 

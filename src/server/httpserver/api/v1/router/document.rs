@@ -138,7 +138,7 @@ where
     );
 
     let searcher = state.get_searcher();
-    let documents = searcher.search_document_parts(&params).await?;
+    let documents = searcher.search_document_parts(params).await?;
     let response = documents
         .founded
         .into_iter()

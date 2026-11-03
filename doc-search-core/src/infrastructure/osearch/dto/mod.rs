@@ -1,6 +1,10 @@
 mod document;
 pub use document::SourceDocument;
 
+// Переэкспорт для Task 4/5 (knn-запросы); пока не используется по пути — allow по прецеденту ниже.
+#[allow(unused_imports)]
+pub use document::EmbeddingsNested;
+
 mod founded;
 pub use founded::FoundedDocumentInfo;
 

@@ -19,6 +19,7 @@ pub fn build_indexes() -> Vec<String> {
 
 pub fn build_result_params() -> ResultParams {
     ResultParamsBuilder::default()
+        .highlight_enable(true)
         .order(ResultOrder::DESC)
         .size(10)
         .offset(0)
@@ -79,8 +80,6 @@ pub fn build_simple_semantic_params() -> SearchingParams {
     let indexes = build_indexes();
     let params = SemanticSearchingParamsBuilder::default()
         .query(query)
-        .model_id(None)
-        .tokens(None)
         .min_score(None)
         .knn_amount(100)
         .build()
@@ -98,7 +97,6 @@ pub fn build_simple_hybrid_params() -> SearchingParams {
     let indexes = build_indexes();
     let params = HybridSearchingParamsBuilder::default()
         .query(query)
-        .model_id(None)
         .min_score(None)
         .knn_amount(100)
         .build()

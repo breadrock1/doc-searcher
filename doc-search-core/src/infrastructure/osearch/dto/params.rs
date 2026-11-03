@@ -38,6 +38,9 @@ impl RetrieveIndexDocsQueryParams {
 pub struct FullTextQueryParams {
     #[getset(get, vis = "pub")]
     query: Option<String>,
+    #[builder(default)]
+    #[getset(get, vis = "pub")]
+    prefix: Option<String>,
     #[getset(get, vis = "pub")]
     result: ResultParams,
     #[getset(get, vis = "pub")]
@@ -57,16 +60,16 @@ impl FullTextQueryParams {
 
 #[derive(Debug, Builder, Getset)]
 pub struct SemanticQueryParams {
+    #[allow(dead_code)]
     #[getset(get, vis = "pub")]
     query: String,
-    #[getset(get, vis = "pub")]
-    model_id: String,
     #[getset(get_copy, vis = "pub")]
     knn_amount: u16,
     #[getset(get_copy, vis = "pub")]
     min_score: Option<f32>,
+    #[builder(default)]
     #[getset(get, vis = "pub")]
-    tokens: Option<Vec<f64>>,
+    prefix: Option<String>,
     #[getset(get, vis = "pub")]
     result: ResultParams,
     #[getset(get, vis = "pub")]
@@ -77,7 +80,7 @@ impl SemanticQueryParams {
     pub fn get_excluded_params(&self) -> &[&str] {
         let include_extra_fields = self.result.include_extra_fields.unwrap_or_default();
         if include_extra_fields {
-            return &["content"];
+            return &["chunked_text", "embeddings"];
         };
 
         &["content", "chunked_text", "embeddings"]
@@ -88,12 +91,13 @@ impl SemanticQueryParams {
 pub struct HybridQueryParams {
     #[getset(get, vis = "pub")]
     query: String,
-    #[getset(get, vis = "pub")]
-    model_id: String,
     #[getset(get_copy, vis = "pub")]
     knn_amount: u16,
     #[getset(get_copy, vis = "pub")]
     min_score: Option<f32>,
+    #[builder(default)]
+    #[getset(get, vis = "pub")]
+    prefix: Option<String>,
     #[getset(get, vis = "pub")]
     result: ResultParams,
     #[getset(get, vis = "pub")]
@@ -107,6 +111,6 @@ impl HybridQueryParams {
             return &["chunked_text", "embeddings"];
         }
 
-        &["content"]
+        &["content", "chunked_text", "embeddings"]
     }
 }

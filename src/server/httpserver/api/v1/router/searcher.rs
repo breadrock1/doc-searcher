@@ -51,7 +51,7 @@ where
 {
     let params = form.try_into()?;
     let searcher = state.get_searcher();
-    let pagination = searcher.search_document_parts(&params).await?;
+    let pagination = searcher.search_document_parts(params).await?;
     let response = pagination.try_into()?;
     Ok(Json(response))
 }
@@ -85,7 +85,7 @@ where
 {
     let params = form.try_into()?;
     let searcher = state.get_searcher();
-    let pagination = searcher.search_document_parts(&params).await?;
+    let pagination = searcher.search_document_parts(params).await?;
     let response = pagination.try_into()?;
     Ok(Json(response))
 }
@@ -119,7 +119,7 @@ where
 {
     let params = form.try_into()?;
     let searcher = state.get_searcher();
-    let pagination = searcher.search_document_parts(&params).await?;
+    let pagination = searcher.search_document_parts(params).await?;
     let response = pagination.try_into()?;
     Ok(Json(response))
 }
@@ -163,7 +163,7 @@ where
         .map_err(|err| ServerError::InternalError(err.to_string()))?;
 
     let searcher = state.get_searcher();
-    let documents = searcher.load_next_pagination(&params).await?;
+    let documents = searcher.paginate(params).await?;
     let response = documents.try_into()?;
     Ok(Json(response))
 }

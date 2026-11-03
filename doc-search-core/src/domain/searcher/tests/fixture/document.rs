@@ -29,7 +29,7 @@ pub fn build_founded_document(document_part: DocumentPartEntrails) -> FoundedDoc
     FoundedDocumentBuilder::default()
         .id(DOC_ID.to_string())
         .index(INDEX.to_string())
-        .score(Some(SCORE))
+        .score(SCORE)
         .highlight(vec![HIGHLIGHT_ITEM.to_string()])
         .document(document_part)
         .build()

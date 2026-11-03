@@ -8,7 +8,7 @@ use crate::server::httpserver::tests::mocks::searcher::MockSearcherService;
 use crate::server::httpserver::tests::mocks::storage::MockStorageService;
 
 const HOME_URL: &str = "/";
-const METRICS_URL: &str = "/api/metrics";
+const METRICS_URL: &str = "/metrics";
 const INDEX_HTML_PAGE_DATA: &str = include_str!("../../../../static/index.html");
 const RESPONSE_BODY_SIZE_LIMIT: usize = 10 * 1024 * 1024;
 

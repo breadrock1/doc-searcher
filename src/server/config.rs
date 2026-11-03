@@ -1,4 +1,5 @@
 use doc_search_core::infrastructure::osearch::OSearchConfig;
+use doc_search_core::infrastructure::vllm::VLLMConfig;
 use gset::Getset;
 use serde_derive::Deserialize;
 
@@ -15,6 +16,8 @@ pub struct ServerConfig {
 pub struct StorageConfig {
     #[getset(get, vis = "pub")]
     opensearch: OSearchConfig,
+    #[getset(get, vis = "pub")]
+    vllm: VLLMConfig,
 }
 
 #[derive(Clone, Deserialize, Getset)]

@@ -1,4 +1,4 @@
-version: '3.9'
+name: doc-search
 
 services:
   opensearch:
@@ -21,6 +21,20 @@ services:
     volumes:
       - 'opensearch-vol-1:/usr/share/opensearch/data'
 
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:3.4.0
+    restart: unless-stopped
+    depends_on:
+      - opensearch
+    networks:
+      - doc-search-net
+    ports:
+      - '5601:5601'
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+      OPENSEARCH_USERNAME: 'admin'
+      OPENSEARCH_PASSWORD: 'S0v4P@ssw0rd2026!'
+
   redis:
     image: redis:latest
     restart: on-failure
@@ -32,6 +46,38 @@ services:
       REDIS_USER: 'redis'
       REDIS_PASSWORD: 'redis'
       REDIS_USER_PASSWORD: 'redis'
+
+  embeddings:
+    image: vllm/vllm-openai:v0.11.0
+    restart: on-failure
+    ipc: host
+    command:
+      - --model
+      - Qwen/Qwen3-Embedding-0.6B
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8074"
+      - --gpu-memory-utilization
+      - "0.7"
+    networks:
+      - doc-search-net
+    ports:
+      - '8074:8074'
+    volumes:
+      - './hgf:/root/.cache/huggingface'
+    environment:
+      VLLM_TARGET_DEVICE: cpu
+      VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
 
 networks:
   doc-search-net:

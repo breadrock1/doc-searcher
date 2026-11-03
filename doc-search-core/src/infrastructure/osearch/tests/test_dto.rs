@@ -32,6 +32,19 @@ fn test_document_part_to_source_document() -> anyhow::Result<()> {
 }
 
 #[rstest]
+fn test_document_part_to_source_document_with_embeddings() -> anyhow::Result<()> {
+    let mut part = build_document_part(1); // существующий fixture, ~> DocumentPart с pub-полями
+    part.embeddings = Some(vec![0.1, 0.2, 0.3].into());
+
+    let source: SourceDocument = part.try_into()?;
+
+    let embeddings = source.embeddings.expect("embeddings must be present");
+    assert_eq!(1, embeddings.len());
+    assert_eq!(vec![0.1, 0.2, 0.3], embeddings[0].knn);
+    Ok(())
+}
+
+#[rstest]
 fn test_founded_document_info_to_document_part(
     #[from(build_founded_document_info)] doc_info: FoundedDocumentInfo,
 ) -> anyhow::Result<()> {

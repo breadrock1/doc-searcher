@@ -51,8 +51,6 @@ pub fn build_semantic_searching_params() -> SearchingParams {
     let filter = build_filter_searching_params();
     let params = SemanticSearchingParamsBuilder::default()
         .query(QUERY_FIELD_VALUE.to_string())
-        .model_id(Some(EMBEDDINGS_MODEL_ID.to_string()))
-        .tokens(None)
         .knn_amount(100)
         .min_score(Some(0.6))
         .build()
@@ -72,7 +70,6 @@ pub fn build_hybrid_searching_params() -> SearchingParams {
     let filter = build_filter_searching_params();
     let params = HybridSearchingParamsBuilder::default()
         .query(QUERY_FIELD_VALUE.to_string())
-        .model_id(Some(EMBEDDINGS_MODEL_ID.to_string()))
         .knn_amount(100)
         .min_score(Some(0.6))
         .build()
@@ -112,6 +109,7 @@ pub fn build_result_searching_params() -> ResultParams {
         .size(10)
         .offset(0)
         .order(ResultOrder::ASC)
+        .highlight_enable(true)
         .highlight_items(Some(10))
         .highlight_item_size(Some(10))
         .include_extra_fields(Some(true))

@@ -32,7 +32,7 @@ impl TryFrom<FoundedDocumentInfo> for FoundedDocument {
             .index(doc_info._index)
             .document(document)
             .highlight(highlight)
-            .score(doc_info._score)
+            .score(doc_info._score.unwrap_or_default())
             .build()
             .context("failed to build founded document")
             .map_err(OSearchError::ValidationError)

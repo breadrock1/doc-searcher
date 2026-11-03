@@ -130,7 +130,7 @@ async fn test_get_index_documents(
     let expectation = searcher.expect_search().once();
 
     match expected_status {
-        StatusCode::OK => expectation.returning(move |_| {
+        StatusCode::OK => expectation.returning(move |_, _| {
             let documents = vec![
                 stubs::founded_document_with_part_id(1),
                 stubs::founded_document_with_part_id(2),
@@ -138,11 +138,11 @@ async fn test_get_index_documents(
 
             Ok(Pagination::new(None, documents))
         }),
-        StatusCode::NOT_FOUND => expectation.returning(move |_| {
+        StatusCode::NOT_FOUND => expectation.returning(move |_, _| {
             let err = anyhow!("not found");
             Err(SearchError::IndexNotFound(err))
         }),
-        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_| {
+        StatusCode::INTERNAL_SERVER_ERROR => expectation.returning(move |_, _| {
             let err = anyhow!("internal server error");
             Err(SearchError::InternalError(err))
         }),
@@ -183,7 +183,7 @@ async fn test_get_index_documents_empty() -> anyhow::Result<()> {
     searcher
         .expect_search()
         .once()
-        .returning(|_| Ok(Pagination::new(None, vec![])));
+        .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
     let test_server_context = test_server::create_test_server_context(storage, searcher);
 
