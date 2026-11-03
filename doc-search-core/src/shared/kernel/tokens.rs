@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-/// Represents vector embeddings for semantic search.
+/// Represents vector vllm for semantic search.
 ///
 /// Contains the numerical representation of text for similarity calculations.
 ///

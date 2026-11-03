@@ -6,7 +6,7 @@ pub use error::ResourceManagerError;
 pub use error::ResourceManagerResult;
 
 mod model;
-pub use model::ResourceInfo;
+use model::ResourceInfo;
 
 use crate::shared::kernel::ResourceId;
 

@@ -9,5 +9,8 @@ pub use ids::ResourceId;
 
 pub mod metadata;
 
+mod reranked;
+pub use reranked::Reranked;
+
 mod tokens;
 pub use tokens::Tokens;
