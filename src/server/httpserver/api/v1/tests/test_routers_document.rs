@@ -2,22 +2,27 @@ use anyhow::anyhow;
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use axum_test::http::header::CONTENT_TYPE;
-use serde_json::Value;
+use serde_json::{json, Value};
 use tower::ServiceExt;
 
 use doc_search_core::domain::searcher::models::Pagination;
 use doc_search_core::domain::searcher::SearchError;
 use doc_search_core::domain::storage::StorageError;
 use doc_search_core::shared::kernel::IndexId;
+use doc_search_core::shared::services::ResourceManagerError;
+use std::sync::Arc;
 
 use crate::server::httpserver::api::v1::API_VERSION_URL;
 use crate::server::httpserver::tests::context::test_server;
+use crate::server::httpserver::tests::mocks::resource_manager::{
+    MockResourceManagerService, StubResourceManager,
+};
 use crate::server::httpserver::tests::mocks::searcher::MockSearcherService;
 use crate::server::httpserver::tests::mocks::storage::MockStorageService;
 
 use super::{
     stubs,
-    stubs::constants::{COMPOSITE_INDEX_IDS, LARGE_DOCUMENT_ID, TEST_INDEX_ID},
+    stubs::constants::{LARGE_DOCUMENT_ID, TEST_INDEX_ID, TEST_RESOURCE_ID},
     RESPONSE_BODY_SIZE_LIMIT, TEST_CONTENT_TYPE,
 };
 
@@ -60,7 +65,7 @@ async fn test_get_document_parts(
 
     let target_uri = format!(
         "{}/storage/{}/{}",
-        API_VERSION_URL, TEST_INDEX_ID, LARGE_DOCUMENT_ID
+        API_VERSION_URL, TEST_RESOURCE_ID, LARGE_DOCUMENT_ID
     );
     let request = Request::builder()
         .method(Method::GET)
@@ -90,37 +95,31 @@ async fn test_get_document_parts(
 #[rstest::rstest]
 #[case(
     StatusCode::OK,
-    TEST_INDEX_ID,
+    TEST_RESOURCE_ID,
     stubs::retrieve_index_documents_params_json_object(),
     stubs::index_documents_json_object()
 )]
 #[case(
     StatusCode::OK,
-    COMPOSITE_INDEX_IDS,
-    stubs::retrieve_index_documents_params_json_object(),
-    stubs::index_documents_json_object()
-)]
-#[case(
-    StatusCode::OK,
-    TEST_INDEX_ID,
+    TEST_RESOURCE_ID,
     stubs::retrieve_index_documents_params_with_filter_json_object(),
     stubs::index_documents_json_object()
 )]
 #[case(
     StatusCode::NOT_FOUND,
-    TEST_INDEX_ID,
+    TEST_RESOURCE_ID,
     stubs::retrieve_index_documents_params_json_object(),
     stubs::not_found_error_json_response()
 )]
 #[case(
     StatusCode::INTERNAL_SERVER_ERROR,
-    TEST_INDEX_ID,
+    TEST_RESOURCE_ID,
     stubs::retrieve_index_documents_params_json_object(),
     stubs::internal_server_error_json_response()
 )]
 async fn test_get_index_documents(
     #[case] expected_status: StatusCode,
-    #[case] indexes: &str,
+    #[case] resource_id: &str,
     #[case] request_body: Value,
     #[case] expected_body: Value,
 ) -> anyhow::Result<()> {
@@ -154,7 +153,10 @@ async fn test_get_index_documents(
     let request_body = serde_json::to_vec(&request_body).expect("failed to serialize json");
     let request = Request::builder()
         .method(Method::POST)
-        .uri(format!("{}/storage/{}/documents", API_VERSION_URL, indexes))
+        .uri(format!(
+            "{}/storage/{}/documents",
+            API_VERSION_URL, resource_id
+        ))
         .header(CONTENT_TYPE, TEST_CONTENT_TYPE)
         .body(Body::from(request_body))
         .expect("failed to build request");
@@ -193,7 +195,7 @@ async fn test_get_index_documents_empty() -> anyhow::Result<()> {
         .method(Method::POST)
         .uri(format!(
             "{}/storage/{}/documents",
-            API_VERSION_URL, TEST_INDEX_ID
+            API_VERSION_URL, TEST_RESOURCE_ID
         ))
         .header(CONTENT_TYPE, TEST_CONTENT_TYPE)
         .body(Body::from(request_body))
@@ -280,7 +282,7 @@ async fn test_store_document(
 
     let test_server_context = test_server::create_test_server_context(storage, searcher);
 
-    let target_uri = format!("{}/storage/{}/create", API_VERSION_URL, TEST_INDEX_ID);
+    let target_uri = format!("{}/storage/{}/create", API_VERSION_URL, TEST_RESOURCE_ID);
     let request_body = serde_json::to_vec(&request_body).expect("failed to serialize json");
     let request = Request::builder()
         .method(Method::PUT)
@@ -370,7 +372,7 @@ async fn test_store_documents(
 
     let test_server_context = test_server::create_test_server_context(storage, searcher);
 
-    let target_uri = format!("{}/storage/{}/documents", API_VERSION_URL, TEST_INDEX_ID);
+    let target_uri = format!("{}/storage/{}/documents", API_VERSION_URL, TEST_RESOURCE_ID);
     let request_body = serde_json::to_vec(&request_body).expect("failed to serialize json");
     let request = Request::builder()
         .method(Method::PUT)
@@ -430,7 +432,7 @@ async fn test_delete_document_parts(
 
     let target_uri = format!(
         "{}/storage/{}/{}",
-        API_VERSION_URL, TEST_INDEX_ID, LARGE_DOCUMENT_ID
+        API_VERSION_URL, TEST_RESOURCE_ID, LARGE_DOCUMENT_ID
     );
     let request = Request::builder()
         .method(Method::DELETE)
@@ -452,6 +454,111 @@ async fn test_delete_document_parts(
 
     let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
     assert_eq!(expected_body, data);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_document_parts_resource_not_found() -> anyhow::Result<()> {
+    let mut resource_manager = MockResourceManagerService::new();
+    resource_manager.expect_get_index().once().returning(|_| {
+        Err(ResourceManagerError::NotFound(
+            "resource not found".to_string(),
+        ))
+    });
+
+    let context = test_server::create_test_server_context_with_resource_manager(
+        MockStorageService::new(),
+        MockSearcherService::new(),
+        Arc::new(resource_manager),
+    );
+
+    let target_uri = format!(
+        "{}/storage/{}/{}",
+        API_VERSION_URL, TEST_RESOURCE_ID, LARGE_DOCUMENT_ID
+    );
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri(target_uri)
+        .header(CONTENT_TYPE, TEST_CONTENT_TYPE)
+        .body(Body::empty())
+        .expect("failed to build request");
+
+    let response = context.test_server.clone().oneshot(request).await?;
+    assert_eq!(StatusCode::NOT_FOUND, response.status());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_document_parts_invalid_resource_id() -> anyhow::Result<()> {
+    let context = test_server::create_test_server_context(
+        MockStorageService::new(),
+        MockSearcherService::new(),
+    );
+
+    let target_uri = format!(
+        "{}/storage/not-a-uuid/{}",
+        API_VERSION_URL, LARGE_DOCUMENT_ID
+    );
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri(target_uri)
+        .header(CONTENT_TYPE, TEST_CONTENT_TYPE)
+        .body(Body::empty())
+        .expect("failed to build request");
+
+    let response = context.test_server.clone().oneshot(request).await?;
+    assert_eq!(StatusCode::BAD_REQUEST, response.status());
+
+    let body = axum::body::to_bytes(response.into_body(), RESPONSE_BODY_SIZE_LIMIT)
+        .await
+        .expect("extracting response body failed");
+    let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
+    assert_eq!(json!("invalid resource_id: not-a-uuid"), data["message"]);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_store_document_joins_resource_prefix() -> anyhow::Result<()> {
+    let mut storage = MockStorageService::new();
+    storage
+        .expect_get_index()
+        .returning(|_| Ok(IndexId(TEST_INDEX_ID.to_string())));
+    storage
+        .expect_store_document_parts()
+        .once()
+        .withf(|index, parts| {
+            index.as_string() == TEST_INDEX_ID
+                && parts
+                    .iter()
+                    .all(|part| part.file_path == "res-pre/./test-document.docx")
+        })
+        .returning(|_, _| Ok(stubs::stored_document_info()));
+
+    let resource_manager =
+        StubResourceManager::new(TEST_INDEX_ID.to_string(), "res-pre/".to_string());
+    let context = test_server::create_test_server_context_with_resource_manager(
+        storage,
+        MockSearcherService::new(),
+        Arc::new(resource_manager),
+    );
+
+    let request_body = serde_json::to_vec(&stubs::create_document_json_object())
+        .expect("failed to serialize json");
+    let request = Request::builder()
+        .method(Method::PUT)
+        .uri(format!(
+            "{}/storage/{}/create",
+            API_VERSION_URL, TEST_RESOURCE_ID
+        ))
+        .header(CONTENT_TYPE, TEST_CONTENT_TYPE)
+        .body(Body::from(request_body))
+        .expect("failed to build request");
+
+    let response = context.test_server.clone().oneshot(request).await?;
+    assert_eq!(StatusCode::CREATED, response.status());
 
     Ok(())
 }

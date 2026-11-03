@@ -1,5 +1,5 @@
 pub const TEST_INDEX_ID: &str = "test-index";
-pub const COMPOSITE_INDEX_IDS: &str = "test-index-1,test-index-2";
+pub const TEST_RESOURCE_ID: &str = "53079efa-b0f2-4058-96dc-c792531972db";
 pub const LARGE_DOCUMENT_ID: &str = "098f6bcd4621d373cade4e832627b4f6";
 
 pub const FIRST_DOC_PART_ID: &str = "73cade4e832627b4f6098f6bcd4621d3";

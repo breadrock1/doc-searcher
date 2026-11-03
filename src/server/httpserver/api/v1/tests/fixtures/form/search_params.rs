@@ -3,6 +3,8 @@ use crate::server::httpserver::api::v1::form::{
     SemanticSearchForm, ShortResultForm,
 };
 
+const TEST_RESOURCE_ID: &str = "53079efa-b0f2-4058-96dc-c792531972db";
+
 pub fn create_retrieve_document_form() -> RetrieveDocumentForm {
     RetrieveDocumentForm {
         path: Some("./test-document.docx".to_string()),
@@ -23,7 +25,7 @@ pub fn create_fulltext_search_form() -> FullTextSearchForm {
     FullTextSearchForm {
         query: Some("find something".to_string()),
         prefix: None,
-        indexes: "test-index-1,test-index-2".to_string(),
+        resource_id: TEST_RESOURCE_ID.to_string(),
         filter: None,
         result: create_result_form(),
     }
@@ -33,7 +35,7 @@ pub fn create_fulltext_search_form_with_filter() -> FullTextSearchForm {
     FullTextSearchForm {
         query: Some("find something".to_string()),
         prefix: None,
-        indexes: "test-index-1,test-index-2".to_string(),
+        resource_id: TEST_RESOURCE_ID.to_string(),
         filter: Some(create_filter_form()),
         result: create_result_form(),
     }
@@ -42,7 +44,7 @@ pub fn create_fulltext_search_form_with_filter() -> FullTextSearchForm {
 pub fn create_semantic_search_form() -> SemanticSearchForm {
     SemanticSearchForm {
         query: "find something".to_string(),
-        indexes: "test-index-1,test-index-2".to_string(),
+        resource_id: TEST_RESOURCE_ID.to_string(),
         knn_amount: 100,
         prefix: None,
         filter: None,
@@ -53,7 +55,7 @@ pub fn create_semantic_search_form() -> SemanticSearchForm {
 pub fn create_semantic_search_form_with_filter() -> SemanticSearchForm {
     SemanticSearchForm {
         query: "find something".to_string(),
-        indexes: "test-index-1,test-index-2".to_string(),
+        resource_id: TEST_RESOURCE_ID.to_string(),
         knn_amount: 100,
         prefix: None,
         filter: Some(create_filter_form()),
@@ -64,7 +66,7 @@ pub fn create_semantic_search_form_with_filter() -> SemanticSearchForm {
 pub fn create_hybrid_search_form() -> HybridSearchForm {
     HybridSearchForm {
         query: "find something".to_string(),
-        indexes: "test-index-1,test-index-2".to_string(),
+        resource_id: TEST_RESOURCE_ID.to_string(),
         knn_amount: 100,
         prefix: None,
         filter: None,
@@ -76,7 +78,7 @@ pub fn create_hybrid_search_form() -> HybridSearchForm {
 pub fn create_hybrid_search_form_with_filter() -> HybridSearchForm {
     HybridSearchForm {
         query: "find something".to_string(),
-        indexes: "test-index-1,test-index-2".to_string(),
+        resource_id: TEST_RESOURCE_ID.to_string(),
         knn_amount: 100,
         prefix: None,
         filter: Some(create_filter_form()),

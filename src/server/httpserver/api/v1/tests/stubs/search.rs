@@ -8,9 +8,9 @@ use doc_search_core::domain::searcher::models::{
 use doc_search_core::shared::kernel::LargeDocumentId;
 
 use super::constants::{
-    COMPOSITE_INDEX_IDS, DOCUMENT_CONTENT, DOCUMENT_CREATED_AT, DOCUMENT_FILE_NAME,
-    DOCUMENT_FILE_PATH, DOCUMENT_FILE_SIZE, DOCUMENT_MODIFIED_AT, KNN_AMOUNT, LARGE_DOCUMENT_ID,
-    MIN_SCORE, SCROLL_ID, SEARCH_QUERY, TEST_INDEX_ID,
+    DOCUMENT_CONTENT, DOCUMENT_CREATED_AT, DOCUMENT_FILE_NAME, DOCUMENT_FILE_PATH,
+    DOCUMENT_FILE_SIZE, DOCUMENT_MODIFIED_AT, KNN_AMOUNT, LARGE_DOCUMENT_ID, MIN_SCORE, SCROLL_ID,
+    SEARCH_QUERY, TEST_INDEX_ID, TEST_RESOURCE_ID,
 };
 
 const RETRIEVE_FILE_PATH: &str = "./test-";
@@ -93,7 +93,7 @@ pub fn pagination_result_json_object() -> Value {
 pub fn fulltext_search_params_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
-        "indexes": COMPOSITE_INDEX_IDS,
+        "resource_id": TEST_RESOURCE_ID,
         "result": result_params_json_object(),
     })
 }
@@ -101,7 +101,7 @@ pub fn fulltext_search_params_json_object() -> Value {
 pub fn fulltext_search_params_with_filter_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
-        "indexes": COMPOSITE_INDEX_IDS,
+        "resource_id": TEST_RESOURCE_ID,
         "filter": filter_params_json_object(),
         "result": result_params_json_object(),
     })
@@ -111,7 +111,7 @@ pub fn semantic_search_params_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "indexes": COMPOSITE_INDEX_IDS,
+        "resource_id": TEST_RESOURCE_ID,
         "result": result_params_json_object(),
     })
 }
@@ -120,7 +120,7 @@ pub fn semantic_search_params_with_filter_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "indexes": COMPOSITE_INDEX_IDS,
+        "resource_id": TEST_RESOURCE_ID,
         "filter": filter_params_json_object(),
         "result": result_params_json_object(),
     })
@@ -130,7 +130,7 @@ pub fn hybrid_search_params_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "indexes": COMPOSITE_INDEX_IDS,
+        "resource_id": TEST_RESOURCE_ID,
         "min_score": MIN_SCORE,
         "result": result_params_json_object(),
     })
@@ -140,7 +140,7 @@ pub fn hybrid_search_params_with_filter_json_object() -> Value {
     json!({
         "query": SEARCH_QUERY,
         "knn_amount": KNN_AMOUNT,
-        "indexes": COMPOSITE_INDEX_IDS,
+        "resource_id": TEST_RESOURCE_ID,
         "min_score": MIN_SCORE,
         "filter": filter_params_json_object(),
         "result": result_params_json_object(),

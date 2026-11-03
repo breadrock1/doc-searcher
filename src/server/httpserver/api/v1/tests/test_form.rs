@@ -2,6 +2,7 @@ use doc_search_core::domain::searcher::models::{
     PaginationParams, RetrieveIndexDocumentsParams, SearchingParams,
 };
 use doc_search_core::domain::storage::models::{CreateIndexParams, LargeDocument};
+use doc_search_core::shared::services::ResourceInfo;
 
 use crate::server::httpserver::api::v1::form::{
     CreateDocumentForm, CreateIndexForm, FullTextSearchForm, HybridSearchForm, PaginateForm,
@@ -67,8 +68,9 @@ fn test_fulltext_search_form_mapping(
     #[case] form: FullTextSearchForm,
     #[case] is_success: bool,
 ) -> anyhow::Result<()> {
-    let result: ServerResult<SearchingParams> = form.try_into();
+    let result: ServerResult<SearchingParams> = form.try_convert_to_params(&resource_info());
     assert_eq!(result.is_ok(), is_success);
+    assert_eq!(vec!["test-index".to_string()], result?.indexes);
     Ok(())
 }
 
@@ -79,8 +81,9 @@ fn test_semantic_search_form_mapping(
     #[case] form: SemanticSearchForm,
     #[case] is_success: bool,
 ) -> anyhow::Result<()> {
-    let result: ServerResult<SearchingParams> = form.try_into();
+    let result: ServerResult<SearchingParams> = form.try_convert_to_params(&resource_info());
     assert_eq!(result.is_ok(), is_success);
+    assert_eq!(vec!["test-index".to_string()], result?.indexes);
     Ok(())
 }
 
@@ -91,9 +94,17 @@ fn test_hybrid_search_form_mapping(
     #[case] form: HybridSearchForm,
     #[case] is_success: bool,
 ) -> anyhow::Result<()> {
-    let result: ServerResult<SearchingParams> = form.try_into();
+    let result: ServerResult<SearchingParams> = form.try_convert_to_params(&resource_info());
     assert_eq!(result.is_ok(), is_success);
+    assert_eq!(vec!["test-index".to_string()], result?.indexes);
     Ok(())
+}
+
+fn resource_info() -> ResourceInfo {
+    ResourceInfo {
+        index: "test-index".to_string(),
+        prefix: "res-pre".to_string(),
+    }
 }
 
 #[rstest::rstest]

@@ -8,8 +8,10 @@ use doc_search::server::ServerApp;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
 use doc_search_core::shared::kernel::Tokens;
+use doc_search_core::shared::services::IResourceManager;
 
 use super::super::mocks::reranker::MockRerankerProvider;
+use super::super::mocks::resource_manager::stub_resource_manager;
 use super::super::mocks::searcher::MockSearcherService;
 use super::super::mocks::storage::MockStorageService;
 use super::super::mocks::tokenizer::MockEmbeddingsProvider;
@@ -51,6 +53,14 @@ pub fn create_test_server_context(
     storage: MockStorageService,
     searcher: MockSearcherService,
 ) -> TestServerContext {
+    create_test_server_context_with_resource_manager(storage, searcher, stub_resource_manager())
+}
+
+pub fn create_test_server_context_with_resource_manager(
+    storage: MockStorageService,
+    searcher: MockSearcherService,
+    resource_manager: Arc<dyn IResourceManager>,
+) -> TestServerContext {
     let meter = AppMeterRegistry::build_local_meter_register()
         .expect("failed to create local meter registry");
 
@@ -64,7 +74,12 @@ pub fn create_test_server_context(
         Arc::new(stub_embeddings()),
         MAX_CONTENT_SIZE,
     );
-    let app = ServerApp::new(Arc::new(storage_uc), Arc::new(searcher_uc), meter);
+    let app = ServerApp::new(
+        Arc::new(storage_uc),
+        Arc::new(searcher_uc),
+        resource_manager,
+        meter,
+    );
 
     let config = ServiceConfig::new().expect("load config failed");
     let test_server = init_server(app, config.telemetry());
