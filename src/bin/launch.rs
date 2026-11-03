@@ -5,6 +5,7 @@ use tokio::net::TcpListener;
 use doc_search::config::ServiceConfig;
 use doc_search::meter::AppMeterRegistry;
 use doc_search::server::{httpserver, httpserver::mw, ServerApp};
+use doc_search::services::resource_manager::ResourceManagerClient;
 use doc_search::SERVICE_NAME;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
@@ -34,8 +35,12 @@ async fn main() -> anyhow::Result<()> {
         vllm_client.clone(),
         vllm_client.clone(),
     ));
+
+    let resource_manager =
+        Arc::new(ResourceManagerClient::connect(config.services().resource_manager()).await?);
+
     let app_meter = AppMeterRegistry::build_meter_registry()?;
-    let server_app = ServerApp::new(storage_uc, searcher_uc, app_meter);
+    let server_app = ServerApp::new(storage_uc, searcher_uc, resource_manager, app_meter);
 
     let app = httpserver::init_server(server_app, config.telemetry());
 
