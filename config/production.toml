@@ -37,14 +37,16 @@ knn_dimension = 768
 token_limit = 700
 overlap_rate = 0.2
 
-[storage.embeddings]
-base_url = "http://embeddings-server:8081/v1"
+[storage.vllm]
+enable = true
+base_url = "http://embeddings-server:8074/v1"
 api_key = ""
-model = "bge"
+model = "Qwen/Qwen3-Embedding-0.6B"
 overlap = 0.2
-dimension = 768
+dimension = 1024
 retries = 3
 timeout = 5
+top_n = 10
 
 [cache]
 is_enabled = false
