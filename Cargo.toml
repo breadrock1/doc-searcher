@@ -77,6 +77,13 @@ features = ["axum", "vendored"]
 [dependencies.doc-search-core]
 path = "doc-search-core"
 
+[dependencies.reqwest]
+version = "0.12.12"
+features = ["json"]
+
+[dependencies.uuid]
+version = "1.15.0"
+
 [dependencies.otlp]
 git = "https://github.com/breadrock1/otlp-rs.git"
 tag = "v0.1.0"
