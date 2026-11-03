@@ -74,11 +74,11 @@ impl AppMeterRegistry {
 
         describe_counter!(
             "docsearch_embeddings_requests_total",
-            "Count all requests to embeddings with status",
+            "Count all requests to vllm with status",
         );
         describe_histogram!(
             "docsearch_embeddings_request_duration_seconds",
-            "Store embeddings request latency",
+            "Store vllm request latency",
         );
 
         describe_gauge!(

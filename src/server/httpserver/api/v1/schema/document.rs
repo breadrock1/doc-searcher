@@ -182,6 +182,6 @@ impl From<Tokens> for EmbeddingsSchema {
         EmbeddingsSchemaBuilder::default()
             .knn(embeddings.knn)
             .build()
-            .expect("embeddings schema could not be built")
+            .expect("vllm schema could not be built")
     }
 }

@@ -216,7 +216,7 @@ pub fn founded_document_with_part_id(doc_part_id: usize) -> FoundedDocument {
     FoundedDocumentBuilder::default()
         .id(LARGE_DOCUMENT_ID.to_string())
         .index(TEST_INDEX_ID.to_string())
-        .score(Some(MIN_SCORE))
+        .score(MIN_SCORE)
         .highlight(highlight)
         .document(doc_part_entrails)
         .build()

@@ -1,4 +1,4 @@
-use doc_search_core::infrastructure::embeddings::EmbeddingsConfig;
+use doc_search_core::infrastructure::vllm::VLLMConfig;
 use doc_search_core::infrastructure::osearch::OSearchConfig;
 use gset::Getset;
 use serde_derive::Deserialize;
@@ -17,7 +17,7 @@ pub struct StorageConfig {
     #[getset(get, vis = "pub")]
     opensearch: OSearchConfig,
     #[getset(get, vis = "pub")]
-    embeddings: EmbeddingsConfig,
+    vllm: VLLMConfig,
 }
 
 #[derive(Clone, Deserialize, Getset)]

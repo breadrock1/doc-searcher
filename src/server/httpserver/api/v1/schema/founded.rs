@@ -15,9 +15,8 @@ pub struct FoundedDocumentPartSchema {
     pub id: String,
     #[schema(example = "test-folder")]
     pub index: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(example = 0.7523)]
-    pub score: Option<f64>,
+    pub score: f64,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[schema(example = json!(vec!["There is", "some text"]))]
     pub highlight: Vec<String>,

@@ -8,7 +8,7 @@ use doc_search::server::{httpserver, httpserver::mw, ServerApp};
 use doc_search::SERVICE_NAME;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
-use doc_search_core::infrastructure::embeddings::EmbeddingsClient;
+use doc_search_core::infrastructure::vllm::VLLMClient;
 use doc_search_core::infrastructure::osearch::OSearchClient;
 use doc_search_core::ServiceConnect;
 
@@ -20,18 +20,19 @@ async fn main() -> anyhow::Result<()> {
     let osearch_config = config.storage().opensearch();
     let osearch_client = Arc::new(OSearchClient::connect(osearch_config).await?);
 
-    let embeddings_config = config.storage().embeddings();
-    let embeddings_client = Arc::new(EmbeddingsClient::connect(embeddings_config).await?);
+    let vllm_config = config.storage().vllm();
+    let vllm_client = Arc::new(VLLMClient::connect(vllm_config).await?);
 
     let max_content_size = config.settings().max_content_size();
     let storage_uc = Arc::new(StorageUseCase::new(
         osearch_client.clone(),
-        embeddings_client.clone(),
+        vllm_client.clone(),
         max_content_size,
     ));
     let searcher_uc = Arc::new(SearcherUseCase::new(
         osearch_client.clone(),
-        embeddings_client.clone(),
+        vllm_client.clone(),
+        vllm_client.clone(),
     ));
     let app_meter = AppMeterRegistry::build_meter_registry()?;
     let server_app = ServerApp::new(storage_uc, searcher_uc, app_meter);

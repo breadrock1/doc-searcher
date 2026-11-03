@@ -8,7 +8,6 @@ use doc_search::server::ServerApp;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
 
-use super::super::mocks::embeddings::DummyEmbeddingsProvider;
 use super::super::mocks::searcher::MockSearcherService;
 use super::super::mocks::storage::MockStorageService;
 use crate::config::ServiceConfig;
@@ -32,7 +31,7 @@ pub fn create_test_server_context(
     let meter = AppMeterRegistry::build_local_meter_register()
         .expect("failed to create local meter registry");
 
-    let searcher_uc = SearcherUseCase::new(Arc::new(searcher), Arc::new(DummyEmbeddingsProvider));
+    let searcher_uc = SearcherUseCase::new(Arc::new(searcher), );
     let storage_uc = StorageUseCase::new(
         Arc::new(storage),
         Arc::new(DummyEmbeddingsProvider),
