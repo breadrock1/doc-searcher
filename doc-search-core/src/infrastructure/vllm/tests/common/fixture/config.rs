@@ -9,6 +9,8 @@ pub fn build_embeddings_config() -> VLLMConfig {
         "model": "bge",
         "overlap": 0.2,
         "dimension": 3,
+        "enable": true,
+        "top_n": 10,
     }))
     .expect("failed to deserialize vllm config")
 }
@@ -22,6 +24,8 @@ pub fn build_embeddings_config_for(base_url: &str) -> VLLMConfig {
         "model": "bge",
         "overlap": 0.2,
         "dimension": 3,
+        "enable": true,
+        "top_n": 10,
     }))
     .expect("failed to deserialize vllm config")
 }

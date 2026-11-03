@@ -290,6 +290,7 @@ fn result_without_extra_fields() -> ResultParams {
         .size(10)
         .offset(0)
         .order(ResultOrder::DESC)
+        .highlight_enable(true)
         .highlight_items(Some(10))
         .highlight_item_size(Some(10))
         .include_extra_fields(Some(false))
@@ -347,7 +348,10 @@ fn test_get_excluded_params_default_branches() -> anyhow::Result<()> {
         .filter(None)
         .build()
         .context("hybrid")?;
-    assert_default_excluded(&["content"], hybrid.get_excluded_params());
+    assert_default_excluded(
+        &["content", "chunked_text", "embeddings"],
+        hybrid.get_excluded_params(),
+    );
 
     Ok(())
 }

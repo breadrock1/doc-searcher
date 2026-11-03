@@ -35,7 +35,7 @@ async fn test_compute_sends_openai_request() -> anyhow::Result<()> {
 
     let head = head.lock().unwrap();
     assert!(
-        head.starts_with("POST /vllm HTTP/1.1"),
+        head.starts_with("POST /embeddings HTTP/1.1"),
         "unexpected request line: {head}"
     );
     assert!(
@@ -47,22 +47,22 @@ async fn test_compute_sends_openai_request() -> anyhow::Result<()> {
         "missing model in request body: {head}"
     );
     assert!(
-        head.contains("\"input\":\"hello\""),
+        head.contains("\"input\":[\"hello\"]"),
         "missing input in request body: {head}"
     );
     Ok(())
 }
 
 #[tokio::test]
-async fn test_compute_dimension_mismatch_degrades_to_empty() -> anyhow::Result<()> {
+async fn test_compute_dimension_mismatch_returns_error() -> anyhow::Result<()> {
     let (address, hits, _) =
         start_test_server(Arc::new(move |_| (200, json_response(vec![0.1])))).await;
 
     let config = build_embeddings_config_for(&address);
     let client = VLLMClient::connect(&config).await?;
-    let result = client.compute("hello".to_string()).await?;
+    let result = client.compute("hello".to_string()).await;
 
-    assert!(result.is_empty());
+    assert!(result.is_err());
     assert_eq!(1, hits.load(Ordering::SeqCst));
     Ok(())
 }
@@ -88,7 +88,7 @@ async fn test_compute_retries_on_rate_limit_then_success() -> anyhow::Result<()>
 }
 
 #[tokio::test]
-async fn test_compute_server_error_degrades_to_empty_without_retry() -> anyhow::Result<()> {
+async fn test_compute_server_error_returns_error_without_retry() -> anyhow::Result<()> {
     // Через openai_dive 5xx не ретраится: статус скрывается, ошибка становится
     // не-retriable (ParseError/InvalidRequestError) ещё до нашей retry-логики.
     let (address, hits, _) =
@@ -96,30 +96,30 @@ async fn test_compute_server_error_degrades_to_empty_without_retry() -> anyhow::
 
     let config = build_embeddings_config_for(&address);
     let client = VLLMClient::connect(&config).await?;
-    let result = client.compute("hello".to_string()).await?;
+    let result = client.compute("hello".to_string()).await;
 
-    assert!(result.is_empty());
+    assert!(result.is_err());
     assert_eq!(1, hits.load(Ordering::SeqCst));
     Ok(())
 }
 
 #[tokio::test]
-async fn test_compute_connection_refused_degrades_to_empty() -> anyhow::Result<()> {
-    // Сетевой отказ ретраится, но после исчерпания retry клиент деградирует к пустому Tokens.
+async fn test_compute_connection_refused_returns_error() -> anyhow::Result<()> {
+    // Сетевой отказ ретраится, но после исчерпания retry клиент возвращает ошибку.
     let dead_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let dead_address = dead_listener.local_addr()?;
     drop(dead_listener);
 
     let config = build_embeddings_config_for(&format!("http://{dead_address}"));
     let client = VLLMClient::connect(&config).await?;
-    let result = client.compute("hello".to_string()).await?;
+    let result = client.compute("hello".to_string()).await;
 
-    assert!(result.is_empty());
+    assert!(result.is_err());
     Ok(())
 }
 
 #[tokio::test]
-async fn test_compute_invalid_body_degrades_to_empty() -> anyhow::Result<()> {
+async fn test_compute_invalid_body_returns_error() -> anyhow::Result<()> {
     let (address, hits, _) = start_test_server(Arc::new(|_| {
         (
             200,
@@ -132,9 +132,9 @@ async fn test_compute_invalid_body_degrades_to_empty() -> anyhow::Result<()> {
 
     let config = build_embeddings_config_for(&address);
     let client = VLLMClient::connect(&config).await?;
-    let result = client.compute("hello".to_string()).await?;
+    let result = client.compute("hello".to_string()).await;
 
-    assert!(result.is_empty());
+    assert!(result.is_err());
     assert_eq!(1, hits.load(Ordering::SeqCst));
     Ok(())
 }

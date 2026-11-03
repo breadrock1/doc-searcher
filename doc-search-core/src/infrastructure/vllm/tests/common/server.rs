@@ -8,7 +8,7 @@ const TEST_LOCAL_SERVER: &str = "127.0.0.1";
 pub async fn start_test_server(
     responder: Arc<dyn Fn(u32) -> (u16, Vec<u8>) + Send + Sync>,
 ) -> (String, Arc<AtomicU32>, Arc<Mutex<String>>) {
-    let listener = tokio::net::TcpListener::bind(TEST_LOCAL_SERVER)
+    let listener = tokio::net::TcpListener::bind((TEST_LOCAL_SERVER, 0))
         .await
         .expect("failed to bind local test server");
 

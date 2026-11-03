@@ -1,7 +1,8 @@
 {
   "_source": {
     "exclude": [
-      "content"
+      "chunked_text",
+      "embeddings"
     ]
   },
   "highlight": {
