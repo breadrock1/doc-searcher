@@ -107,7 +107,7 @@ impl IIndexStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         Ok(IndexId(index_id.to_owned()))
@@ -132,7 +132,7 @@ impl IIndexStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         Ok(())
@@ -157,7 +157,7 @@ impl IIndexStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         let indexes = response
@@ -194,7 +194,7 @@ impl IIndexStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         let indexes = response
@@ -270,7 +270,7 @@ impl IDocumentPartStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         let first_doc_id = stored_doc_ids
@@ -320,7 +320,7 @@ impl IDocumentPartStorage for OSearchClient {
         let response = result?;
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         let response_data = response.json::<Value>().await?;
@@ -353,7 +353,7 @@ impl IDocumentPartStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         let document: DocumentPart = response
@@ -398,7 +398,7 @@ impl IDocumentPartStorage for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(StorageError::from(err));
+            return Err(err.into());
         }
 
         Ok(())
@@ -454,7 +454,7 @@ impl ISearcher for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(SearchError::InternalError(anyhow!(err)));
+            return Err(err.into());
         }
 
         let response_data = response
@@ -489,7 +489,7 @@ impl IPaginator for OSearchClient {
 
         if !response.status_code().is_success() {
             let err = error::OSearchError::from_response(response).await;
-            return Err(SearchError::InternalError(anyhow!(err)));
+            return Err(err.into());
         };
 
         let response_data = response
