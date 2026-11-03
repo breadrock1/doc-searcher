@@ -79,6 +79,8 @@ pub struct ResultForm {
     pub offset: u32,
     #[schema(example = false)]
     pub include_extra_fields: Option<bool>,
+    #[schema(example = false)]
+    pub highlight_enable: Option<bool>,
     #[schema(example = 3)]
     pub highlight_items: Option<u16>,
     #[schema(example = 600)]
@@ -95,6 +97,7 @@ impl TryFrom<ResultForm> for ResultParams {
             .size(form.size.into())
             .offset(form.offset.into())
             .include_extra_fields(form.include_extra_fields)
+            .highlight_enable(form.highlight_enable.unwrap_or_default())
             .highlight_items(form.highlight_items)
             .highlight_item_size(form.highlight_item_size)
             .build()
@@ -124,6 +127,7 @@ impl TryFrom<ShortResultForm> for ResultParams {
             .size(form.size.into())
             .offset(form.offset.into())
             .include_extra_fields(form.include_extra_fields)
+            .highlight_enable(false)
             .highlight_items(None)
             .highlight_item_size(None)
             .build()

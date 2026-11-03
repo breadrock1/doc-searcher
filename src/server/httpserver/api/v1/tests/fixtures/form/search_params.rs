@@ -100,6 +100,7 @@ fn create_result_form() -> ResultForm {
         size: 10,
         offset: 0,
         include_extra_fields: Some(false),
+        highlight_enable: Some(true),
         highlight_items: Some(3),
         highlight_item_size: Some(100),
     }

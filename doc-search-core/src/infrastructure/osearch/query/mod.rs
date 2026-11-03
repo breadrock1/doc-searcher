@@ -416,6 +416,10 @@ fn build_filter_query(filter: &Option<FilterParams>) -> Value {
 }
 
 fn build_highlight_query(params: &ResultParams) -> Value {
+    if !params.highlight_enable {
+        return json!({});
+    }
+
     let mut base_value = json!({
         "fields": {
             "content": {
