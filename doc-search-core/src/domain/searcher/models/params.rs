@@ -62,6 +62,13 @@ impl SearchingParams {
         matches!(self.kind, SearchKindParams::Hybrid(_))
     }
 
+    pub fn get_query_if_hybrid_kind(&self) -> (bool, String) {
+        match &self.kind {
+            SearchKindParams::Hybrid(params) => (true, params.query.clone()),
+            _ => (false, String::default()),
+        }
+    }
+
     /// Returns the file path / folder prefix used to narrow the search to a
     /// single object key or folder inside the (bucket) index, when present.
     pub fn get_prefix(&self) -> Option<&str> {
@@ -89,7 +96,7 @@ impl SearchingParams {
 /// * `FullText` - Traditional full-text search with query string
 /// * `Semantic` - Vector-based semantic similarity search
 /// * `Hybrid` - Combination of full-text and semantic search
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SearchKindParams {
     Retrieve(RetrieveIndexDocumentsParams),
     FullText(FullTextSearchingParams),
@@ -113,7 +120,7 @@ impl Display for SearchKindParams {
 ///
 /// # Fields
 /// * `path` - Optional file path to filter documents by
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone, Builder, PartialEq)]
 pub struct RetrieveIndexDocumentsParams {
     pub path: Option<String>,
 }
@@ -123,7 +130,7 @@ pub struct RetrieveIndexDocumentsParams {
 /// # Fields
 /// * `query` - Optional search query string
 /// * `prefix` - Optional file path / folder prefix to filter documents by
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone, Builder, PartialEq)]
 pub struct FullTextSearchingParams {
     pub query: Option<String>,
     #[builder(default)]
@@ -152,7 +159,7 @@ pub struct FullTextSearchingParams {
 ///     prefix: None,
 /// };
 /// ```
-#[derive(Builder, Clone)]
+#[derive(Builder, Clone, PartialEq)]
 pub struct SemanticSearchingParams {
     pub query: String,
     pub knn_amount: u16,
@@ -181,7 +188,7 @@ impl Debug for SemanticSearchingParams {
 /// * `knn_amount` - Number of nearest neighbors for semantic component
 /// * `min_score` - Minimum combined score threshold (optional)
 /// * `prefix` - Optional file path / folder prefix to filter documents by
-#[derive(Builder, Clone)]
+#[derive(Builder, Clone, PartialEq)]
 pub struct HybridSearchingParams {
     pub query: String,
     pub knn_amount: u16,

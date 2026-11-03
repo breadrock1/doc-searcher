@@ -23,7 +23,7 @@ use std::fmt::{Debug, Formatter};
 /// let found_doc = FoundedDocument {
 ///     id: "doc123".to_string(),
 ///     index: "documents".to_string(),
-///     score: Some(0.95),
+///     score: 0.95,
 ///     highlight: vec!["<em>search</em> term".to_string()],
 ///     document: DocumentPartEntrailsBuilder::default().build().expect("failed to build doc part entrails"),
 /// };
@@ -32,7 +32,7 @@ use std::fmt::{Debug, Formatter};
 pub struct FoundedDocument {
     pub id: String,
     pub index: String,
-    pub score: Option<f64>,
+    pub score: f64,
     pub highlight: Vec<String>,
     pub document: DocumentPartEntrails,
 }
@@ -50,7 +50,7 @@ impl Debug for FoundedDocument {
 /// Represents the detailed content and metadata of a document part.
 ///
 /// This structure holds comprehensive information about a specific part of a larger document,
-/// including file properties, content, embeddings, and metadata.
+/// including file properties, content, vllm, and metadata.
 ///
 /// # Fields
 /// * `large_doc_id` - Identifier of the parent document
@@ -62,7 +62,7 @@ impl Debug for FoundedDocument {
 /// * `modified_at` - Unix timestamp of last modification
 /// * `content` - Raw text content of the document part (optional)
 /// * `chunked_text` - Text split into chunks for processing (optional)
-/// * `embeddings` - Vector embeddings for semantic search (optional)
+/// * `vllm` - Vector vllm for semantic search (optional)
 /// * `metadata` - Additional document metadata (optional)
 ///
 /// # Example
