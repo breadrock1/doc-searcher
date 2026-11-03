@@ -19,6 +19,7 @@ pub fn build_indexes() -> Vec<String> {
 
 pub fn build_result_params() -> ResultParams {
     ResultParamsBuilder::default()
+        .highlight_enable(true)
         .order(ResultOrder::DESC)
         .size(10)
         .offset(0)

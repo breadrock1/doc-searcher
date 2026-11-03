@@ -7,12 +7,35 @@ use doc_search::server::httpserver::init_server;
 use doc_search::server::ServerApp;
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
 use doc_search_core::application::usecase::storage::StorageUseCase;
+use doc_search_core::shared::kernel::Tokens;
 
+use super::super::mocks::reranker::MockRerankerProvider;
 use super::super::mocks::searcher::MockSearcherService;
 use super::super::mocks::storage::MockStorageService;
+use super::super::mocks::tokenizer::MockEmbeddingsProvider;
 use crate::config::ServiceConfig;
 
 const MAX_CONTENT_SIZE: usize = 100;
+
+/// Embeddings provider that always returns empty tokens: enough for the HTTP
+/// layer tests, which assert on routing and DTO mapping, not on vector values.
+fn stub_embeddings() -> MockEmbeddingsProvider {
+    let mut embeddings = MockEmbeddingsProvider::new();
+    embeddings
+        .expect_compute()
+        .returning(|_| Ok(Tokens::default()));
+    embeddings
+        .expect_compute_bulk()
+        .returning(|chunks| Ok(vec![Tokens::default(); chunks.len()]));
+    embeddings
+}
+
+/// Reranker that keeps the incoming order and scores untouched.
+fn stub_reranker() -> MockRerankerProvider {
+    let mut reranker = MockRerankerProvider::new();
+    reranker.expect_rerank().returning(|_, docs| Ok(docs));
+    reranker
+}
 
 pub struct TestServerContext {
     pub test_server: Router,
@@ -31,10 +54,14 @@ pub fn create_test_server_context(
     let meter = AppMeterRegistry::build_local_meter_register()
         .expect("failed to create local meter registry");
 
-    let searcher_uc = SearcherUseCase::new(Arc::new(searcher));
+    let searcher_uc = SearcherUseCase::new(
+        Arc::new(searcher),
+        Arc::new(stub_embeddings()),
+        Arc::new(stub_reranker()),
+    );
     let storage_uc = StorageUseCase::new(
         Arc::new(storage),
-        Arc::new(DummyEmbeddingsProvider),
+        Arc::new(stub_embeddings()),
         MAX_CONTENT_SIZE,
     );
     let app = ServerApp::new(Arc::new(storage_uc), Arc::new(searcher_uc), meter);

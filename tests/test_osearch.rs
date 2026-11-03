@@ -2,6 +2,7 @@ mod common;
 use common::fixture::document::*;
 use common::fixture::search_params::*;
 use common::mocks::embeddings::StubEmbeddingsProvider;
+use common::mocks::reranker::StubReranker;
 use common::setup_osearch_environment;
 
 use doc_search_core::application::usecase::searcher::SearcherUseCase;
@@ -136,7 +137,11 @@ async fn test_opensearch_search_documents(
     #[case] founded_documents_amount: usize,
 ) -> anyhow::Result<()> {
     let test_env = setup_osearch_environment(TEST_INDEX_ID).await?;
-    let searcher = SearcherUseCase::new(test_env.osearch(), Arc::new(StubEmbeddingsProvider));
+    let searcher = SearcherUseCase::new(
+        test_env.osearch(),
+        Arc::new(StubEmbeddingsProvider),
+        Arc::new(StubReranker),
+    );
     let storage = StorageUseCase::new(
         test_env.osearch(),
         Arc::new(StubEmbeddingsProvider),
