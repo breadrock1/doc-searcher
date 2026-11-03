@@ -100,6 +100,7 @@ pub fn build_result_params() -> ResultParams {
         .order(ResultOrder::DESC)
         .size(10)
         .offset(0)
+        .highlight_enable(true)
         .include_extra_fields(Some(true))
         .highlight_items(Some(10))
         .highlight_item_size(Some(100))

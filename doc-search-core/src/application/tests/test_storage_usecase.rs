@@ -55,8 +55,8 @@ async fn test_store_document(
         ..
     } = test_env;
     mock_embeddings
-        .expect_compute()
-        .returning(|_| Ok(vec![0.1, 0.2].into()));
+        .expect_compute_bulk()
+        .returning(|chunks| Ok(vec![vec![0.1, 0.2].into(); chunks.len()]));
     let embeddings = Arc::new(mock_embeddings);
 
     mock_storage
@@ -109,8 +109,8 @@ async fn test_store_document_embeddings_unavailable_stores_without_vectors(
     } = test_env;
 
     mock_embeddings
-        .expect_compute()
-        .returning(|_| Ok(Tokens::default()));
+        .expect_compute_bulk()
+        .returning(|chunks| Ok(vec![Tokens::default(); chunks.len()]));
 
     let embeddings = Arc::new(mock_embeddings);
 

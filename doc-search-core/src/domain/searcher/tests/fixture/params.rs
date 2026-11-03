@@ -109,6 +109,7 @@ pub fn build_result_searching_params() -> ResultParams {
         .size(10)
         .offset(0)
         .order(ResultOrder::ASC)
+        .highlight_enable(true)
         .highlight_items(Some(10))
         .highlight_item_size(Some(10))
         .include_extra_fields(Some(true))

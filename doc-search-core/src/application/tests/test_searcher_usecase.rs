@@ -3,8 +3,10 @@ use rstest::rstest;
 use std::sync::Arc;
 
 use crate::application::services::embeddings::error::TokenizerError;
+use crate::application::tests::mock::reranker::MockRerankerProvider;
 use crate::application::tests::mock::searcher::MockSearcher;
 use crate::application::tests::mock::tokenizer::MockEmbeddingsProvider;
+use crate::application::tests::mock::{TestEnvironment, init_test_environment};
 use crate::application::usecase::searcher::SearcherUseCase;
 use crate::domain::searcher::SearchError;
 use crate::domain::searcher::models::{
@@ -28,7 +30,11 @@ async fn test_search_document_parts_success(
         .times(1)
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(result.is_ok());
@@ -45,7 +51,11 @@ async fn test_search_document_parts_error(
         .times(1)
         .returning(|_, _| Err(SearchError::InternalError(anyhow::anyhow!("boom"))));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(result.is_err());
@@ -60,7 +70,11 @@ async fn test_load_next_pagination_success() -> anyhow::Result<()> {
         .times(1)
         .returning(|_| Ok(Pagination::new(Some("next-scroll".to_string()), vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let params = PaginationParamsBuilder::default()
         .scroll_id("scroll-value".to_string())
         .build()
@@ -81,7 +95,11 @@ async fn test_load_next_pagination_error() -> anyhow::Result<()> {
         .times(1)
         .returning(|_| Err(SearchError::ServiceError(anyhow::anyhow!("boom"))));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let params = PaginationParamsBuilder::default()
         .scroll_id("scroll-value".to_string())
         .build()
@@ -110,7 +128,11 @@ async fn test_semantic_computes_embeddings_and_searches(
         .withf(|_: &SearchingParams, qe: &Option<Tokens>| *qe == Some(vec![1.0, 2.0, 3.0].into()))
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(embeddings),
+        Arc::new(MockRerankerProvider::new()),
+    );
     assert!(usecase.search_document_parts(params).await.is_ok());
     Ok(())
 }
@@ -129,7 +151,11 @@ async fn test_semantic_provider_error_returns_internal_error(
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(embeddings),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
     assert!(matches!(result, Err(SearchError::InternalError(_))));
     Ok(())
@@ -140,7 +166,11 @@ async fn test_semantic_provider_error_returns_internal_error(
 async fn test_hybrid_computes_embeddings_and_searches(
     #[from(build_hybrid_searching_params)] params: SearchingParams,
 ) -> anyhow::Result<()> {
-    let mut embeddings = MockEmbeddingsProvider::new();
+    let TestEnvironment {
+        mut embeddings,
+        mut reranker,
+        ..
+    } = init_test_environment();
     embeddings
         .expect_compute()
         .times(1)
@@ -152,7 +182,12 @@ async fn test_hybrid_computes_embeddings_and_searches(
         .withf(|_: &SearchingParams, qe: &Option<Tokens>| *qe == Some(vec![1.0, 2.0, 3.0].into()))
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings));
+    reranker
+        .expect_rerank()
+        .times(1)
+        .returning(|_, docs| Ok(docs));
+
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
     assert!(usecase.search_document_parts(params).await.is_ok());
     Ok(())
 }
@@ -162,7 +197,11 @@ async fn test_hybrid_computes_embeddings_and_searches(
 async fn test_hybrid_empty_embeddings_still_searches(
     #[from(build_hybrid_searching_params)] params: SearchingParams,
 ) -> anyhow::Result<()> {
-    let mut embeddings = MockEmbeddingsProvider::new();
+    let TestEnvironment {
+        mut embeddings,
+        mut reranker,
+        ..
+    } = init_test_environment();
     embeddings
         .expect_compute()
         .times(1)
@@ -174,7 +213,12 @@ async fn test_hybrid_empty_embeddings_still_searches(
         .withf(|_: &SearchingParams, qe: &Option<Tokens>| qe.is_some())
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings));
+    reranker
+        .expect_rerank()
+        .times(1)
+        .returning(|_, docs| Ok(docs));
+
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
     let pagination = usecase.search_document_parts(params).await?;
     assert!(pagination.founded.is_empty());
     assert!(pagination.scroll_id.is_none());
@@ -197,7 +241,11 @@ async fn test_retrieve_rejects_traversal_path() -> anyhow::Result<()> {
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(matches!(result, Err(SearchError::ValidationError(_))));
@@ -220,7 +268,11 @@ async fn test_retrieve_rejects_absolute_path() -> anyhow::Result<()> {
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(matches!(result, Err(SearchError::ValidationError(_))));
@@ -245,7 +297,11 @@ async fn test_retrieve_with_valid_path_searches() -> anyhow::Result<()> {
         .times(1)
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     assert!(usecase.search_document_parts(params).await.is_ok());
     Ok(())
 }
@@ -267,7 +323,11 @@ async fn test_fulltext_rejects_traversal_prefix() -> anyhow::Result<()> {
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(matches!(result, Err(SearchError::ValidationError(_))));
@@ -291,7 +351,11 @@ async fn test_fulltext_rejects_absolute_prefix() -> anyhow::Result<()> {
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(matches!(result, Err(SearchError::ValidationError(_))));
@@ -317,7 +381,11 @@ async fn test_fulltext_with_valid_prefix_searches() -> anyhow::Result<()> {
         .times(1)
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     assert!(usecase.search_document_parts(params).await.is_ok());
     Ok(())
 }
@@ -341,7 +409,11 @@ async fn test_semantic_rejects_traversal_prefix() -> anyhow::Result<()> {
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(matches!(result, Err(SearchError::ValidationError(_))));
@@ -375,7 +447,11 @@ async fn test_semantic_with_valid_prefix_searches() -> anyhow::Result<()> {
         .times(1)
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(embeddings),
+        Arc::new(MockRerankerProvider::new()),
+    );
     assert!(usecase.search_document_parts(params).await.is_ok());
     Ok(())
 }
@@ -399,7 +475,11 @@ async fn test_hybrid_rejects_traversal_prefix() -> anyhow::Result<()> {
     let mut mock = MockSearcher::new();
     mock.expect_search().never();
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(MockEmbeddingsProvider::new()));
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
     let result = usecase.search_document_parts(params).await;
 
     assert!(matches!(result, Err(SearchError::ValidationError(_))));
@@ -422,7 +502,11 @@ async fn test_hybrid_with_valid_prefix_searches() -> anyhow::Result<()> {
         None,
     );
 
-    let mut embeddings = MockEmbeddingsProvider::new();
+    let TestEnvironment {
+        mut embeddings,
+        mut reranker,
+        ..
+    } = init_test_environment();
     embeddings
         .expect_compute()
         .times(1)
@@ -433,7 +517,12 @@ async fn test_hybrid_with_valid_prefix_searches() -> anyhow::Result<()> {
         .times(1)
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
-    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings));
+    reranker
+        .expect_rerank()
+        .times(1)
+        .returning(|_, docs| Ok(docs));
+
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
     assert!(usecase.search_document_parts(params).await.is_ok());
     Ok(())
 }
