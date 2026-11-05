@@ -1,5 +1,5 @@
 use doc_search_core::domain::searcher::models::{
-    PaginationParams, RetrieveIndexDocumentsParams, SearchingParams,
+    PaginationParams, RetrieveIndexDocumentsParams, SearchKindParams, SearchingParams,
 };
 use doc_search_core::domain::storage::models::{CreateIndexParams, LargeDocument};
 
@@ -106,6 +106,56 @@ fn test_paginate_form_mapping(#[case] scroll_id: &str) -> anyhow::Result<()> {
     let result: ServerResult<PaginationParams> = form.try_into();
     let pagination = result.expect("paginate form must convert to pagination params");
     assert_eq!(scroll_id, pagination.scroll_id.as_str());
+    assert_eq!(None, pagination.query);
+    assert!(!pagination.is_reranker_enable);
+
+    Ok(())
+}
+
+#[test]
+fn test_paginate_form_maps_reranker_fields() -> anyhow::Result<()> {
+    let form: PaginateForm = serde_json::from_value(serde_json::json!({
+        "scroll_id": "scroll-id",
+        "query": "find something",
+        "is_reranker_enable": true,
+    }))
+    .expect("failed to deserialize paginate form");
+
+    let params: PaginationParams = form.try_into()?;
+    assert_eq!(Some("find something".to_string()), params.query);
+    assert!(params.is_reranker_enable);
+
+    Ok(())
+}
+
+#[rstest::rstest]
+#[case(true)]
+#[case(false)]
+fn test_semantic_form_maps_reranker_flag(#[case] enabled: bool) -> anyhow::Result<()> {
+    let mut form = create_semantic_search_form();
+    form.is_reranker_enable = enabled;
+
+    let params: SearchingParams = form.try_into()?;
+    let SearchKindParams::Semantic(semantic) = params.get_kind() else {
+        panic!("expected semantic search kind");
+    };
+    assert_eq!(enabled, semantic.is_reranker_enable);
+
+    Ok(())
+}
+
+#[rstest::rstest]
+#[case(true)]
+#[case(false)]
+fn test_hybrid_form_maps_reranker_flag(#[case] enabled: bool) -> anyhow::Result<()> {
+    let mut form = create_hybrid_search_form();
+    form.is_reranker_enable = enabled;
+
+    let params: SearchingParams = form.try_into()?;
+    let SearchKindParams::Hybrid(hybrid) = params.get_kind() else {
+        panic!("expected hybrid search kind");
+    };
+    assert_eq!(enabled, hybrid.is_reranker_enable);
 
     Ok(())
 }

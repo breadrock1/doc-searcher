@@ -57,6 +57,7 @@ impl From<SearchError> for ServerError {
             SearchError::AuthenticationFailed(err) => {
                 ServerError::AuthenticationFailed(err.to_string())
             }
+            SearchError::EmptyRerankerQueryError => ServerError::IncorrectInputForm(err.to_string()),
             SearchError::IndexNotFound(err) => ServerError::NotFound(err.to_string()),
             SearchError::InternalError(err) => ServerError::InternalError(err.to_string()),
             SearchError::ValidationError(err) => ServerError::IncorrectInputForm(err.to_string()),

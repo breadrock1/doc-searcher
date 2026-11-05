@@ -207,6 +207,9 @@ pub struct HybridSearchForm {
     pub indexes: String,
     #[schema(example = 0.7)]
     pub min_score: Option<f32>,
+    #[schema(example = false)]
+    #[serde(default)]
+    pub is_reranker_enable: bool,
     pub result: ResultForm,
     pub filter: Option<FilterForm>,
 }
@@ -229,6 +232,7 @@ impl TryFrom<HybridSearchForm> for SearchingParams {
             .query(form.query)
             .knn_amount(form.knn_amount)
             .min_score(form.min_score)
+            .is_reranker_enable(form.is_reranker_enable)
             .prefix(form.prefix)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
@@ -252,6 +256,9 @@ pub struct SemanticSearchForm {
     pub prefix: Option<String>,
     #[schema(example = "test-folder-1,test-folder-2")]
     pub indexes: String,
+    #[schema(example = false)]
+    #[serde(default)]
+    pub is_reranker_enable: bool,
     pub result: ShortResultForm,
     pub filter: Option<FilterForm>,
 }
@@ -274,6 +281,7 @@ impl TryFrom<SemanticSearchForm> for SearchingParams {
             .query(form.query)
             .knn_amount(form.knn_amount)
             .min_score(None)
+            .is_reranker_enable(form.is_reranker_enable)
             .prefix(form.prefix)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))?;
@@ -291,6 +299,11 @@ impl TryFrom<SemanticSearchForm> for SearchingParams {
 pub struct PaginateForm {
     #[schema(example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFmOSWhk")]
     scroll_id: String,
+    #[schema(example = "Hello world")]
+    pub query: Option<String>,
+    #[schema(example = false)]
+    #[serde(default)]
+    pub is_reranker_enable: bool,
 }
 
 impl TryFrom<PaginateForm> for PaginationParams {
@@ -299,6 +312,8 @@ impl TryFrom<PaginateForm> for PaginationParams {
     fn try_from(form: PaginateForm) -> Result<Self, Self::Error> {
         PaginationParamsBuilder::default()
             .scroll_id(form.scroll_id)
+            .query(form.query)
+            .is_reranker_enable(form.is_reranker_enable)
             .build()
             .map_err(|err| ServerError::IncorrectInputForm(err.to_string()))
     }

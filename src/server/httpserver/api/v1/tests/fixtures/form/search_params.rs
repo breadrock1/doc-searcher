@@ -47,6 +47,7 @@ pub fn create_semantic_search_form() -> SemanticSearchForm {
         prefix: None,
         filter: None,
         result: create_short_result_form(),
+        is_reranker_enable: false,
     }
 }
 
@@ -58,6 +59,7 @@ pub fn create_semantic_search_form_with_filter() -> SemanticSearchForm {
         prefix: None,
         filter: Some(create_filter_form()),
         result: create_short_result_form(),
+        is_reranker_enable: false,
     }
 }
 
@@ -70,6 +72,7 @@ pub fn create_hybrid_search_form() -> HybridSearchForm {
         filter: None,
         result: create_result_form(),
         min_score: Some(0.6),
+        is_reranker_enable: false,
     }
 }
 
@@ -82,6 +85,7 @@ pub fn create_hybrid_search_form_with_filter() -> HybridSearchForm {
         filter: Some(create_filter_form()),
         result: create_result_form(),
         min_score: Some(0.6),
+        is_reranker_enable: false,
     }
 }
 
