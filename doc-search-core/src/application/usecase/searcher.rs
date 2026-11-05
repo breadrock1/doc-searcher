@@ -56,8 +56,7 @@ where
         }
 
         let searching_kind = params.get_kind().to_string();
-
-        let (is_ensure_reranking_need, query) = params.get_query_if_hybrid_kind();
+        let reranking_query = params.get_query_if_reranking_need();
         let ensured = self.ensure_query_embeddings(params).await?;
         let result = self.searcher.search(ensured.params, ensured.tokens).await;
 
@@ -77,7 +76,7 @@ where
         .record(instant.elapsed().as_secs_f64());
 
         let pagination = result?;
-        if is_ensure_reranking_need {
+        if let Some(query) = reranking_query {
             return self.ensure_reranked_result(query, pagination).await;
         }
 
@@ -86,6 +85,15 @@ where
 
     #[instrument(level = "info", skip(self))]
     pub async fn paginate(&self, params: PaginationParams) -> SearchResult<Pagination> {
+        let reranking_query = params
+            .query
+            .clone()
+            .filter(|query| params.is_reranker_enable && !query.trim().is_empty());
+
+        if params.is_reranker_enable && reranking_query.is_none() {
+            return Err(SearchError::EmptyRerankerQueryError);
+        }
+
         let instant = tokio::time::Instant::now();
 
         let result = self.searcher.paginate(params).await;
@@ -102,11 +110,11 @@ where
         )
         .record(instant.elapsed().as_secs_f64());
 
-        // TODO: does need to rerank pagination results?
-        //  pagination available for fulltext and semantic searching
-        //  bu reranking available for hybrid searching only
-
         let pagination = result?;
+        if let Some(query) = reranking_query {
+            return self.ensure_reranked_result(query, pagination).await;
+        }
+
         Ok(pagination)
     }
 

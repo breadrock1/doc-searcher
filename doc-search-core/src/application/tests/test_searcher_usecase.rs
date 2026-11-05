@@ -168,7 +168,7 @@ async fn test_hybrid_computes_embeddings_and_searches(
 ) -> anyhow::Result<()> {
     let TestEnvironment {
         mut embeddings,
-        mut reranker,
+        reranker,
         ..
     } = init_test_environment();
     embeddings
@@ -182,13 +182,252 @@ async fn test_hybrid_computes_embeddings_and_searches(
         .withf(|_: &SearchingParams, qe: &Option<Tokens>| *qe == Some(vec![1.0, 2.0, 3.0].into()))
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
 
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
+    assert!(usecase.search_document_parts(params).await.is_ok());
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_hybrid_reranks_when_enabled() -> anyhow::Result<()> {
+    let TestEnvironment {
+        mut embeddings,
+        mut reranker,
+        ..
+    } = init_test_environment();
+    embeddings
+        .expect_compute()
+        .times(1)
+        .returning(|_| Ok(vec![1.0, 2.0, 3.0].into()));
+
+    let mut mock = MockSearcher::new();
+    mock.expect_search()
+        .times(1)
+        .returning(|_, _| Ok(Pagination::new(None, vec![])));
+
     reranker
         .expect_rerank()
         .times(1)
+        .withf(|query: &String, _| query == "hybrid query")
         .returning(|_, docs| Ok(docs));
+
+    let params = SearchingParams::new(
+        vec!["test-index-1".into()],
+        SearchKindParams::Hybrid(
+            HybridSearchingParamsBuilder::default()
+                .query("hybrid query".to_string())
+                .knn_amount(10)
+                .min_score(None)
+                .is_reranker_enable(true)
+                .build()?,
+        ),
+        build_result_searching_params(),
+        None,
+    );
 
     let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
     assert!(usecase.search_document_parts(params).await.is_ok());
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_hybrid_does_not_rerank_when_disabled() -> anyhow::Result<()> {
+    let TestEnvironment {
+        mut embeddings,
+        reranker,
+        ..
+    } = init_test_environment();
+    embeddings
+        .expect_compute()
+        .times(1)
+        .returning(|_| Ok(vec![1.0, 2.0, 3.0].into()));
+
+    let mut mock = MockSearcher::new();
+    mock.expect_search()
+        .times(1)
+        .returning(|_, _| Ok(Pagination::new(None, vec![])));
+
+    let params = SearchingParams::new(
+        vec!["test-index-1".into()],
+        SearchKindParams::Hybrid(
+            HybridSearchingParamsBuilder::default()
+                .query("hybrid query".to_string())
+                .knn_amount(10)
+                .min_score(None)
+                .is_reranker_enable(false)
+                .build()?,
+        ),
+        build_result_searching_params(),
+        None,
+    );
+
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
+    assert!(usecase.search_document_parts(params).await.is_ok());
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_semantic_reranks_when_enabled() -> anyhow::Result<()> {
+    let TestEnvironment {
+        mut embeddings,
+        mut reranker,
+        ..
+    } = init_test_environment();
+    embeddings
+        .expect_compute()
+        .times(1)
+        .returning(|_| Ok(vec![1.0, 2.0, 3.0].into()));
+
+    let mut mock = MockSearcher::new();
+    mock.expect_search()
+        .times(1)
+        .returning(|_, _| Ok(Pagination::new(None, vec![])));
+
+    reranker
+        .expect_rerank()
+        .times(1)
+        .withf(|query: &String, _| query == "semantic query")
+        .returning(|_, docs| Ok(docs));
+
+    let params = SearchingParams::new(
+        vec!["test-index-1".into()],
+        SearchKindParams::Semantic(
+            SemanticSearchingParamsBuilder::default()
+                .query("semantic query".to_string())
+                .knn_amount(10)
+                .min_score(None)
+                .is_reranker_enable(true)
+                .build()?,
+        ),
+        build_result_searching_params(),
+        None,
+    );
+
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
+    assert!(usecase.search_document_parts(params).await.is_ok());
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_semantic_does_not_rerank_when_disabled() -> anyhow::Result<()> {
+    let TestEnvironment {
+        mut embeddings,
+        reranker,
+        ..
+    } = init_test_environment();
+    embeddings
+        .expect_compute()
+        .times(1)
+        .returning(|_| Ok(vec![1.0, 2.0, 3.0].into()));
+
+    let mut mock = MockSearcher::new();
+    mock.expect_search()
+        .times(1)
+        .returning(|_, _| Ok(Pagination::new(None, vec![])));
+
+    let params = SearchingParams::new(
+        vec!["test-index-1".into()],
+        SearchKindParams::Semantic(
+            SemanticSearchingParamsBuilder::default()
+                .query("semantic query".to_string())
+                .knn_amount(10)
+                .min_score(None)
+                .is_reranker_enable(false)
+                .build()?,
+        ),
+        build_result_searching_params(),
+        None,
+    );
+
+    let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
+    assert!(usecase.search_document_parts(params).await.is_ok());
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_paginate_reranks_when_enabled() -> anyhow::Result<()> {
+    let TestEnvironment { mut reranker, .. } = init_test_environment();
+
+    let mut mock = MockSearcher::new();
+    mock.expect_paginate()
+        .times(1)
+        .returning(|_| Ok(Pagination::new(Some("next-scroll".to_string()), vec![])));
+
+    reranker
+        .expect_rerank()
+        .times(1)
+        .withf(|query: &String, _| query == "pagination query")
+        .returning(|_, docs| Ok(docs));
+
+    let params = PaginationParamsBuilder::default()
+        .scroll_id("scroll-value".to_string())
+        .query(Some("pagination query".to_string()))
+        .is_reranker_enable(true)
+        .build()?;
+
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(reranker),
+    );
+    let pagination = usecase.paginate(params).await?;
+    assert_eq!(Some("next-scroll".to_string()), pagination.scroll_id);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_paginate_does_not_rerank_when_disabled() -> anyhow::Result<()> {
+    let TestEnvironment { reranker, .. } = init_test_environment();
+
+    let mut mock = MockSearcher::new();
+    mock.expect_paginate()
+        .times(1)
+        .returning(|_| Ok(Pagination::new(Some("next-scroll".to_string()), vec![])));
+
+    let params = PaginationParamsBuilder::default()
+        .scroll_id("scroll-value".to_string())
+        .query(Some("pagination query".to_string()))
+        .is_reranker_enable(false)
+        .build()?;
+
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(reranker),
+    );
+    let pagination = usecase.paginate(params).await?;
+    assert_eq!(Some("next-scroll".to_string()), pagination.scroll_id);
+    Ok(())
+}
+
+#[rstest]
+#[case(None)]
+#[case(Some(String::new()))]
+#[case(Some("   ".to_string()))]
+#[tokio::test]
+async fn test_paginate_rejects_reranking_without_query(
+    #[case] query: Option<String>,
+) -> anyhow::Result<()> {
+    let mut mock = MockSearcher::new();
+    mock.expect_paginate().never();
+
+    let params = PaginationParamsBuilder::default()
+        .scroll_id("scroll-value".to_string())
+        .query(query)
+        .is_reranker_enable(true)
+        .build()?;
+
+    let usecase = SearcherUseCase::new(
+        Arc::new(mock),
+        Arc::new(MockEmbeddingsProvider::new()),
+        Arc::new(MockRerankerProvider::new()),
+    );
+    let result = usecase.paginate(params).await;
+
+    assert!(matches!(result, Err(SearchError::ValidationError(_))));
     Ok(())
 }
 
@@ -199,7 +438,7 @@ async fn test_hybrid_empty_embeddings_still_searches(
 ) -> anyhow::Result<()> {
     let TestEnvironment {
         mut embeddings,
-        mut reranker,
+        reranker,
         ..
     } = init_test_environment();
     embeddings
@@ -212,11 +451,6 @@ async fn test_hybrid_empty_embeddings_still_searches(
         .times(1)
         .withf(|_: &SearchingParams, qe: &Option<Tokens>| qe.is_some())
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
-
-    reranker
-        .expect_rerank()
-        .times(1)
-        .returning(|_, docs| Ok(docs));
 
     let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
     let pagination = usecase.search_document_parts(params).await?;
@@ -504,7 +738,7 @@ async fn test_hybrid_with_valid_prefix_searches() -> anyhow::Result<()> {
 
     let TestEnvironment {
         mut embeddings,
-        mut reranker,
+        reranker,
         ..
     } = init_test_environment();
     embeddings
@@ -516,11 +750,6 @@ async fn test_hybrid_with_valid_prefix_searches() -> anyhow::Result<()> {
     mock.expect_search()
         .times(1)
         .returning(|_, _| Ok(Pagination::new(None, vec![])));
-
-    reranker
-        .expect_rerank()
-        .times(1)
-        .returning(|_, docs| Ok(docs));
 
     let usecase = SearcherUseCase::new(Arc::new(mock), Arc::new(embeddings), Arc::new(reranker));
     assert!(usecase.search_document_parts(params).await.is_ok());

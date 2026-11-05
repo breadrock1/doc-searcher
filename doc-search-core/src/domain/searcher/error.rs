@@ -191,6 +191,21 @@ pub enum SearchError {
     #[error("searcher: validation error: {0}")]
     ValidationError(anyhow::Error),
 
+    /// Empty query error in search parameters.
+    ///
+    /// This error occurs when:
+    /// * Required parameters are not missing but empty
+    /// * Malformed query syntax
+    ///
+    /// # Example
+    /// ```
+    /// use doc_search_core::domain::searcher::SearchError;
+    ///
+    /// Err(SearchError::EmptyQueryError);
+    /// ```
+    #[error("searcher: passed empty query when reranker is enabled")]
+    EmptyRerankerQueryError,
+
     /// Error returned by the search service itself.
     ///
     /// This error occurs when:
