@@ -62,10 +62,15 @@ impl SearchingParams {
         matches!(self.kind, SearchKindParams::Hybrid(_))
     }
 
-    pub fn get_query_if_hybrid_kind(&self) -> (bool, String) {
+    pub fn get_query_if_reranking_need(&self) -> Option<String> {
         match &self.kind {
-            SearchKindParams::Hybrid(params) => (true, params.query.clone()),
-            _ => (false, String::default()),
+            SearchKindParams::Semantic(params) if params.is_reranker_enable => {
+                Some(params.query.clone())
+            }
+            SearchKindParams::Hybrid(params) if params.is_reranker_enable => {
+                Some(params.query.clone())
+            }
+            _ => None,
         }
     }
 
@@ -146,6 +151,7 @@ pub struct FullTextSearchingParams {
 /// * `query` - Search query text
 /// * `knn_amount` - Number of nearest neighbors to return
 /// * `min_score` - Minimum similarity score threshold (optional)
+/// * `is_reranker_enable` - Whether to rerank the found documents with the query
 /// * `prefix` - Optional file path / folder prefix to filter documents by
 ///
 /// # Example
@@ -156,6 +162,7 @@ pub struct FullTextSearchingParams {
 ///     query: "machine learning".to_string(),
 ///     knn_amount: 10,
 ///     min_score: Some(0.7),
+///     is_reranker_enable: false,
 ///     prefix: None,
 /// };
 /// ```
@@ -165,6 +172,8 @@ pub struct SemanticSearchingParams {
     pub knn_amount: u16,
     pub min_score: Option<f32>,
     #[builder(default)]
+    pub is_reranker_enable: bool,
+    #[builder(default)]
     pub prefix: Option<String>,
 }
 
@@ -172,8 +181,8 @@ impl Debug for SemanticSearchingParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "query: {}, knn_amount: {}, min_score: {:?}, prefix: {:?}",
-            self.query, self.knn_amount, self.min_score, self.prefix,
+            "query: {}, knn_amount: {}, min_score: {:?}, is_reranker_enable: {}, prefix: {:?}",
+            self.query, self.knn_amount, self.min_score, self.is_reranker_enable, self.prefix,
         )
     }
 }
@@ -187,12 +196,15 @@ impl Debug for SemanticSearchingParams {
 /// * `query` - Search query text
 /// * `knn_amount` - Number of nearest neighbors for semantic component
 /// * `min_score` - Minimum combined score threshold (optional)
+/// * `is_reranker_enable` - Whether to rerank the found documents with the query
 /// * `prefix` - Optional file path / folder prefix to filter documents by
 #[derive(Builder, Clone, PartialEq)]
 pub struct HybridSearchingParams {
     pub query: String,
     pub knn_amount: u16,
     pub min_score: Option<f32>,
+    #[builder(default)]
+    pub is_reranker_enable: bool,
     #[builder(default)]
     pub prefix: Option<String>,
 }
@@ -201,8 +213,8 @@ impl Debug for HybridSearchingParams {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "query: {}, knn_amount: {}, min_score: {:?}, prefix: {:?}",
-            self.query, self.knn_amount, self.min_score, self.prefix,
+            "query: {}, knn_amount: {}, min_score: {:?}, is_reranker_enable: {}, prefix: {:?}",
+            self.query, self.knn_amount, self.min_score, self.is_reranker_enable, self.prefix,
         )
     }
 }
@@ -211,9 +223,15 @@ impl Debug for HybridSearchingParams {
 ///
 /// # Fields
 /// * `scroll_id` - Scroll ID from previous search results for continuation
+/// * `query` - Optional original search query, required for reranking
+/// * `is_reranker_enable` - Whether to rerank the next page of found documents
 #[derive(Debug, Builder)]
 pub struct PaginationParams {
     pub scroll_id: String,
+    #[builder(default)]
+    pub query: Option<String>,
+    #[builder(default)]
+    pub is_reranker_enable: bool,
 }
 
 /// Filter parameters for narrowing down search results.
