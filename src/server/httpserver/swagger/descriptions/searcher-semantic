@@ -4,6 +4,8 @@ The `filter` field is optional. You can see example into `schema`.
 
 The query vector is computed automatically by the external embeddings service - the client does not pass tokens.
 
+Set `is_reranker_enable` to `true` to rerank the found documents with the external reranker service using the same query.
+
 The `include_extra_fields` field returns additional fields into Document:
  - `chunked_text` - all chunks of document content;
  - `embeddings` - embeddings for each chunk.

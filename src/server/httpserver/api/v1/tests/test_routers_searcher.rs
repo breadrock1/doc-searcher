@@ -288,11 +288,13 @@ async fn test_paginate_next(
 
     let test_server_context = test_server::create_test_server_context(storage, searcher);
 
+    let request_body = serde_json::to_vec(&serde_json::json!({ "scroll_id": SCROLL_ID }))
+        .expect("failed to serialize json");
     let request = Request::builder()
-        .method(Method::GET)
-        .uri(format!("{}/search/paginate/{}", API_VERSION_URL, SCROLL_ID))
+        .method(Method::POST)
+        .uri(format!("{}/search/paginate", API_VERSION_URL))
         .header(CONTENT_TYPE, "application/json")
-        .body(Body::empty())
+        .body(Body::from(request_body))
         .expect("failed to build request");
 
     let response = test_server_context
@@ -307,6 +309,48 @@ async fn test_paginate_next(
         .expect("body should be ok");
     let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
     assert_eq!(expected_body, data);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_paginate_rejects_reranker_without_query() -> anyhow::Result<()> {
+    let storage = MockStorageService::new();
+    let mut searcher = MockSearcherService::new();
+    searcher.expect_paginate().never();
+
+    let test_server_context = test_server::create_test_server_context(storage, searcher);
+
+    let request_body = serde_json::to_vec(&serde_json::json!({
+        "scroll_id": SCROLL_ID,
+        "is_reranker_enable": true,
+    }))
+    .expect("failed to serialize json");
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri(format!("{}/search/paginate", API_VERSION_URL))
+        .header(CONTENT_TYPE, "application/json")
+        .body(Body::from(request_body))
+        .expect("failed to build request");
+
+    let response = test_server_context
+        .test_server
+        .clone()
+        .oneshot(request)
+        .await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = axum::body::to_bytes(response.into_body(), RESPONSE_BODY_SIZE_LIMIT)
+        .await
+        .expect("body should be ok");
+    let data = serde_json::from_slice::<Value>(&body).expect("failed to parse json");
+    assert_eq!(
+        serde_json::json!({
+            "status": 400,
+            "message": "query is required when reranker is enabled",
+        }),
+        data
+    );
 
     Ok(())
 }

@@ -93,6 +93,6 @@ where
         )
         .route(
             router::searcher::SEARCH_PAGINATE_URL,
-            get(router::searcher::paginate_next),
+            post(router::searcher::paginate_next),
         )
 }

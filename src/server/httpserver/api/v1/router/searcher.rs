@@ -1,22 +1,22 @@
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::Json;
-use doc_search_core::domain::searcher::models::PaginationParamsBuilder;
+use doc_search_core::domain::searcher::models::PaginationParams;
 use doc_search_core::domain::searcher::{IPaginator, ISearcher};
 use doc_search_core::domain::storage::{IDocumentPartStorage, IIndexStorage};
 use std::sync::Arc;
 
 use crate::server::httpserver::api::v1::form::{
-    FullTextSearchForm, HybridSearchForm, SemanticSearchForm,
+    FullTextSearchForm, HybridSearchForm, PaginateForm, SemanticSearchForm,
 };
 use crate::server::httpserver::api::v1::schema::PaginationSchema;
 use crate::server::httpserver::swagger::DefaultErrorForm;
 use crate::server::httpserver::ServerApp;
-use crate::server::{ServerError, ServerResult};
+use crate::server::ServerResult;
 
 pub const SEARCH_FULLTEXT_URL: &str = "/search/fulltext";
 pub const SEARCH_SEMANTIC_URL: &str = "/search/semantic";
 pub const SEARCH_HYBRID_URL: &str = "/search/hybrid";
-pub const SEARCH_PAGINATE_URL: &str = "/search/paginate/{scroll_id}";
+pub const SEARCH_PAGINATE_URL: &str = "/search/paginate";
 
 const FULLTEXT_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/searcher-fulltext");
 const SEMANTIC_DESCRIPTION: &str = include_str!("../../../swagger/descriptions/searcher-semantic");
@@ -125,17 +125,11 @@ where
 }
 
 #[utoipa::path(
-    get,
+    post,
     tag = "search",
     path = SEARCH_PAGINATE_URL,
-    description = "Paginate search results by scroll",
-    params(
-        (
-            "scroll_id" = &str,
-            description = "Scroll ID to load next founded documents",
-            example = "FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y",
-        ),
-    ),
+    description = "Paginate search results by scroll. Pass the original search query and `is_reranker_enable` to rerank the next page.",
+    request_body(content = PaginateForm),
     responses(
         (
             status = 200,
@@ -151,16 +145,13 @@ where
 )]
 pub async fn paginate_next<Storage, Searcher>(
     State(state): State<Arc<ServerApp<Storage, Searcher>>>,
-    Path(scroll_id): Path<String>,
+    Json(form): Json<PaginateForm>,
 ) -> ServerResult<Json<PaginationSchema>>
 where
     Searcher: ISearcher + IPaginator + Send + Sync + 'static,
     Storage: IIndexStorage + IDocumentPartStorage + Send + Sync + 'static,
 {
-    let params = PaginationParamsBuilder::default()
-        .scroll_id(scroll_id)
-        .build()
-        .map_err(|err| ServerError::InternalError(err.to_string()))?;
+    let params = PaginationParams::try_from(form)?;
 
     let searcher = state.get_searcher();
     let documents = searcher.paginate(params).await?;

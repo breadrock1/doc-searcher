@@ -75,6 +75,7 @@ pub fn init_swagger_layer() -> SwaggerUi {
             RetrieveDocumentForm,
             SemanticSearchForm,
             HybridSearchForm,
+            PaginateForm,
             ServerError,
             Success,
         ),
