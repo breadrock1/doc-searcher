@@ -4,9 +4,11 @@ pub use config::ResourceManagerConfig;
 mod dto;
 pub use dto::ResourceSchema;
 
-use doc_search_core::ServiceConnect;
 use doc_search_core::shared::kernel::ResourceId;
-use doc_search_core::shared::services::{IResourceManager, ResourceInfo, ResourceManagerError, ResourceManagerResult};
+use doc_search_core::shared::services::{
+    IResourceManager, ResourceInfo, ResourceManagerError, ResourceManagerResult,
+};
+use doc_search_core::ServiceConnect;
 use metrics::{counter, histogram};
 use std::time::Duration;
 use tokio::time::Instant;
@@ -64,7 +66,7 @@ impl IResourceManager for ResourceManagerClient {
             "docsearch_resource_manager_requests_total",
             "status" => status,
         )
-            .increment(1);
+        .increment(1);
         histogram!("docsearch_resource_manager_request_duration_seconds")
             .record(instant.elapsed().as_secs_f64());
 
