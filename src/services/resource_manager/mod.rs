@@ -1,36 +1,23 @@
-use gset::Getset;
+mod config;
+pub use config::ResourceManagerConfig;
+
+mod dto;
+pub use dto::ResourceSchema;
+
+use doc_search_core::ServiceConnect;
+use doc_search_core::shared::kernel::ResourceId;
+use doc_search_core::shared::services::{IResourceManager, ResourceInfo, ResourceManagerError, ResourceManagerResult};
 use metrics::{counter, histogram};
-use serde_derive::Deserialize;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use tokio::time::Instant;
 use tracing::instrument;
 
-use doc_search_core::shared::kernel::ResourceId;
-use doc_search_core::shared::services::{
-    IResourceManager, ResourceInfo, ResourceManagerError, ResourceManagerResult,
-};
-use doc_search_core::ServiceConnect;
-
 const RESOURCE_PATH: &str = "/api/v1/resource";
-
-#[derive(Clone, Debug, Deserialize, Getset)]
-pub struct ResourceManagerConfig {
-    #[getset(get, vis = "pub")]
-    base_url: String,
-    #[getset(get_copy, vis = "pub")]
-    timeout: u64,
-}
 
 #[derive(Clone)]
 pub struct ResourceManagerClient {
     config: ResourceManagerConfig,
     client: reqwest::Client,
-}
-
-#[derive(Debug, Deserialize)]
-struct ResourceSchema {
-    external_id: Option<String>,
-    #[serde(default)]
-    prefix: String,
 }
 
 #[async_trait::async_trait]
@@ -77,7 +64,7 @@ impl IResourceManager for ResourceManagerClient {
             "docsearch_resource_manager_requests_total",
             "status" => status,
         )
-        .increment(1);
+            .increment(1);
         histogram!("docsearch_resource_manager_request_duration_seconds")
             .record(instant.elapsed().as_secs_f64());
 
